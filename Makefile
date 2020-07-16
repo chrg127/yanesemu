@@ -1,29 +1,37 @@
 CXX = g++
 CFLAGS = -Wall -Wextra
 DEBDIR = debug
-RELDIR = rel
+RELDIR = release
 OBJDIR = obj
 PRGNAME = emu
 
-HEADERS = nescpu.h
-_OBJS = main.o nescpu.o
+HEADERS = cpu.h nesrom.h
+_OBJS = main.o cpu.o nesrom.o
 OBJS = $(patsubst %,$(OBJDIR)/%,$(_OBJS))
 
-default: debug
+default: directories debug
 
+directories:
+	mkdir -p $(DEBDIR) $(RELDIR) $(DEBDIR)/$(OBJDIR) $(RELDIR)/$(OBJDIR) 
+
+# OUTDIR defined in these two rules
 debug: CFLAGS += -g
+debug: OUTDIR = $(DEBDIR)
+debug: OBJS_WITHDIR = $(patsubst %,$(OUTDIR)/%,$(OBJS))
 debug: $(PRGNAME)
 
 release: CFLAGS += O2
+release: OUTDIR = $(RELDIR)
+release: OBJS_WITHDIR = $(patsubst %,$(OUTDIR)/$(OBJS))
 release: $(PRGNAME)
 
 $(OBJDIR)/%.o: %.cpp $(HEADERS)
-	$(CXX) $(CFLAGS) -c $< -o $@
+	$(CXX) $(CFLAGS) -c $< -o $(OUTDIR)/$@
 
 $(PRGNAME): $(OBJS)
-	$(CXX) $(OBJS) -o $(DEBDIR)/$(PRGNAME)
+	$(CXX) $(OBJS_WITHDIR) -o $(OUTDIR)/$(PRGNAME)
 
 .PHONY: clean
 clean:
-	rm -f $(OBJDIR)/*.o $(DEBDIR)/$(PRGNAME)
+	rm -f $(DEBDIR)/$(OBJDIR)/*.o $(RELDIR)/$(OBJDIR)/*.o $(DEBDIR)/$(PRGNAME)
 
