@@ -6,13 +6,13 @@ int main(int argc, char **argv)
     FILE *romfile;
 
     if (argc < 2) {
-        std::fprintf(stderr, "%s: error: rom file not specified", *argv);
+        std::fprintf(stderr, "%s: error: rom file not specified\n", *argv);
         return 1;
     }
 
     romfile = std::fopen(argv[1], "rb");
     if (!romfile) {
-        std::fprintf(stderr, "%s: error: rom file couldn't be opened", *argv);
+        std::fprintf(stderr, "%s: error: rom file couldn't be opened\n", *argv);
         return 1;
 
     }
