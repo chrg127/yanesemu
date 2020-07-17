@@ -16,7 +16,7 @@ enum OPCODES : int {
 };
 
 class CPU {
-    friend class RomFile;
+    RomFile &file;
 
     int areg;
     int xreg;
@@ -25,6 +25,12 @@ class CPU {
     uint8_t rambuf[8192];
 
 public:
+    CPU(RomFile &f)
+        : file(f)
+    { }
+    
+    ~CPU() { }
+
     unsigned char fetch(RomFile &rom);
     int decode(unsigned char opcode);
     void execute(int opcode);

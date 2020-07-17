@@ -2,10 +2,10 @@
 
 #include <cstdio>
 
-unsigned char CPU::fetch(RomFile &rom)
+uint8_t CPU::fetch(RomFile &rom)
 {
-    unsigned char buf[2];
-    std::fread(buf, 1, 1, rom.file);
+    uint8_t buf[2];
+    rom.read(1, buf);
     return *buf;
 }
 
@@ -27,7 +27,7 @@ void CPU::execute(int opcode)
     case STX:
         break;
     default:
-        fprintf(stderr, "error: unknown opcode: %02X\n", opcode);
+        printf("\rerror: unknown opcode: %02X\n", opcode);
     }
 }
 

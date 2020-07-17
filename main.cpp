@@ -4,8 +4,8 @@
 
 int main(int argc, char **argv)
 {
-    CPU cpu;
     RomFile rom;
+    CPU cpu(rom);
     bool done = false;
     int opcodeb, opcode;
 
@@ -18,6 +18,8 @@ int main(int argc, char **argv)
         std::fprintf(stderr, "%s: error: rom file couldn't be opened\n", *argv);
         return 1;
     }
+
+    rom.printinfo();
 
     //fetch, decode and execute cycle
     while (!done) {
