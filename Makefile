@@ -5,7 +5,7 @@ RELDIR = release
 OBJDIR = obj
 PRGNAME = emu
 
-HEADERS = cpu.h nesrom.h
+HEADERS = cpu.h nesrom.h memorymap.h
 _OBJS = main.o cpu.o nesrom.o
 OBJS = $(patsubst %,$(OBJDIR)/%,$(_OBJS))
 

@@ -142,7 +142,7 @@ void RomFile::printinfo()
         std::printf("iNES");
     else
         std::printf("NES 2.0");
-    std::printf(", %dx16k PRG ROM, %dx8k CHR ROM", prgrom_size, chrrom_size);
+    std::printf(", mapper %d, %dx16k PRG ROM, %dx8k CHR ROM", mapper, prgrom_size, chrrom_size);
     if (has_prgram)
         std::printf(", %d PRG RAM", prgram_size);
     if (has_chrram)
@@ -153,9 +153,9 @@ void RomFile::printinfo()
         std::printf(", %d CHR NVRAM", chrnvram_size);
 
     if (nametab_mirroring == HORZ)
-        std::printf(", H-Mirroring");
+        std::printf(", H-Mirror");
     else
-        std::printf(", Vertical mirroring");
+        std::printf(", V-Mirror");
     if (has_battery)
         std::printf(", SRAM enabled");
     if (has_trainer)
