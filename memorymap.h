@@ -2,6 +2,9 @@
 #define MEMORYMAP_H_INCLUDED
 
 /* General defines for memory map sections. */
+
+#define MEMSIZE 0xFFFF
+
 #define RAM_START   0
 #define RAM_END     0x07FF
 #define RAM_SIZE    0x0800
