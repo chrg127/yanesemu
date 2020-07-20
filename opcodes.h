@@ -1,757 +1,354 @@
-inline void instr_brk_impl()
-{
+/*
+ * DO NOT #include this file normally. It must be #include'd only inside the CPU class in cpu.h.
+ */
 
+typedef uint8_t (CPU::*OpcodeFuncVal)(uint8_t);
+typedef void (CPU::*OpcodeFuncVoid)();
+typedef void (CPU::*OpcodeFuncJmp)(uint16_t);
+
+// NOTE: addressing mode functions.
+inline void addrmode_impl(OpcodeFuncVoid f)
+{
+    (this->*f)();
 }
 
-
-
-inline void instr_ora_imm()
+inline void addrmode_imm(OpcodeFuncVal f)
 {
-    accum |= fetch_op();
+    (this->*f)(fetch_op());
 }
 
-inline void instr_ora_zero()
+inline void addrmode_accum(OpcodeFuncVal f)
 {
-    accum |= read_mem(fetch_op());
+    accum = (this->*f)(accum);
 }
 
-inline void instr_ora_zerox()
+inline void addrmode_zero(OpcodeFuncVal f)
 {
-    accum |= read_mem(fetch_op() + xreg);
+    write_mem( (this->*f)(read_mem( fetch_op() )) );
 }
 
-inline void instr_ora_abs()
+inline void addrmode_zerox(OpcodeFuncVal f)
 {
-    uint8_t op1 = fetch_op();
-    accum |= read_mem(build_addr(op1, fetch_op));
+    uint8_t op = fetch_op() + xreg;
+    write_mem( (this->*f)(read_mem(op)) );
 }
 
-inline void instr_ora_absx()
+inline void addrmode_zeroy(OpcodeFuncVal f)
 {
-    uint8_t op1 = fetch_op();
-    accum |= read_mem(build_addr(op1, fetch_op)+xreg);
+    uint8_t op = fetch_op() + yreg;
+    write_mem( (this->*f)(read_mem(op)) );
 }
 
-inline void instr_ora_absy()
+inline void addrmode_abs(OpcodeFuncVal f)
 {
-    uint8_t op1 = fetch_op();
-    accum |= read_mem(build_addr(op1, fetch_op)+yreg);
+    uint8_t low = fetch_op();
+    uint16_t addr = buildval16(low, fetch_op());
+    write_mem( (this->*f)(read_mem(addr)) );
 }
 
-inline void instr_ora_indx()
+inline void addrmode_absjmp(OpcodeFuncJmp f)
+{
+    uint8_t low = fetch_op();
+    uint16_t addr = buildval16(low, fetch_op());
+    (this->*f)(addr);
+}
+
+inline void addrmode_absx(OpcodeFuncVal f)
+{
+    uint8_t low = fetch_op();
+    uint16_t addr = buildval16(low, fetch_op()) + xreg;
+    write_mem( (this->*f)(read_mem(addr)) );
+}
+
+inline void addrmode_absy(OpcodeFuncVal f)
+{
+    uint8_t low = fetch_op();
+    uint16_t addr = buildval16(low, fetch_op()) + yreg;
+    write_mem( (this->*f)(read_mem(addr)) );
+}
+
+inline void addrmode_indjmp(OpcodeFuncJmp f)
+{
+    uint8_t low = fetch_op();
+    uint16_t addr = buildval16(low, fetch_op());
+    (this->*f)(read_mem(addr));
+}
+
+inline void addrmode_indx(OpcodeFuncVal f)
 {
     uint8_t op = fetch_op() + xreg;
     uint8_t low = read_mem(op);
-    accum |= read_mem1(build_addr(low, read_mem(op+1));
+    uint16_t addr = buildval16(low, read_mem(op+1));
+    write_mem( (this->*f)(read_mem(addr)) );
 }
 
-inline void instr_ora_indy()
+inline void addrmode_indy(OpcodeFuncVal f)
 {
-    uint8_t addr = read_mem(fetch_op());
-    accum |= read_mem(addr + yreg);
+    uint8_t op = fetch_op();
+    uint8_t low = read_mem(op);
+    uint16_t addr = buildval16(low, read_mem(op+1))+yreg;
+    write_mem( (this->*f)(read_mem(addr)) );
 }
 
 
-
-inline void instr_asl_accum()
-{
-
-}
-
-inline void instr_asl_zero()
-{
-
-}
-
-inline void instr_asl_zerox()
-{
-
-}
-
-inline void instr_asl_abs()
-{
-
-}
-
-inline void instr_asl_absx()
-{
-
-}
-
-
-
-inline void instr_php_impl()
-{
-
-}
-
-inline void instr_bpl_impl()
-{
-
-}
-
-inline void instr_clc_impl()
-{
-
-}
-
-inline void instr_jsr_abs()
-{
-
-}
-
-inline void instr_and_indx()
-{
-
-}
-
-inline void instr_bit_zero()
-{
-
-}
-
-inline void instr_and_zero()
-{
-
-}
-
-inline void instr_rol_zero()
-{
-
-}
-
-inline void instr_plp_impl()
-{
-
-}
-
-inline void instr_and_imm()
-{
-
-}
-
-inline void instr_rol_accum()
-{
-
-}
-
-inline void instr_bit_abs()
-{
-
-}
-
-inline void instr_and_abs()
-{
-
-}
-
-inline void instr_rol_abs()
-{
-
-}
-
-inline void instr_bmi_impl()
-{
-
-}
-
-inline void instr_and_indy()
-{
-
-}
-
-inline void instr_and_zerox()
-{
-
-}
-
-inline void instr_rol_zerox()
-{
-
-}
-
-inline void instr_sec_impl()
-{
-
-}
-
-inline void instr_and_absy()
-{
-
-}
-
-inline void instr_and_absx()
-{
-
-}
-
-inline void instr_rol_absx()
-{
-
-}
-
-inline void instr_rti_impl()
-{
-
-}
-
-inline void instr_eor_indx()
-{
-
-}
-
-inline void instr_eor_zero()
-{
-
-}
-
-inline void instr_lsr_zero()
-{
-
-}
-
-inline void instr_pha_impl()
-{
-
-}
-
-inline void instr_eor_imm()
-{
-
-}
-
-inline void instr_lsr_accum()
-{
-
-}
-
-inline void instr_jmp_abs()
-{
-
-}
-
-inline void instr_eor_abs()
-{
-
-}
-
-inline void instr_lsr_abs()
-{
-
-}
-
-inline void instr_bvc_impl()
-{
-
-}
-
-inline void instr_eor_indy()
-{
-
-}
-
-inline void instr_eor_zerox()
-{
-
-}
-
-inline void instr_lsr_zerox()
-{
-
-}
-
-inline void instr_cli_impl()
-{
-
-}
-
-inline void instr_eor_absy()
-{
-
-}
-
-inline void instr_eor_absx()
-{
-
-}
-
-inline void instr_lsr_absx()
-{
-
-}
-
-inline void instr_rts_impl()
-{
-
-}
-
-inline void instr_adc_indx()
-{
-
-}
-
-inline void instr_adc_zero()
-{
-
-}
-
-inline void instr_ror_zero()
-{
-
-}
-
-inline void instr_pla_impl()
-{
-
-}
-
-inline void instr_adc_imm()
-{
-
-}
-
-inline void instr_ror_accum()
-{
-
-}
-
-inline void instr_jmp_ind()
-{
-
-}
-
-inline void instr_adc_abs()
-{
-
-}
-
-inline void instr_ror_abs()
-{
-
-}
-
-inline void instr_bvs_impl()
-{
-
-}
-
-inline void instr_adc_indy()
-{
-
-}
-
-inline void instr_adc_zerox()
-{
-
-}
-
-inline void instr_ror_zerox()
-{
-
-}
-
-inline void instr_sei_impl()
+// NOTE: all instruction functions.
+void instr_brk()
 {
-
-}
-
-inline void instr_adc_absy()
-{
-
-}
-
-inline void instr_adc_absx()
-{
-
-}
-
-inline void instr_ror_absx()
-{
-
-}
-
-inline void instr_sta_indx()
-{
-
-}
-
-inline void instr_sty_zero()
-{
-
-}
-
-inline void instr_sta_zero()
-{
-
-}
-
-inline void instr_stx_zero()
-{
-
-}
-
-inline void instr_dey_impl()
-{
-
-}
-
-inline void instr_txa_impl()
-{
-
-}
-
-inline void instr_sty_abs()
-{
-
-}
-
-inline void instr_sta_abs()
-{
-
-}
-
-inline void instr_stx_abs()
-{
-
-}
-
-inline void instr_bcc_impl()
-{
-
-}
-
-inline void instr_sta_indy()
-{
-
-}
-
-inline void instr_sty_zerox()
-{
-
-}
-
-inline void instr_sta_zerox()
-{
-
-}
-
-inline void instr_stx_zeroy()
-{
-
-}
-
-inline void instr_tya_impl()
-{
-
-}
-
-inline void instr_sta_absy()
-{
-
-}
-
-inline void instr_txs_impl()
-{
-
-}
-
-inline void instr_sta_absx()
-{
-
-}
-
-inline void instr_ldy_imm()
-{
-
-}
-
-inline void instr_lda_indx()
-{
-
-}
-
-inline void instr_ldx_imm()
-{
-
-}
-
-inline void instr_ldy_zero()
-{
-
-}
-
-inline void instr_lda_zero()
-{
-
-}
-
-inline void instr_ldx_zero()
-{
-
-}
-
-inline void instr_tay_impl()
-{
-
-}
-
-inline void instr_lda_imm()
-{
-
-}
-
-inline void instr_tax_impl()
-{
-
-}
-
-inline void instr_ldy_abs()
-{
-
-}
-
-inline void instr_lda_abs()
-{
-
-}
-
-inline void instr_ldx_abs()
-{
-
-}
-
-inline void instr_bcs_impl()
-{
-
-}
-
-inline void instr_lda_indy()
-{
-
-}
-
-inline void instr_ldy_zerox()
-{
-
-}
-
-inline void instr_lda_zerox()
-{
-
-}
-
-inline void instr_ldx_zeroy()
-{
-
-}
-
-inline void instr_clv_impl()
-{
-
-}
-
-inline void instr_lda_absy()
-{
-
-}
-
-inline void instr_tsx_impl()
-{
-
-}
-
-inline void instr_ldy_absx()
-{
-
-}
-
-inline void instr_lda_absx()
-{
-
-}
-
-inline void instr_ldx_absy()
-{
-
-}
-
-inline void instr_cpy_imm()
-{
-
-}
-
-inline void instr_cmp_indx()
-{
-
-}
-
-inline void instr_cpy_zero()
-{
-
-}
-
-inline void instr_cmp_zero()
-{
-
-}
-
-inline void instr_dec_zero()
-{
-
+    push(pc);
+    push(procstatus.reg);
+    uint8_t low = read_mem(IRQBRKVEC);
+    pc = buildval16(low, read_mem(IRQBRKVEC+1));
+    procstatus.breakc = 1;
 }
-
-inline void instr_iny_impl()
-{
 
+#define load_func(regist, regname) \
+uint8_t instr_ld##regist(uint8_t val) \
+{ \
+    regname = val; \
+    procstatus.zero = (regname == 0); \
+    procstatus.neg = (regname & 0x80); \
+    return val; \
 }
 
-inline void instr_cmp_imm()
-{
+load_func(a, accum)
+load_func(x, xreg)
+load_func(y, yreg)
 
+#define store_func(regist, regname) \
+uint8_t instr_st##regist(uint8_t val) \
+{ \
+    val = regname; \
+    procstatus.zero = (regname == 0); \
+    procstatus.neg = (regname & 0x80); \
+    return val; \
 }
-
-inline void instr_dex_impl()
-{
 
-}
+store_func(a, accum)
+store_func(x, xreg)
+store_func(y, yreg)
 
-inline void instr_cpy_abs()
-{
+#define inc_func(name, regname) \
+void instr_##name() { regname++; }
 
-}
+inc_func(inx, xreg)
+inc_func(iny, yreg)
 
-inline void instr_cmp_abs()
+uint8_t instr_inc(uint8_t val)
 {
-
+    return ++val;
 }
 
-inline void instr_dec_abs()
-{
-
+#define dec_func(name, regname) \
+void instr_##name() \
+{ \
+    regname--; \
 }
+dec_func(dex, xreg)
+dec_func(dey, yreg)
 
-inline void instr_bne_impl()
+uint8_t instr_dec(uint8_t val)
 {
-
+    return --val;
 }
 
-inline void instr_cmp_indy()
-{
+#define transfer_func(regist1, reg1name, regist2, reg2name) \
+    void instr_t##regist1##regist2() { reg2name = reg1name; }
+transfer_func(x, xreg, a, accum)
+transfer_func(y, yreg, a, accum)
+transfer_func(a, accum, x, xreg)
+transfer_func(a, accum, y, yreg)
+transfer_func(s, sp, x, xreg)
+transfer_func(x, xreg, s, sp)
 
+#define cmp_func(name, regname) \
+uint8_t instr_##name(uint8_t val) \
+{ \
+    uint8_t res = regname-val; \
+    procstatus.zero     = (res == 0) ? 1 : 0; \
+    procstatus.ov       = ((res & 0x80) != (regname & 1)) ? 1 : 0; \
+    procstatus.carry    = procstatus.ov; \
+    procstatus.neg      = res & 0x80; \
+    return val; \
 }
+cmp_func(cmp, accum)
+cmp_func(cpx, xreg)
+cmp_func(cpy, yreg)
 
-inline void instr_cmp_zerox()
-{
-
-}
 
-inline void instr_dec_zerox()
+uint8_t instr_adc(uint8_t val)
 {
-
+    uint8_t sign = (accum & 0x80) >> 8;
+    accum += val + procstatus.carry;
+    procstatus.zero = (accum == 0);
+    procstatus.ov   = ((accum & 0x80) != sign);
+    procstatus.carry = procstatus.ov;
+    procstatus.neg  = accum & 0x80;
+    return val;
 }
 
-inline void instr_cmp_absy()
+uint8_t instr_sbc(uint8_t val)
 {
-
+    uint8_t sign = (accum & 0x80) >> 8;
+    accum -= val - (1-procstatus.carry);
+    procstatus.zero = (accum == 0);
+    procstatus.ov   = ((accum & 0x80) != sign);
+    procstatus.carry = procstatus.ov;
+    procstatus.neg  = accum & 0x80;
+    return val;
 }
 
-inline void instr_cmp_absx()
-{
+#define clearflag_func(name, flag) \
+void instr_##name() { flag = 0; }
+#define setflag_func(name, flag) \
+void instr_##name() { flag = 1; }
 
-}
+clearflag_func(clc, procstatus.carry)
+clearflag_func(clv, procstatus.ov)
+clearflag_func(cli, procstatus.intdis)
+setflag_func(sec, procstatus.carry)
+setflag_func(sei, procstatus.intdis)
 
-inline void instr_dec_absx()
+uint8_t instr_ora(uint8_t val)
 {
-
+    accum |= val;
+    procstatus.neg  = accum & 0x80;
+    procstatus.zero = (accum == 0);
+    return val;
 }
 
-inline void instr_cpx_imm()
+uint8_t instr_and(uint8_t val)
 {
-
+    accum &= val;
+    procstatus.neg  = accum & 0x80;
+    procstatus.zero = (accum == 0);
+    return val;
 }
 
-inline void instr_sbc_indx()
+uint8_t instr_eor(uint8_t val)
 {
-
+    accum ^= val;
+    procstatus.neg  = accum & 0x80;
+    procstatus.zero = (accum == 0);
+    return val;
 }
 
-inline void instr_cpx_zero()
+uint8_t instr_bit(uint8_t val)
 {
-
+    uint8_t res = val & accum;
+    procstatus.neg  = res & 0x80;
+    procstatus.zero = (res == 0);
+    procstatus.ov   = res & 0x40;
+    return val;
 }
 
-inline void instr_sbc_zero()
+uint8_t instr_asl(uint8_t val)
 {
-
+    procstatus.carry = val & 0x80;
+    val <<= 1;
+    procstatus.neg  = val & 0x80;
+    procstatus.zero = (val == 0);
+    return val;
 }
 
-inline void instr_inc_zero()
+uint8_t instr_lsr(uint8_t val)
 {
-
+    procstatus.carry = val & 1;
+    val >>= 1;
+    procstatus.neg  = val & 0x80;
+    procstatus.zero = (val == 0);
+    return val;
 }
 
-inline void instr_inx_impl()
+uint8_t instr_rol(uint8_t val)
 {
-
+    uint8_t bit0 = procstatus.carry;
+    procstatus.carry = val & 0x80;
+    val <<= 1;
+    val |= bit0;
+    procstatus.neg  = val & 0x80;
+    procstatus.zero = (val == 0);
+    return val;
 }
 
-inline void instr_sbc_imm()
+uint8_t instr_ror(uint8_t val)
 {
-
+    uint8_t bit7 = procstatus.carry << 8;
+    procstatus.carry = val & 1;
+    val >>= 1;
+    val |= bit7 << 8;
+    procstatus.neg  = val & 0x80;
+    procstatus.zero = (val == 0);
+    return val;
 }
 
-inline void instr_nop_impl()
+void instr_php()
 {
-
+    push(procstatus.reg);
 }
 
-inline void instr_cpx_abs()
+void instr_plp()
 {
-
+    procstatus.reg = pull();
 }
 
-inline void instr_sbc_abs()
+void instr_pha()
 {
-
+    push(accum);
 }
 
-inline void instr_inc_abs()
+void instr_pla()
 {
-
+    accum = pull();
 }
 
-inline void instr_beq_impl()
-{
 
-}
+#define branch_fset_func(name, flag) \
+void instr_##name() { pc += fetch_op()*flag; }
+#define branch_fcl_func(name, flag) \
+void instr_##name() { pc += fetch_op()*(flag+1); }
 
-inline void instr_sbc_indy()
-{
+branch_fset_func(bmi, procstatus.neg)
+branch_fset_func(bvs, procstatus.ov)
+branch_fset_func(bcs, procstatus.carry)
+branch_fset_func(beq, procstatus.zero)
+branch_fcl_func(bpl, procstatus.neg)
+branch_fcl_func(bvc, procstatus.ov)
+branch_fcl_func(bcc, procstatus.carry)
+branch_fcl_func(bne, procstatus.zero)
 
-}
 
-inline void instr_sbc_zerox()
+void instr_jmp(uint16_t addr)
 {
-
+    pc = addr;
 }
 
-inline void instr_inc_zerox()
+void instr_jsr(uint16_t addr)
 {
-
+    push(pc >> 8);
+    push(pc & 0xFF);
+    pc = addr;
 }
 
-inline void instr_sbc_absy()
+void instr_rts()
 {
-
+    pc = pull()-1;
 }
 
-inline void instr_sbc_absx()
+void instr_rti()
 {
-
+    procstatus.reg = pull();
+    pc = pull();
 }
-
-inline void instr_inc_absx()
-{
 
-}
+void instr_nop() { }
 
+#undef branch_fset_func
+#undef branch_fcl_func
+#undef inc_func
+#undef cmp_func
+#undef clearflag_func
+#undef setflag_func
+#undef store_func
+#undef dec_func
+#undef transfer_func
+#undef load_func

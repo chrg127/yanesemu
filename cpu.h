@@ -9,75 +9,6 @@
 
 #define OPCODELEN 1
 
-/*enum AddrMode {
-    SINGLE,
-    ACCUM,
-    IMM,
-    ZERO,
-    ZERO_X,
-    ABS,
-    ABS_X,
-    ABS_Y,
-    IND,
-    IND_X,
-    IND_Y,
-};
-
-enum Opcode {
-    ADC,
-    AND,
-    ASL,
-    BIT,
-    BPL,
-    BMI,
-    BVC,
-    BVS,
-    BCC,
-    BCS,
-    BNE,
-    BEQ,
-    BRK,
-    CMP,
-    CPX,
-    CPY,
-    DEC,
-    DEX,
-    DEY,
-    EOR,
-    CLC,
-    SEC,
-    CLI,
-    SEI,
-    CLV,
-    INC,
-    JMP,
-    JSR,
-    LDA,
-    LDX,
-    LDY,
-    LSR,
-    NOP,
-    ORA,
-    PHA,
-    PLA,
-    PHP,
-    PLP,
-    ROL,
-    ROR,
-    RTI,
-    RTS,
-    SBC,
-    STA,
-    STX,
-    STY,
-    TAX,
-    TXA,
-    TAY,
-    TYA,
-    TXS,
-    TSX,
-};*/
-
 class CPU {
     RomFile &rom;
 
@@ -103,18 +34,21 @@ class CPU {
     } procstatus;
 
     uint8_t fetch_op();
-    uint8_t read_mem(uint16_t addr);
-    void cmp(uint8_t reg, uint8_t val);
-    void jmp(uint16_t addr);
+    uint8_t read_mem(uint16_t addr)
+    {
+        return 0;
+    }
+    void write_mem(uint16_t addr)
+    {
+    }
     void push(uint8_t val);
     uint8_t pull();
-    inline uint16_t build_addr(uint8_t low, uint8_t hi)
+    inline uint16_t buildval16(uint8_t low, uint8_t hi)
     {
         uint16_t addr = hi << 8;
         addr |= low;
         return addr;
     }
-
 
 public:
     CPU(RomFile &f)
@@ -127,7 +61,8 @@ public:
     //void decode(uint8_t byte, uint8_t &opcode, AddrMode &mode);
     void execute(uint8_t opcode);
     //int fetchoperands1(char opcode);
-    
+
+// Definitions of all opcodes and addressing modes.
 #include "opcodes.h"
 
 };
