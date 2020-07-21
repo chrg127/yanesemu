@@ -1,4 +1,6 @@
 #include <cstdio>
+#include <cstdlib>
+#include <unistd.h>
 #include "cpu.h"
 #include "nesrom.h"
 
@@ -7,7 +9,7 @@ int main(int argc, char *argv[])
     RomFile rom;
     CPU cpu(rom);
     bool done = false;
-    int opcodeb, opcode;
+    int opcode;
 
     if (argc < 2) {
         std::fprintf(stderr, "%s: error: rom file not specified\n", *argv);
@@ -24,16 +26,21 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    //rom.printinfo();
+    cpu.initmem();
 
     //fetch, decode and execute cycle
-    /*while (!done) {
-        opcodeb = cpu.fetch(rom);
-        opcode = cpu.decode(opcodeb);
+    int counter = 100;
+    while (!done) {
+        //system("clear");
+        opcode = cpu.fetch();
         cpu.execute(opcode);
-
-        if (rom.eof())
+        cpu.printinfo();
+        usleep(10000);
+        if (--counter < 0)
             done = true;
+        //if (rom.eof())
+            //done = true;
     }
-    return 0;*/
+    puts("");
+    return 0;
 }

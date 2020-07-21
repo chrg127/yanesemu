@@ -12,82 +12,122 @@ inline void addrmode_impl(OpcodeFuncVoid f)
     (this->*f)();
 }
 
+inline void addrmode_rel(OpcodeFuncVal f)
+{
+    DBGPRINT(" #$");
+    uint8_t op = fetch_op();
+    DBGPRINTHEX8(op);
+    (this->*f)(op);
+}
+
 inline void addrmode_imm(OpcodeFuncVal f)
 {
-    (this->*f)(fetch_op());
+    DBGPRINT(" #$");
+    uint8_t op = fetch_op();
+    DBGPRINTHEX8(op);
+    (this->*f)(op);
 }
 
 inline void addrmode_accum(OpcodeFuncVal f)
 {
     accum = (this->*f)(accum);
+    DBGPRINT(" A");
 }
 
 inline void addrmode_zero(OpcodeFuncVal f)
 {
-    write_mem( (this->*f)(read_mem( fetch_op() )) );
+    DBGPRINT(" $");
+    uint8_t op = fetch_op();
+    DBGPRINTHEX8(op);
+    write_mem( op, (this->*f)(read_mem(op)) );
 }
 
 inline void addrmode_zerox(OpcodeFuncVal f)
 {
+    DBGPRINT(" $");
     uint8_t op = fetch_op() + xreg;
-    write_mem( (this->*f)(read_mem(op)) );
+    DBGPRINTHEX8(op);
+    write_mem( op, (this->*f)(read_mem(op)) );
+    DBGPRINT(",x");
 }
 
 inline void addrmode_zeroy(OpcodeFuncVal f)
 {
+    DBGPRINT(" $");
     uint8_t op = fetch_op() + yreg;
-    write_mem( (this->*f)(read_mem(op)) );
+    DBGPRINTHEX8(op);
+    write_mem( op, (this->*f)(read_mem(op)) );
+    DBGPRINT(",y");
 }
 
 inline void addrmode_abs(OpcodeFuncVal f)
 {
+    DBGPRINT(" $");
     uint8_t low = fetch_op();
     uint16_t addr = buildval16(low, fetch_op());
-    write_mem( (this->*f)(read_mem(addr)) );
+    DBGPRINTHEX16(addr);
+    write_mem( addr, (this->*f)(read_mem(addr)) );
 }
 
 inline void addrmode_absjmp(OpcodeFuncJmp f)
 {
+    DBGPRINT(" $");
     uint8_t low = fetch_op();
     uint16_t addr = buildval16(low, fetch_op());
+    DBGPRINTHEX16(addr);
     (this->*f)(addr);
 }
 
 inline void addrmode_absx(OpcodeFuncVal f)
 {
+    DBGPRINT(" $");
     uint8_t low = fetch_op();
     uint16_t addr = buildval16(low, fetch_op()) + xreg;
-    write_mem( (this->*f)(read_mem(addr)) );
+    DBGPRINTHEX16(addr);
+    write_mem( addr, (this->*f)(read_mem(addr)) );
+    DBGPRINT(",x");
 }
 
 inline void addrmode_absy(OpcodeFuncVal f)
 {
+    DBGPRINT(" $");
     uint8_t low = fetch_op();
     uint16_t addr = buildval16(low, fetch_op()) + yreg;
-    write_mem( (this->*f)(read_mem(addr)) );
+    DBGPRINTHEX16(addr);
+    write_mem( addr, (this->*f)(read_mem(addr)) );
+    DBGPRINT(",y");
 }
 
 inline void addrmode_indjmp(OpcodeFuncJmp f)
 {
+    DBGPRINT(" ($");
     uint8_t low = fetch_op();
     uint16_t addr = buildval16(low, fetch_op());
+    DBGPRINTHEX16(addr);
     (this->*f)(read_mem(addr));
+    DBGPRINT(")");
 }
 
 inline void addrmode_indx(OpcodeFuncVal f)
 {
+    DBGPRINT(" ($");
     uint8_t op = fetch_op() + xreg;
+    DBGPRINTHEX8(op);
     uint8_t low = read_mem(op);
     uint16_t addr = buildval16(low, read_mem(op+1));
-    write_mem( (this->*f)(read_mem(addr)) );
+    write_mem( addr, (this->*f)(read_mem(addr)) );
+    DBGPRINT(",x)");
 }
 
 inline void addrmode_indy(OpcodeFuncVal f)
 {
+    DBGPRINT(" ($");
     uint8_t op = fetch_op();
+    DBGPRINTHEX8(op);
     uint8_t low = read_mem(op);
     uint16_t addr = buildval16(low, read_mem(op+1))+yreg;
-    write_mem( (this->*f)(read_mem(addr)) );
+    write_mem( addr, (this->*f)(read_mem(addr)) );
+    DBGPRINT("),y");
 }
 
 
@@ -99,6 +139,8 @@ void instr_brk()
     uint8_t low = read_mem(IRQBRKVEC);
     pc = buildval16(low, read_mem(IRQBRKVEC+1));
     procstatus.breakc = 1;
+    std::fprintf(stderr, "GOT BRK!\n");
+    std::exit(0);
 }
 
 #define load_func(regist, regname) \
@@ -205,6 +247,7 @@ void instr_##name() { flag = 1; }
 clearflag_func(clc, procstatus.carry)
 clearflag_func(clv, procstatus.ov)
 clearflag_func(cli, procstatus.intdis)
+clearflag_func(cld, procstatus.decimal)
 setflag_func(sec, procstatus.carry)
 setflag_func(sei, procstatus.intdis)
 
@@ -303,9 +346,9 @@ void instr_pla()
 
 
 #define branch_fset_func(name, flag) \
-void instr_##name() { pc += fetch_op()*flag; }
+uint8_t instr_##name(uint8_t val) { pc += val*flag; return val; }
 #define branch_fcl_func(name, flag) \
-void instr_##name() { pc += fetch_op()*(flag+1); }
+uint8_t instr_##name(uint8_t val) { pc += val*(flag^0); return val; }
 
 branch_fset_func(bmi, procstatus.neg)
 branch_fset_func(bvs, procstatus.ov)
@@ -327,6 +370,11 @@ void instr_jsr(uint16_t addr)
     push(pc >> 8);
     push(pc & 0xFF);
     pc = addr;
+    static bool already_written = false;
+    FILE *f = fopen("memdump", "w");
+    if (!already_written)
+        memdump(f);
+    already_written = true;
 }
 
 void instr_rts()

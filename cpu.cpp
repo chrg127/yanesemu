@@ -1,23 +1,66 @@
 #include "cpu.h"
 
 #include <cstdio>
+#include <cassert>
+#include <cstring>
+#include <cctype>
 #include "memorymap.h"
+
+static void printopcode(uint8_t op)
+{
+    static const char *table[] = {
+        "BRK", "ORA", nullptr, nullptr, nullptr, "ORA", "ASL", nullptr, "PHP",
+        "ORA", "ASL", nullptr, nullptr, "ORA", "ASL", nullptr, "BPL", "ORA",
+        nullptr, nullptr, nullptr, "ORA", "ASL", nullptr, "CLC", "ORA", nullptr,
+        nullptr, nullptr, "ORA", "ASL", nullptr, "JSR", "AND", nullptr, nullptr,
+        "BIT", "AND", "ROL", nullptr, "PLP", "AND", "ROL", nullptr, "BIT",
+        "AND", "ROL", nullptr, "BMI", "AND", nullptr, nullptr, nullptr, "AND",
+        "ROL", nullptr, "SEC", "AND", nullptr, nullptr, nullptr, "AND", "ROL",
+        nullptr, "RTI", "EOR", nullptr, nullptr, nullptr, "EOR", "LSR", nullptr,
+        "PHA", "EOR", "LSR", nullptr, "JMP", "EOR", "LSR", nullptr, "BVC",
+        "EOR", nullptr, nullptr, nullptr, "EOR", "LSR", nullptr, "CLI", "EOR",
+        nullptr, nullptr, nullptr, "EOR", "LSR", nullptr, "RTS", "ADC", nullptr,
+        nullptr, nullptr, "ADC", "ROR", nullptr, "PLA", "ADC", "ROR", nullptr,
+        "JMP", "ADC", "ROR", nullptr, "BVS", "ADC", nullptr, nullptr, nullptr,
+        "ADC", "ROR", nullptr, "SEI", "ADC", nullptr, nullptr, nullptr, "ADC",
+        "ROR", nullptr, nullptr, "STA", nullptr, nullptr, "STY", "STA", "STX",
+        nullptr, "DEY", nullptr, "TXA", nullptr, "STY", "STA", "STX", nullptr,
+        "BCC", "STA", nullptr, nullptr, "STY", "STA", "STX", nullptr, "TYA",
+        "STA", "TXS", nullptr, nullptr, "STA", nullptr, nullptr, "LDY", "LDA",
+        "LDX", nullptr, "LDY", "LDA", "LDX", nullptr, "TAY", "LDA", "TAX",
+        nullptr, "LDY", "LDA", "LDX", nullptr, "BCS", "LDA", nullptr, nullptr,
+        "LDY", "LDA", "LDX", nullptr, "CLV", "LDA", "TSX", nullptr, "LDY",
+        "LDA", "LDX", nullptr, "CPY", "CMP", nullptr, nullptr, "CPY", "CMP",
+        "DEC", nullptr, "INY", "CMP", "DEX", nullptr, "CPY", "CMP", "DEC",
+        nullptr, "BNE", "CMP", nullptr, nullptr, nullptr, "CMP", "DEC", nullptr,
+        "CLD", "CMP", nullptr, nullptr, nullptr, "CMP", "DEC", nullptr, "CPX",
+        "SBC", nullptr, nullptr, "CPX", "SBC", "INC", nullptr, "INX", "SBC",
+        "NOP", nullptr, "CPX", "SBC", "INC", nullptr, "BEQ", "SBC", nullptr,
+        nullptr, nullptr, "SBC", "INC", nullptr, nullptr, "SBC", nullptr, nullptr,
+        nullptr, "SBC", "INC",
+    };
+    std::printf("Instruction: [%02X] %s", op, table[op]);
+}
+
+void CPU::initmem()
+{
+    std::memset(memory, 0x55, CARTRIDGE_SPACE_START-1);
+    std::memcpy(memory+CARTRIDGE_SPACE_START, rom.get_prgrom(), MEMSIZE-CARTRIDGE_SPACE_START);
+    pc = 0x4020;
+}
 
 uint8_t CPU::fetch()
 {
-    uint8_t buf[1];
-    rom.read(1, buf);
-    return *buf;
+    assert(pc != 0xFFFF);
+    return memory[pc++];
 }
-
-
 
 #define INSTR_CASE(id, name, mode) \
     case id: addrmode_##mode(&CPU::instr_##name); break;
 
-
 void CPU::execute(uint8_t opcode)
 {
+    printopcode(opcode);
     switch(opcode) {
         INSTR_CASE(0x00, brk, impl)
         INSTR_CASE(0x01, ora, indx)
@@ -28,7 +71,7 @@ void CPU::execute(uint8_t opcode)
         INSTR_CASE(0x0A, asl, accum)
         INSTR_CASE(0x0D, ora, abs)
         INSTR_CASE(0x0E, asl, abs)
-        INSTR_CASE(0x10, bpl, impl)
+        INSTR_CASE(0x10, bpl, rel)
         INSTR_CASE(0x11, ora, indy)
         INSTR_CASE(0x15, ora, zerox)
         INSTR_CASE(0x16, asl, zerox)
@@ -47,7 +90,7 @@ void CPU::execute(uint8_t opcode)
         INSTR_CASE(0x2C, bit, abs)
         INSTR_CASE(0x2D, and, abs)
         INSTR_CASE(0x2E, rol, abs)
-        INSTR_CASE(0x30, bmi, impl)
+        INSTR_CASE(0x30, bmi, rel)
         INSTR_CASE(0x31, and, indy)
         INSTR_CASE(0x35, and, zerox)
         INSTR_CASE(0x36, rol, zerox)
@@ -65,7 +108,7 @@ void CPU::execute(uint8_t opcode)
         INSTR_CASE(0x4C, jmp, absjmp)
         INSTR_CASE(0x4D, eor, abs)
         INSTR_CASE(0x4E, lsr, abs)
-        INSTR_CASE(0x50, bvc, impl)
+        INSTR_CASE(0x50, bvc, rel)
         INSTR_CASE(0x51, eor, indy)
         INSTR_CASE(0x55, eor, zerox)
         INSTR_CASE(0x56, lsr, zerox)
@@ -83,7 +126,7 @@ void CPU::execute(uint8_t opcode)
         INSTR_CASE(0x6C, jmp, indjmp)
         INSTR_CASE(0x6D, adc, abs)
         INSTR_CASE(0x6E, ror, abs)
-        INSTR_CASE(0x70, bvs, impl)
+        INSTR_CASE(0x70, bvs, rel)
         INSTR_CASE(0x71, adc, indy)
         INSTR_CASE(0x75, adc, zerox)
         INSTR_CASE(0x76, ror, zerox)
@@ -100,7 +143,7 @@ void CPU::execute(uint8_t opcode)
         INSTR_CASE(0x8C, sty, abs)
         INSTR_CASE(0x8D, sta, abs)
         INSTR_CASE(0x8E, stx, abs)
-        INSTR_CASE(0x90, bcc, impl)
+        INSTR_CASE(0x90, bcc, rel)
         INSTR_CASE(0x91, sta, indy)
         INSTR_CASE(0x94, sty, zerox)
         INSTR_CASE(0x95, sta, zerox)
@@ -121,7 +164,7 @@ void CPU::execute(uint8_t opcode)
         INSTR_CASE(0xAC, ldy, abs)
         INSTR_CASE(0xAD, lda, abs)
         INSTR_CASE(0xAE, ldx, abs)
-        INSTR_CASE(0xB0, bcs, impl)
+        INSTR_CASE(0xB0, bcs, rel)
         INSTR_CASE(0xB1, lda, indy)
         INSTR_CASE(0xB4, ldy, zerox)
         INSTR_CASE(0xB5, lda, zerox)
@@ -143,10 +186,11 @@ void CPU::execute(uint8_t opcode)
         INSTR_CASE(0xCC, cpy, abs)
         INSTR_CASE(0xCD, cmp, abs)
         INSTR_CASE(0xCE, dec, abs)
-        INSTR_CASE(0xD0, bne, impl)
+        INSTR_CASE(0xD0, bne, rel)
         INSTR_CASE(0xD1, cmp, indy)
         INSTR_CASE(0xD5, cmp, zerox)
         INSTR_CASE(0xD6, dec, zerox)
+        INSTR_CASE(0xD8, cld, impl)
         INSTR_CASE(0xD9, cmp, absy)
         INSTR_CASE(0xDD, cmp, absx)
         INSTR_CASE(0xDE, dec, absx)
@@ -161,30 +205,66 @@ void CPU::execute(uint8_t opcode)
         INSTR_CASE(0xEC, cpx, abs)
         INSTR_CASE(0xED, sbc, abs)
         INSTR_CASE(0xEE, inc, abs)
-        INSTR_CASE(0xF0, beq, impl)
+        INSTR_CASE(0xF0, beq, rel)
         INSTR_CASE(0xF1, sbc, indy)
         INSTR_CASE(0xF5, sbc, zerox)
         INSTR_CASE(0xF6, inc, zerox)
         INSTR_CASE(0xF9, sbc, absy)
         INSTR_CASE(0xFD, sbc, absx)
         INSTR_CASE(0xFE, inc, absx)
+        default:
+            std::fprintf(stderr, "error: unknown opcode: %02X\n", opcode);
     }
+    DBGPRINT("\n");
 }
 
 #undef INSTR_CASE
 
+#define WRITEFLAG(f, c) putchar( (f == 1) ? std::toupper(c) : std::tolower(c) )
+void CPU::printinfo()
+{
+    std::printf("PC: %04X A: %02X X: %02X Y: %02X S: %02X\n", pc, accum, xreg, yreg, sp);
+    WRITEFLAG(procstatus.carry,     'c');
+    WRITEFLAG(procstatus.zero,      'z');
+    WRITEFLAG(procstatus.intdis,    'i');
+    WRITEFLAG(procstatus.breakc,    'b');
+    WRITEFLAG(procstatus.ov,        'v');
+    WRITEFLAG(procstatus.neg,       'n');
+    WRITEFLAG(procstatus.decimal,   'd');
+    puts("");
+}
+#undef WRITEFLAG
+
 uint8_t CPU::fetch_op()
 {
-    return 0;
+    return memory[pc++];
+}
+
+uint8_t CPU::read_mem(uint16_t addr)
+{
+    return memory[addr];
+}
+
+void CPU::write_mem(uint16_t addr, uint8_t val)
+{
+    memory[addr] = val;
 }
 
 void CPU::push(uint8_t val)
 {
-
+    memory[sp--] = val;
 }
 
 uint8_t CPU::pull()
 {
-    return 0;
+    return memory[sp++];
 }
 
+void CPU::memdump(FILE *f)
+{
+    int i, j;
+    for (i = 0; i < MEMSIZE; i++) {
+        for (j = 0; j < 16; j++, i++)
+            std::fprintf(f, "%04X = %02X\n", i, memory[i]);
+    }
+}
