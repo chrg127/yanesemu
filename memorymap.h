@@ -70,12 +70,14 @@ enum APUREG : int {
 #define APU_DISABLED_END    0x401F
 
 #define CARTRIDGE_SPACE_START   0x4020
-#define CARTRIDGE_SPACE_END     0xFFFF
-#define CARTRIDGE_SPACE_SIZE    0xBFE0
 
 #define SRAM_START  0x6000
 #define SRAM_END    0x7FFF
 #define SRAM_SIZE   0x1FFF
+
+#define PRGROM_START    0x8000
+#define PRGROM_END      0xFFFF
+#define PRGROM_SIZE     0x7FFF
 
 #define NMIVEC      0xFFFA
 #define RESETVEC    0xFFFC

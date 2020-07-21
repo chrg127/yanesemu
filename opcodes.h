@@ -5,6 +5,7 @@
 typedef uint8_t (CPU::*OpcodeFuncVal)(uint8_t);
 typedef void (CPU::*OpcodeFuncVoid)();
 typedef void (CPU::*OpcodeFuncJmp)(uint16_t);
+//typedef void (CPU::*OpcodeFuncBranch)(uint8_t, bool);
 
 // NOTE: addressing mode functions.
 inline void addrmode_impl(OpcodeFuncVoid f)
@@ -12,12 +13,17 @@ inline void addrmode_impl(OpcodeFuncVoid f)
     (this->*f)();
 }
 
-inline void addrmode_rel(OpcodeFuncVal f)
+inline void addrmode_rel(bool take)
 {
     DBGPRINT(" #$");
     uint8_t op = fetch_op();
     DBGPRINTHEX8(op);
-    (this->*f)(op);
+    if (!take) {
+        DBGPRINT(" [Branch not taken]");
+        return;
+    }
+    DBGPRINT(" [Branch taken]");
+    pc += (int8_t) op;
 }
 
 inline void addrmode_imm(OpcodeFuncVal f)
@@ -139,8 +145,6 @@ void instr_brk()
     uint8_t low = read_mem(IRQBRKVEC);
     pc = buildval16(low, read_mem(IRQBRKVEC+1));
     procstatus.breakc = 1;
-    std::fprintf(stderr, "GOT BRK!\n");
-    std::exit(0);
 }
 
 #define load_func(regist, regname) \
@@ -344,11 +348,19 @@ void instr_pla()
     accum = pull();
 }
 
-
+/*
 #define branch_fset_func(name, flag) \
-uint8_t instr_##name(uint8_t val) { pc += val*flag; return val; }
+void instr_##name(uint8_t val, bool take) \
+{ \
+}
+
 #define branch_fcl_func(name, flag) \
-uint8_t instr_##name(uint8_t val) { pc += val*(flag^0); return val; }
+void instr_##name(uint8_t val, bool take) \
+{ \
+    if (!take) \
+        return; \
+    pc += val*(flag^1); \
+}
 
 branch_fset_func(bmi, procstatus.neg)
 branch_fset_func(bvs, procstatus.ov)
@@ -358,7 +370,7 @@ branch_fcl_func(bpl, procstatus.neg)
 branch_fcl_func(bvc, procstatus.ov)
 branch_fcl_func(bcc, procstatus.carry)
 branch_fcl_func(bne, procstatus.zero)
-
+*/
 
 void instr_jmp(uint16_t addr)
 {
@@ -370,16 +382,13 @@ void instr_jsr(uint16_t addr)
     push(pc >> 8);
     push(pc & 0xFF);
     pc = addr;
-    static bool already_written = false;
-    FILE *f = fopen("memdump", "w");
-    if (!already_written)
-        memdump(f);
-    already_written = true;
 }
 
 void instr_rts()
 {
-    pc = pull()-1;
+    uint8_t low = pull();
+    uint16_t addr = buildval16(low, pull());
+    pc = addr;
 }
 
 void instr_rti()

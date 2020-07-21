@@ -9,16 +9,7 @@
 #include "memorymap.h"
 
 #define DEBUG
-
-#ifdef DEBUG
-#define DBGPRINT(fmt) std::printf(fmt)
-#define DBGPRINTHEX8(val) std::printf("%02X", val)
-#define DBGPRINTHEX16(val) std::printf("%04X", val)
-#else
-#define DBGPRINT(fmt) ;
-#define DBGPRINTHEX8(val) ;
-#define DBGPRINTHEX16(val) ;
-#endif
+#include "debug.h"
 
 class CPU {
     RomFile &rom;
@@ -65,11 +56,11 @@ public:
 
     ~CPU() { }
 
-    void initmem();
+    void initemu();
     uint8_t fetch();
     void execute(uint8_t opcode);
     void printinfo();
-    void memdump(FILE *f);
+    void memdump(const char * const fname);
 
 // Definitions of all opcodes and addressing modes.
 #include "opcodes.h"
