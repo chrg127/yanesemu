@@ -20,9 +20,9 @@ debug: OUTDIR = $(DEBDIR)
 debug: OBJS_WITHDIR = $(patsubst %,$(OUTDIR)/%,$(OBJS))
 debug: $(PRGNAME)
 
-release: CFLAGS += O2
+release: CFLAGS += -O2
 release: OUTDIR = $(RELDIR)
-release: OBJS_WITHDIR = $(patsubst %,$(OUTDIR)/$(OBJS))
+release: OBJS_WITHDIR = $(patsubst %,$(OUTDIR)/%,$(OBJS))
 release: $(PRGNAME)
 
 $(OBJDIR)/%.o: %.cpp $(HEADERS)
