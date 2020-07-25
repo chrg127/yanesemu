@@ -7,14 +7,16 @@
 #include <cstdlib>
 #include "nesrom.h"
 #include "memorymap.h"
+#include "bus.h"
 
 #define DEBUG
 #include "debug.h"
 
+
 class CPU {
     RomFile &rom;
 
-    uint8_t memory[MEMSIZE];
+    Bus *bus;
 
     uint16_t pc;
     uint8_t accum;
@@ -36,34 +38,32 @@ class CPU {
     } procstatus;
 
     uint8_t fetch_op();
-    uint8_t read_mem(uint16_t addr);
-    void write_mem(uint16_t addr, uint8_t val);
     void push(uint8_t val);
     uint8_t pull();
     inline uint16_t buildval16(uint8_t low, uint8_t hi)
     {
-        uint16_t addr = (hi << 8);
-        addr |= low;
-        return addr;
+        return (hi << 8) | low;
     }
 
+// Definitions of all opcodes and addressing modes.
+#include "opcodes.h"
+
 public:
-    CPU(RomFile &f)
-        : rom(f), accum(0), xreg(0), yreg(0), sp(0)
+    CPU(RomFile &f, Bus *b)
+        : rom(f), bus(b),
+          accum(0), xreg(0), yreg(0), sp(0)
     {
         procstatus.reg = 0;
     }
 
     ~CPU() { }
 
+    void main();
     void initemu();
     uint8_t fetch();
     void execute(uint8_t opcode);
     void printinfo();
     void memdump(const char * const fname);
-
-// Definitions of all opcodes and addressing modes.
-#include "opcodes.h"
 
 };
 

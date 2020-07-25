@@ -5,8 +5,8 @@ RELDIR = release
 OBJDIR = obj
 PRGNAME = emu
 
-HEADERS = cpu.h nesrom.h memorymap.h
-_OBJS = main.o cpu.o nesrom.o
+HEADERS = cpu.h nesrom.h memorymap.h bus.h
+_OBJS = main.o cpu.o nesrom.o bus.o
 OBJS = $(patsubst %,$(OBJDIR)/%,$(_OBJS))
 
 default: directories debug

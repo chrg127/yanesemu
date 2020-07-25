@@ -15,23 +15,21 @@ inline void addrmode_impl(OpcodeFuncVoid f)
 
 inline void addrmode_rel(bool take)
 {
-    DBGPRINT(" #$");
     uint8_t op = fetch_op();
-    DBGPRINTHEX8(op);
+    DBGPRINTF(" #$%02X", op);
     if (!take) {
         DBGPRINT(" [Branch not taken]");
         return;
     }
-    DBGPRINT(" [Branch taken]");
     pc += (int8_t) op;
+    DBGPRINT(" [Branch taken]");
 }
 
 inline void addrmode_imm(OpcodeFuncVal f)
 {
-    DBGPRINT(" #$");
     uint8_t op = fetch_op();
-    DBGPRINTHEX8(op);
     (this->*f)(op);
+    DBGPRINTF(" #$%02X", op);
 }
 
 inline void addrmode_accum(OpcodeFuncVal f)
@@ -42,98 +40,81 @@ inline void addrmode_accum(OpcodeFuncVal f)
 
 inline void addrmode_zero(OpcodeFuncVal f)
 {
-    DBGPRINT(" $");
     uint8_t op = fetch_op();
-    DBGPRINTHEX8(op);
-    write_mem( op, (this->*f)(read_mem(op)) );
+    bus->write( op, (this->*f)(bus->read(op)) );
+    DBGPRINTF(" $%02X", op);
 }
 
 inline void addrmode_zerox(OpcodeFuncVal f)
 {
-    DBGPRINT(" $");
     uint8_t op = fetch_op() + xreg;
-    DBGPRINTHEX8(op);
-    write_mem( op, (this->*f)(read_mem(op)) );
-    DBGPRINT(",x");
+    bus->write( op, (this->*f)(bus->read(op)) );
+    DBGPRINTF(" $%02X,x", op);
 }
 
 inline void addrmode_zeroy(OpcodeFuncVal f)
 {
-    DBGPRINT(" $");
     uint8_t op = fetch_op() + yreg;
-    DBGPRINTHEX8(op);
-    write_mem( op, (this->*f)(read_mem(op)) );
-    DBGPRINT(",y");
+    bus->write( op, (this->*f)(bus->read(op)) );
+    DBGPRINTF(" $%02X,y", op);
 }
 
 inline void addrmode_abs(OpcodeFuncVal f)
 {
-    DBGPRINT(" $");
     uint8_t low = fetch_op();
     uint16_t addr = buildval16(low, fetch_op());
-    DBGPRINTHEX16(addr);
-    write_mem( addr, (this->*f)(read_mem(addr)) );
+    bus->write( addr, (this->*f)(bus->read(addr)) );
+    DBGPRINTF(" $%04X", addr);
 }
 
 inline void addrmode_absjmp(OpcodeFuncJmp f)
 {
-    DBGPRINT(" $");
     uint8_t low = fetch_op();
     uint16_t addr = buildval16(low, fetch_op());
-    DBGPRINTHEX16(addr);
     (this->*f)(addr);
+    DBGPRINTF(" $%04X", addr);
 }
 
 inline void addrmode_absx(OpcodeFuncVal f)
 {
-    DBGPRINT(" $");
     uint8_t low = fetch_op();
     uint16_t addr = buildval16(low, fetch_op()) + xreg;
-    DBGPRINTHEX16(addr);
-    write_mem( addr, (this->*f)(read_mem(addr)) );
-    DBGPRINT(",x");
+    bus->write( addr, (this->*f)(bus->read(addr)) );
+    DBGPRINTF(" $%04X,x", addr);
 }
 
 inline void addrmode_absy(OpcodeFuncVal f)
 {
-    DBGPRINT(" $");
     uint8_t low = fetch_op();
     uint16_t addr = buildval16(low, fetch_op()) + yreg;
-    DBGPRINTHEX16(addr);
-    write_mem( addr, (this->*f)(read_mem(addr)) );
-    DBGPRINT(",y");
+    bus->write( addr, (this->*f)(bus->read(addr)) );
+    DBGPRINTF(" $%04X,y", addr);
 }
 
 inline void addrmode_indjmp(OpcodeFuncJmp f)
 {
-    DBGPRINT(" ($");
     uint8_t low = fetch_op();
     uint16_t addr = buildval16(low, fetch_op());
-    DBGPRINTHEX16(addr);
-    (this->*f)(read_mem(addr));
-    DBGPRINT(")");
+    (this->*f)(bus->read(addr));
+    DBGPRINTF(" ($%04X)", addr);
 }
 
 inline void addrmode_indx(OpcodeFuncVal f)
 {
-    DBGPRINT(" ($");
     uint8_t op = fetch_op() + xreg;
-    DBGPRINTHEX8(op);
-    uint8_t low = read_mem(op);
-    uint16_t addr = buildval16(low, read_mem(op+1));
-    write_mem( addr, (this->*f)(read_mem(addr)) );
-    DBGPRINT(",x)");
+    uint8_t low = bus->read(op);
+    uint16_t addr = buildval16(low, bus->read(op+1));
+    bus->write( addr, (this->*f)(bus->read(addr)) );
+    DBGPRINTF(" ($%02X,x)", op);
 }
 
 inline void addrmode_indy(OpcodeFuncVal f)
 {
-    DBGPRINT(" ($");
     uint8_t op = fetch_op();
-    DBGPRINTHEX8(op);
-    uint8_t low = read_mem(op);
-    uint16_t addr = buildval16(low, read_mem(op+1))+yreg;
-    write_mem( addr, (this->*f)(read_mem(addr)) );
-    DBGPRINT("),y");
+    uint8_t low = bus->read(op);
+    uint16_t addr = buildval16(low, bus->read(op+1))+yreg;
+    bus->write( addr, (this->*f)(bus->read(addr)) );
+    DBGPRINTF(" ($%02X),y", op);
 }
 
 
@@ -142,8 +123,8 @@ void instr_brk()
 {
     push(pc);
     push(procstatus.reg);
-    uint8_t low = read_mem(IRQBRKVEC);
-    pc = buildval16(low, read_mem(IRQBRKVEC+1));
+    uint8_t low = bus->read(IRQBRKVEC);
+    pc = buildval16(low, bus->read(IRQBRKVEC+1));
     procstatus.breakc = 1;
 }
 
@@ -395,6 +376,7 @@ void instr_rti()
 {
     procstatus.reg = pull();
     pc = pull();
+    // other stuff
 }
 
 void instr_nop() { }

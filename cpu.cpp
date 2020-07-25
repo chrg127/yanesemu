@@ -2,7 +2,6 @@
 
 #include <cstdio>
 #include <cassert>
-#include <cstring>
 #include <cctype>
 #include "memorymap.h"
 
@@ -44,23 +43,29 @@ static void printopcode(uint8_t op, FILE *f)
         nullptr, nullptr, "SBC", "INC", nullptr, nullptr, "SBC", nullptr, nullptr,
         nullptr, "SBC", "INC",
     };
-    std::printf("Instruction: [%02X] %s", op, table[op]);
+    std::fprintf(f, "Instruction: [%02X] %s", op, table[op]);
 }
 
 
+/* NOTE: public functions */
+void CPU::main()
+{
+    execute(fetch());
+}
 
 /* initializes the emulation by initializing the memory and moving pc to the start of the rom. */
 void CPU::initemu()
 {
-    std::memset(memory, 0x55, PRGROM_START-1);
-    std::memcpy(memory+PRGROM_START, rom.get_prgrom(), PRGROM_SIZE);
-    pc = PRGROM_START;
+    bus->initmem(rom.get_prgrom());
+    // at initialization, the CPU loads the start address from the vector at FFFC-FFFD
+    uint8_t low = bus->read(RESETVEC);
+    pc = buildval16(low, bus->read(RESETVEC+1));
 }
 
 uint8_t CPU::fetch()
 {
     assert(pc != MEMSIZE);
-    return memory[pc++];
+    return bus->read(pc++);
 }
 
 #define INSTR_CASE(id, name, mode) \
@@ -70,9 +75,9 @@ uint8_t CPU::fetch()
 
 void CPU::execute(uint8_t opcode)
 {
-//#ifdef DEBUG
-    printopcode(opcode, stdin);
-//#endif
+#ifdef DEBUG
+    printopcode(opcode, stdout);
+#endif
     switch(opcode) {
         INSTR_CASE(0x00, brk, impl)
         INSTR_CASE(0x01, ora, indx)
@@ -251,24 +256,6 @@ void CPU::printinfo()
 
 #undef WRITEFLAG
 
-/* prints the contents of current memory to a file with name fname */
-void CPU::memdump(const char * const fname)
-{
-    int i, j;
-    FILE *f;
-
-    f = fopen(fname, "w");
-    for (i = 0; i < MEMSIZE; ) {
-        std::fprintf(f, "%04X: ", i);
-        for (j = 0; j < 16; j++) {
-            std::fprintf(f, "%02X ", memory[i]);
-            i++;
-        }
-        std::fputs("\n", f);
-    }
-    fclose(f);
-}
-
 
 
 /* NOTE: private functions */
@@ -276,25 +263,13 @@ void CPU::memdump(const char * const fname)
 /* fetch next operand (not opcode) from memory */
 uint8_t CPU::fetch_op()
 {
-    return memory[pc++];
-}
-
-/* reads memory from the specified address */
-uint8_t CPU::read_mem(uint16_t addr)
-{
-    return memory[addr];
-}
-
-/* writes val to the specified address */
-void CPU::write_mem(uint16_t addr, uint8_t val)
-{
-    memory[addr] = val;
+    return bus->read(pc++);
 }
 
 /* pushes a value to the hardware stack */
 void CPU::push(uint8_t val)
 {
-    memory[buildval16(sp, 0x01)] = val;
+    bus->write(buildval16(sp, 0x01), val);
     sp--;
 }
 
@@ -302,6 +277,6 @@ void CPU::push(uint8_t val)
 uint8_t CPU::pull()
 {
     ++sp;
-    return memory[buildval16(sp, 0x01)];
+    return bus->read(buildval16(sp, 0x01));
 }
 

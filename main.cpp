@@ -1,12 +1,14 @@
 #include <cstdio>
 #include <cstdlib>
+#include "bus.h"
 #include "cpu.h"
 #include "nesrom.h"
 
 int main(int argc, char *argv[])
 {
     RomFile rom;
-    CPU cpu(rom);
+    Bus bus;
+    CPU cpu(rom, &bus);
     bool done = false;
 
     if (argc < 2) {
@@ -29,9 +31,13 @@ int main(int argc, char *argv[])
     cpu.initemu();
 
     //fetch, decode and execute cycle
+    int counter = 10;
     while (!done) {
-        cpu.execute(cpu.fetch());
-        cpu.printinfo();
+        cpu.main();
+        if (--counter < 0) {
+            bus.memdump("other/memdump.log");
+            done = true;
+        }
     }
     puts("");
 
