@@ -1,22 +1,18 @@
 #ifndef NESCPU_H_INCLUDED
 #define NESCPU_H_INCLUDED
 
-#include <cstdio>
-#include <cstddef>
 #include <cstdint>
-#include <cstdlib>
-#include "nesrom.h"
-#include "memorymap.h"
 #include "bus.h"
 
 #define DEBUG
 #include "debug.h"
 
+class RomFile;
 
 class CPU {
+    // component system
     RomFile &rom;
-
-    Bus *bus;
+    Bus &bus;
 
     uint16_t pc;
     uint8_t accum;
@@ -37,6 +33,10 @@ class CPU {
         uint8_t reg;
     } procstatus;
 
+    // interrupt signals
+    int cycles;
+    bool nmipending = false;
+
     uint8_t fetch_op();
     void push(uint8_t val);
     uint8_t pull();
@@ -49,9 +49,10 @@ class CPU {
 #include "opcodes.h"
 
 public:
-    CPU(RomFile &f, Bus *b)
+    CPU(RomFile &f, Bus &b)
         : rom(f), bus(b),
-          accum(0), xreg(0), yreg(0), sp(0)
+          accum(0), xreg(0), yreg(0), sp(0),
+          cycles(0)
     {
         procstatus.reg = 0;
     }

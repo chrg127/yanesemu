@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
 {
     RomFile rom;
     Bus bus;
-    CPU cpu(rom, &bus);
+    CPU cpu(rom, bus);
     bool done = false;
 
     if (argc < 2) {

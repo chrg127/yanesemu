@@ -1,9 +1,8 @@
 #include "cpu.h"
 
 #include <cstdio>
-#include <cassert>
 #include <cctype>
-#include "memorymap.h"
+#include "nesrom.h"
 
 
 
@@ -51,21 +50,24 @@ static void printopcode(uint8_t op, FILE *f)
 void CPU::main()
 {
     execute(fetch());
+    printinfo();
 }
 
 /* initializes the emulation by initializing the memory and moving pc to the start of the rom. */
 void CPU::initemu()
 {
-    bus->initmem(rom.get_prgrom());
+    bus.initmem(rom.get_prgrom());
     // at initialization, the CPU loads the start address from the vector at FFFC-FFFD
-    uint8_t low = bus->read(RESETVEC);
-    pc = buildval16(low, bus->read(RESETVEC+1));
+    uint8_t low = bus.read(RESETVEC);
+    pc = buildval16(low, bus.read(RESETVEC+1));
 }
 
 uint8_t CPU::fetch()
 {
+#ifdef DEBUG
     assert(pc != MEMSIZE);
-    return bus->read(pc++);
+#endif
+    return bus.read(pc++);
 }
 
 #define INSTR_CASE(id, name, mode) \
@@ -263,13 +265,13 @@ void CPU::printinfo()
 /* fetch next operand (not opcode) from memory */
 uint8_t CPU::fetch_op()
 {
-    return bus->read(pc++);
+    return bus.read(pc++);
 }
 
 /* pushes a value to the hardware stack */
 void CPU::push(uint8_t val)
 {
-    bus->write(buildval16(sp, 0x01), val);
+    bus.write(buildval16(sp, 0x01), val);
     sp--;
 }
 
@@ -277,6 +279,6 @@ void CPU::push(uint8_t val)
 uint8_t CPU::pull()
 {
     ++sp;
-    return bus->read(buildval16(sp, 0x01));
+    return bus.read(buildval16(sp, 0x01));
 }
 

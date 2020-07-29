@@ -1,4 +1,6 @@
 #ifdef DEBUG
+#include <cstdio>
+#include <cassert>
 #define DBGPRINT(str)       std::printf(str)
 #define DBGPRINTF(fmt, ...) std::printf(fmt, __VA_ARGS__)
 #define DBGPRINTHEX8(val)   std::printf("%02X", val)

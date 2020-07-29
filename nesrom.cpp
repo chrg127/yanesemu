@@ -1,5 +1,4 @@
 #include "nesrom.h"
-#include <cstdio>
 
 RomFile::RomFile()
 {
