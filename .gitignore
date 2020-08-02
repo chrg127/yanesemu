@@ -5,3 +5,4 @@ release/
 obj/
 test/
 other/
+*.swp

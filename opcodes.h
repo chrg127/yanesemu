@@ -30,7 +30,17 @@ void addrmode_absy_modify(OpcodeFuncMod f);
 void addrmode_indx_modify(OpcodeFuncMod f);
 void addrmode_indy_modify(OpcodeFuncMod f);
 /* write (used just by STA, STX and STY, which is also why there are no
- * instr_func for those */
+ * instr_func for those
+ * cycle table:
+ * zero:    2
+ * zerox:   2
+ * zeroy:   2
+ * abs:     3
+ * absx:    3
+ * absy:    3
+ * indx:    2
+ * indy:    2
+ */
 void addrmode_zero_write(uint8_t val);
 void addrmode_zerox_write(uint8_t val);
 void addrmode_zeroy_write(uint8_t val);
@@ -63,7 +73,7 @@ void instr_bit(const uint8_t val);
 
 /* modify instructions
  * these do need to modify their operand. they usually act on an address
- * and sometimes with the accumulator */
+ * and sometimes with the accumulator. */
 uint8_t instr_inc(uint8_t val);
 uint8_t instr_dec(uint8_t val);
 uint8_t instr_asl(uint8_t val);

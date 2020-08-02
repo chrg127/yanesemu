@@ -53,19 +53,6 @@ class CPU {
             carry = zero = intdis = decimal = breakc = ov = neg = unused = 0;
         }
     } procstatus;
-    //union {
-        /*
-        struct {
-            uint8_t carry   : 1;
-            uint8_t zero    : 1;
-            uint8_t intdis  : 1;
-            uint8_t breakc  : 1;
-            uint8_t ov      : 1;
-            uint8_t neg     : 1;
-            uint8_t decimal : 1;
-        };*/
-        //uint8_t reg;
-    //} procstatus;
 
     // interrupt signals
     int cycles;
