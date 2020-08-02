@@ -7,11 +7,13 @@
 #define DEBUG
 #include "debug.h"
 
-class RomFile;
+namespace nesrom {
+    class RomFile;
+}
 
 class CPU {
     // component system
-    RomFile &rom;
+    nesrom::RomFile &rom;
     Bus &bus;
 
     uint16_t pc;
@@ -57,23 +59,31 @@ class CPU {
     // interrupt signals
     int cycles;
     bool nmipending = false;
+    bool irqpending = false;
+
+    uint8_t operand;
+    uint8_t operand2;
 
     uint8_t fetch();
     void execute(uint8_t opcode);
+    void interrupt();
     uint8_t fetch_op();
     void push(uint8_t val);
     uint8_t pull();
+    void cycle(uint8_t n);
+    void irqpoll();
+    void nmipoll();
+
     inline uint16_t buildval16(uint8_t low, uint8_t hi)
     {
         return (hi << 8) | low;
     }
-    void cycle(uint8_t n);
 
 // Definitions of all opcodes and addressing modes.
 #include "opcodes.h"
 
 public:
-    CPU(RomFile &f, Bus &b)
+    CPU(nesrom::RomFile &f, Bus &b)
         : rom(f), bus(b),
           accum(0), xreg(0), yreg(0), sp(0),
           cycles(0)
@@ -84,7 +94,10 @@ public:
     ~CPU() { }
 
     void main();
-    void initemu();
+    void power();
+    void fire_irq();
+    void fire_nmi();
+    void reset();
     void printinfo();
     void memdump(const char * const fname);
 

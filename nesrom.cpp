@@ -1,5 +1,7 @@
 #include "nesrom.h"
 
+namespace nesrom {
+    
 RomFile::RomFile()
 {
     file = NULL;
@@ -165,3 +167,4 @@ void RomFile::printinfo()
     std::puts("");
 }
 
+}

@@ -2,60 +2,158 @@
 
 #include <cstdio>
 #include <cctype>
+#include <cstring>
 #include "nesrom.h"
 
-
-
-static const char *op_str_table[] = {
-    "BRK", "ORA", nullptr, nullptr, nullptr, "ORA", "ASL", nullptr, "PHP",
-    "ORA", "ASL", nullptr, nullptr, "ORA", "ASL", nullptr, "BPL", "ORA",
-    nullptr, nullptr, nullptr, "ORA", "ASL", nullptr, "CLC", "ORA", nullptr,
-    nullptr, nullptr, "ORA", "ASL", nullptr, "JSR", "AND", nullptr, nullptr,
-    "BIT", "AND", "ROL", nullptr, "PLP", "AND", "ROL", nullptr, "BIT",
-    "AND", "ROL", nullptr, "BMI", "AND", nullptr, nullptr, nullptr, "AND",
-    "ROL", nullptr, "SEC", "AND", nullptr, nullptr, nullptr, "AND", "ROL",
-    nullptr, "RTI", "EOR", nullptr, nullptr, nullptr, "EOR", "LSR", nullptr,
-    "PHA", "EOR", "LSR", nullptr, "JMP", "EOR", "LSR", nullptr, "BVC",
-    "EOR", nullptr, nullptr, nullptr, "EOR", "LSR", nullptr, "CLI", "EOR",
-    nullptr, nullptr, nullptr, "EOR", "LSR", nullptr, "RTS", "ADC", nullptr,
-    nullptr, nullptr, "ADC", "ROR", nullptr, "PLA", "ADC", "ROR", nullptr,
-    "JMP", "ADC", "ROR", nullptr, "BVS", "ADC", nullptr, nullptr, nullptr,
-    "ADC", "ROR", nullptr, "SEI", "ADC", nullptr, nullptr, nullptr, "ADC",
-    "ROR", nullptr, nullptr, "STA", nullptr, nullptr, "STY", "STA", "STX",
-    nullptr, "DEY", nullptr, "TXA", nullptr, "STY", "STA", "STX", nullptr,
-    "BCC", "STA", nullptr, nullptr, "STY", "STA", "STX", nullptr, "TYA",
-    "STA", "TXS", nullptr, nullptr, "STA", nullptr, nullptr, "LDY", "LDA",
-    "LDX", nullptr, "LDY", "LDA", "LDX", nullptr, "TAY", "LDA", "TAX",
-    nullptr, "LDY", "LDA", "LDX", nullptr, "BCS", "LDA", nullptr, nullptr,
-    "LDY", "LDA", "LDX", nullptr, "CLV", "LDA", "TSX", nullptr, "LDY",
-    "LDA", "LDX", nullptr, "CPY", "CMP", nullptr, nullptr, "CPY", "CMP",
-    "DEC", nullptr, "INY", "CMP", "DEX", nullptr, "CPY", "CMP", "DEC",
-    nullptr, "BNE", "CMP", nullptr, nullptr, nullptr, "CMP", "DEC", nullptr,
-    "CLD", "CMP", nullptr, nullptr, nullptr, "CMP", "DEC", nullptr, "CPX",
-    "SBC", nullptr, nullptr, "CPX", "SBC", "INC", nullptr, "INX", "SBC",
-    "NOP", nullptr, "CPX", "SBC", "INC", nullptr, "BEQ", "SBC", nullptr,
-    nullptr, nullptr, "SBC", "INC", nullptr, nullptr, "SBC", nullptr, nullptr,
-    nullptr, "SBC", "INC",
+enum AddrMode {
+    INVALID,
+    IMM, ACCUM, ZERO, ZEROX, ZEROY,
+    ABS, ABSX, ABSY, IND, INDX, INDY,
+    IMPL, REL,
 };
 
-/* NOTE: static functions */
+static struct {
+    const char *str;
+    AddrMode mode;
+} optab[] = {
+    { "BRK", IMPL },        { "ORA", INDX },        { nullptr, INVALID }, 
+    { nullptr, INVALID },   { nullptr, INVALID },   { "ORA", ZERO },
+    { "ASL", ZERO },        { nullptr, INVALID },   { "PHP", IMPL },
+    { "ORA", IMM },         { "ASL", ACCUM },       { nullptr, INVALID }, 
+    { nullptr, INVALID },   { "ORA", ABS },         { "ASL", ABS },
+    { nullptr, INVALID },   { "BPL", REL },         { "ORA", INDY },
+    { nullptr, INVALID },   { nullptr, INVALID },   { nullptr, INVALID }, 
+    { "ORA", ZEROX },       { "ASL", ZEROX },       { nullptr, INVALID }, 
+    { "CLC", IMPL },        { "ORA", ABSY },        { nullptr, INVALID }, 
+    { nullptr, INVALID },   { nullptr, INVALID },   { "ORA", ABSX },
+    { "ASL", ABSX },        { nullptr, INVALID },   { "JSR", IMPL },
+    { "AND", INDX },        { nullptr, INVALID },   { nullptr, INVALID }, 
+    { "BIT", ZERO },        { "AND", ZERO },        { "ROL", ZERO },
+    { nullptr, INVALID },   { "PLP", IMPL },        { "AND", IMM },
+    { "ROL", ACCUM },       { nullptr, INVALID },   { "BIT", ABS },
+    { "AND", ABS },         { "ROL", ABS },         { nullptr, INVALID }, 
+    { "BMI", REL },         { "AND", INDY },        { nullptr, INVALID }, 
+    { nullptr, INVALID },   { nullptr, INVALID },   { "AND", ZEROX },
+    { "ROL", ZEROX },       { nullptr, INVALID },   { "SEC", IMPL },
+    { "AND", ABSY },        { nullptr, INVALID },   { nullptr, INVALID }, 
+    { nullptr, INVALID },   { "AND", ABSX },        { "ROL", ABSX },
+    { nullptr, INVALID },   { "RTI", IMPL },        { "EOR", INDX },
+    { nullptr, INVALID },   { nullptr, INVALID },   { nullptr, INVALID }, 
+    { "EOR", ZERO },        { "LSR", ZERO },        { nullptr, INVALID }, 
+    { "PHA", IMPL },        { "EOR", IMM },         { "LSR", ACCUM },
+    { nullptr, INVALID },   { "JMP", IMPL },        { "EOR", ABS },
+    { "LSR", ABS },         { nullptr, INVALID },   { "BVC", REL },
+    { "EOR", INDY },        { nullptr, INVALID },   { nullptr, INVALID }, 
+    { nullptr, INVALID },   { "EOR", ZEROX },       { "LSR", ZEROX },
+    { nullptr, INVALID },   { "CLI", IMPL },        { "EOR", ABSY },
+    { nullptr, INVALID },   { nullptr, INVALID },   { nullptr, INVALID }, 
+    { "EOR", ABSX },        { "LSR", ABSX },        { nullptr, INVALID }, 
+    { "RTS", IMPL },        { "ADC", INDX },        { nullptr, INVALID }, 
+    { nullptr, INVALID },   { nullptr, INVALID },   { "ADC", ZERO },
+    { "ROR", ZERO },        { nullptr, INVALID },   { "PLA", IMPL },
+    { "ADC", IMM },         { "ROR", ACCUM },       { nullptr, INVALID }, 
+    { "JMP_IND", IMPL },    { "ADC", ABS },         { "ROR", ABS },
+    { nullptr, INVALID },   { "BVS", REL },         { "ADC", INDY },
+    { nullptr, INVALID },   { nullptr, INVALID },   { nullptr, INVALID }, 
+    { "ADC", ZEROX },       { "ROR", ZEROX },       { nullptr, INVALID }, 
+    { "SEI", IMPL },        { "ADC", ABSY },        { nullptr, INVALID }, 
+    { nullptr, INVALID },   { nullptr, INVALID },   { "ADC", ABSX },
+    { "ROR", ABSX },        { nullptr, INVALID },   { nullptr, INVALID }, 
+    { "STA", INDX },        { nullptr, INVALID },   { nullptr, INVALID }, 
+    { "STY", ZERO },        { "STA", ZERO },        { "STX", ZERO },
+    { nullptr, INVALID },   { "DEY", IMPL },        { nullptr, INVALID }, 
+    { "TXA", IMPL },        { nullptr, INVALID },   { "STY", ABS },
+    { "STA", ABS },         { "STX", ABS },         { nullptr, INVALID }, 
+    { "BCC", REL },         { "STA", INDY },        { nullptr, INVALID }, 
+    { nullptr, INVALID },   { "STY", ZEROX },       { "STA", ZEROX },
+    { "STX", ZEROY },       { nullptr, INVALID },   { "TYA", IMPL },
+    { "STA", ABSY },        { "TXS", IMPL },        { nullptr, INVALID }, 
+    { nullptr, INVALID },   { "STA", ABSX },        { nullptr, INVALID }, 
+    { nullptr, INVALID },   { "LDY", IMM },         { "LDA", INDX },
+    { "LDX", IMM },         { nullptr, INVALID },   { "LDY", ZERO },
+    { "LDA", ZERO },        { "LDX", ZERO },        { nullptr, INVALID }, 
+    { "TAY", IMPL },        { "LDA", IMM },         { "TAX", IMPL },
+    { nullptr, INVALID },   { "LDY", ABS },         { "LDA", ABS },
+    { "LDX", ABS },         { nullptr, INVALID },   { "BCS", REL },
+    { "LDA", INDY },        { nullptr, INVALID },   { nullptr, INVALID }, 
+    { "LDY", ZEROX },       { "LDA", ZEROX },       { "LDX", ZEROY },
+    { nullptr, INVALID },   { "CLV", IMPL },        { "LDA", ABSY },
+    { "TSX", IMPL },        { nullptr, INVALID },   { "LDY", ABSX },
+    { "LDA", ABSX },        { "LDX", ABSY },        { nullptr, INVALID }, 
+    { "CPY", IMM },         { "CMP", INDX },        { nullptr, INVALID }, 
+    { nullptr, INVALID },   { "CPY", ZERO },        { "CMP", ZERO },
+    { "DEC", ZERO },        { nullptr, INVALID },   { "INY", IMPL },
+    { "CMP", IMM },         { "DEX", IMPL },        { nullptr, INVALID }, 
+    { "CPY", ABS },         { "CMP", ABS },         { "DEC", ABS },
+    { nullptr, INVALID },   { "BNE", REL },         { "CMP", INDY },
+    { nullptr, INVALID },   { nullptr, INVALID },   { nullptr, INVALID }, 
+    { "CMP", ZEROX },       { "DEC", ZEROX },       { nullptr, INVALID }, 
+    { "CLD", IMPL },        { "CMP", ABSY },        { nullptr, INVALID }, 
+    { nullptr, INVALID },   { nullptr, INVALID },   { "CMP", ABSX },
+    { "DEC", ABSX },        { nullptr, INVALID },   { "CPX", IMM },
+    { "SBC", INDX },        { nullptr, INVALID },   { nullptr, INVALID }, 
+    { "CPX", ZERO },        { "SBC", ZERO },        { "INC", ZERO },
+    { nullptr, INVALID },   { "INX", IMPL },        { "SBC", IMM },
+    { "NOP", IMPL },        { nullptr, INVALID },   { "CPX", ABS },
+    { "SBC", ABS },         { "INC", ABS },         { nullptr, INVALID }, 
+    { "BEQ", REL },         { "SBC", INDY },        { nullptr, INVALID }, 
+    { nullptr, INVALID },   { nullptr, INVALID },   { "SBC", ZEROX },
+    { "INC", ZEROX },       { nullptr, INVALID },   { nullptr, INVALID }, 
+    { "SBC", ABSY },        { nullptr, INVALID },   { nullptr, INVALID }, 
+    { nullptr, INVALID },   { "SBC", ABSX },        { "INC", ABSX },
+};
 
-/* prints hex and name of a specified opcode to file f. */
-static void printopcode(uint8_t op, FILE *f)
+/* Disassemle and print id and name of an opcode. Assumes pc points to the opcode. */
+
+static void print_opcode(uint8_t opcode, uint8_t op1, uint8_t op2, FILE *f)
 {
-    std::fprintf(f, "Instruction: [%02X] %s", op, op_str_table[op]);
+    std::fprintf(f, "Instruction: [%02X] %s", opcode, optab[opcode].str);
+
+#define PRINT_CASE(mode, fmt, ...) \
+    case mode: std::fprintf(f, fmt, __VA_ARGS__); break;
+
+    switch (optab[opcode].mode) {
+    case IMPL: break;
+        PRINT_CASE(IMM, " #$%02X", op1)
+    case ACCUM:
+        std::fputs(" A", f);
+        break;
+        PRINT_CASE(ZERO,    " $%02X",       op1)
+        PRINT_CASE(ZEROX,   " $%02X,x",     op1)
+        PRINT_CASE(ZEROY,   " $%02X,y",     op1)
+        PRINT_CASE(ABS,     " $%02X%02X",   op2, op1)
+        PRINT_CASE(ABSX,    " $%02X%02X,x", op2, op1)
+        PRINT_CASE(ABSY,    " $%02X%02X,y", op2, op1)
+        PRINT_CASE(IND,     " ($%02X%02X)", op2, op1)
+        PRINT_CASE(INDX,    " ($%02X,x)",   op1)
+        PRINT_CASE(INDY,    " ($%02X),y",   op1)
+        PRINT_CASE(REL,     " #$%02X",      op1)
+    default:
+        std::fprintf(stderr, "error: mode not valid\n");
+        break;
+    }
+#undef PRINT_CASE
+    std::fputs("\n", f);
 }
+
+
+
+
 
 
 /* NOTE: public functions */
 void CPU::main()
 {
-    execute(fetch());
+    uint8_t opcode = fetch();
+    execute(opcode);
+#ifdef DEBUG
+    print_opcode(opcode, operand, operand2, stdout);
     printinfo();
+#endif
 }
 
 /* initializes the emulation by initializing the memory and moving pc to the start of the rom. */
-void CPU::initemu()
+void CPU::power()
 {
     bus.initmem(rom.get_prgrom());
     // at initialization, the CPU loads the start address from the vector at FFFC-FFFD
@@ -63,6 +161,45 @@ void CPU::initemu()
     pc = buildval16(low, bus.read(RESETVEC+1));
 }
 
+void CPU::fire_irq()
+{
+    irqpending = true;
+}
+
+void CPU::fire_nmi()
+{
+    nmipending = true;
+}
+
+void reset()
+{
+
+}
+
+void CPU::printinfo()
+{
+    DBGPRINTF("PC: %04X A: %02X X: %02X Y: %02X S: %02X ",
+                   pc, accum, xreg, yreg, sp);
+
+#define WRITEFLAG(f, c) \
+    DBGPRINTF( "%c", (f == 1) ? std::toupper(c) : std::tolower(c) )
+
+    WRITEFLAG(procstatus.carry,     'c');
+    WRITEFLAG(procstatus.zero,      'z');
+    WRITEFLAG(procstatus.intdis,    'i');
+    WRITEFLAG(procstatus.breakc,    'b');
+    WRITEFLAG(procstatus.ov,        'v');
+    WRITEFLAG(procstatus.neg,       'n');
+    WRITEFLAG(procstatus.decimal,   'd');
+
+#undef WRITEFLAG
+    DBGPRINT("\n");
+}
+
+
+
+
+/* NOTE: private functions */
 uint8_t CPU::fetch()
 {
 #ifdef DEBUG
@@ -73,22 +210,18 @@ uint8_t CPU::fetch()
 
 /* definitions of all opcodes and addressing modes */
 #include "opcodes.cpp"
-
-#define INSTR_IMPLD(id, func) \
-    case id: instr_##func(); break;
-#define INSTR_AMODE(id, name, mode, type) \
-    case id: addrmode_##mode##_##type(&CPU::instr_##name); break;
-#define INSTR_WRITE(id, mode, val) \
-    case id: addrmode_##mode##_write(val); break;
-#define INSTR_OTHER(id, func, ...) \
-    case id: instr_##func(__VA_ARGS__); break;
-
-
+/* executes a single instruction. */
 void CPU::execute(uint8_t opcode)
 {
-#ifdef DEBUG
-    printopcode(opcode, stdout);
-#endif
+#define INSTR_IMPLD(id, func) \
+    case id: instr_##func(); return;
+#define INSTR_AMODE(id, name, mode, type) \
+    case id: addrmode_##mode##_##type(&CPU::instr_##name); return;
+#define INSTR_WRITE(id, mode, val) \
+    case id: addrmode_##mode##_write(val); return;
+#define INSTR_OTHER(id, func, ...) \
+    case id: instr_##func(__VA_ARGS__); return;
+
     switch(opcode) {
         INSTR_IMPLD(0x00, brk)
         INSTR_AMODE(0x01, ora, indx, read)
@@ -103,7 +236,7 @@ void CPU::execute(uint8_t opcode)
         INSTR_AMODE(0x11, ora, indy, read)
         INSTR_AMODE(0x15, ora, zerox, read)
         INSTR_AMODE(0x16, asl, zerox, modify)
-        INSTR_OTHER(0x18, flag, procstatus.carry, false)   //clc
+        INSTR_OTHER(0x18, flag, procstatus.carry, false)   // clc
         INSTR_AMODE(0x19, ora, absy, read)
         INSTR_AMODE(0x1D, ora, absx, read)
         INSTR_AMODE(0x1E, asl, absx, modify)
@@ -122,7 +255,7 @@ void CPU::execute(uint8_t opcode)
         INSTR_AMODE(0x31, and, indy, read)
         INSTR_AMODE(0x35, and, zerox, read)
         INSTR_AMODE(0x36, rol, zerox, modify)
-        INSTR_OTHER(0x38, flag, procstatus.carry, true)     //sec
+        INSTR_OTHER(0x38, flag, procstatus.carry, true)    //sec
         INSTR_AMODE(0x39, and, absy, read)
         INSTR_AMODE(0x3D, and, absx, read)
         INSTR_AMODE(0x3E, rol, absx, modify)
@@ -162,44 +295,44 @@ void CPU::execute(uint8_t opcode)
         INSTR_AMODE(0x79, adc, absy, read)
         INSTR_AMODE(0x7D, adc, absx, read)
         INSTR_AMODE(0x7E, ror, absx, modify)
-        INSTR_WRITE(0x81, indx, accum)        // sta
-        INSTR_WRITE(0x84, zero, yreg)         // sty
-        INSTR_WRITE(0x85, zero, accum)        // sta
-        INSTR_WRITE(0x86, zero, xreg)         // stx
+        INSTR_WRITE(0x81, indx, accum)                      // sta
+        INSTR_WRITE(0x84, zero, yreg)                       // sty
+        INSTR_WRITE(0x85, zero, accum)                      // sta
+        INSTR_WRITE(0x86, zero, xreg)                       // stx
         INSTR_IMPLD(0x88, dey)
-        INSTR_OTHER(0x8A, transfer, xreg, accum)             // txa
-        INSTR_WRITE(0x8C, abs, yreg)          // sty
-        INSTR_WRITE(0x8D, abs, accum)         // sta
-        INSTR_WRITE(0x8E, abs, xreg)          // stx
-        INSTR_OTHER(0x90, branch, procstatus.carry == 0)   // bcc
-        INSTR_WRITE(0x91, indy, accum)        // sta
-        INSTR_WRITE(0x94, zerox, yreg)        // sty
-        INSTR_WRITE(0x95, zerox, accum)       // sta
-        INSTR_WRITE(0x96, zeroy, xreg)        // stx
-        INSTR_OTHER(0x98, transfer, yreg, accum)             // tya
-        INSTR_WRITE(0x99, absy, accum)        // sta
-        INSTR_OTHER(0x9A, transfer, xreg, sp)                // txs
-        INSTR_WRITE(0x9D, absx, accum)        // sta
+        INSTR_OTHER(0x8A, transfer, xreg, accum)            // txa
+        INSTR_WRITE(0x8C, abs, yreg)                        // sty
+        INSTR_WRITE(0x8D, abs, accum)                       // sta
+        INSTR_WRITE(0x8E, abs, xreg)                        // stx
+        INSTR_OTHER(0x90, branch, procstatus.carry == 0)    // bcc
+        INSTR_WRITE(0x91, indy, accum)                      // sta
+        INSTR_WRITE(0x94, zerox, yreg)                      // sty
+        INSTR_WRITE(0x95, zerox, accum)                     // sta
+        INSTR_WRITE(0x96, zeroy, xreg)                      // stx
+        INSTR_OTHER(0x98, transfer, yreg, accum)            // tya
+        INSTR_WRITE(0x99, absy, accum)                      // sta
+        INSTR_OTHER(0x9A, transfer, xreg, sp)               // txs
+        INSTR_WRITE(0x9D, absx, accum)                      // sta
         INSTR_AMODE(0xA0, ldy, imm, read)
         INSTR_AMODE(0xA1, lda, indx, read)
         INSTR_AMODE(0xA2, ldx, imm, read)
         INSTR_AMODE(0xA4, ldy, zero, read)
         INSTR_AMODE(0xA5, lda, zero, read)
         INSTR_AMODE(0xA6, ldx, zero, read)
-        INSTR_OTHER(0xA8, transfer, accum, yreg)             // tay
+        INSTR_OTHER(0xA8, transfer, accum, yreg)            // tay
         INSTR_AMODE(0xA9, lda, imm, read)
-        INSTR_OTHER(0xAA, transfer, accum, xreg)             // tax
+        INSTR_OTHER(0xAA, transfer, accum, xreg)            // tax
         INSTR_AMODE(0xAC, ldy, abs, read)
         INSTR_AMODE(0xAD, lda, abs, read)
         INSTR_AMODE(0xAE, ldx, abs, read)
-        INSTR_OTHER(0xB0, branch, procstatus.carry == 1)   // bcs
+        INSTR_OTHER(0xB0, branch, procstatus.carry == 1)    // bcs
         INSTR_AMODE(0xB1, lda, indy, read)
         INSTR_AMODE(0xB4, ldy, zerox, read)
         INSTR_AMODE(0xB5, lda, zerox, read)
         INSTR_AMODE(0xB6, ldx, zeroy, read)
-        INSTR_OTHER(0xB8, flag, procstatus.ov, false)      //clv
+        INSTR_OTHER(0xB8, flag, procstatus.ov, false)       // clv
         INSTR_AMODE(0xB9, lda, absy, read)
-        INSTR_OTHER(0xBA, transfer, sp, xreg)                // tsx
+        INSTR_OTHER(0xBA, transfer, sp, xreg)               // tsx
         INSTR_AMODE(0xBC, ldy, absx, read)
         INSTR_AMODE(0xBD, lda, absx, read)
         INSTR_AMODE(0xBE, ldx, absy, read)
@@ -242,37 +375,14 @@ void CPU::execute(uint8_t opcode)
         INSTR_AMODE(0xFE, inc, absx, modify)
         default:
             DBGPRINTF("error: unknown opcode: %02X\n", opcode);
+            return;
     }
-    DBGPRINT("\n");
-}
 
 #undef INSTR_IMPLD
 #undef INSTR_AMODE
 #undef INSTR_WRITE
 #undef INSTR_OTHER
-
-
-#define WRITEFLAG(f, c) \
-    DBGPRINTF( "%c", (f == 1) ? std::toupper(c) : std::tolower(c) )
-
-void CPU::printinfo()
-{
-    DBGPRINTF("PC: %04X A: %02X X: %02X Y: %02X S: %02X ", pc, accum, xreg, yreg, sp);
-    WRITEFLAG(procstatus.carry,     'c');
-    WRITEFLAG(procstatus.zero,      'z');
-    WRITEFLAG(procstatus.intdis,    'i');
-    WRITEFLAG(procstatus.breakc,    'b');
-    WRITEFLAG(procstatus.ov,        'v');
-    WRITEFLAG(procstatus.neg,       'n');
-    WRITEFLAG(procstatus.decimal,   'd');
-    DBGPRINT("\n");
 }
-
-#undef WRITEFLAG
-
-
-
-/* NOTE: private functions */
 
 /* fetch next operand (not opcode) from memory */
 uint8_t CPU::fetch_op()
@@ -294,6 +404,7 @@ uint8_t CPU::pull()
     return bus.read(buildval16(sp, 0x01));
 }
 
+/* adds n cycles to the cycle counter */
 void CPU::cycle(uint8_t n)
 {
     cycles += n;

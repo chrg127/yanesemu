@@ -3,90 +3,84 @@
 // NOTE: addressing mode functions.
 void CPU::addrmode_imm_read(OpcodeFuncRead f)
 {
-    uint8_t op = fetch_op();
-    (this->*f)(op);
+    operand = fetch_op();
+    (this->*f)(operand);
     cycle(2);
-    DBGPRINTF(" #$%02X", op);
 }
 
 void CPU::addrmode_zero_read(OpcodeFuncRead f)
 {
-    uint8_t op = fetch_op();
-    (this->*f)(bus.read(op));
+    operand = fetch_op();
+    (this->*f)(bus.read(operand));
     cycle(3);
-    DBGPRINTF(" $%02X", op);
 }
 
 void CPU::addrmode_zerox_read(OpcodeFuncRead f)
 {
-    uint8_t op = fetch_op() + xreg;
-    (this->*f)(bus.read(op));
+    operand = fetch_op();
+    (this->*f)(bus.read(operand + xreg));
     cycle(4);
-    DBGPRINTF(" $%02X,x", op);
 }
 
 void CPU::addrmode_zeroy_read(OpcodeFuncRead f)
 {
-    uint8_t op = fetch_op() + yreg;
-    (this->*f)(bus.read(op));
+    operand = fetch_op();
+    (this->*f)(bus.read(operand + yreg));
     cycle(4);
-    DBGPRINTF(" $%02X,y", op);
 }
 
 void CPU::addrmode_abs_read(OpcodeFuncRead f)
 {
-    uint8_t low = fetch_op();
-    uint16_t addr = buildval16(low, fetch_op());
+    operand = fetch_op();
+    operand2 = fetch_op();
+    uint16_t addr = buildval16(operand, operand2);
     (this->*f)(bus.read(addr));
     cycle(4);
-    DBGPRINTF(" $%04X", addr);
 }
 
 void CPU::addrmode_absx_read(OpcodeFuncRead f)
 {
-    uint8_t low = fetch_op();
-    uint16_t addr = buildval16(low, fetch_op());
+    operand = fetch_op();
+    operand2 = fetch_op();
+    uint16_t addr = buildval16(operand, operand2);
     uint16_t res = addr + xreg;
     (this->*f)(bus.read(addr));
     cycle(4);
     if ((addr >> 8) != (res >> 8))
         cycle(1);
-    DBGPRINTF(" $%04X,x", addr);
 }
 
 void CPU::addrmode_absy_read(OpcodeFuncRead f)
 {
-    uint8_t low = fetch_op();
-    uint16_t addr = buildval16(low, fetch_op());
+    operand = fetch_op();
+    operand2 = fetch_op();
+    uint16_t addr = buildval16(operand, operand2);
     uint16_t res = addr + yreg;
     (this->*f)(bus.read(addr));
     cycle(4);
     if ((addr >> 8) != (res >> 8))
         cycle(1);
-    DBGPRINTF(" $%04X,y", addr);
 }
 
 void CPU::addrmode_indx_read(OpcodeFuncRead f)
 {
-    uint8_t op = fetch_op() + xreg;
-    uint8_t low = bus.read(op);
-    uint16_t addr = buildval16(low, bus.read(op+1));
+    operand = fetch_op();
+    uint8_t low = bus.read(operand + xreg);
+    uint16_t addr = buildval16(low, bus.read(operand+1));
     (this->*f)(bus.read(addr));
     cycle(6);
-    DBGPRINTF(" ($%02X,x)", op);
 }
 
 void CPU::addrmode_indy_read(OpcodeFuncRead f)
 {
-    uint8_t op = fetch_op();
-    uint8_t low = bus.read(op);
-    uint16_t addr = buildval16(low, bus.read(op+1));
+    operand = fetch_op();
+    uint8_t low = bus.read(operand);
+    uint16_t addr = buildval16(low, bus.read(operand+1));
     uint16_t res = addr + yreg;
     (this->*f)(bus.read(addr));
     cycle(5);
     if ((addr >> 8) != (res >> 8))
         cycle(1);
-    DBGPRINTF(" ($%02X),y", op);
 }
 
 
@@ -95,118 +89,110 @@ void CPU::addrmode_accum_modify(OpcodeFuncMod f)
 {
     accum = (this->*f)(accum);
     cycle(2);
-    DBGPRINT(" A");
 }
 
 void CPU::addrmode_zero_modify(OpcodeFuncMod f)
 {
-    uint8_t op = fetch_op();
-    uint8_t res = (this->*f)(bus.read(op));
-    bus.write(op, res);
+    operand = fetch_op();
+    uint8_t res = (this->*f)(bus.read(operand));
+    bus.write(operand, res);
     cycle(5);
-    DBGPRINTF(" $%02X", op);
 }
 
 void CPU::addrmode_zerox_modify(OpcodeFuncMod f)
 {
-    uint8_t op = fetch_op() + xreg;
-    uint8_t res = (this->*f)(bus.read(op));
-    bus.write(op, res);
+    operand = fetch_op();
+    uint8_t res = (this->*f)(bus.read(operand + xreg));
+    bus.write(operand + xreg, res);
     cycle(6);
-    DBGPRINTF(" $%02X,x", op);
 }
 
 void CPU::addrmode_abs_modify(OpcodeFuncMod f)
 {
-    uint8_t low = fetch_op();
-    uint16_t addr = buildval16(low, fetch_op());
+    operand = fetch_op();
+    operand2 = fetch_op();
+    uint16_t addr = buildval16(operand, operand2);
     uint8_t res = (this->*f)(bus.read(addr));
     bus.write(addr, res);
     cycle(6);
-    DBGPRINTF(" $%04X", addr);
 }
 
 void CPU::addrmode_absx_modify(OpcodeFuncMod f)
 {
-    uint8_t low = fetch_op();
-    uint16_t addr = buildval16(low, fetch_op()) + xreg;
+    operand = fetch_op();
+    operand2 = fetch_op();
+    uint16_t addr = buildval16(operand, operand2) + xreg;
     uint8_t res = (this->*f)(bus.read(addr));
     bus.write(addr, res);
     cycle(7);
-    DBGPRINTF(" $%04X,x", addr);
 }
 
 
 
 void CPU::addrmode_zero_write(uint8_t val)
 {
-    uint8_t op = fetch_op();
-    bus.write(op, val);
+    operand = fetch_op();
+    bus.write(operand, val);
     cycle(2);
-    DBGPRINTF(" $%02X", op);
 }
 
 void CPU::addrmode_zerox_write(uint8_t val)
 {
-    uint8_t op = fetch_op() + xreg;
-    bus.write(op, val);
+    operand = fetch_op() + xreg;
+    bus.write(operand + xreg, val);
     cycle(2);
-    DBGPRINTF(" $%02X,x", op);
 }
 
 void CPU::addrmode_zeroy_write(uint8_t val)
 {
-    uint8_t op = fetch_op() + yreg;
-    bus.write(op, val);
+    operand = fetch_op();
+    bus.write(operand + yreg, val);
     cycle(2);
-    DBGPRINTF(" $%02X,y", op);
 }
 
 void CPU::addrmode_abs_write(uint8_t val)
 {
-    uint8_t low = fetch_op();
-    uint16_t addr = buildval16(low, fetch_op());
+    operand = fetch_op();
+    operand2 = fetch_op();
+    uint16_t addr = buildval16(operand, operand2);
     bus.write(addr, val);
     cycle(3);
-    DBGPRINTF(" $%04X", addr);
 }
 
 void CPU::addrmode_absx_write(uint8_t val)
 {
-    uint8_t low = fetch_op();
-    uint16_t addr = buildval16(low, fetch_op()) + xreg;
+    operand = fetch_op();
+    operand2 = fetch_op();
+    uint16_t addr = buildval16(operand, operand2) + xreg;
     bus.write(addr, val);
     cycle(3);
-    DBGPRINTF(" $%04X,x", addr);
 }
 
 void CPU::addrmode_absy_write(uint8_t val)
 {
-    uint8_t low = fetch_op();
-    uint16_t addr = buildval16(low, fetch_op()) + yreg;
+    operand = fetch_op();
+    operand2 = fetch_op();
+    uint16_t addr = buildval16(operand, operand2) + yreg;
     bus.write(addr, val);
     cycle(3);
-    DBGPRINTF(" $%04X,y", addr);
 }
 
 void CPU::addrmode_indx_write(uint8_t val)
 {
-    uint8_t op = fetch_op() + xreg;
-    uint8_t low = bus.read(op);
-    uint16_t addr = buildval16(low, bus.read(op+1));
+    operand = fetch_op() + xreg;
+    uint8_t low = bus.read(operand);
+    uint16_t addr = buildval16(low, bus.read(operand+1));
     bus.write(addr, val);
     cycle(2);
-    DBGPRINTF(" ($%02X,x)", op);
 }
 
 void CPU::addrmode_indy_write(uint8_t val)
 {
-    uint8_t op = fetch_op();
-    uint8_t low = bus.read(op);
-    uint16_t addr = buildval16(low, bus.read(op+1))+yreg;
+    operand = fetch_op();
+    uint8_t low = bus.read(operand);
+    uint16_t addr = buildval16(low, bus.read(operand+1))+yreg;
     bus.write(addr, val);
     cycle(2);
-    DBGPRINTF(" ($%02X),y", op);
 }
 
 
@@ -214,19 +200,17 @@ void CPU::addrmode_indy_write(uint8_t val)
 
 void CPU::instr_branch(bool take)
 {
-    uint8_t op = fetch_op();
+    operand = fetch_op();
+    uint8_t op = operand;
     uint8_t oldpc = pc;
     cycle(2);
-    DBGPRINTF(" #$%02X", op);
     if (!take) {
-        DBGPRINT(" [Branch not taken]");
         cycle(1);
         op = 0;
     }
     pc += (int8_t) op;
     if ((oldpc >> 8) != (pc >> 8))
         cycle(2);
-    DBGPRINT(" [Branch taken]");
 }
 
 void CPU::instr_push(uint8_t val)
@@ -421,7 +405,7 @@ func_increase(x, xreg)
 func_increase(y, yreg)
 
 #define func_decrease(reg, regname) \
-void CPU::instr_in##reg() \
+void CPU::instr_de##reg() \
 { \
     regname--; \
     procstatus.zero = (xreg == 0); \
@@ -447,38 +431,34 @@ void CPU::instr_pla()
 
 void CPU::instr_jsr()
 {
-    uint8_t low = fetch_op();
-    uint16_t addr = buildval16(low, fetch_op());
+    operand = fetch_op();
+    operand2 = fetch_op();
     push(pc >> 8);
     push(pc & 0xFF);
-    pc = addr;
+    pc = buildval16(operand, operand2);
     cycle(6);
-    DBGPRINTF(" $%04X", addr);
 }
 
 void CPU::instr_jmp()
 {
-    uint8_t low = fetch_op();
-    uint16_t addr = buildval16(low, fetch_op());
-    pc = addr;
+    operand = fetch_op();
+    operand2 = fetch_op();
+    pc = buildval16(operand, operand2);
     cycle(3);
-    DBGPRINTF(" $%04X", addr);
 }
 
 void CPU::instr_jmp_ind()
 {
-    uint8_t low = fetch_op();
-    uint16_t addr = buildval16(low, fetch_op());
-    pc = bus.read(addr);
+    operand = fetch_op();
+    operand2 = fetch_op();
+    pc = bus.read(buildval16(operand, operand2));
     cycle(5);
-    DBGPRINTF(" ($%04X)", addr);
 }
 
 void CPU::instr_rts()
 {
     uint8_t low = pull();
-    uint16_t addr = buildval16(low, pull());
-    pc = addr;
+    pc = buildval16(low, pull());
     cycle(6);
 }
 
@@ -496,8 +476,8 @@ void CPU::instr_brk()
 void CPU::instr_rti()
 {
     procstatus = pull();
-    uint8_t pclow = pull();
-    pc = buildval16(pclow, pull());
+    uint8_t low = pull();
+    pc = buildval16(low, pull());
     cycle(6);
 }
 

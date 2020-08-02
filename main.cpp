@@ -4,6 +4,8 @@
 #include "cpu.h"
 #include "nesrom.h"
 
+using nesrom::RomFile;
+
 int main(int argc, char *argv[])
 {
     RomFile rom;
@@ -21,14 +23,14 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (rom.file_format() == NesFmt::NES20) {
+    if (rom.file_format() == nesrom::NesFmt::NES20) {
         std::fprintf(stderr, "%s: error: NES 2.0 format not yet supported.\n", *argv);
         return 1;
     }
 
     rom.printinfo();
 
-    cpu.initemu();
+    cpu.power();
 
     //fetch, decode and execute cycle
     int counter = 10;

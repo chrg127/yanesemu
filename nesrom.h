@@ -7,6 +7,8 @@
 #define HEADER_LEN 16
 #define TRAINER_LEN 512
 
+namespace nesrom {
+
 enum NesFmt {
     INVALID,
     INES,
@@ -143,5 +145,7 @@ public:
 
     void printinfo();
 };
+
+} //namespace nesrom
 
 #endif
