@@ -213,12 +213,6 @@ void CPU::instr_branch(bool take)
         cycle(2);
 }
 
-void CPU::instr_push(uint8_t val)
-{
-    push(val);
-    cycle(3);
-}
-
 void CPU::instr_flag(bool &flag, bool v)
 {
     flag = v;
@@ -415,6 +409,20 @@ void CPU::instr_de##reg() \
 func_decrease(x, xreg)
 func_decrease(y, yreg)
 
+void CPU::instr_php()
+{
+    procstatus.breakf = 1;
+    push(procstatus.reg());
+    procstatus.breakf = 0;
+    cycle(3);
+}
+
+void CPU::instr_pha()
+{
+    push(accum);
+    cycle(3);
+}
+
 void CPU::instr_plp()
 {
     procstatus = pull();
@@ -464,12 +472,10 @@ void CPU::instr_rts()
 
 void CPU::instr_brk()
 {
-    push(pc >> 8);
-    push(pc & 0xFF);
-    push(procstatus.reg());
-    uint8_t low = bus.read(IRQBRKVEC);
-    pc = buildval16(low, bus.read(IRQBRKVEC+1));
-    procstatus.breakc = 1;
+    procstatus.breakf = 1;
+    interrupt(IRQBRKVEC);
+    // the break flag only exists in a copy, so reset it here
+    procstatus.breakf = 0;
     cycle(7);
 }
 

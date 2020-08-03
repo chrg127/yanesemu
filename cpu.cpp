@@ -144,6 +144,15 @@ static void print_opcode(uint8_t opcode, uint8_t op1, uint8_t op2, FILE *f)
 /* NOTE: public functions */
 void CPU::main()
 {
+    if (execnmi) {
+        interrupt(NMIVEC);
+        return;
+    }
+    if (execirq) {
+        interrupt(IRQBRKVEC);
+        return;
+    }
+
     uint8_t opcode = fetch();
     execute(opcode);
 #ifdef DEBUG
@@ -152,13 +161,15 @@ void CPU::main()
 #endif
 }
 
-/* initializes the emulation by initializing the memory and moving pc to the start of the rom. */
 void CPU::power()
 {
     bus.initmem(rom.get_prgrom());
-    // at initialization, the CPU loads the start address from the vector at FFFC-FFFD
-    uint8_t low = bus.read(RESETVEC);
-    pc = buildval16(low, bus.read(RESETVEC+1));
+    bus.disable_write();
+    sp = 0;
+    pc = 0;
+    interrupt(RESETVEC);
+    bus.enable_write();
+    cycle(8);
 }
 
 void CPU::fire_irq()
@@ -171,9 +182,11 @@ void CPU::fire_nmi()
     nmipending = true;
 }
 
-void reset()
+void CPU::reset()
 {
-
+    pc = sp = accum = xreg = yreg = 0;
+    procstatus.reset();
+    bus.reset();
 }
 
 void CPU::printinfo()
@@ -187,7 +200,8 @@ void CPU::printinfo()
     WRITEFLAG(procstatus.carry,     'c');
     WRITEFLAG(procstatus.zero,      'z');
     WRITEFLAG(procstatus.intdis,    'i');
-    WRITEFLAG(procstatus.breakc,    'b');
+    WRITEFLAG(procstatus.unused,    'u');
+    WRITEFLAG(procstatus.breakf,    'b');
     WRITEFLAG(procstatus.ov,        'v');
     WRITEFLAG(procstatus.neg,       'n');
     WRITEFLAG(procstatus.decimal,   'd');
@@ -205,6 +219,12 @@ uint8_t CPU::fetch()
 #ifdef DEBUG
     assert(pc != MEMSIZE);
 #endif
+    return bus.read(pc++);
+}
+
+/* fetch next operand (not opcode) from memory */
+uint8_t CPU::fetch_op()
+{
     return bus.read(pc++);
 }
 
@@ -227,7 +247,7 @@ void CPU::execute(uint8_t opcode)
         INSTR_AMODE(0x01, ora, indx, read)
         INSTR_AMODE(0x05, ora, zero, read)
         INSTR_AMODE(0x06, asl, zero, modify)
-        INSTR_OTHER(0x08, push, procstatus.reg())          // php
+        INSTR_IMPLD(0x08, php)
         INSTR_AMODE(0x09, ora, imm, read)
         INSTR_AMODE(0x0A, asl, accum, modify)
         INSTR_AMODE(0x0D, ora, abs, read)
@@ -263,7 +283,7 @@ void CPU::execute(uint8_t opcode)
         INSTR_AMODE(0x41, eor, indx, read)
         INSTR_AMODE(0x45, eor, zero, read)
         INSTR_AMODE(0x46, lsr, zero, modify)
-        INSTR_OTHER(0x48, push, accum)                     // pha
+        INSTR_IMPLD(0x48, pha)
         INSTR_AMODE(0x49, eor, imm, read)
         INSTR_AMODE(0x4A, lsr, accum, modify)
         INSTR_IMPLD(0x4C, jmp)
@@ -384,16 +404,20 @@ void CPU::execute(uint8_t opcode)
 #undef INSTR_OTHER
 }
 
-/* fetch next operand (not opcode) from memory */
-uint8_t CPU::fetch_op()
+void CPU::interrupt(uint16_t vec)
 {
-    return bus.read(pc++);
+    push(pc >> 8);
+    push(pc & 0xFF);
+    push(procstatus.reg());
+    procstatus.intdis = 1;
+    uint8_t low = bus.read(vec);
+    pc = buildval16(low, bus.read(vec+1));
 }
 
 /* pushes a value to the hardware stack */
 void CPU::push(uint8_t val)
 {
-    bus.write(buildval16(sp, 0x01), val);
+    bus.write(0x0100+sp, val);
     sp--;
 }
 
@@ -401,7 +425,7 @@ void CPU::push(uint8_t val)
 uint8_t CPU::pull()
 {
     ++sp;
-    return bus.read(buildval16(sp, 0x01));
+    return bus.read(0x0100+sp);
 }
 
 /* adds n cycles to the cycle counter */
@@ -410,3 +434,14 @@ void CPU::cycle(uint8_t n)
     cycles += n;
 }
 
+void CPU::irqpoll()
+{
+    if (!procstatus.intdis && irqpending)
+        execirq = true;
+}
+
+void CPU::nmipoll()
+{
+    if (nmipending)
+        execnmi = true;
+}

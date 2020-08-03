@@ -52,7 +52,6 @@ void addrmode_indy_write(uint8_t val);
 
 /* other */
 void instr_branch(bool take);
-void instr_push(uint8_t val);
 void instr_flag(bool &flag, bool v);
 void instr_transfer(uint8_t from, uint8_t &to);
 
@@ -88,6 +87,9 @@ void instr_inx();
 void instr_iny();
 void instr_dex();
 void instr_dey();
+
+void instr_php();
+void instr_pha();
 void instr_plp();
 void instr_pla();
 void instr_jsr();

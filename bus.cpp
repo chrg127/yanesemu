@@ -3,9 +3,10 @@
 #include <cstdio>
 #include <cstring>
 
+/* copies rom memory and initizializes all other memory to 0 */
 void Bus::initmem(uint8_t *prgrom)
 {
-    std::memset(memory, 0x55, PRGROM_START-1);
+    std::memset(memory, 0, PRGROM_START-1);
     std::memcpy(memory+PRGROM_START, prgrom, PRGROM_SIZE);
 }
 
@@ -18,6 +19,8 @@ uint8_t Bus::read(uint16_t addr)
 /* writes val to the specified address */
 void Bus::write(uint16_t addr, uint8_t val)
 {
+    if (!write_enable)
+        return;
     memory[addr] = val;
 }
 

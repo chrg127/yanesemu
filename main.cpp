@@ -30,14 +30,13 @@ int main(int argc, char *argv[])
 
     rom.printinfo();
 
-    cpu.power();
-
-    //fetch, decode and execute cycle
     int counter = 10;
+    cpu.power();
     while (!done) {
         cpu.main();
         if (--counter < 0) {
             bus.memdump("other/memdump.log");
+            cpu.reset();
             done = true;
         }
     }

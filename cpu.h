@@ -27,15 +27,15 @@ class CPU {
         bool zero       = 0;
         bool intdis     = 0;
         bool decimal    = 0;
-        bool breakc     = 0;
+        bool breakf     = 0;
+        bool unused     = 0;
         bool ov         = 0;
         bool neg        = 0;
-        bool unused     = 0;
 
         uint8_t reg()
         {
-            return carry << 0  | zero << 1 | intdis << 2 | decimal << 3 |
-                   breakc << 4 | ov << 5   | neg << 6    | unused << 7;
+            return carry  << 0  | zero   << 1  | intdis << 2 | decimal << 3 |
+                   breakf << 4  | unused << 5  | ov     << 6 | neg     << 7;
         }
 
         inline void operator=(const uint8_t data)
@@ -44,30 +44,33 @@ class CPU {
             zero    = data & 0x02;
             intdis  = data & 0x04;
             decimal = data & 0x08;
-            breakc  = data & 0x10;
-            ov      = data & 0x20;
-            neg     = data & 0x40;
-            unused  = data & 0x80;
+            breakf  = data & 0x10;
+            unused  = data & 0x20;
+            ov      = data & 0x40;
+            neg     = data & 0x80;
         }
 
         void reset()
         {
-            carry = zero = intdis = decimal = breakc = ov = neg = unused = 0;
+            carry = zero = intdis = decimal = breakf = ov = neg = 0;
+            unused = 1;
         }
     } procstatus;
 
     // interrupt signals
     int cycles;
     bool nmipending = false;
+    bool execnmi = false;
     bool irqpending = false;
+    bool execirq = false;
 
     uint8_t operand;
     uint8_t operand2;
 
     uint8_t fetch();
-    void execute(uint8_t opcode);
-    void interrupt();
     uint8_t fetch_op();
+    void execute(uint8_t opcode);
+    void interrupt(uint16_t vec);
     void push(uint8_t val);
     uint8_t pull();
     void cycle(uint8_t n);
