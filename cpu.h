@@ -4,16 +4,14 @@
 #include <cstdint>
 #include "bus.h"
 
-#define DEBUG
-#include "debug.h"
-
 namespace nesrom {
-    class RomFile;
+    class ROM;
 }
 
+namespace Processor {
+
 class CPU {
-    // component system
-    nesrom::RomFile &rom;
+    nesrom::ROM &rom;
     Bus &bus;
 
     uint16_t pc;
@@ -63,7 +61,8 @@ class CPU {
     bool execnmi = false;
     bool irqpending = false;
     bool execirq = false;
-
+    
+    uint8_t curropcode;
     uint8_t operand;
     uint8_t operand2;
 
@@ -86,7 +85,7 @@ class CPU {
 #include "opcodes.h"
 
 public:
-    CPU(nesrom::RomFile &f, Bus &b)
+    CPU(nesrom::ROM &f, Bus &b)
         : rom(f), bus(b),
           accum(0), xreg(0), yreg(0), sp(0),
           cycles(0)
@@ -103,8 +102,9 @@ public:
     void reset();
     void printinfo();
     void memdump(const char * const fname);
-
 };
+
+}
 
 #endif
 

@@ -204,13 +204,12 @@ void CPU::instr_branch(bool take)
     uint8_t op = operand;
     uint8_t oldpc = pc;
     cycle(2);
-    if (!take) {
-        cycle(1);
-        op = 0;
-    }
+    if (!take)
+        return;
     pc += (int8_t) op;
+    cycle(1);
     if ((oldpc >> 8) != (pc >> 8))
-        cycle(2);
+        cycle(1);
 }
 
 void CPU::instr_flag(bool &flag, bool v)
@@ -233,98 +232,95 @@ void CPU::instr_transfer(uint8_t from, uint8_t &to)
 void CPU::instr_lda(const uint8_t val)
 {
     accum = val;
-    procstatus.zero = (accum == 0);
-    procstatus.neg  = (accum & 0x80);
+    procstatus.zero = accum == 0;
+    procstatus.neg  = accum & 0x80;
 }
 
 void CPU::instr_ldx(const uint8_t val)
 {
     xreg = val;
-    procstatus.zero = (xreg == 0);
-    procstatus.neg  = (xreg & 0x80);
+    procstatus.zero = xreg == 0;
+    procstatus.neg  = xreg & 0x80;
 }
 
 void CPU::instr_ldy(const uint8_t val)
 {
     yreg = val;
-    procstatus.zero = (yreg == 0);
-    procstatus.neg  = (yreg & 0x80);
+    procstatus.zero = yreg == 0;
+    procstatus.neg  = yreg & 0x80;
 }
 
 void CPU::instr_cmp(const uint8_t val)
 {
-    uint8_t res = accum-val;
-    procstatus.zero     = (res == 0) ? 1 : 0;
-    procstatus.ov       = ((res & 0x80) != (accum & 1)) ? 1 : 0;
-    procstatus.carry    = procstatus.ov;
+    int res = accum-val;
+    procstatus.zero     = res == 0;
     procstatus.neg      = res & 0x80;
+    procstatus.carry    = res >= 0;
 }
 
 void CPU::instr_cpx(const uint8_t val)
 {
-    uint8_t res = xreg-val;
-    procstatus.zero     = (res == 0) ? 1 : 0;
-    procstatus.ov       = ((res & 0x80) != (xreg & 1)) ? 1 : 0;
-    procstatus.carry    = procstatus.ov;
+    int res = xreg-val;
+    procstatus.zero     = res == 0;
     procstatus.neg      = res & 0x80;
+    procstatus.carry    = res >= 0;
 }
 
 void CPU::instr_cpy(const uint8_t val)
 {
-    uint8_t res = yreg-val;
-    procstatus.zero     = (res == 0) ? 1 : 0;
-    procstatus.ov       = ((res & 0x80) != (yreg & 1)) ? 1 : 0;
-    procstatus.carry    = procstatus.ov;
+    int res = yreg-val;
+    procstatus.zero     = res == 0;
     procstatus.neg      = res & 0x80;
+    procstatus.carry    = res >= 0;
 }
 
 void CPU::instr_adc(const uint8_t val)
 {
-    uint8_t sign = (accum & 0x80) >> 8;
-    accum += val + procstatus.carry;
-    procstatus.zero = (accum == 0);
-    procstatus.ov   = ((accum & 0x80) != sign);
-    procstatus.carry = procstatus.ov;
-    procstatus.neg  = accum & 0x80;
+    int res = accum + val + procstatus.carry;
+    procstatus.zero     = (uint8_t) res == 0;
+    procstatus.neg      = res & 0x80;
+    procstatus.carry    = res > 0xFF;
+    procstatus.ov       = (accum^res) & ~(accum^val) & 0x80;
+    accum = res;
 }
 
 void CPU::instr_sbc(const uint8_t val)
 {
-    uint8_t sign = (accum & 0x80) >> 8;
-    accum -= val - (1-procstatus.carry);
-    procstatus.zero = (accum == 0);
-    procstatus.ov   = ((accum & 0x80) != sign);
-    procstatus.carry = procstatus.ov;
-    procstatus.neg  = accum & 0x80;
+    uint8_t tmp = ~val;
+    int res = accum + tmp + procstatus.carry;
+    procstatus.zero     = (uint8_t) res == 0;
+    procstatus.neg      = res & 0x80;
+    procstatus.carry    = res > 0xFF;
+    procstatus.ov       = (accum^res) & ~(accum^val) & 0x80;
+    accum = res;
 }
 
 void CPU::instr_ora(const uint8_t val)
 {
     accum |= val;
     procstatus.neg  = accum & 0x80;
-    procstatus.zero = (accum == 0);
+    procstatus.zero = accum == 0;
 }
 
 void CPU::instr_and(const uint8_t val)
 {
     accum &= val;
     procstatus.neg  = accum & 0x80;
-    procstatus.zero = (accum == 0);
+    procstatus.zero = accum == 0;
 }
 
 void CPU::instr_eor(const uint8_t val)
 {
     accum ^= val;
     procstatus.neg  = accum & 0x80;
-    procstatus.zero = (accum == 0);
+    procstatus.zero = accum == 0;
 }
 
 void CPU::instr_bit(const uint8_t val)
 {
-    uint8_t res = accum & val;
-    procstatus.neg  = res & 0x80;
-    procstatus.zero = (res == 0);
-    procstatus.ov   = res & 0x40;
+    procstatus.neg  = (accum & val) == 0;
+    procstatus.zero = val == 0;
+    procstatus.ov   = val & 0x40;
 }
 
 
@@ -332,16 +328,16 @@ void CPU::instr_bit(const uint8_t val)
 uint8_t CPU::instr_inc(uint8_t val)
 {
     val++;
-    procstatus.zero = (val == 0);
-    procstatus.neg  = (val & 0x80);
+    procstatus.zero = val == 0;
+    procstatus.neg  = val & 0x80;
     return val;
 }
 
 uint8_t CPU::instr_dec(uint8_t val)
 {
     val--;
-    procstatus.zero = (val == 0);
-    procstatus.neg  = (val & 0x80);
+    procstatus.zero = val == 0;
+    procstatus.neg  = val & 0x80;
     return val;
 }
 
@@ -349,8 +345,8 @@ uint8_t CPU::instr_asl(uint8_t val)
 {
     procstatus.carry = val & 0x80;
     val <<= 1;
+    procstatus.zero = val == 0;
     procstatus.neg  = val & 0x80;
-    procstatus.zero = (val == 0);
     return val;
 }
 
@@ -358,30 +354,28 @@ uint8_t CPU::instr_lsr(uint8_t val)
 {
     procstatus.carry = val & 1;
     val >>= 1;
+    procstatus.zero = val == 0;
     procstatus.neg  = val & 0x80;
-    procstatus.zero = (val == 0);
     return val;
 }
 
 uint8_t CPU::instr_rol(uint8_t val)
 {
-    uint8_t bit0 = procstatus.carry;
+    bool c = procstatus.carry;
     procstatus.carry = val & 0x80;
-    val <<= 1;
-    val |= bit0;
+    val = val << 1 | c;
+    procstatus.zero = val == 0;
     procstatus.neg  = val & 0x80;
-    procstatus.zero = (val == 0);
     return val;
 }
 
 uint8_t CPU::instr_ror(uint8_t val)
 {
-    uint8_t bit7 = procstatus.carry << 8;
+    bool c = procstatus.carry;
     procstatus.carry = val & 1;
-    val >>= 1;
-    val |= bit7 << 8;
+    val = val >> 1 | c << 7;
+    procstatus.zero = val == 0;
     procstatus.neg  = val & 0x80;
-    procstatus.zero = (val == 0);
     return val;
 }
 
@@ -391,8 +385,8 @@ uint8_t CPU::instr_ror(uint8_t val)
 void CPU::instr_in##reg() \
 { \
     regname++; \
-    procstatus.zero = (xreg == 0); \
-    procstatus.neg  = (xreg & 0x80); \
+    procstatus.zero = xreg == 0; \
+    procstatus.neg  = xreg & 0x80; \
     cycle(2); \
 }
 func_increase(x, xreg)
@@ -402,12 +396,15 @@ func_increase(y, yreg)
 void CPU::instr_de##reg() \
 { \
     regname--; \
-    procstatus.zero = (xreg == 0); \
-    procstatus.neg  = (xreg & 0x80); \
+    procstatus.zero = xreg == 0; \
+    procstatus.neg  = xreg & 0x80; \
     cycle(2); \
 }
 func_decrease(x, xreg)
 func_decrease(y, yreg)
+
+#undef func_increase
+#undef func_decrease
 
 void CPU::instr_php()
 {
@@ -426,14 +423,15 @@ void CPU::instr_pha()
 void CPU::instr_plp()
 {
     procstatus = pull();
+    procstatus.breakf = 0;
     cycle(4);
 }
 
 void CPU::instr_pla()
 {
     accum = pull();
-    procstatus.zero = (accum == 0);
-    procstatus.neg  = (accum & 0x80);
+    procstatus.zero = accum == 0;
+    procstatus.neg  = accum & 0x80;
     cycle(4);
 }
 
@@ -441,6 +439,7 @@ void CPU::instr_jsr()
 {
     operand = fetch_op();
     operand2 = fetch_op();
+    pc--;
     push(pc >> 8);
     push(pc & 0xFF);
     pc = buildval16(operand, operand2);
@@ -455,11 +454,19 @@ void CPU::instr_jmp()
     cycle(3);
 }
 
+/* We could have another addressing mode function for this... but I decided
+ * I'd rather have 1 less function and call this one directly as it's used
+ * by one instruction */
 void CPU::instr_jmp_ind()
 {
     operand = fetch_op();
     operand2 = fetch_op();
-    pc = bus.read(buildval16(operand, operand2));
+    uint8_t addr = buildval16(operand, operand2);
+    // Hardware bug.
+    if (operand == 0xFF) {
+        pc = buildval16(bus.read(addr), bus.read(addr & 0xFF00));
+    } else
+        pc = buildval16(bus.read(addr), bus.read(addr+1));
     cycle(5);
 }
 
@@ -467,6 +474,7 @@ void CPU::instr_rts()
 {
     uint8_t low = pull();
     pc = buildval16(low, pull());
+    pc++;
     cycle(6);
 }
 
@@ -474,7 +482,7 @@ void CPU::instr_brk()
 {
     procstatus.breakf = 1;
     interrupt(IRQBRKVEC);
-    // the break flag only exists in a copy, so reset it here
+    // the break flag only exists in the copy, so reset it here
     procstatus.breakf = 0;
     cycle(7);
 }
@@ -482,6 +490,7 @@ void CPU::instr_brk()
 void CPU::instr_rti()
 {
     procstatus = pull();
+    procstatus.breakf = 0;
     uint8_t low = pull();
     pc = buildval16(low, pull());
     cycle(6);

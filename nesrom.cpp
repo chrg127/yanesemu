@@ -1,11 +1,20 @@
 #include "nesrom.h"
 
 namespace nesrom {
-    
-RomFile::RomFile()
+
+enum ErrID : int {
+    SUCCESS, ERRINVFORMAT, ERRNES20, FNOTFOUND
+};
+
+static const char *rom_error_msg[] = {
+    "no errors", "invalid NES format", "NES 2.0 not yet supported", "no such file or directory"
+};
+
+
+ROM::ROM()
 {
     file = NULL;
-    fformat = NesFmt::INVALID;
+    fformat = Format::INVALID;
 
     // set all of these to 0, just to be secure.
     mapper = submapper = 0;
@@ -22,16 +31,21 @@ RomFile::RomFile()
     def_expansion_dev = 0;
 }
 
-void RomFile::parseheader()
+int ROM::parseheader()
 {
-    int shift;
-
     read(HEADER_LEN, header);
-    fformat = NesFmt::INVALID;
+    fformat = Format::INVALID;
     if (header[0] == 'N' && header[1] == 'E' && header[2] == 'S' && header[3] == 0x1A)
-        fformat = NesFmt::INES;
-    if (fformat == NesFmt::INES && (header[7] & 0xC) == 0x8)
-        fformat = NesFmt::NES20;
+        fformat = Format::INES;
+    if (fformat == Format::INES && (header[7] & 0xC) == 0x8) {
+        //fformat = Format::NES20;
+        dbgmsg = ErrID::ERRNES20;
+        return 1;
+    }
+    if (fformat == Format::INVALID) {
+        dbgmsg = ErrID::ERRINVFORMAT;
+        return 1;
+    }
 
     prgrom_size = header[4];
     chrrom_size = header[5];
@@ -46,66 +60,79 @@ void RomFile::parseheader()
     mapper = (header[6] & 0xF0) >> 4;
     mapper |= (header[7] & 0xF0);
 
-    if (fformat == NesFmt::INES) {
-        if (chrrom_size == 0)
-            has_chrram = true;
-
-        prgram_size = header[8];
-        // the specification says this bit exists, but no emus make use of it
-        //region = header[9] & 1;
-        region = (header[10] & 3);
-        has_prgram = header[10] & 0x10;
-        has_bus_conflicts = header[10] & 0x20;
-
-    } else if (fformat == NesFmt::NES20) {
-        prgrom_size |= (header[9] & 0xF) << 8;
-        chrrom_size |= (header[9] & 0xF0) << 8;
-        mapper |= (header[8] & 0xF) << 8;
-        submapper = header[8] & 0xF0;
-
-        shift = header[10] & 0xF;
-        if (shift == 0)
-            has_prgram = false;
-        else {
-            has_prgram = true;
-            prgram_size = 64 << shift;
-        }
-
-        shift = header[10] & 0xF0;
-        eeprom_size = (shift == 0) ? 0 : 64 << shift;
-
-        shift = header[11] & 0xF;
-        if (shift == 0)
-            has_chrram = false;
-        else {
-            has_chrram = true;
-            chrram_size = 64 << shift;
-        }
-        shift = header[11] & 0xF0;
-        chrnvram_size = (shift == 0) ? 0 : 64 << shift;
-
-        cpu_ppu_timing =  header[12] & 3;
-
-        vs_ppu_type = vs_hw_type = 0;
-        if (console_type == VSSYSTEM) {
-            vs_ppu_type = header[13] & 0xF;
-            vs_hw_type = header[13] & 0xF0;
-        } else if (console_type == 3)
-            console_type = header[13] & 0xF;
-
-        misc_roms_num = header[14] & 3;
-
-        def_expansion_dev = header[15] & 0x3F;
-    }
+    if (fformat == Format::INES)
+        parse_ines();
+    else if (fformat == Format::NES20)
+        parse_nes20();
+    return 0;
 }
 
-int RomFile::open(char * const name)
+void ROM::parse_ines()
+{
+    if (chrrom_size == 0)
+        has_chrram = true;
+    prgram_size = header[8];
+    // the specification says this bit exists, but no emus make use of it
+    //region = header[9] & 1;
+    region = (header[10] & 3);
+    has_prgram = header[10] & 0x10;
+    has_bus_conflicts = header[10] & 0x20;
+}
+
+void ROM::parse_nes20()
+{
+    int shift;
+
+    prgrom_size |= (header[9] & 0xF) << 8;
+    chrrom_size |= (header[9] & 0xF0) << 8;
+    mapper      |= (header[8] & 0xF) << 8;
+    submapper   = header[8] & 0xF0;
+
+    shift = header[10] & 0xF;
+    if (shift == 0)
+        has_prgram = false;
+    else {
+        has_prgram = true;
+        prgram_size = 64 << shift;
+    }
+
+    shift = header[10] & 0xF0;
+    eeprom_size = (shift == 0) ? 0 : 64 << shift;
+
+    shift = header[11] & 0xF;
+    if (shift == 0)
+        has_chrram = false;
+    else {
+        has_chrram = true;
+        chrram_size = 64 << shift;
+    }
+    shift = header[11] & 0xF0;
+    chrnvram_size = (shift == 0) ? 0 : 64 << shift;
+
+    cpu_ppu_timing =  header[12] & 3;
+
+    vs_ppu_type = vs_hw_type = 0;
+    if (console_type == VSSYSTEM) {
+        vs_ppu_type = header[13] & 0xF;
+        vs_hw_type = header[13] & 0xF0;
+    } else if (console_type == 3)
+        console_type = header[13] & 0xF;
+
+    misc_roms_num = header[14] & 3;
+
+        def_expansion_dev = header[15] & 0x3F;
+}
+
+int ROM::open(char * const name)
 {
     fname = name;
     file = std::fopen(name, "rb");
-    if (!file)
+    if (!file) {
+        dbgmsg = ErrID::FNOTFOUND;
         return 1;
-    parseheader();
+    }
+    if (parseheader() == 1)
+        return 1;
     // get trainer
     if (has_trainer)
         read(TRAINER_LEN, trainer);
@@ -126,7 +153,7 @@ int RomFile::open(char * const name)
     return 0;
 }
 
-void RomFile::close()
+void ROM::close()
 {
     if (file)
         fclose(file);
@@ -136,7 +163,7 @@ void RomFile::close()
         delete[] chrrom;
 }
 
-void RomFile::printinfo()
+void ROM::printinfo()
 {
     std::printf("%s: ", fname);
     if (fformat == INES)
@@ -167,4 +194,9 @@ void RomFile::printinfo()
     std::puts("");
 }
 
+const char *ROM::errormsg()
+{
+    return rom_error_msg[dbgmsg];
 }
+
+} // namespace nesrom

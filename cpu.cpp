@@ -4,233 +4,32 @@
 #include <cctype>
 #include <cstring>
 #include "nesrom.h"
+#include "disass.h"
 
-enum AddrMode {
-    INVALID,
-    IMM, ACCUM, ZERO, ZEROX, ZEROY,
-    ABS, ABSX, ABSY, IND, INDX, INDY,
-    IMPL, REL,
-};
+#define DEBUG
+#include "debug.h"
 
-static struct {
-    const char *str;
-    AddrMode mode;
-} optab[] = {
-    { "BRK", IMPL },        { "ORA", INDX },        { nullptr, INVALID }, 
-    { nullptr, INVALID },   { nullptr, INVALID },   { "ORA", ZERO },
-    { "ASL", ZERO },        { nullptr, INVALID },   { "PHP", IMPL },
-    { "ORA", IMM },         { "ASL", ACCUM },       { nullptr, INVALID }, 
-    { nullptr, INVALID },   { "ORA", ABS },         { "ASL", ABS },
-    { nullptr, INVALID },   { "BPL", REL },         { "ORA", INDY },
-    { nullptr, INVALID },   { nullptr, INVALID },   { nullptr, INVALID }, 
-    { "ORA", ZEROX },       { "ASL", ZEROX },       { nullptr, INVALID }, 
-    { "CLC", IMPL },        { "ORA", ABSY },        { nullptr, INVALID }, 
-    { nullptr, INVALID },   { nullptr, INVALID },   { "ORA", ABSX },
-    { "ASL", ABSX },        { nullptr, INVALID },   { "JSR", IMPL },
-    { "AND", INDX },        { nullptr, INVALID },   { nullptr, INVALID }, 
-    { "BIT", ZERO },        { "AND", ZERO },        { "ROL", ZERO },
-    { nullptr, INVALID },   { "PLP", IMPL },        { "AND", IMM },
-    { "ROL", ACCUM },       { nullptr, INVALID },   { "BIT", ABS },
-    { "AND", ABS },         { "ROL", ABS },         { nullptr, INVALID }, 
-    { "BMI", REL },         { "AND", INDY },        { nullptr, INVALID }, 
-    { nullptr, INVALID },   { nullptr, INVALID },   { "AND", ZEROX },
-    { "ROL", ZEROX },       { nullptr, INVALID },   { "SEC", IMPL },
-    { "AND", ABSY },        { nullptr, INVALID },   { nullptr, INVALID }, 
-    { nullptr, INVALID },   { "AND", ABSX },        { "ROL", ABSX },
-    { nullptr, INVALID },   { "RTI", IMPL },        { "EOR", INDX },
-    { nullptr, INVALID },   { nullptr, INVALID },   { nullptr, INVALID }, 
-    { "EOR", ZERO },        { "LSR", ZERO },        { nullptr, INVALID }, 
-    { "PHA", IMPL },        { "EOR", IMM },         { "LSR", ACCUM },
-    { nullptr, INVALID },   { "JMP", IMPL },        { "EOR", ABS },
-    { "LSR", ABS },         { nullptr, INVALID },   { "BVC", REL },
-    { "EOR", INDY },        { nullptr, INVALID },   { nullptr, INVALID }, 
-    { nullptr, INVALID },   { "EOR", ZEROX },       { "LSR", ZEROX },
-    { nullptr, INVALID },   { "CLI", IMPL },        { "EOR", ABSY },
-    { nullptr, INVALID },   { nullptr, INVALID },   { nullptr, INVALID }, 
-    { "EOR", ABSX },        { "LSR", ABSX },        { nullptr, INVALID }, 
-    { "RTS", IMPL },        { "ADC", INDX },        { nullptr, INVALID }, 
-    { nullptr, INVALID },   { nullptr, INVALID },   { "ADC", ZERO },
-    { "ROR", ZERO },        { nullptr, INVALID },   { "PLA", IMPL },
-    { "ADC", IMM },         { "ROR", ACCUM },       { nullptr, INVALID }, 
-    { "JMP_IND", IMPL },    { "ADC", ABS },         { "ROR", ABS },
-    { nullptr, INVALID },   { "BVS", REL },         { "ADC", INDY },
-    { nullptr, INVALID },   { nullptr, INVALID },   { nullptr, INVALID }, 
-    { "ADC", ZEROX },       { "ROR", ZEROX },       { nullptr, INVALID }, 
-    { "SEI", IMPL },        { "ADC", ABSY },        { nullptr, INVALID }, 
-    { nullptr, INVALID },   { nullptr, INVALID },   { "ADC", ABSX },
-    { "ROR", ABSX },        { nullptr, INVALID },   { nullptr, INVALID }, 
-    { "STA", INDX },        { nullptr, INVALID },   { nullptr, INVALID }, 
-    { "STY", ZERO },        { "STA", ZERO },        { "STX", ZERO },
-    { nullptr, INVALID },   { "DEY", IMPL },        { nullptr, INVALID }, 
-    { "TXA", IMPL },        { nullptr, INVALID },   { "STY", ABS },
-    { "STA", ABS },         { "STX", ABS },         { nullptr, INVALID }, 
-    { "BCC", REL },         { "STA", INDY },        { nullptr, INVALID }, 
-    { nullptr, INVALID },   { "STY", ZEROX },       { "STA", ZEROX },
-    { "STX", ZEROY },       { nullptr, INVALID },   { "TYA", IMPL },
-    { "STA", ABSY },        { "TXS", IMPL },        { nullptr, INVALID }, 
-    { nullptr, INVALID },   { "STA", ABSX },        { nullptr, INVALID }, 
-    { nullptr, INVALID },   { "LDY", IMM },         { "LDA", INDX },
-    { "LDX", IMM },         { nullptr, INVALID },   { "LDY", ZERO },
-    { "LDA", ZERO },        { "LDX", ZERO },        { nullptr, INVALID }, 
-    { "TAY", IMPL },        { "LDA", IMM },         { "TAX", IMPL },
-    { nullptr, INVALID },   { "LDY", ABS },         { "LDA", ABS },
-    { "LDX", ABS },         { nullptr, INVALID },   { "BCS", REL },
-    { "LDA", INDY },        { nullptr, INVALID },   { nullptr, INVALID }, 
-    { "LDY", ZEROX },       { "LDA", ZEROX },       { "LDX", ZEROY },
-    { nullptr, INVALID },   { "CLV", IMPL },        { "LDA", ABSY },
-    { "TSX", IMPL },        { nullptr, INVALID },   { "LDY", ABSX },
-    { "LDA", ABSX },        { "LDX", ABSY },        { nullptr, INVALID }, 
-    { "CPY", IMM },         { "CMP", INDX },        { nullptr, INVALID }, 
-    { nullptr, INVALID },   { "CPY", ZERO },        { "CMP", ZERO },
-    { "DEC", ZERO },        { nullptr, INVALID },   { "INY", IMPL },
-    { "CMP", IMM },         { "DEX", IMPL },        { nullptr, INVALID }, 
-    { "CPY", ABS },         { "CMP", ABS },         { "DEC", ABS },
-    { nullptr, INVALID },   { "BNE", REL },         { "CMP", INDY },
-    { nullptr, INVALID },   { nullptr, INVALID },   { nullptr, INVALID }, 
-    { "CMP", ZEROX },       { "DEC", ZEROX },       { nullptr, INVALID }, 
-    { "CLD", IMPL },        { "CMP", ABSY },        { nullptr, INVALID }, 
-    { nullptr, INVALID },   { nullptr, INVALID },   { "CMP", ABSX },
-    { "DEC", ABSX },        { nullptr, INVALID },   { "CPX", IMM },
-    { "SBC", INDX },        { nullptr, INVALID },   { nullptr, INVALID }, 
-    { "CPX", ZERO },        { "SBC", ZERO },        { "INC", ZERO },
-    { nullptr, INVALID },   { "INX", IMPL },        { "SBC", IMM },
-    { "NOP", IMPL },        { nullptr, INVALID },   { "CPX", ABS },
-    { "SBC", ABS },         { "INC", ABS },         { nullptr, INVALID }, 
-    { "BEQ", REL },         { "SBC", INDY },        { nullptr, INVALID }, 
-    { nullptr, INVALID },   { nullptr, INVALID },   { "SBC", ZEROX },
-    { "INC", ZEROX },       { nullptr, INVALID },   { nullptr, INVALID }, 
-    { "SBC", ABSY },        { nullptr, INVALID },   { nullptr, INVALID }, 
-    { nullptr, INVALID },   { "SBC", ABSX },        { "INC", ABSX },
-};
-
-/* Disassemle and print id and name of an opcode. Assumes pc points to the opcode. */
-
-static void print_opcode(uint8_t opcode, uint8_t op1, uint8_t op2, FILE *f)
-{
-    std::fprintf(f, "Instruction: [%02X] %s", opcode, optab[opcode].str);
-
-#define PRINT_CASE(mode, fmt, ...) \
-    case mode: std::fprintf(f, fmt, __VA_ARGS__); break;
-
-    switch (optab[opcode].mode) {
-    case IMPL: break;
-        PRINT_CASE(IMM, " #$%02X", op1)
-    case ACCUM:
-        std::fputs(" A", f);
-        break;
-        PRINT_CASE(ZERO,    " $%02X",       op1)
-        PRINT_CASE(ZEROX,   " $%02X,x",     op1)
-        PRINT_CASE(ZEROY,   " $%02X,y",     op1)
-        PRINT_CASE(ABS,     " $%02X%02X",   op2, op1)
-        PRINT_CASE(ABSX,    " $%02X%02X,x", op2, op1)
-        PRINT_CASE(ABSY,    " $%02X%02X,y", op2, op1)
-        PRINT_CASE(IND,     " ($%02X%02X)", op2, op1)
-        PRINT_CASE(INDX,    " ($%02X,x)",   op1)
-        PRINT_CASE(INDY,    " ($%02X),y",   op1)
-        PRINT_CASE(REL,     " #$%02X",      op1)
-    default:
-        std::fprintf(stderr, "error: mode not valid\n");
-        break;
-    }
-#undef PRINT_CASE
-    std::fputs("\n", f);
-}
-
-
-
-
-
-
-/* NOTE: public functions */
-void CPU::main()
-{
-    if (execnmi) {
-        interrupt(NMIVEC);
-        return;
-    }
-    if (execirq) {
-        interrupt(IRQBRKVEC);
-        return;
-    }
-
-    uint8_t opcode = fetch();
-    execute(opcode);
-#ifdef DEBUG
-    print_opcode(opcode, operand, operand2, stdout);
-    printinfo();
-#endif
-}
-
-void CPU::power()
-{
-    bus.initmem(rom.get_prgrom());
-    bus.disable_write();
-    sp = 0;
-    pc = 0;
-    interrupt(RESETVEC);
-    bus.enable_write();
-    cycle(8);
-}
-
-void CPU::fire_irq()
-{
-    irqpending = true;
-}
-
-void CPU::fire_nmi()
-{
-    nmipending = true;
-}
-
-void CPU::reset()
-{
-    pc = sp = accum = xreg = yreg = 0;
-    procstatus.reset();
-    bus.reset();
-}
-
-void CPU::printinfo()
-{
-    DBGPRINTF("PC: %04X A: %02X X: %02X Y: %02X S: %02X ",
-                   pc, accum, xreg, yreg, sp);
-
-#define WRITEFLAG(f, c) \
-    DBGPRINTF( "%c", (f == 1) ? std::toupper(c) : std::tolower(c) )
-
-    WRITEFLAG(procstatus.carry,     'c');
-    WRITEFLAG(procstatus.zero,      'z');
-    WRITEFLAG(procstatus.intdis,    'i');
-    WRITEFLAG(procstatus.unused,    'u');
-    WRITEFLAG(procstatus.breakf,    'b');
-    WRITEFLAG(procstatus.ov,        'v');
-    WRITEFLAG(procstatus.neg,       'n');
-    WRITEFLAG(procstatus.decimal,   'd');
-
-#undef WRITEFLAG
-    DBGPRINT("\n");
-}
-
-
-
+namespace Processor {
 
 /* NOTE: private functions */
+/* Fetch next opcode from memory */
 uint8_t CPU::fetch()
 {
-#ifdef DEBUG
     assert(pc != MEMSIZE);
-#endif
     return bus.read(pc++);
 }
 
-/* fetch next operand (not opcode) from memory */
+/* Fetch next operand (not opcode) from memory */
 uint8_t CPU::fetch_op()
 {
+    assert(pc != MEMSIZE);
     return bus.read(pc++);
 }
 
-/* definitions of all opcodes and addressing modes */
+/* Definitions of all opcodes and addressing modes */
 #include "opcodes.cpp"
-/* executes a single instruction. */
+
+/* Executes a single instruction. */
 void CPU::execute(uint8_t opcode)
 {
 #define INSTR_IMPLD(id, func) \
@@ -390,6 +189,7 @@ void CPU::execute(uint8_t opcode)
         INSTR_AMODE(0xF1, sbc, indy, read)
         INSTR_AMODE(0xF5, sbc, zerox, read)
         INSTR_AMODE(0xF6, inc, zerox, modify)
+        INSTR_OTHER(0xF8, flag, procstatus.decimal, true)   // sed
         INSTR_AMODE(0xF9, sbc, absy, read)
         INSTR_AMODE(0xFD, sbc, absx, read)
         INSTR_AMODE(0xFE, inc, absx, modify)
@@ -404,6 +204,8 @@ void CPU::execute(uint8_t opcode)
 #undef INSTR_OTHER
 }
 
+/* Emulates the interrupt behavior common to all four interrupt signals
+ * (reset, irq, nmi and brk) */
 void CPU::interrupt(uint16_t vec)
 {
     push(pc >> 8);
@@ -414,25 +216,28 @@ void CPU::interrupt(uint16_t vec)
     pc = buildval16(low, bus.read(vec+1));
 }
 
-/* pushes a value to the hardware stack */
+/* Pushes a value to the hardware stack */
 void CPU::push(uint8_t val)
 {
     bus.write(0x0100+sp, val);
     sp--;
 }
 
-/* pulls and returns a value from the hardware stack */
+/* Pulls and returns a value from the hardware stack */
 uint8_t CPU::pull()
 {
     ++sp;
     return bus.read(0x0100+sp);
 }
 
-/* adds n cycles to the cycle counter */
+/* Adds n cycles to the cycle counter */
 void CPU::cycle(uint8_t n)
 {
     cycles += n;
 }
+
+/* Poll for the IRQ and NMI respectively. A poll is made on the penultimate
+ * cycle of an instruction. */
 
 void CPU::irqpoll()
 {
@@ -444,4 +249,82 @@ void CPU::nmipoll()
 {
     if (nmipending)
         execnmi = true;
+}
+
+
+
+/* NOTE: public functions */
+/* Executes one whole fetch-decode-execute cycle, giving priority
+ * to interrupt signals first. */
+void CPU::main()
+{
+    if (execnmi) {
+        interrupt(NMIVEC);
+        return;
+    }
+    if (execirq && !procstatus.intdis) {
+        interrupt(IRQBRKVEC);
+        return;
+    }
+
+    curropcode = fetch();
+    execute(curropcode);
+}
+
+/* Emulates the start/reset function of the 6502. */
+void CPU::power()
+{
+    bus.initmem(rom.get_prgrom());
+    bus.disable_write();
+    sp = 0;
+    pc = 0;
+    interrupt(RESETVEC);
+    bus.enable_write();
+    cycle(8);
+}
+
+/* Sends an IRQ signal. Used by other devices. */
+void CPU::fire_irq()
+{
+    irqpending = true;
+}
+
+/* Sends an NMI signal */
+void CPU::fire_nmi()
+{
+    nmipending = true;
+}
+
+/* Simply resets registers and memory. */
+void CPU::reset()
+{
+    pc = sp = accum = xreg = yreg = 0;
+    procstatus.reset();
+    bus.reset();
+}
+
+/* Prints info about the instruction which has just been executed and
+ * the status of the registers. */
+void CPU::printinfo()
+{
+    print_opcode(curropcode, operand, operand2, procstatus.reg(), stdout);
+    DBGPRINTF("PC: %04X A: %02X X: %02X Y: %02X S: %02X ",
+                   pc, accum, xreg, yreg, sp);
+
+#define WRITEFLAG(f, c) \
+    DBGPRINTF( "%c", (f == 1) ? std::toupper(c) : std::tolower(c) )
+
+    WRITEFLAG(procstatus.neg,       'n');
+    WRITEFLAG(procstatus.ov,        'v');
+    WRITEFLAG(procstatus.unused,    'u');
+    WRITEFLAG(procstatus.breakf,    'b');
+    WRITEFLAG(procstatus.decimal,   'd');
+    WRITEFLAG(procstatus.intdis,    'i');
+    WRITEFLAG(procstatus.zero,      'z');
+    WRITEFLAG(procstatus.carry,     'c');
+
+#undef WRITEFLAG
+    DBGPRINT("\n");
+}
+
 }

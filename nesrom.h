@@ -9,7 +9,7 @@
 
 namespace nesrom {
 
-enum NesFmt {
+enum Format {
     INVALID,
     INES,
     NES20,
@@ -73,7 +73,7 @@ enum VsHardware : int {
     DUALSYS_RAID,
 };
 
-class RomFile {
+class ROM {
     FILE *file;
     char *fname;
 
@@ -82,7 +82,7 @@ class RomFile {
     uint8_t *prgrom;
     uint8_t *chrrom;
 
-    NesFmt fformat;
+    Format fformat;
     uint16_t mapper;
     uint8_t submapper;
 
@@ -112,19 +112,25 @@ class RomFile {
     uint8_t misc_roms_num;
     uint8_t def_expansion_dev;
 
-    void parseheader();
+    int dbgmsg;
+
+    int parseheader();
+    void parse_ines();
+    void parse_nes20();
+    inline void read(size_t n, uint8_t *buf)
+    {
+        std::fread(buf, 1, n, file);
+    }
 
 public:
 
-    RomFile();
-
-    ~RomFile()
+    ROM();
+    ~ROM()
     {
         close();
     }
 
-
-    NesFmt file_format() { return fformat; }
+    Format file_format() { return fformat; }
     uint16_t mappertype() { return mapper; }
     bool hasprgram() { return has_prgram; }
     bool haschrram() { return has_chrram; }
@@ -132,18 +138,8 @@ public:
 
     int open(char * const name);
     void close();
-
-    inline void read(size_t n, uint8_t *buf)
-    {
-        std::fread(buf, 1, n, file);
-    }
-
-    inline bool eof()
-    {
-        return std::feof(file);
-    }
-
     void printinfo();
+    const char *errormsg();
 };
 
 } //namespace nesrom

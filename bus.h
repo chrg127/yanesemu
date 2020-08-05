@@ -4,6 +4,8 @@
 #include <cstdint>
 #include "memorymap.h"
 
+namespace Processor {
+
 class Bus {
     uint8_t memory[MEMSIZE];
     bool write_enable = false;
@@ -32,5 +34,7 @@ public:
 
     }
 };
+
+} // namespace Processor
 
 #endif

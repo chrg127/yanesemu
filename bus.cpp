@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <cstring>
 
+namespace Processor {
+
 /* copies rom memory and initizializes all other memory to 0 */
 void Bus::initmem(uint8_t *prgrom)
 {
@@ -42,3 +44,4 @@ void Bus::memdump(const char * const fname)
     fclose(f);
 }
 
+} // namespace Processor
