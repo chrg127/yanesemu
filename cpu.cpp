@@ -4,7 +4,6 @@
 #include <cctype>
 #include <cstring>
 #include "nesrom.h"
-#include "disass.h"
 
 #define DEBUG
 #include "debug.h"
@@ -303,11 +302,13 @@ void CPU::reset()
     bus.reset();
 }
 
+#include "disass.cpp"
+
 /* Prints info about the instruction which has just been executed and
  * the status of the registers. */
 void CPU::printinfo()
 {
-    print_opcode(curropcode, operand, operand2, procstatus.reg(), stdout);
+    disassemble(operand, operand2, stdout);
     DBGPRINTF("PC: %04X A: %02X X: %02X Y: %02X S: %02X ",
                    pc, accum, xreg, yreg, sp);
 

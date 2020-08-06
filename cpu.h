@@ -1,6 +1,7 @@
 #ifndef NESCPU_H_INCLUDED
 #define NESCPU_H_INCLUDED
 
+#include <cstdio>
 #include <cstdint>
 #include "bus.h"
 
@@ -100,6 +101,7 @@ public:
     void fire_irq();
     void fire_nmi();
     void reset();
+    void disassemble(uint8_t op1, uint8_t op2, FILE *f);
     void printinfo();
     void memdump(const char * const fname);
 };
