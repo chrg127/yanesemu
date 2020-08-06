@@ -5,14 +5,9 @@
 #include <cstdint>
 #include "bus.h"
 
-namespace nesrom {
-    class ROM;
-}
-
 namespace Processor {
 
 class CPU {
-    nesrom::ROM &rom;
     Bus &bus;
 
     uint16_t pc;
@@ -86,8 +81,8 @@ class CPU {
 #include "opcodes.h"
 
 public:
-    CPU(nesrom::ROM &f, Bus &b)
-        : rom(f), bus(b),
+    CPU(Bus &b)
+        : bus(b),
           accum(0), xreg(0), yreg(0), sp(0),
           cycles(0)
     {
@@ -101,6 +96,7 @@ public:
     void fire_irq();
     void fire_nmi();
     void reset();
+    uint8_t peek_opcode() { return curropcode; }
     void disassemble(uint8_t op1, uint8_t op2, FILE *f);
     void printinfo();
     void memdump(const char * const fname);
