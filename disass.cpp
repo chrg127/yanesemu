@@ -229,7 +229,7 @@ void CPU::disassemble(uint8_t op1, uint8_t op2, FILE *f)
         INSTR_AMODE(0xFD, SBC, absx, op1, op2)
         INSTR_AMODE(0xFE, INC, absx, op1, op2)
         default:
-            std::fprintf(f, "Instruction [%02X] UNKNOWN\n", curropcode);
+            std::fprintf(f, "UNKNOWN\n");
             return;
     }
 

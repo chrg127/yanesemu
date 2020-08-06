@@ -14,15 +14,15 @@ namespace Processor {
 /* Fetch next opcode from memory */
 uint8_t CPU::fetch()
 {
-    assert(pc != MEMSIZE);
-    return bus.read(pc++);
+    assert(pc.reg != MEMSIZE);
+    return bus.read(pc.reg++);
 }
 
 /* Fetch next operand (not opcode) from memory */
 uint8_t CPU::fetch_op()
 {
-    assert(pc != MEMSIZE);
-    return bus.read(pc++);
+    assert(pc.reg != MEMSIZE);
+    return bus.read(pc.reg++);
 }
 
 /* Definitions of all opcodes and addressing modes */
@@ -207,12 +207,13 @@ void CPU::execute(uint8_t opcode)
  * (reset, irq, nmi and brk) */
 void CPU::interrupt(uint16_t vec)
 {
-    push(pc >> 8);
-    push(pc & 0xFF);
+    push(pc.high);
+    push(pc.low);
     push(procstatus.reg());
     procstatus.intdis = 1;
     uint8_t low = bus.read(vec);
-    pc = buildval16(low, bus.read(vec+1));
+    pc.reg = buildval16(low, bus.read(vec+1));
+    cycle(7);
 }
 
 /* Pushes a value to the hardware stack */
@@ -235,18 +236,25 @@ void CPU::cycle(uint8_t n)
     cycles += n;
 }
 
+void CPU::last_cycle()
+{
+    nmipoll();
+    irqpoll();
+    cycles++;
+}
+
 /* Poll for the IRQ and NMI respectively. A poll is made on the penultimate
  * cycle of an instruction. */
 
 void CPU::irqpoll()
 {
-    if (!procstatus.intdis && irqpending)
+    if (!execirq && !procstatus.intdis && irqpending)
         execirq = true;
 }
 
 void CPU::nmipoll()
 {
-    if (nmipending)
+    if (!execnmi && nmipending)
         execnmi = true;
 }
 
@@ -274,7 +282,6 @@ void CPU::main()
 void CPU::power(uint8_t &prgrom)
 {
     bus.initmem(prgrom);
-    bus.write_enable = false;
     sp = 0;
     pc = 0;
     interrupt(RESETVEC);
@@ -308,9 +315,9 @@ void CPU::reset()
  * the status of the registers. */
 void CPU::printinfo()
 {
-    disassemble(operand, operand2, stdout);
+    disassemble(operandnew.low, operandnew.high, stdout);
     DBGPRINTF("PC: %04X A: %02X X: %02X Y: %02X S: %02X ",
-                   pc, accum, xreg, yreg, sp);
+                   pc.reg, accum, xreg, yreg, sp);
 
 #define WRITEFLAG(f, c) \
     DBGPRINTF( "%c", (f == 1) ? std::toupper(c) : std::tolower(c) )
@@ -325,6 +332,9 @@ void CPU::printinfo()
     WRITEFLAG(procstatus.carry,     'c');
 
 #undef WRITEFLAG
+
+    DBGPRINTF(" cycles: %d", cycles);
+
     DBGPRINT("\n");
 }
 

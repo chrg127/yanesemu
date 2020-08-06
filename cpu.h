@@ -7,10 +7,24 @@
 
 namespace Processor {
 
+union reg16 {
+    struct {
+        uint8_t low, high;
+    };
+    uint16_t reg;
+
+    reg16() : reg(0) { }
+    reg16(uint16_t val) : reg(val) { }
+    inline void operator=(uint16_t val)
+    {
+        reg = val;
+    }
+};
+
 class CPU {
     Bus &bus;
 
-    uint16_t pc;
+    reg16 pc;
     uint8_t accum;
     uint8_t xreg;
     uint8_t yreg;
@@ -57,11 +71,9 @@ class CPU {
     bool execnmi = false;
     bool irqpending = false;
     bool execirq = false;
-    
-    uint8_t curropcode;
-    uint8_t operand;
-    uint8_t operand2;
 
+    uint8_t curropcode;
+    reg16 operandnew;
     uint8_t fetch();
     uint8_t fetch_op();
     void execute(uint8_t opcode);
@@ -69,6 +81,7 @@ class CPU {
     void push(uint8_t val);
     uint8_t pull();
     void cycle(uint8_t n);
+    void last_cycle();
     void irqpoll();
     void nmipoll();
 
@@ -82,17 +95,17 @@ class CPU {
 
 public:
     CPU(Bus &b)
-        : bus(b),
-          accum(0), xreg(0), yreg(0), sp(0),
-          cycles(0)
+        : bus(b), pc(0), accum(0),
+          xreg(0), yreg(0), sp(0), cycles(0)
     {
+        bus.write_enable = false;
         procstatus.reset();
     }
 
     ~CPU() { }
 
     void main();
-    void power();
+    void power(uint8_t &prgrom);
     void fire_irq();
     void fire_nmi();
     void reset();
