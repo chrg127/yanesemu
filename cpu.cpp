@@ -271,14 +271,14 @@ void CPU::main()
 }
 
 /* Emulates the start/reset function of the 6502. */
-void CPU::power()
+void CPU::power(uint8_t &prgrom)
 {
-    bus.initmem(rom.get_prgrom());
-    bus.disable_write();
+    bus.initmem(prgrom);
+    bus.write_enable = false;
     sp = 0;
     pc = 0;
     interrupt(RESETVEC);
-    bus.enable_write();
+    bus.write_enable = true;
     cycle(8);
 }
 

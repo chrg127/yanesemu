@@ -134,12 +134,12 @@ public:
     uint16_t mappertype() { return mapper; }
     bool hasprgram() { return has_prgram; }
     bool haschrram() { return has_chrram; }
-    uint8_t *get_prgrom() { return prgrom; }
+    uint8_t &get_prgrom() { return *prgrom; }
 
     int open(char * const name);
     void close();
     void printinfo();
-    const char *errormsg();
+    const char *get_errormsg();
 };
 
 } //namespace nesrom

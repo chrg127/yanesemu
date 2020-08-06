@@ -7,7 +7,7 @@ enum ErrID : int {
 };
 
 static const char *rom_error_msg[] = {
-    "no errors", "invalid NES format", "NES 2.0 not yet supported", "no such file or directory"
+    "no errors", "invalid NES format", "NES 2.0 not yet supported", "can't open rom file"
 };
 
 
@@ -194,7 +194,7 @@ void ROM::printinfo()
     std::puts("");
 }
 
-const char *ROM::errormsg()
+const char *ROM::get_errormsg()
 {
     return rom_error_msg[dbgmsg];
 }
