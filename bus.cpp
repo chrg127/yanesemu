@@ -6,10 +6,17 @@
 namespace Processor {
 
 /* copies rom memory and initizializes all other memory to 0 */
-void Bus::initmem(uint8_t &prgrom)
+void Bus::initmem(uint8_t *prgrom, size_t romsize)
 {
     std::memset(memory, 0, PRGROM_START-1);
-    std::memcpy(memory+PRGROM_START, &prgrom, PRGROM_SIZE);
+
+    // copy prgrom from the end
+    for (size_t i = 0; i < PRGROM_SIZE; i++) {
+        size_t tmp = PRGROM_START+i;
+        size_t tmp2 = romsize-(PRGROM_SIZE+1)+i;
+        memory[tmp] = prgrom[tmp2];
+    }
+    //std::memcpy(memory+PRGROM_START, &prgrom, PRGROM_SIZE);
 }
 
 /* reads memory from the specified address */

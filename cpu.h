@@ -3,6 +3,7 @@
 
 #include <cstdio>
 #include <cstdint>
+#include <cstddef>
 #include "bus.h"
 
 namespace Processor {
@@ -105,7 +106,7 @@ public:
     ~CPU() { }
 
     void main();
-    void power(uint8_t &prgrom);
+    void power(uint8_t *prgrom, size_t romsize);
     void fire_irq();
     void fire_nmi();
     void reset();

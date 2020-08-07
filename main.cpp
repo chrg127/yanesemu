@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     Processor::Bus bus;
     Processor::CPU cpu(bus);
     bool done = false;
-    int flags, counter = 10;
+    int flags, counter = 20;
 
     if (argc < 2) {
         std::fprintf(stderr, "usage: %s [ARGS...] ROMFILE\nerror: rom file not specified\n", *argv);
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
     }
 
     rom.printinfo();
-    cpu.power(rom.get_prgrom());
+    cpu.power(rom.get_prgrom(), rom.get_prgrom_size());
     while (!done) {
         cpu.main();
         cpu.printinfo();

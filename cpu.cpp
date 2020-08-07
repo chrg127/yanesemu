@@ -279,9 +279,9 @@ void CPU::main()
 }
 
 /* Emulates the start/reset function of the 6502. */
-void CPU::power(uint8_t &prgrom)
+void CPU::power(uint8_t *prgrom, size_t romsize)
 {
-    bus.initmem(prgrom);
+    bus.initmem(prgrom, romsize);
     sp = 0;
     pc = 0;
     interrupt(RESETVEC);

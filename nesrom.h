@@ -134,7 +134,8 @@ public:
     uint16_t mappertype() { return mapper; }
     bool hasprgram() { return has_prgram; }
     bool haschrram() { return has_chrram; }
-    uint8_t &get_prgrom() { return *prgrom; }
+    uint8_t *get_prgrom() { return prgrom; }
+    size_t get_prgrom_size() { return prgrom_size*16384; }
 
     int open(char * const name);
     void close();
