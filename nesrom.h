@@ -111,7 +111,8 @@ class ROM {
     bool has_bus_conflicts;
     uint8_t misc_roms_num;
     uint8_t def_expansion_dev;
-
+    
+    // for debugging purposes
     int dbgmsg;
 
     int parseheader();

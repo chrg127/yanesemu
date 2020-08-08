@@ -25,6 +25,9 @@ union reg16 {
 class CPU {
     Bus &bus;
 
+    uint8_t curropcode;
+    reg16 op;   // operand
+
     reg16 pc;
     uint8_t accum;
     uint8_t xreg;
@@ -73,8 +76,6 @@ class CPU {
     bool irqpending = false;
     bool execirq = false;
 
-    uint8_t curropcode;
-    reg16 operandnew;
     uint8_t fetch();
     uint8_t fetch_op();
     void execute(uint8_t opcode);
@@ -89,6 +90,19 @@ class CPU {
     inline uint16_t buildval16(uint8_t low, uint8_t hi)
     {
         return (hi << 8) | low;
+    }
+    
+    /* Increment cycles and forwards the address to bus.read() */
+    inline uint8_t read(uint16_t addr)
+    {
+        cycle(1);
+        return bus.read(addr);
+    }
+
+    inline void write(uint16_t addr, uint8_t val)
+    {
+        cycle(1);
+        bus.write(addr, val);
     }
 
 // Definitions of all opcodes and addressing modes.

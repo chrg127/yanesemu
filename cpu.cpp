@@ -14,14 +14,14 @@ namespace Processor {
 /* Fetch next opcode from memory */
 uint8_t CPU::fetch()
 {
-    assert(pc.reg != MEMSIZE);
+    cycle(1);
     return bus.read(pc.reg++);
 }
 
 /* Fetch next operand (not opcode) from memory */
 uint8_t CPU::fetch_op()
 {
-    assert(pc.reg != MEMSIZE);
+    cycle(1);
     return bus.read(pc.reg++);
 }
 
@@ -207,10 +207,16 @@ void CPU::execute(uint8_t opcode)
  * (reset, irq, nmi and brk) */
 void CPU::interrupt(uint16_t vec)
 {
+    cycle(1);
     push(pc.high);
+    cycle(1);
     push(pc.low);
+    cycle(1);
     push(procstatus.reg());
+    cycle(1);
     procstatus.intdis = 1;
+
+    // interrupt hijacking
     uint8_t low = bus.read(vec);
     pc.reg = buildval16(low, bus.read(vec+1));
     cycle(7);
@@ -221,6 +227,7 @@ void CPU::push(uint8_t val)
 {
     bus.write(0x0100+sp, val);
     sp--;
+    cycle(1);
 }
 
 /* Pulls and returns a value from the hardware stack */
@@ -228,6 +235,7 @@ uint8_t CPU::pull()
 {
     ++sp;
     return bus.read(0x0100+sp);
+    cycle(1);
 }
 
 /* Adds n cycles to the cycle counter */
@@ -236,11 +244,11 @@ void CPU::cycle(uint8_t n)
     cycles += n;
 }
 
+/* Executes last cyle polling, doesn't increment cycles */
 void CPU::last_cycle()
 {
     nmipoll();
     irqpoll();
-    cycles++;
 }
 
 /* Poll for the IRQ and NMI respectively. A poll is made on the penultimate
@@ -270,6 +278,7 @@ void CPU::main()
         return;
     }
     if (execirq && !procstatus.intdis) {
+        procstatus.intdis = 1;
         interrupt(IRQBRKVEC);
         return;
     }
@@ -315,7 +324,7 @@ void CPU::reset()
  * the status of the registers. */
 void CPU::printinfo()
 {
-    disassemble(operandnew.low, operandnew.high, stdout);
+    disassemble(op.low, op.high, stdout);
     DBGPRINTF("PC: %04X A: %02X X: %02X Y: %02X S: %02X ",
                    pc.reg, accum, xreg, yreg, sp);
 
