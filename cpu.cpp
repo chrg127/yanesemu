@@ -14,15 +14,7 @@ namespace Processor {
 /* Fetch next opcode from memory */
 uint8_t CPU::fetch()
 {
-    cycle(1);
-    return bus.read(pc.reg++);
-}
-
-/* Fetch next operand (not opcode) from memory */
-uint8_t CPU::fetch_op()
-{
-    cycle(1);
-    return bus.read(pc.reg++);
+    return readmem(pc.reg++);
 }
 
 /* Definitions of all opcodes and addressing modes */
@@ -221,33 +213,31 @@ void CPU::interrupt(bool reset)
     // there's a special handling for the reset interrupt. more research should
     // be done for a better solution.
     if (reset) 
-        vec = RESETVEC;
+        vec = Mem::RESETVEC;
     else if (nmipending) {
         nmipending = false;
-        vec = NMIVEC;
+        vec = Mem::NMIVEC;
     } else if (irqpending) {
         irqpending = false;
-        vec = IRQBRKVEC;
+        vec = Mem::IRQBRKVEC;
     } else
-        vec = IRQBRKVEC;
-    pc.low = read(vec);
-    pc.high = read(vec+1);
+        vec = Mem::IRQBRKVEC;
+    pc.low = readmem(vec);
+    pc.high = readmem(vec+1);
 }
 
 /* Pushes a value to the hardware stack */
 void CPU::push(uint8_t val)
 {
-    bus.write(0x0100+sp, val);
+    writemem(0x0100+sp, val);
     sp--;
-    cycle(1);
 }
 
 /* Pulls and returns a value from the hardware stack */
 uint8_t CPU::pull()
 {
     ++sp;
-    cycle(1);
-    return bus.read(0x0100+sp);
+    return readmem(0x0100+sp);
 }
 
 /* Adds n cycles to the cycle counter */

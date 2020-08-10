@@ -8,15 +8,9 @@ namespace Processor {
 /* copies rom memory and initizializes all other memory to 0 */
 void Bus::initmem(uint8_t *prgrom, size_t romsize)
 {
-    std::memset(memory, 0, PRGROM_START-1);
-
-    // copy prgrom from the end
-    for (size_t i = 0; i < PRGROM_SIZE; i++) {
-        size_t tmp = PRGROM_START+i;
-        size_t tmp2 = romsize-(PRGROM_SIZE+1)+i;
-        memory[tmp] = prgrom[tmp2];
-    }
-    //std::memcpy(memory+PRGROM_START, &prgrom, PRGROM_SIZE);
+    std::memset(memory, 0, Mem::PRGROM_START-1);
+    std::memcpy(memory+Mem::PRGROM_START, prgrom + romsize - (Mem::PRGROM_SIZE+1),
+            Mem::PRGROM_SIZE);
 }
 
 /* reads memory from the specified address */
@@ -38,9 +32,13 @@ void Bus::memdump(const char * const fname)
 {
     int i, j;
     FILE *f;
-
+    
+    if (!fname)
+        return;
     f = fopen(fname, "w");
-    for (i = 0; i < MEMSIZE; ) {
+    if (!f)
+        return;
+    for (i = 0; i < Mem::MEMSIZE; ) {
         std::fprintf(f, "%04X: ", i);
         for (j = 0; j < 16; j++) {
             std::fprintf(f, "%02X ", memory[i]);

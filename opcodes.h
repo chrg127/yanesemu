@@ -1,7 +1,7 @@
 /* to be included in cpu.h */
 
-typedef void (CPU::*OpcodeFuncRead)(const uint8_t);
-typedef uint8_t (CPU::*OpcodeFuncMod)(uint8_t);
+typedef void (CPU::*InstrFuncRead)(const uint8_t);
+typedef uint8_t (CPU::*InstrFuncMod)(uint8_t);
 
 
 /* to ensure correctness (and due to the fact that the cycles taken by each
@@ -10,37 +10,26 @@ typedef uint8_t (CPU::*OpcodeFuncMod)(uint8_t);
  * bsnes does) */
 
 /* read */
-void addrmode_imm_read(OpcodeFuncRead f);
-void addrmode_zero_read(OpcodeFuncRead f);
-void addrmode_zerox_read(OpcodeFuncRead f);
-void addrmode_zeroy_read(OpcodeFuncRead f);
-void addrmode_abs_read(OpcodeFuncRead f);
-void addrmode_absx_read(OpcodeFuncRead f);
-void addrmode_absy_read(OpcodeFuncRead f);
-void addrmode_indx_read(OpcodeFuncRead f);
-void addrmode_indy_read(OpcodeFuncRead f);
+void addrmode_imm_read(InstrFuncRead f);
+void addrmode_zero_read(InstrFuncRead f);
+void addrmode_zerox_read(InstrFuncRead f);
+void addrmode_zeroy_read(InstrFuncRead f);
+void addrmode_abs_read(InstrFuncRead f);
+void addrmode_absx_read(InstrFuncRead f);
+void addrmode_absy_read(InstrFuncRead f);
+void addrmode_indx_read(InstrFuncRead f);
+void addrmode_indy_read(InstrFuncRead f);
 /* modify */
-void addrmode_accum_modify(OpcodeFuncMod f);
-void addrmode_zero_modify(OpcodeFuncMod f);
-void addrmode_zerox_modify(OpcodeFuncMod f);
-void addrmode_zeroy_modify(OpcodeFuncMod f);
-void addrmode_abs_modify(OpcodeFuncMod f);
-void addrmode_absx_modify(OpcodeFuncMod f);
-void addrmode_absy_modify(OpcodeFuncMod f);
-void addrmode_indx_modify(OpcodeFuncMod f);
-void addrmode_indy_modify(OpcodeFuncMod f);
-/* write (used just by STA, STX and STY, which is also why there are no
- * instr_func for those
- * cycle table:
- * zero:    2
- * zerox:   2
- * zeroy:   2
- * abs:     3
- * absx:    3
- * absy:    3
- * indx:    2
- * indy:    2
- */
+void addrmode_accum_modify(InstrFuncMod f);
+void addrmode_zero_modify(InstrFuncMod f);
+void addrmode_zerox_modify(InstrFuncMod f);
+void addrmode_zeroy_modify(InstrFuncMod f);
+void addrmode_abs_modify(InstrFuncMod f);
+void addrmode_absx_modify(InstrFuncMod f);
+void addrmode_absy_modify(InstrFuncMod f);
+void addrmode_indx_modify(InstrFuncMod f);
+void addrmode_indy_modify(InstrFuncMod f);
+/* write (used just by STA, STX and STY, which is also why there are no instr_func for those */
 void addrmode_zero_write(uint8_t val);
 void addrmode_zerox_write(uint8_t val);
 void addrmode_zeroy_write(uint8_t val);
@@ -100,7 +89,8 @@ void instr_brk();
 void instr_rti();
 void instr_nop();
 
-/* opcode functions missing (as they are not needed:
+/* 
+ * opcode functions missing (as they are not needed:
  * - STA, STX, STY
  * - PHP, PHA
  * - BEQ, BNE, BMI, BPL, BVC, BVS, BCC, BCS

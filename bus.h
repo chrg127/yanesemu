@@ -8,13 +8,20 @@
 namespace Processor {
 
 class Bus {
-    uint8_t memory[MEMSIZE];
+    uint8_t *memory;
 
 public:
     bool write_enable = false;
 
-    Bus() : write_enable(false) { }
-    ~Bus() { }
+    Bus() : write_enable(false)
+    {
+        memory = new uint8_t[Mem::MEMSIZE];
+    }
+
+    ~Bus()
+    {
+        delete[] memory;
+    }
 
     void initmem(uint8_t *prgrom, size_t romsize);
     uint8_t read(uint16_t addr);

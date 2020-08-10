@@ -29,6 +29,7 @@ ROM::ROM()
     has_bus_conflicts = false;
     misc_roms_num = 0;
     def_expansion_dev = 0;
+    has_prgram = has_chrram = false;
 }
 
 int ROM::parseheader()
@@ -125,6 +126,10 @@ void ROM::parse_nes20()
 
 int ROM::open(char * const name)
 {
+    if (!name) {
+        dbgmsg = ErrID::FNOTFOUND;
+        return 1;
+    }
     fname = name;
     file = std::fopen(name, "rb");
     if (!file) {

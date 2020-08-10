@@ -26,7 +26,8 @@ class CPU {
     Bus &bus;
 
     uint8_t curropcode;
-    reg16 op;   // operand
+    reg16 op;       // operand
+    reg16 result;   // for results in addrmode_* functions
 
     reg16 pc;
     uint8_t accum;
@@ -77,7 +78,6 @@ class CPU {
     bool execirq = false;
 
     uint8_t fetch();
-    uint8_t fetch_op();
     void execute(uint8_t opcode);
     void interrupt(bool reset = false);
     void push(uint8_t val);
@@ -91,15 +91,15 @@ class CPU {
     {
         return (hi << 8) | low;
     }
-    
+
     /* Increment cycles and forwards the address to bus.read() */
-    inline uint8_t read(uint16_t addr)
+    inline uint8_t readmem(uint16_t addr)
     {
         cycle(1);
         return bus.read(addr);
     }
 
-    inline void write(uint16_t addr, uint8_t val)
+    inline void writemem(uint16_t addr, uint8_t val)
     {
         cycle(1);
         bus.write(addr, val);

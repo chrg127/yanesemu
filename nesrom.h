@@ -4,8 +4,8 @@
 #include <cstdio>
 #include <cstdint>
 
-#define HEADER_LEN 16
-#define TRAINER_LEN 512
+const int HEADER_LEN = 16;
+const int TRAINER_LEN = 512;
 
 namespace nesrom {
 

@@ -9,102 +9,102 @@
  * "instruction". */
 
 // NOTE: addressing mode functions.
-void CPU::addrmode_imm_read(OpcodeFuncRead f)
+void CPU::addrmode_imm_read(InstrFuncRead f)
 {
     // cycles: 2
-    op.low = fetch_op();
+    op.low = fetch();
     (this->*f)(op.low);
     last_cycle();
 }
 
-void CPU::addrmode_zero_read(OpcodeFuncRead f)
+void CPU::addrmode_zero_read(InstrFuncRead f)
 {
     // cycles: 3
-    op.low = fetch_op();
-    (this->*f)(read(op.low));
+    op.low = fetch();
+    (this->*f)(readmem(op.low));
     last_cycle();
 }
 
-void CPU::addrmode_zerox_read(OpcodeFuncRead f)
+void CPU::addrmode_zerox_read(InstrFuncRead f)
 {
     // cycles: 4
-    op.low = fetch_op();
-    (this->*f)(read(op.low + xreg));
+    op.low = fetch();
+    (this->*f)(readmem(op.low + xreg));
     // increment due to indexed addressing
     cycle(1);
     last_cycle();
 }
 
-void CPU::addrmode_zeroy_read(OpcodeFuncRead f)
+void CPU::addrmode_zeroy_read(InstrFuncRead f)
 {
     // cycles: 4
-    op.low = fetch_op();
-    (this->*f)(read(op.low + yreg));
+    op.low = fetch();
+    (this->*f)(readmem(op.low + yreg));
     cycle(1);
     last_cycle();
 }
 
-void CPU::addrmode_abs_read(OpcodeFuncRead f)
+void CPU::addrmode_abs_read(InstrFuncRead f)
 {
     // cycles: 4
-    op.low = fetch_op();
-    op.high = fetch_op();
-    (this->*f)(read(op.reg));
+    op.low = fetch();
+    op.high = fetch();
+    (this->*f)(readmem(op.reg));
     last_cycle();
 }
 
-void CPU::addrmode_absx_read(OpcodeFuncRead f)
+void CPU::addrmode_absx_read(InstrFuncRead f)
 {
     // cycles: 4+1
     reg16 res;
 
-    op.low = fetch_op();
+    op.low = fetch();
     // cycle 3 is second operand fetch + adding X to the full reg
-    op.high = fetch_op();
-    res = read(op.reg+xreg);
+    op.high = fetch();
+    res = readmem(op.reg+xreg);
     (this->*f)(res.reg);
     if (op.high != res.high)
         cycle(1);
     last_cycle();
 }
 
-void CPU::addrmode_absy_read(OpcodeFuncRead f)
+void CPU::addrmode_absy_read(InstrFuncRead f)
 {
     // cycles: 4+1
     reg16 res;
 
-    op.low = fetch_op();
-    op.high = fetch_op();
-    res = read(op.reg+yreg);
+    op.low = fetch();
+    op.high = fetch();
+    res = readmem(op.reg+yreg);
     (this->*f)(res.reg);
     if (op.high != res.high)
         cycle(1);
     last_cycle();
 }
 
-void CPU::addrmode_indx_read(OpcodeFuncRead f)
+void CPU::addrmode_indx_read(InstrFuncRead f)
 {
     // cycles: 6
     reg16 res;
 
-    op.low = fetch_op();
+    op.low = fetch();
     cycle(1);
-    res.low = read(op.low+xreg);
-    res.high = read(op.low+xreg+1);
-    (this->*f)(read(res.reg));
+    res.low = readmem(op.low+xreg);
+    res.high = readmem(op.low+xreg+1);
+    (this->*f)(readmem(res.reg));
     last_cycle();
 }
 
-void CPU::addrmode_indy_read(OpcodeFuncRead f)
+void CPU::addrmode_indy_read(InstrFuncRead f)
 {
     // cycles: 5+1
     reg16 res;
 
-    op.low = fetch_op();
-    res.low = read(op.low);
-    res.high = read(op.low+1);
+    op.low = fetch();
+    res.low = readmem(op.low);
+    res.high = readmem(op.low+1);
     res.reg += yreg;
-    (this->*f)(read(res.reg));
+    (this->*f)(readmem(res.reg));
     if (op.high != res.high)
         cycle(1);
     last_cycle();
@@ -112,7 +112,7 @@ void CPU::addrmode_indy_read(OpcodeFuncRead f)
 
 
 
-void CPU::addrmode_accum_modify(OpcodeFuncMod f)
+void CPU::addrmode_accum_modify(InstrFuncMod f)
 {
     // cycles: 2
     cycle(1);
@@ -120,58 +120,58 @@ void CPU::addrmode_accum_modify(OpcodeFuncMod f)
     last_cycle();
 }
 
-void CPU::addrmode_zero_modify(OpcodeFuncMod f)
+void CPU::addrmode_zero_modify(InstrFuncMod f)
 {
     //cycles: 5
     reg16 res;
 
-    op.low = fetch_op();
-    res = (this->*f)(read(op.low));
+    op.low = fetch();
+    res = (this->*f)(readmem(op.low));
     // the cpu uses a cycle to write back an unmodified value
     cycle(1);
-    write(op.low, res.reg);
+    writemem(op.low, res.reg);
     last_cycle();
 }
 
-void CPU::addrmode_zerox_modify(OpcodeFuncMod f)
+void CPU::addrmode_zerox_modify(InstrFuncMod f)
 {
     // cycles: 6
     reg16 res;
 
-    op.low = fetch_op();
+    op.low = fetch();
     cycle(1);
-    res = (this->*f)(read(op.low + xreg));
+    res = (this->*f)(readmem(op.low + xreg));
     cycle(1);
-    write(op.low + xreg, res.reg);
+    writemem(op.low + xreg, res.reg);
     last_cycle();
 }
 
-void CPU::addrmode_abs_modify(OpcodeFuncMod f)
+void CPU::addrmode_abs_modify(InstrFuncMod f)
 {
     // cycles: 6
     reg16 res;
 
-    op.low = fetch_op();
-    op.high = fetch_op();
-    res = (this->*f)(read(op.reg));
+    op.low = fetch();
+    op.high = fetch();
+    res = (this->*f)(readmem(op.reg));
     cycle(1);
-    write(op.reg, res.reg);
+    writemem(op.reg, res.reg);
     last_cycle();
 }
 
-void CPU::addrmode_absx_modify(OpcodeFuncMod f)
+void CPU::addrmode_absx_modify(InstrFuncMod f)
 {
     // cycles: 7
     reg16 res;
 
-    op.low = fetch_op();
-    op.high = fetch_op();
-    res = (this->*f)(read(op.reg + xreg));
+    op.low = fetch();
+    op.high = fetch();
+    res = (this->*f)(readmem(op.reg + xreg));
     // reread from effective address
     cycle(1);
     // write the value back to effective address
     cycle(1);
-    write(op.reg + xreg, res.reg);
+    writemem(op.reg + xreg, res.reg);
     last_cycle();
 }
 
@@ -180,55 +180,55 @@ void CPU::addrmode_absx_modify(OpcodeFuncMod f)
 void CPU::addrmode_zero_write(uint8_t val)
 {
     // cycles: 3
-    op.low = fetch_op();
-    write(op.low, val);
+    op.low = fetch();
+    writemem(op.low, val);
     last_cycle();
 }
 
 void CPU::addrmode_zerox_write(uint8_t val)
 {
     // cycles: 4
-    op.low = fetch_op();
+    op.low = fetch();
     cycle(1);
-    write(op.low + xreg, val);
+    writemem(op.low + xreg, val);
     last_cycle();
 }
 
 void CPU::addrmode_zeroy_write(uint8_t val)
 {
     // cycles: 4
-    op.low = fetch_op();
+    op.low = fetch();
     cycle(1);
-    write(op.low + yreg, val);
+    writemem(op.low + yreg, val);
     last_cycle();
 }
 
 void CPU::addrmode_abs_write(uint8_t val)
 {
     // cycles: 4
-    op.low = fetch_op();
-    op.high = fetch_op();
-    write(op.reg, val);
+    op.low = fetch();
+    op.high = fetch();
+    writemem(op.reg, val);
     last_cycle();
 }
 
 void CPU::addrmode_absx_write(uint8_t val)
 {
     // cycles: 5
-    op.low = fetch_op();
-    op.high = fetch_op();
+    op.low = fetch();
+    op.high = fetch();
     cycle(1);
-    write(op.reg + xreg, val);
+    writemem(op.reg + xreg, val);
     last_cycle();
 }
 
 void CPU::addrmode_absy_write(uint8_t val)
 {
     // cycles: 5
-    op.low = fetch_op();
-    op.high = fetch_op();
+    op.low = fetch();
+    op.high = fetch();
     cycle(1);
-    write(op.reg + yreg, val);
+    writemem(op.reg + yreg, val);
     last_cycle();
 }
 
@@ -237,12 +237,12 @@ void CPU::addrmode_indx_write(uint8_t val)
     // cycles: 6
     reg16 res;
 
-    op.low = fetch_op();
+    op.low = fetch();
     // read from addres, add X to it
     cycle(1);
-    res.low = read(op.low+xreg);
-    res.high = read(op.low+xreg+1);
-    write(res.reg, val);
+    res.low = readmem(op.low+xreg);
+    res.high = readmem(op.low+xreg+1);
+    writemem(res.reg, val);
     last_cycle();
 }
 
@@ -251,12 +251,12 @@ void CPU::addrmode_indy_write(uint8_t val)
     // cycles: 6
     reg16 res;
 
-    op.low = fetch_op();
-    res.low = read(op.low);
-    res.high = read(op.low+1);
+    op.low = fetch();
+    res.low = readmem(op.low);
+    res.high = readmem(op.low+1);
     res.reg += yreg;
     cycle(1);
-    write(res.reg, val);
+    writemem(res.reg, val);
     last_cycle();
 }
 
@@ -269,7 +269,7 @@ void CPU::instr_branch(bool take)
     reg16 tmp;
 
     last_cycle();
-    op.low = fetch_op();
+    op.low = fetch();
     tmp = pc;
     if (!take)
         return;
@@ -348,23 +348,23 @@ void CPU::instr_cpy(const uint8_t val)
 
 void CPU::instr_adc(const uint8_t val)
 {
-    int res = accum + val + procstatus.carry;
-    procstatus.zero     = (uint8_t) res == 0;
-    procstatus.neg      = res & 0x80;
-    procstatus.carry    = res > 0xFF;
-    procstatus.ov       = (accum^res) & ~(accum^val) & 0x80;
-    accum = res;
+    int sum = accum + val + procstatus.carry;
+    procstatus.zero     = (uint8_t) sum == 0;
+    procstatus.neg      = sum & 0x80;
+    procstatus.carry    = sum > 0xFF;
+    procstatus.ov       = (accum^sum) & ~(accum^val) & 0x80;
+    accum = sum;
 }
 
 void CPU::instr_sbc(const uint8_t val)
 {
     uint8_t tmp = ~val;
-    int res = accum + tmp + procstatus.carry;
-    procstatus.zero     = (uint8_t) res == 0;
-    procstatus.neg      = res & 0x80;
-    procstatus.carry    = res > 0xFF;
-    procstatus.ov       = (accum^res) & ~(accum^val) & 0x80;
-    accum = res;
+    int sum = accum + tmp + procstatus.carry;
+    procstatus.zero     = (uint8_t) sum == 0;
+    procstatus.neg      = sum & 0x80;
+    procstatus.carry    = sum > 0xFF;
+    procstatus.ov       = (accum^sum) & ~(accum^val) & 0x80;
+    accum = sum;
 }
 
 void CPU::instr_ora(const uint8_t val)
@@ -528,7 +528,7 @@ void CPU::instr_pla()
 void CPU::instr_jsr()
 {
     // cycles: 6
-    op.low = fetch_op();
+    op.low = fetch();
     pc.reg--;
     // internal operation, 1 cycle
     cycle(1);
@@ -537,7 +537,7 @@ void CPU::instr_jsr()
     pc.low = op.low;
     // the original hardware technically fetches the next operand right into the pc's high byte.
     // I save it in op.high first to enable disassembling.
-    op.high = fetch_op();
+    op.high = fetch();
     pc.high = op.high;
     last_cycle();
 }
@@ -545,8 +545,8 @@ void CPU::instr_jsr()
 void CPU::instr_jmp()
 {
     // cycles: 3
-    op.low = fetch_op();
-    op.high = fetch_op();
+    op.low = fetch();
+    op.high = fetch();
     pc = op.reg;
     last_cycle();
 }
@@ -556,16 +556,16 @@ void CPU::instr_jmp()
 void CPU::instr_jmp_ind()
 {
     // cycles: 5
-    op.low = fetch_op();
-    op.high = fetch_op();
+    op.low = fetch();
+    op.high = fetch();
     // hardware bug
     if (op.low == 0xFF) {
-        pc.low = read(op.reg);
+        pc.low = readmem(op.reg);
         // reset the low byte, e.g. $02FF -> $0200
-        pc.high = read(op.reg & 0xFF00);
+        pc.high = readmem(op.reg & 0xFF00);
     } else {
-        pc.low = read(op.reg);
-        pc.high = read(op.reg+1);
+        pc.low = readmem(op.reg);
+        pc.high = readmem(op.reg+1);
     }
     last_cycle();
 }
