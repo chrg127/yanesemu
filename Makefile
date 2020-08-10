@@ -1,5 +1,5 @@
 CXX = g++
-CFLAGS = -Wall -Wextra
+CFLAGS = -Wall -Wextra -pipe
 DEBDIR = debug
 RELDIR = release
 OBJDIR = obj

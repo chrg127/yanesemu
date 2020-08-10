@@ -1,21 +1,12 @@
 /* to be included only by cpu.cpp */
 
-/* for most instruction, the polling happens during the final cycle of the
+
+/* NOTE: All instructions have an impled cycle from fetching the instruction
+ * itself. (The call is done in CPU::main())
+ * for most instruction, the polling happens during the final cycle of the
  * instruction, before the opcode fetch of the next instruction. if polling
  * detects an interrupt, the interrupt sequence is executed as the next
  * "instruction". */
-/* if both IRQ and NMI are pending, the NMI will be handled and the IRQ
- * forgotten.
- */
-/* polling quirks:
- * if IRQ is pending and RTI is executed and clears the intdis flag, the 
- * CPU will invoke the handler immediately after RTI finished executing.
- * CLI, SEI, and PLP change the intdis flag after polling for interrupts.
- * this means they can delay interrupts. */
-/* fuck branch polling */
-
-/* NOTE: All instructions have an impled cycle from fetching the instruction
- * itself. (The call is done in CPU::main()) */
 
 // NOTE: addressing mode functions.
 void CPU::addrmode_imm_read(OpcodeFuncRead f)
@@ -65,10 +56,12 @@ void CPU::addrmode_abs_read(OpcodeFuncRead f)
 void CPU::addrmode_absx_read(OpcodeFuncRead f)
 {
     // cycles: 4+1
+    reg16 res;
+
     op.low = fetch_op();
     // cycle 3 is second operand fetch + adding X to the full reg
     op.high = fetch_op();
-    reg16 res = read(op.reg+xreg);
+    res = read(op.reg+xreg);
     (this->*f)(res.reg);
     if (op.high != res.high)
         cycle(1);
@@ -78,9 +71,11 @@ void CPU::addrmode_absx_read(OpcodeFuncRead f)
 void CPU::addrmode_absy_read(OpcodeFuncRead f)
 {
     // cycles: 4+1
+    reg16 res;
+
     op.low = fetch_op();
     op.high = fetch_op();
-    reg16 res = read(op.reg+yreg);
+    res = read(op.reg+yreg);
     (this->*f)(res.reg);
     if (op.high != res.high)
         cycle(1);
@@ -110,7 +105,7 @@ void CPU::addrmode_indy_read(OpcodeFuncRead f)
     res.high = read(op.low+1);
     res.reg += yreg;
     (this->*f)(read(res.reg));
-    if (op.high != (res >> 8))
+    if (op.high != res.high)
         cycle(1);
     last_cycle();
 }
@@ -134,7 +129,7 @@ void CPU::addrmode_zero_modify(OpcodeFuncMod f)
     res = (this->*f)(read(op.low));
     // the cpu uses a cycle to write back an unmodified value
     cycle(1);
-    write(op.low, res);
+    write(op.low, res.reg);
     last_cycle();
 }
 
@@ -147,7 +142,7 @@ void CPU::addrmode_zerox_modify(OpcodeFuncMod f)
     cycle(1);
     res = (this->*f)(read(op.low + xreg));
     cycle(1);
-    write(op.low + xreg, res);
+    write(op.low + xreg, res.reg);
     last_cycle();
 }
 
@@ -160,7 +155,7 @@ void CPU::addrmode_abs_modify(OpcodeFuncMod f)
     op.high = fetch_op();
     res = (this->*f)(read(op.reg));
     cycle(1);
-    write(op.reg, res);
+    write(op.reg, res.reg);
     last_cycle();
 }
 
@@ -176,7 +171,7 @@ void CPU::addrmode_absx_modify(OpcodeFuncMod f)
     cycle(1);
     // write the value back to effective address
     cycle(1);
-    write(op.reg + xreg, res);
+    write(op.reg + xreg, res.reg);
     last_cycle();
 }
 
@@ -204,7 +199,7 @@ void CPU::addrmode_zeroy_write(uint8_t val)
     // cycles: 4
     op.low = fetch_op();
     cycle(1);
-    bus.write(op.low + yreg, val);
+    write(op.low + yreg, val);
     last_cycle();
 }
 
@@ -219,6 +214,7 @@ void CPU::addrmode_abs_write(uint8_t val)
 
 void CPU::addrmode_absx_write(uint8_t val)
 {
+    // cycles: 5
     op.low = fetch_op();
     op.high = fetch_op();
     cycle(1);
@@ -228,6 +224,7 @@ void CPU::addrmode_absx_write(uint8_t val)
 
 void CPU::addrmode_absy_write(uint8_t val)
 {
+    // cycles: 5
     op.low = fetch_op();
     op.high = fetch_op();
     cycle(1);
@@ -237,23 +234,29 @@ void CPU::addrmode_absy_write(uint8_t val)
 
 void CPU::addrmode_indx_write(uint8_t val)
 {
+    // cycles: 6
+    reg16 res;
+
     op.low = fetch_op();
+    // read from addres, add X to it
     cycle(1);
-    uint16_t addr = buildval16(bus.read(op.low+xreg), bus.read(op.low+1+xreg));
-    cycle(3);
-    bus.write(addr, val);
-    cycle(1);
+    res.low = read(op.low+xreg);
+    res.high = read(op.low+xreg+1);
+    write(res.reg, val);
     last_cycle();
 }
 
 void CPU::addrmode_indy_write(uint8_t val)
 {
+    // cycles: 6
+    reg16 res;
+
     op.low = fetch_op();
+    res.low = read(op.low);
+    res.high = read(op.low+1);
+    res.reg += yreg;
     cycle(1);
-    uint16_t addr = buildval16(bus.read(op.low), bus.read(op.low+1))+yreg;
-    cycle(3);
-    bus.write(addr, val);
-    cycle(1);
+    write(res.reg, val);
     last_cycle();
 }
 
@@ -262,14 +265,15 @@ void CPU::addrmode_indy_write(uint8_t val)
 
 void CPU::instr_branch(bool take)
 {
+    // cycles: 2+1+1
     reg16 tmp;
 
+    last_cycle();
     op.low = fetch_op();
     tmp = pc;
-    cycle(1);
-    last_cycle();
     if (!take)
         return;
+    cycle(1);
     pc.reg += (int8_t) op.low;
     last_cycle();
     if (tmp.high != pc.high)
@@ -278,15 +282,17 @@ void CPU::instr_branch(bool take)
 
 void CPU::instr_flag(bool &flag, bool v)
 {
-    cycle(1);
+    // cycles: 2
     last_cycle();
+    cycle(1);
     flag = v;
 }
 
 void CPU::instr_transfer(uint8_t from, uint8_t &to)
 {
-    cycle(1);
+    // cycles: 2
     last_cycle();
+    cycle(1);
     to = from;
     procstatus.zero = (to == 0);
     procstatus.neg  = (to & 0x80);
@@ -499,17 +505,20 @@ void CPU::instr_plp()
 {
     // cycles: 4
     // one cycle for reading next instruction, one for incrementing S
-    cycle(2);
+    cycle(1);
+    cycle(1);
+    // plp polls for interrupts before pulling
+    last_cycle();
     procstatus = pull();
     procstatus.breakf = 0;
-    last_cycle();
 }
 
 void CPU::instr_pla()
 {
     // cycles: 4
     // one cycle for reading next instruction, one for incrementing S
-    cycle(2);
+    cycle(1);
+    cycle(1);
     accum = pull();
     procstatus.zero = accum == 0;
     procstatus.neg  = accum & 0x80;
@@ -546,17 +555,18 @@ void CPU::instr_jmp()
 // have 1 less function and call this one directly as it's used by one instruction
 void CPU::instr_jmp_ind()
 {
+    // cycles: 5
     op.low = fetch_op();
-    cycle(1);
     op.high = fetch_op();
-    cycle(1);
-    uint16_t addr = op.reg;
-    // Hardware bug.
+    // hardware bug
     if (op.low == 0xFF) {
-        pc.reg = buildval16(bus.read(addr), bus.read(addr & 0xFF00));
-    } else
-        pc.reg = buildval16(bus.read(addr), bus.read(addr+1));
-    cycle(3);
+        pc.low = read(op.reg);
+        // reset the low byte, e.g. $02FF -> $0200
+        pc.high = read(op.reg & 0xFF00);
+    } else {
+        pc.low = read(op.reg);
+        pc.high = read(op.reg+1);
+    }
     last_cycle();
 }
 
@@ -564,7 +574,8 @@ void CPU::instr_rts()
 {
     // cycles: 6
     // one for read of the next instruction, one for incrementing S
-    cycle(2);
+    cycle(1);
+    cycle(1);
     pc.low = pull();
     pc.high = pull();
     pc.reg++;
@@ -577,16 +588,16 @@ void CPU::instr_brk()
 {
     procstatus.breakf = 1;
     // cycles are counted in the interrupt function
-    interrupt(IRQBRKVEC);
-    // the break flag only exists in the copy, so reset it here
-    procstatus.breakf = 0;
+    interrupt();
+    // the break flag will be reset in the interrupt
 }
 
 void CPU::instr_rti()
 {
     // cycles: 6
     // one for read of the next instruction, one for incrementing S
-    cycle(2);
+    cycle(1);
+    cycle(1);
     procstatus = pull();
     // reset this just to be sure
     procstatus.breakf = 0;

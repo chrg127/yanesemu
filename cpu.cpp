@@ -205,21 +205,33 @@ void CPU::execute(uint8_t opcode)
 
 /* Emulates the interrupt behavior common to all four interrupt signals
  * (reset, irq, nmi and brk) */
-void CPU::interrupt(uint16_t vec)
+void CPU::interrupt(bool reset)
 {
+    uint16_t vec;
+
+    // one cycle for reading next instruction byte and throw away
     cycle(1);
     push(pc.high);
-    cycle(1);
     push(pc.low);
-    cycle(1);
     push(procstatus.reg());
-    cycle(1);
+    // reset this here just in case
+    procstatus.breakf = 0;
     procstatus.intdis = 1;
-
-    // interrupt hijacking
-    uint8_t low = bus.read(vec);
-    pc.reg = buildval16(low, bus.read(vec+1));
-    cycle(7);
+    // Interrupt hijacking
+    // there's a special handling for the reset interrupt. more research should
+    // be done for a better solution.
+    if (reset) 
+        vec = RESETVEC;
+    else if (nmipending) {
+        nmipending = false;
+        vec = NMIVEC;
+    } else if (irqpending) {
+        irqpending = false;
+        vec = IRQBRKVEC;
+    } else
+        vec = IRQBRKVEC;
+    pc.low = read(vec);
+    pc.high = read(vec+1);
 }
 
 /* Pushes a value to the hardware stack */
@@ -234,8 +246,8 @@ void CPU::push(uint8_t val)
 uint8_t CPU::pull()
 {
     ++sp;
-    return bus.read(0x0100+sp);
     cycle(1);
+    return bus.read(0x0100+sp);
 }
 
 /* Adds n cycles to the cycle counter */
@@ -274,12 +286,15 @@ void CPU::nmipoll()
 void CPU::main()
 {
     if (execnmi) {
-        interrupt(NMIVEC);
+        cycle(1);
+        interrupt();
+        execnmi = false;
         return;
     }
-    if (execirq && !procstatus.intdis) {
-        procstatus.intdis = 1;
-        interrupt(IRQBRKVEC);
+    if (execirq) {
+        cycle(1);
+        interrupt();
+        execirq = false;
         return;
     }
 
@@ -293,7 +308,7 @@ void CPU::power(uint8_t *prgrom, size_t romsize)
     bus.initmem(prgrom, romsize);
     sp = 0;
     pc = 0;
-    interrupt(RESETVEC);
+    interrupt(true);
     bus.write_enable = true;
     cycle(8);
 }

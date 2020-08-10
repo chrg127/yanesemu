@@ -79,7 +79,7 @@ class CPU {
     uint8_t fetch();
     uint8_t fetch_op();
     void execute(uint8_t opcode);
-    void interrupt(uint16_t vec);
+    void interrupt(bool reset = false);
     void push(uint8_t val);
     uint8_t pull();
     void cycle(uint8_t n);
