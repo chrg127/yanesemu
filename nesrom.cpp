@@ -17,6 +17,7 @@ ROM::ROM()
     fformat = Format::INVALID;
 
     // set all of these to 0, just to be secure.
+    prgrom = chrrom = nullptr;
     mapper = submapper = 0;
     prgrom_size = chrrom_size = prgram_size = chrram_size = eeprom_size = chrnvram_size = 0;
     mapper = submapper = 0;
@@ -51,7 +52,7 @@ int ROM::parseheader()
     prgrom_size = header[4];
     chrrom_size = header[5];
 
-    nametab_mirroring           = header[6] & 1;
+    nametab_mirroring   = header[6] & 1;
     has_battery         = header[6] & 2;
     has_trainer         = header[6] & 4;
     has_fourscreenmode  = header[6] & 8;
@@ -171,7 +172,7 @@ void ROM::close()
 void ROM::printinfo()
 {
     std::printf("%s: ", fname);
-    if (fformat == INES)
+    if (fformat == Format::INES)
         std::printf("iNES");
     else
         std::printf("NES 2.0");

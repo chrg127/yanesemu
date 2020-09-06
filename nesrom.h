@@ -9,13 +9,15 @@ const int TRAINER_LEN = 512;
 
 namespace nesrom {
 
-enum Format {
-    INVALID,
-    INES,
-    NES20,
+
+enum CpuTiming : int {
+    RP2C02 = 0,
+    RP2C07 = 1,
+    UMC6527P = 3,
+    MULTIPLE = 2,
 };
 
-enum NametabMirroring : int {
+enum NTMirror : int {
     HORZ = 0,
     VERT = 1,
 };
@@ -38,13 +40,6 @@ enum ConsoleType : int {
     VRTECH_VT32,
     VRTECH_VT369,
     UMC,
-};
-
-enum CPUTiming : int {
-    RP2C02 = 0,
-    RP2C07 = 1,
-    UMC6527P = 3,
-    MULTIPLE = 2,
 };
 
 enum VsPPU : int {
@@ -77,17 +72,26 @@ class ROM {
     FILE *file;
     char *fname;
 
+    enum class Format {
+        INVALID,
+        INES,
+        NES20,
+    } fformat;
+
     uint8_t header[HEADER_LEN];
     uint8_t trainer[TRAINER_LEN];
     uint8_t *prgrom;
     uint8_t *chrrom;
 
-    Format fformat;
     uint16_t mapper;
     uint8_t submapper;
 
     bool has_prgram;
     bool has_chrram;
+    bool has_battery;
+    bool has_trainer;
+    bool has_fourscreenmode;
+
     uint32_t prgrom_size;
     uint32_t chrrom_size;
     uint32_t prgram_size;
@@ -95,17 +99,12 @@ class ROM {
     uint32_t eeprom_size;
     uint32_t chrnvram_size;
 
-    uint8_t nametab_mirroring;
-    bool has_battery;
-    bool has_trainer;
-    bool has_fourscreenmode;
-    uint8_t region;
-    uint8_t console_type;
-
-    uint8_t cpu_ppu_timing;
-
-    uint8_t vs_ppu_type;
-    uint8_t vs_hw_type;
+    int nametab_mirroring;
+    int region;
+    int console_type;
+    int cpu_ppu_timing;
+    int vs_ppu_type;
+    int vs_hw_type;
 
     //weird
     bool has_bus_conflicts;
@@ -131,17 +130,23 @@ public:
         close();
     }
 
-    Format file_format() { return fformat; }
-    uint16_t mappertype() { return mapper; }
-    bool hasprgram() { return has_prgram; }
-    bool haschrram() { return has_chrram; }
-    uint8_t *get_prgrom() { return prgrom; }
-    size_t get_prgrom_size() { return prgrom_size*16384; }
-
     int open(char * const name);
     void close();
     void printinfo();
     const char *get_errormsg();
+
+    Format file_format()
+    { return fformat; }
+    uint16_t mappertype()
+    { return mapper; }
+    bool hasprgram()
+    { return has_prgram; }
+    bool haschrram()
+    { return has_chrram; }
+    uint8_t *get_prgrom()
+    { return prgrom; }
+    size_t get_prgrom_size()
+    { return prgrom_size*16384; }
 };
 
 } //namespace nesrom

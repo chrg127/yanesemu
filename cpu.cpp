@@ -17,6 +17,7 @@ uint8_t CPU::fetch()
     return readmem(pc.reg++);
 }
 
+
 /* Definitions of all opcodes and addressing modes */
 #include "opcodes.cpp"
 
@@ -202,7 +203,7 @@ void CPU::interrupt(bool reset)
     uint16_t vec;
 
     // one cycle for reading next instruction byte and throw away
-    cycle(1);
+    cycle();
     push(pc.high);
     push(pc.low);
     push(procstatus.reg());
@@ -241,9 +242,9 @@ uint8_t CPU::pull()
 }
 
 /* Adds n cycles to the cycle counter */
-void CPU::cycle(uint8_t n)
+void CPU::cycle()
 {
-    cycles += n;
+    cycles++;
 }
 
 /* Executes last cyle polling, doesn't increment cycles */
@@ -276,13 +277,13 @@ void CPU::nmipoll()
 void CPU::main()
 {
     if (execnmi) {
-        cycle(1);
+        cycle();
         interrupt();
         execnmi = false;
         return;
     }
     if (execirq) {
-        cycle(1);
+        cycle();
         interrupt();
         execirq = false;
         return;
@@ -300,7 +301,6 @@ void CPU::power(uint8_t *prgrom, size_t romsize)
     pc = 0;
     interrupt(true);
     bus.write_enable = true;
-    cycle(8);
 }
 
 /* Sends an IRQ signal. Used by other devices. */

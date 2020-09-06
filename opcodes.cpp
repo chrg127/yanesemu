@@ -31,7 +31,7 @@ void CPU::addrmode_zerox_read(InstrFuncRead f)
     op.low = fetch();
     (this->*f)(readmem(op.low + xreg));
     // increment due to indexed addressing
-    cycle(1);
+    cycle();
     last_cycle();
 }
 
@@ -40,7 +40,7 @@ void CPU::addrmode_zeroy_read(InstrFuncRead f)
     // cycles: 4
     op.low = fetch();
     (this->*f)(readmem(op.low + yreg));
-    cycle(1);
+    cycle();
     last_cycle();
 }
 
@@ -64,7 +64,7 @@ void CPU::addrmode_absx_read(InstrFuncRead f)
     res = readmem(op.reg+xreg);
     (this->*f)(res.reg);
     if (op.high != res.high)
-        cycle(1);
+        cycle();
     last_cycle();
 }
 
@@ -78,7 +78,7 @@ void CPU::addrmode_absy_read(InstrFuncRead f)
     res = readmem(op.reg+yreg);
     (this->*f)(res.reg);
     if (op.high != res.high)
-        cycle(1);
+        cycle();
     last_cycle();
 }
 
@@ -88,7 +88,7 @@ void CPU::addrmode_indx_read(InstrFuncRead f)
     reg16 res;
 
     op.low = fetch();
-    cycle(1);
+    cycle();
     res.low = readmem(op.low+xreg);
     res.high = readmem(op.low+xreg+1);
     (this->*f)(readmem(res.reg));
@@ -106,7 +106,7 @@ void CPU::addrmode_indy_read(InstrFuncRead f)
     res.reg += yreg;
     (this->*f)(readmem(res.reg));
     if (op.high != res.high)
-        cycle(1);
+        cycle();
     last_cycle();
 }
 
@@ -115,7 +115,7 @@ void CPU::addrmode_indy_read(InstrFuncRead f)
 void CPU::addrmode_accum_modify(InstrFuncMod f)
 {
     // cycles: 2
-    cycle(1);
+    cycle();
     accum = (this->*f)(accum);
     last_cycle();
 }
@@ -128,7 +128,7 @@ void CPU::addrmode_zero_modify(InstrFuncMod f)
     op.low = fetch();
     res = (this->*f)(readmem(op.low));
     // the cpu uses a cycle to write back an unmodified value
-    cycle(1);
+    cycle();
     writemem(op.low, res.reg);
     last_cycle();
 }
@@ -139,9 +139,9 @@ void CPU::addrmode_zerox_modify(InstrFuncMod f)
     reg16 res;
 
     op.low = fetch();
-    cycle(1);
+    cycle();
     res = (this->*f)(readmem(op.low + xreg));
-    cycle(1);
+    cycle();
     writemem(op.low + xreg, res.reg);
     last_cycle();
 }
@@ -154,7 +154,7 @@ void CPU::addrmode_abs_modify(InstrFuncMod f)
     op.low = fetch();
     op.high = fetch();
     res = (this->*f)(readmem(op.reg));
-    cycle(1);
+    cycle();
     writemem(op.reg, res.reg);
     last_cycle();
 }
@@ -168,9 +168,9 @@ void CPU::addrmode_absx_modify(InstrFuncMod f)
     op.high = fetch();
     res = (this->*f)(readmem(op.reg + xreg));
     // reread from effective address
-    cycle(1);
+    cycle();
     // write the value back to effective address
-    cycle(1);
+    cycle();
     writemem(op.reg + xreg, res.reg);
     last_cycle();
 }
@@ -189,7 +189,7 @@ void CPU::addrmode_zerox_write(uint8_t val)
 {
     // cycles: 4
     op.low = fetch();
-    cycle(1);
+    cycle();
     writemem(op.low + xreg, val);
     last_cycle();
 }
@@ -198,7 +198,7 @@ void CPU::addrmode_zeroy_write(uint8_t val)
 {
     // cycles: 4
     op.low = fetch();
-    cycle(1);
+    cycle();
     writemem(op.low + yreg, val);
     last_cycle();
 }
@@ -217,7 +217,7 @@ void CPU::addrmode_absx_write(uint8_t val)
     // cycles: 5
     op.low = fetch();
     op.high = fetch();
-    cycle(1);
+    cycle();
     writemem(op.reg + xreg, val);
     last_cycle();
 }
@@ -227,7 +227,7 @@ void CPU::addrmode_absy_write(uint8_t val)
     // cycles: 5
     op.low = fetch();
     op.high = fetch();
-    cycle(1);
+    cycle();
     writemem(op.reg + yreg, val);
     last_cycle();
 }
@@ -239,7 +239,7 @@ void CPU::addrmode_indx_write(uint8_t val)
 
     op.low = fetch();
     // read from addres, add X to it
-    cycle(1);
+    cycle();
     res.low = readmem(op.low+xreg);
     res.high = readmem(op.low+xreg+1);
     writemem(res.reg, val);
@@ -255,7 +255,7 @@ void CPU::addrmode_indy_write(uint8_t val)
     res.low = readmem(op.low);
     res.high = readmem(op.low+1);
     res.reg += yreg;
-    cycle(1);
+    cycle();
     writemem(res.reg, val);
     last_cycle();
 }
@@ -273,18 +273,18 @@ void CPU::instr_branch(bool take)
     tmp = pc;
     if (!take)
         return;
-    cycle(1);
+    cycle();
     pc.reg += (int8_t) op.low;
     last_cycle();
     if (tmp.high != pc.high)
-        cycle(1);
+        cycle();
 }
 
 void CPU::instr_flag(bool &flag, bool v)
 {
     // cycles: 2
     last_cycle();
-    cycle(1);
+    cycle();
     flag = v;
 }
 
@@ -292,7 +292,7 @@ void CPU::instr_transfer(uint8_t from, uint8_t &to)
 {
     // cycles: 2
     last_cycle();
-    cycle(1);
+    cycle();
     to = from;
     procstatus.zero = (to == 0);
     procstatus.neg  = (to & 0x80);
@@ -303,6 +303,7 @@ void CPU::instr_transfer(uint8_t from, uint8_t &to)
 // NOTE: all instruction functions.
 void CPU::instr_lda(const uint8_t val)
 {
+    ;
     accum = val;
     procstatus.zero = accum == 0;
     procstatus.neg  = accum & 0x80;
@@ -457,7 +458,7 @@ uint8_t CPU::instr_ror(uint8_t val)
 #define func_increase(reg, regname) \
 void CPU::instr_in##reg() \
 { \
-    cycle(1); \
+    cycle(); \
     regname++; \
     procstatus.zero = xreg == 0; \
     procstatus.neg  = xreg & 0x80; \
@@ -469,7 +470,7 @@ func_increase(y, yreg)
 #define func_decrease(reg, regname) \
 void CPU::instr_de##reg() \
 { \
-    cycle(1); \
+    cycle(); \
     regname--; \
     procstatus.zero = xreg == 0; \
     procstatus.neg  = xreg & 0x80; \
@@ -485,7 +486,7 @@ void CPU::instr_php()
 {
     // cycles: 3
     // one cycle for reading next instruction and throwing away
-    cycle(1);
+    cycle();
     procstatus.breakf = 1;
     push(procstatus.reg());
     procstatus.breakf = 0;
@@ -496,7 +497,7 @@ void CPU::instr_pha()
 {
     // cycles: 3
     // one cycle for reading next instruction and throwing away
-    cycle(1);
+    cycle();
     push(accum);
     last_cycle();
 }
@@ -505,8 +506,8 @@ void CPU::instr_plp()
 {
     // cycles: 4
     // one cycle for reading next instruction, one for incrementing S
-    cycle(1);
-    cycle(1);
+    cycle();
+    cycle();
     // plp polls for interrupts before pulling
     last_cycle();
     procstatus = pull();
@@ -517,8 +518,8 @@ void CPU::instr_pla()
 {
     // cycles: 4
     // one cycle for reading next instruction, one for incrementing S
-    cycle(1);
-    cycle(1);
+    cycle();
+    cycle();
     accum = pull();
     procstatus.zero = accum == 0;
     procstatus.neg  = accum & 0x80;
@@ -531,7 +532,7 @@ void CPU::instr_jsr()
     op.low = fetch();
     pc.reg--;
     // internal operation, 1 cycle
-    cycle(1);
+    cycle();
     push(pc.high);
     push(pc.low);
     pc.low = op.low;
@@ -574,13 +575,13 @@ void CPU::instr_rts()
 {
     // cycles: 6
     // one for read of the next instruction, one for incrementing S
-    cycle(1);
-    cycle(1);
+    cycle();
+    cycle();
     pc.low = pull();
     pc.high = pull();
     pc.reg++;
     // cycle for incrementing pc
-    cycle(1);
+    cycle();
     last_cycle();
 }
 
@@ -596,8 +597,8 @@ void CPU::instr_rti()
 {
     // cycles: 6
     // one for read of the next instruction, one for incrementing S
-    cycle(1);
-    cycle(1);
+    cycle();
+    cycle();
     procstatus = pull();
     // reset this just to be sure
     procstatus.breakf = 0;
@@ -608,7 +609,7 @@ void CPU::instr_rti()
 
 void CPU::instr_nop()
 {
-    cycle(1);
+    cycle();
     last_cycle();
 }
 

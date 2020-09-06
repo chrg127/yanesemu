@@ -82,7 +82,7 @@ class CPU {
     void interrupt(bool reset = false);
     void push(uint8_t val);
     uint8_t pull();
-    void cycle(uint8_t n);
+    void cycle();
     void last_cycle();
     void irqpoll();
     void nmipoll();
@@ -95,13 +95,13 @@ class CPU {
     /* Increment cycles and forwards the address to bus.read() */
     inline uint8_t readmem(uint16_t addr)
     {
-        cycle(1);
+        cycle();
         return bus.read(addr);
     }
 
     inline void writemem(uint16_t addr, uint8_t val)
     {
-        cycle(1);
+        cycle();
         bus.write(addr, val);
     }
 
