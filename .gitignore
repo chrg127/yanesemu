@@ -1,9 +1,7 @@
-*.nes
 *.out
 debug/
 release/
-obj/
-test/
 other/
 *.swp
 tags
+test/
