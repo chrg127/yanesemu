@@ -124,10 +124,11 @@ public:
     void fire_irq();
     void fire_nmi();
     void reset();
-    uint8_t peek_opcode() { return curropcode; }
     void disassemble(uint8_t op1, uint8_t op2, FILE *f);
-    void printinfo();
-    void memdump(const char * const fname);
+    void printinfo(FILE *logfile);
+
+    uint8_t peek_opcode()
+    { return curropcode; }
 };
 
 }

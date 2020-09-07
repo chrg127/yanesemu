@@ -327,15 +327,14 @@ void CPU::reset()
 
 /* Prints info about the instruction which has just been executed and
  * the status of the registers. */
-void CPU::printinfo()
+void CPU::printinfo(FILE *logfile)
 {
     disassemble(op.low, op.high, stdout);
-    DBGPRINTF("PC: %04X A: %02X X: %02X Y: %02X S: %02X ",
+    std::fprintf(logfile, "PC: %04X A: %02X X: %02X Y: %02X S: %02X ",
                    pc.reg, accum, xreg, yreg, sp);
 
 #define WRITEFLAG(f, c) \
-    DBGPRINTF( "%c", (f == 1) ? std::toupper(c) : std::tolower(c) )
-
+    std::fprintf(logfile, "%c", (f == 1) ? std::toupper(c) : std::tolower(c) )
     WRITEFLAG(procstatus.neg,       'n');
     WRITEFLAG(procstatus.ov,        'v');
     WRITEFLAG(procstatus.unused,    'u');
@@ -344,12 +343,10 @@ void CPU::printinfo()
     WRITEFLAG(procstatus.intdis,    'i');
     WRITEFLAG(procstatus.zero,      'z');
     WRITEFLAG(procstatus.carry,     'c');
-
 #undef WRITEFLAG
 
-    DBGPRINTF(" cycles: %d", cycles);
-
-    DBGPRINT("\n");
+    std::fprintf(logfile, " cycles: %d", cycles);
+    std::fputs("\n", logfile);
 }
 
 }

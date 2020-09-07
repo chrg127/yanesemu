@@ -28,25 +28,18 @@ void Bus::write(uint16_t addr, uint8_t val)
 }
 
 /* prints the contents of current memory to a file with name fname */
-void Bus::memdump(const char * const fname)
+void Bus::memdump(FILE *dumpfile)
 {
     int i, j;
-    FILE *f;
     
-    if (!fname)
-        return;
-    f = fopen(fname, "w");
-    if (!f)
-        return;
     for (i = 0; i < Mem::MEMSIZE; ) {
-        std::fprintf(f, "%04X: ", i);
+        std::fprintf(dumpfile, "%04X: ", i);
         for (j = 0; j < 16; j++) {
-            std::fprintf(f, "%02X ", memory[i]);
+            std::fprintf(dumpfile, "%02X ", memory[i]);
             i++;
         }
-        std::fputs("\n", f);
+        std::fputs("\n", dumpfile);
     }
-    fclose(f);
 }
 
 } // namespace Processor

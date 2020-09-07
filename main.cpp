@@ -1,45 +1,17 @@
 #include <cstdio>
 #include <cstdlib>
+#include <vector>
+#include "cmdargs.h"
 #include "bus.h"
 #include "cpu.h"
 #include "nesrom.h"
+#define DEBUG
+#include "debug.h"
 
-static char *romname = nullptr;
-
-enum Args : int {
-    BREAK_ON_BRK    = 0x01,
-    EXEC_FOR        = 0x02,
-};
-
-int parse_args(int argc, char *argv[], int &flags)
-{
-    int c;
-
-    flags = 0;
-    while (++argv, --argc > 0) {
-        if (c = *argv[0], c == '-') {
-            c = (*argv)[1];
-            switch(c) {
-            case 'b':
-                flags |= Args::BREAK_ON_BRK;
-                break;
-            default:
-                std::fprintf(stderr, "error: invalid argument: -%c\n", c);
-                return 1;
-            }
-        } else {
-            if (romname == nullptr)
-                romname = *argv;
-            else
-                std::fputs("warning: rom file already specified, the first one found will be used\n", stderr);
-        }
-    }
-    if (romname == nullptr) {
-        std::fputs("error: rom file not specified\n", stderr);
-        return 1;
-    }
-    return 0;
-}
+static Flags flags;
+static const char *version_str = "0.1";
+// static const char *def_log  = "other/output.log";
+static const char *def_dump = "other/memdump.log";
 
 int main(int argc, char *argv[])
 {
@@ -47,40 +19,93 @@ int main(int argc, char *argv[])
     Processor::Bus bus;
     Processor::CPU cpu(bus);
     bool done = false;
-    int flags, counter = 20;
+    FILE *logfile, *dumpfile;
+    char *romname = nullptr;
+    int counter;
 
     if (argc < 2) {
-        std::fprintf(stderr, "usage: %s [ARGS...] ROMFILE\nerror: rom file not specified\n", *argv);
+        print_usage(*argv);
         return 1;
     }
 
-    if (parse_args(argc, argv, flags) != 0)
+    auto v = parse_args(flags, argc, argv);
+    
+    if (flags.bits & ARG_HELP) {
+        print_usage(*argv);
+        return 0;
+    }
+    if (flags.bits & ARG_VERSION) {
+        std::printf("%s\n", version_str);
+        return 0;
+    }
+
+    if (v.size() != 1) {
+        if (v.size() == 0)
+            error("ROM file not specified\n");
+        else
+            error("Too many files specified\n");
         return 1;
+    }
+    romname = v[0];
 
     if (rom.open(romname) != 0) {
-        std::fprintf(stderr, "%s: error: %s\n", *argv, rom.get_errormsg());
+        error("%s\n", rom.get_errormsg());
         return 1;
     }
+    
+    if (flags.bits & ARG_LOG_FILE) {
+        auto s = get_arg_choices(flags, ARG_LOG_FILE);
+        if (s == "stdout")
+            logfile = stdout;
+        else if (s == "stderr")
+            logfile = stderr;
+        else {
+            logfile = fopen(s.c_str(), "r");
+            if (!logfile) {
+                error("%s: no such file or directory\n", s.c_str());
+                return 1;
+            }
+        }
+    } else
+        logfile = stdout;
 
-    rom.printinfo();
+    if (flags.bits & ARG_DUMP_FILE) {
+        auto s = get_arg_choices(flags, ARG_DUMP_FILE);
+        if (s == "stdout")
+            dumpfile = stdout;
+        else if (s == "stderr")
+            dumpfile = stderr;
+        else {
+            dumpfile = fopen(s.c_str(), "r");
+            if (!dumpfile) {
+                error("%s: no such file or directory\n", s.c_str());
+                return 1;
+            }
+        }
+    } else
+        dumpfile = fopen(def_dump, "r");
+
+
+
+    rom.printinfo(logfile);
     cpu.power(rom.get_prgrom(), rom.get_prgrom_size());
+    counter = 20;
     while (!done) {
         cpu.main();
-        cpu.printinfo();
-        if (flags & Args::BREAK_ON_BRK) {
-            if (cpu.peek_opcode() == 0) {
-                std::printf("got BRK, stopping emulation\n");
-                bus.memdump("other/memdump.log");
-                done = true;
-            }
+        cpu.printinfo(logfile);
+        if (flags.bits & ARG_BREAK_ON_BRK && cpu.peek_opcode() == 0) {
+            DBGPRINT("got BRK, stopping emulation\n");
+            bus.memdump(dumpfile);
+            done = true;
         }
         if (--counter < 0) {
             cpu.reset();
-            bus.memdump("other/memdump.log");
+            bus.memdump(dumpfile);
             done = true;
         }
     }
     puts("");
+    fclose(dumpfile);
 
     return 0;
 }

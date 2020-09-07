@@ -1,4 +1,6 @@
 #include "nesrom.h"
+#define DEBUG
+#include "debug.h"
 
 namespace nesrom {
 
@@ -169,34 +171,34 @@ void ROM::close()
         delete[] chrrom;
 }
 
-void ROM::printinfo()
+void ROM::printinfo(FILE *logfile)
 {
-    std::printf("%s: ", fname);
+    std::fprintf(logfile, "%s: ", fname);
     if (fformat == Format::INES)
-        std::printf("iNES");
+        std::fprintf(logfile, "iNES");
     else
-        std::printf("NES 2.0");
-    std::printf(", mapper %d, %dx16k PRG ROM, %dx8k CHR ROM", mapper, prgrom_size, chrrom_size);
+        std::fprintf(logfile, "NES 2.0");
+    std::fprintf(logfile, ", mapper %d, %dx16k PRG ROM, %dx8k CHR ROM",
+            mapper, prgrom_size, chrrom_size);
     if (has_prgram)
-        std::printf(", %d PRG RAM", prgram_size);
+        std::fprintf(logfile, ", %d PRG RAM", prgram_size);
     if (has_chrram)
-        std::printf(", %d CHR RAM", chrram_size);
+        std::fprintf(logfile, ", %d CHR RAM", chrram_size);
     if (eeprom_size != 0)
-        std::printf(", %d EEPROM", eeprom_size);
+        std::fprintf(logfile, ", %d EEPROM", eeprom_size);
     if (chrnvram_size != 0)
-        std::printf(", %d CHR NVRAM", chrnvram_size);
+        std::fprintf(logfile, ", %d CHR NVRAM", chrnvram_size);
 
     if (nametab_mirroring == HORZ)
-        std::printf(", H-Mirror");
+        std::fprintf(logfile, ", H-Mirror");
     else
-        std::printf(", V-Mirror");
+        std::fprintf(logfile, ", V-Mirror");
     if (has_battery)
-        std::printf(", SRAM enabled");
+        std::fprintf(logfile, ", SRAM enabled");
     if (has_trainer)
-        std::printf(", Trainer enabled");
+        std::fprintf(logfile, ", Trainer enabled");
     if (has_fourscreenmode)
-        std::printf(", Four screen mode enabled");
-
+        std::fprintf(logfile, ", Four screen mode enabled");
     std::puts("");
 }
 

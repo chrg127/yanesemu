@@ -132,7 +132,7 @@ public:
 
     int open(char * const name);
     void close();
-    void printinfo();
+    void printinfo(FILE *logfile);
     const char *get_errormsg();
 
     Format file_format()

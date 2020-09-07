@@ -2,34 +2,42 @@ CXX = g++
 CFLAGS = -Wall -Wextra -pipe
 DEBDIR = debug
 RELDIR = release
-OBJDIR = obj
-PRGNAME = emu
+DEBOBJDIR = $(DEBDIR)/obj
+RELOBJDIR = $(RELDIR)/obj
+DEBPRGNAME = emu
+RELPRGNAME = emu-release
 
-HEADERS = cpu.h nesrom.h memorymap.h bus.h
-_OBJS = main.o cpu.o nesrom.o bus.o
-OBJS = $(patsubst %,$(OBJDIR)/%,$(_OBJS))
+HEADERS = cpu.h nesrom.h memorymap.h bus.h cmdargs.h
+OBJS = main.o cpu.o nesrom.o bus.o cmdargs.o
+
+DEBOBJS = $(patsubst %,$(DEBOBJDIR)/%,$(OBJS))
+RELOBJS = $(patsubst %,$(RELOBJDIR)/%,$(OBJS))
+LIBS = -lm
 
 default: directories debug
 
 directories:
 	mkdir -p $(DEBDIR) $(RELDIR) $(DEBDIR)/$(OBJDIR) $(RELDIR)/$(OBJDIR) 
 
-# OUTDIR defined in these two rules
+# different rules for debug and release
 debug: CFLAGS += -g
-debug: OUTDIR = $(DEBDIR)
-debug: OBJS_WITHDIR = $(patsubst %,$(OUTDIR)/%,$(OBJS))
-debug: $(PRGNAME)
+debug: $(DEBPRGNAME)
+
+$(DEBOBJDIR)/%.o: %.cpp $(HEADERS)
+	$(CXX) $(CFLAGS) -c $< -o $@
+
+$(DEBPRGNAME): $(DEBOBJS)
+	$(CXX) $(DEBOBJS) -o $(DEBDIR)/$(DEBPRGNAME) $(LIBS)
+
 
 release: CFLAGS += -O2
-release: OUTDIR = $(RELDIR)
-release: OBJS_WITHDIR = $(patsubst %,$(OUTDIR)/%,$(OBJS))
-release: $(PRGNAME)
+release: $(RELPRGNAME)
 
-$(OBJDIR)/%.o: %.cpp $(HEADERS)
-	$(CXX) $(CFLAGS) -c $< -o $(OUTDIR)/$@
+$(RELOBJDIR)/%.o: %.cpp $(HEADERS)
+	$(CXX) $(CFLAGS) -c $< -o $@
 
-$(PRGNAME): $(OBJS)
-	$(CXX) $(OBJS_WITHDIR) -o $(OUTDIR)/$(PRGNAME)
+$(RELPRGNAME): $(RELOBJS)
+	$(CXX) $(RELOBJS) -o $(RELDIR)/$(RELPRGNAME) $(LIBS)
 
 .PHONY: clean
 clean:
