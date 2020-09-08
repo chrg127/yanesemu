@@ -173,6 +173,8 @@ void ROM::close()
 
 void ROM::printinfo(FILE *logfile)
 {
+    if (!logfile)
+        return;
     std::fprintf(logfile, "%s: ", fname);
     if (fformat == Format::INES)
         std::fprintf(logfile, "iNES");

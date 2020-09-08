@@ -67,6 +67,8 @@ inline static void print_branch(FILE *f, const char *name, uint8_t disp, bool to
 
 void CPU::disassemble(uint8_t op1, uint8_t op2, FILE *f)
 {
+    if (!f)
+        return;
 #define INSTR_IMPLD(id, name) \
     case id: print_implied(f, #name); return;
 #define INSTR_AMODE(id, name, mode, ...) \

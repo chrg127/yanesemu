@@ -8,30 +8,85 @@
 #define DEBUG
 #include "debug.h"
 
-static Flags flags;
+enum Args : uint32_t {
+    ARG_BREAK_ON_BRK = 0x01,
+    ARG_LOG_FILE     = 0x02,
+    ARG_DUMP_FILE    = 0x04,
+    ARG_HELP         = 0x20000000,
+    ARG_VERSION      = 0x40000000,
+};
+
+const int NUM_FLAGS = 5;
+static CommandLine::ArgOption cmdflags[] = {
+    { 'b', ARG_BREAK_ON_BRK, "break-on-brk", "Stops emulation when BRK is encountered.", false, false, {} },
+    { 'l', ARG_LOG_FILE,     "log-file",     "The file where to log instructions. "
+                                             "Pass \"stdout\" to print to stdout, "
+                                             "\"stderr\" to print to stderr.",           true,  true,  {} },
+    { 'd', ARG_DUMP_FILE,    "dump-file",    "The file where to dump memory."
+                                             "Pass \"stdout\" to print to stdout, "
+                                             "\"stderr\" to print to stderr.",           true,  true,  {} },
+    { 'h', ARG_HELP,         "help",         "Print this help text and quit",            false, false, {} },
+    { 'v', ARG_VERSION,      "version",      "Shows the program's version",              false, false, {} },
+};
+static CommandLine::ArgFlags flags(NUM_FLAGS);
+static char *progname;
 static const char *version_str = "0.1";
+
+void print_usage()
+{
+    std::fprintf(stderr, "Usage: %s [args...] <ROM file>\n", progname);
+    std::fprintf(stderr, "Valid arguments:\n");
+    for (int i = 0; i < NUM_FLAGS; i++) {
+        std::fprintf(stderr, "\t-%c, --%s\t\t%s\n",
+                cmdflags[i].opt, cmdflags[i].long_opt.c_str(), cmdflags[i].desc.c_str());
+    }
+}
+
 // static const char *def_log  = "other/output.log";
-static const char *def_dump = "other/memdump.log";
+// static const char *def_dump = "other/memdump.log";
+
+bool open_file(FILE **f, uint32_t arg)
+{
+    if ((flags.bits & arg) == 0)
+        return true;
+
+    std::string &s = flags.get_choice(arg);
+    if (s == "stdout")
+        *f  = stdout;
+    else if (s == "stderr")
+        *f  = stderr;
+    else if (s == "")
+        *f = nullptr;
+    else {
+        const char *cs = s.c_str();
+        *f = fopen(cs, "w");
+        if (!(*f)) {
+            error("%s: no such file or directory\n", cs);
+            return false;
+        }
+    }
+    return true;
+}
 
 int main(int argc, char *argv[])
 {
+    CommandLine::ArgParser parser(cmdflags, NUM_FLAGS);
+    FILE *logfile, *dumpfile;
     nesrom::ROM rom;
     Processor::Bus bus;
     Processor::CPU cpu(bus);
     bool done = false;
-    FILE *logfile, *dumpfile;
-    char *romname = nullptr;
     int counter;
-
+    
+    progname = *argv;
     if (argc < 2) {
-        print_usage(*argv);
+        print_usage();
         return 1;
     }
 
-    auto v = parse_args(flags, argc, argv);
-    
+    parser.parse_args(flags, argc, argv);
     if (flags.bits & ARG_HELP) {
-        print_usage(*argv);
+        print_usage();
         return 0;
     }
     if (flags.bits & ARG_VERSION) {
@@ -39,54 +94,20 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if (v.size() != 1) {
-        if (v.size() == 0)
-            error("ROM file not specified\n");
-        else
-            error("Too many files specified\n");
+    if (flags.item == nullptr) {
+        error("ROM file not specified\n");
         return 1;
-    }
-    romname = v[0];
-
-    if (rom.open(romname) != 0) {
+    } else if (rom.open(flags.item) != 0) {
         error("%s\n", rom.get_errormsg());
         return 1;
     }
     
-    if (flags.bits & ARG_LOG_FILE) {
-        auto s = get_arg_choices(flags, ARG_LOG_FILE);
-        if (s == "stdout")
-            logfile = stdout;
-        else if (s == "stderr")
-            logfile = stderr;
-        else {
-            logfile = fopen(s.c_str(), "r");
-            if (!logfile) {
-                error("%s: no such file or directory\n", s.c_str());
-                return 1;
-            }
-        }
-    } else
-        logfile = stdout;
-
-    if (flags.bits & ARG_DUMP_FILE) {
-        auto s = get_arg_choices(flags, ARG_DUMP_FILE);
-        if (s == "stdout")
-            dumpfile = stdout;
-        else if (s == "stderr")
-            dumpfile = stderr;
-        else {
-            dumpfile = fopen(s.c_str(), "r");
-            if (!dumpfile) {
-                error("%s: no such file or directory\n", s.c_str());
-                return 1;
-            }
-        }
-    } else
-        dumpfile = fopen(def_dump, "r");
-
-
-
+    logfile = dumpfile = nullptr;
+    if (!open_file(&logfile, ARG_LOG_FILE))
+        return 1;
+    if (!open_file(&dumpfile, ARG_DUMP_FILE))
+        return 1;
+    
     rom.printinfo(logfile);
     cpu.power(rom.get_prgrom(), rom.get_prgrom_size());
     counter = 20;
@@ -104,9 +125,13 @@ int main(int argc, char *argv[])
             done = true;
         }
     }
-    puts("");
-    fclose(dumpfile);
+    if (logfile)
+        std::fputs("", logfile);
 
+    if (logfile && logfile != stdout && logfile != stderr)
+        fclose(logfile);
+    if (dumpfile && dumpfile != stdout && dumpfile != stderr)
+        fclose(dumpfile);
     return 0;
 }
 

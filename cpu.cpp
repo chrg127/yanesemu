@@ -329,7 +329,10 @@ void CPU::reset()
  * the status of the registers. */
 void CPU::printinfo(FILE *logfile)
 {
-    disassemble(op.low, op.high, stdout);
+    if (!logfile)
+        return;
+
+    disassemble(op.low, op.high, logfile);
     std::fprintf(logfile, "PC: %04X A: %02X X: %02X Y: %02X S: %02X ",
                    pc.reg, accum, xreg, yreg, sp);
 

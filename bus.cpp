@@ -32,6 +32,8 @@ void Bus::memdump(FILE *dumpfile)
 {
     int i, j;
     
+    if (!dumpfile)
+        return;
     for (i = 0; i < Mem::MEMSIZE; ) {
         std::fprintf(dumpfile, "%04X: ", i);
         for (j = 0; j < 16; j++) {

@@ -5,25 +5,54 @@
 #include <string>
 #include <cstdint>
 
-const int CMDFLAGS_NUM = 5;
+namespace CommandLine {
 
-enum Args : uint32_t {
-    ARG_BREAK_ON_BRK = 0x01,
-    ARG_LOG_FILE     = 0x02,
-    ARG_DUMP_FILE    = 0x04,
-    ARG_HELP         = 0x20000000,
-    ARG_VERSION      = 0x40000000,
+struct ArgOption {
+    char opt;
+    int flagbit;
+    std::string long_opt;
+    std::string desc;
+    bool has_choices;
+    bool accept_any_choice;
+    std::vector<std::string> choices;
 };
 
-struct Flags {
-    uint32_t bits;
-    std::string choices[CMDFLAGS_NUM];
+struct ArgFlags {
+    uint32_t bits = 0;                 /* what arguments have been found */                 
+    std::string *choices;              /* the choices found for any arg that accept them */ 
+    char *item = nullptr;              /* the not-an-option item */
+    
+    ArgFlags(int n) 
+    {
+        choices = new std::string[n];
+    }
+
+    ~ArgFlags()
+    { 
+        delete[] choices;
+    }
+
+    std::string &get_choice(int arg);
 };
 
-std::vector<char *> parse_args(Flags &flags, int argc, char *argv[]);
-std::string get_arg_choices(Flags &flags, int arg);
-void print_usage(const char *progname);
-void print_version();
+class ArgParser {
+    ArgOption *args;     /* array of arguments */
+    int nargs;          /* size of array */
+
+    int find_opt(char c);
+    int find_opt(std::string s);
+    bool get_choice(ArgFlags &flags, int i, std::string choice);
+    bool check_arg(ArgFlags &flags, const char *arg, const char *argnext);
+
+public:
+    ArgParser(ArgOption *a, int n)
+        : args(a), nargs(n)
+    { }
+
+    void parse_args(ArgFlags &f, int argc, char *argv[]);
+};
+
+} // namespace CommandLine
 
 #endif
 
