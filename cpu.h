@@ -8,28 +8,29 @@
 
 namespace Processor {
 
-union reg16 {
-    struct {
-        uint8_t low, high;
-    };
-    uint16_t reg;
-
-    reg16() : reg(0) { }
-    reg16(uint16_t val) : reg(val) { }
-    inline void operator=(uint16_t val)
-    {
-        reg = val;
-    }
-};
-
 class CPU {
     Bus &bus;
 
     uint8_t curropcode;
-    reg16 op;       // operand
-    reg16 result;   // for results in addrmode_* functions
 
-    reg16 pc;
+    union Reg16 {
+        struct {
+            uint8_t low, high;
+        };
+        uint16_t reg;
+
+        Reg16() : reg(0) { }
+        Reg16(uint16_t val) : reg(val) { }
+        inline void operator=(uint16_t val)
+        {
+            reg = val;
+        }
+    };
+
+    Reg16 op;       // operand
+    Reg16 result;   // for results in addrmode_* functions
+
+    Reg16 pc;
     uint8_t accum;
     uint8_t xreg;
     uint8_t yreg;

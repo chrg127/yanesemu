@@ -56,7 +56,7 @@ void CPU::addrmode_abs_read(InstrFuncRead f)
 void CPU::addrmode_absx_read(InstrFuncRead f)
 {
     // cycles: 4+1
-    reg16 res;
+    Reg16 res;
 
     op.low = fetch();
     // cycle 3 is second operand fetch + adding X to the full reg
@@ -71,7 +71,7 @@ void CPU::addrmode_absx_read(InstrFuncRead f)
 void CPU::addrmode_absy_read(InstrFuncRead f)
 {
     // cycles: 4+1
-    reg16 res;
+    Reg16 res;
 
     op.low = fetch();
     op.high = fetch();
@@ -85,7 +85,7 @@ void CPU::addrmode_absy_read(InstrFuncRead f)
 void CPU::addrmode_indx_read(InstrFuncRead f)
 {
     // cycles: 6
-    reg16 res;
+    Reg16 res;
 
     op.low = fetch();
     cycle();
@@ -98,7 +98,7 @@ void CPU::addrmode_indx_read(InstrFuncRead f)
 void CPU::addrmode_indy_read(InstrFuncRead f)
 {
     // cycles: 5+1
-    reg16 res;
+    Reg16 res;
 
     op.low = fetch();
     res.low = readmem(op.low);
@@ -123,7 +123,7 @@ void CPU::addrmode_accum_modify(InstrFuncMod f)
 void CPU::addrmode_zero_modify(InstrFuncMod f)
 {
     //cycles: 5
-    reg16 res;
+    Reg16 res;
 
     op.low = fetch();
     res = (this->*f)(readmem(op.low));
@@ -136,7 +136,7 @@ void CPU::addrmode_zero_modify(InstrFuncMod f)
 void CPU::addrmode_zerox_modify(InstrFuncMod f)
 {
     // cycles: 6
-    reg16 res;
+    Reg16 res;
 
     op.low = fetch();
     cycle();
@@ -149,7 +149,7 @@ void CPU::addrmode_zerox_modify(InstrFuncMod f)
 void CPU::addrmode_abs_modify(InstrFuncMod f)
 {
     // cycles: 6
-    reg16 res;
+    Reg16 res;
 
     op.low = fetch();
     op.high = fetch();
@@ -162,7 +162,7 @@ void CPU::addrmode_abs_modify(InstrFuncMod f)
 void CPU::addrmode_absx_modify(InstrFuncMod f)
 {
     // cycles: 7
-    reg16 res;
+    Reg16 res;
 
     op.low = fetch();
     op.high = fetch();
@@ -235,7 +235,7 @@ void CPU::addrmode_absy_write(uint8_t val)
 void CPU::addrmode_indx_write(uint8_t val)
 {
     // cycles: 6
-    reg16 res;
+    Reg16 res;
 
     op.low = fetch();
     // read from addres, add X to it
@@ -249,7 +249,7 @@ void CPU::addrmode_indx_write(uint8_t val)
 void CPU::addrmode_indy_write(uint8_t val)
 {
     // cycles: 6
-    reg16 res;
+    Reg16 res;
 
     op.low = fetch();
     res.low = readmem(op.low);
@@ -266,7 +266,7 @@ void CPU::addrmode_indy_write(uint8_t val)
 void CPU::instr_branch(bool take)
 {
     // cycles: 2+1+1
-    reg16 tmp;
+    Reg16 tmp;
 
     last_cycle();
     op.low = fetch();

@@ -1,6 +1,6 @@
 // defined independent of DEBUG macro
 #define error(...) do { std::fprintf(stderr, "error: " __VA_ARGS__); } while (0)
-#define warning(...) do { std::fprintf(stderr, "error: " __VA_ARGS__); } while (0)
+#define warning(...) do { std::fprintf(stderr, "warning: " __VA_ARGS__); } while (0)
 
 #ifdef DEBUG
 #include <cstdio>
