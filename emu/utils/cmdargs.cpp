@@ -1,7 +1,7 @@
-#include <emu/utils/cmdargs.h>
+#include <emu/utils/cmdargs.hpp>
 
 #include <cmath>
-#include <emu/utils/debug.h>
+#include <emu/utils/debug.hpp>
 
 namespace CommandLine {
 

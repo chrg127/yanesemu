@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <cstddef>
-#include "memorymap.h"
+#include <emu/core/memorymap.hpp>
 
 namespace Processor {
 

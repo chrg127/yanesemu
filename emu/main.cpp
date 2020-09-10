@@ -1,12 +1,11 @@
 #include <cstdio>
 #include <cstdlib>
-#include <vector>
-#include <emu/utils/cmdargs.h>
-#include <emu/core/bus.h>
-#include <emu/core/cpu.h>
-#include <emu/nesrom.h>
+#include <emu/utils/cmdargs.hpp>
+#include <emu/core/bus.hpp>
+#include <emu/core/cpu.hpp>
+#include <emu/nesrom.hpp>
 #define DEBUG
-#include <emu/utils/debug.h>
+#include <emu/utils/debug.hpp>
 
 enum Args : uint32_t {
     ARG_BREAK_ON_BRK = 0x01,

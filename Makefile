@@ -1,7 +1,7 @@
 VPATH=emu:emu/core:emu/utils
-HEADERS = nesrom.h \
-		  cpu.h memorymap.h bus.h \
-		  cmdargs.h debug.h
+HEADERS = nesrom.hpp \
+		  bus.hpp cpu.hpp memorymap.hpp \
+		  cmdargs.hpp debug.hpp
 OBJS = main.o nesrom.o \
 	   cpu.o bus.o \
 	   cmdargs.o
@@ -25,6 +25,9 @@ DEBOBJS = $(patsubst %,$(DEBOBJDIR)/%,$(OBJS))
 #RELOBJS = $(patsubst %,$(RELOBJDIR)/%,$(OBJS))
 
 default: directories debug
+
+print:
+	@echo "using objects:" $(DEBOBJS) "and headers:" $(HEADERS)
 
 directories:
 	mkdir -p $(DEBDIR) $(DEBOBJDIR)

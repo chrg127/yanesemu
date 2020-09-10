@@ -1,12 +1,14 @@
-#include <emu/core/cpu.h>
+#include <emu/core/cpu.hpp>
 
 #include <cstdio>
 #include <cctype>
 #include <cstring>
-#include <emu/nesrom.h>
+#include <emu/nesrom.hpp>
 
 #define DEBUG
-#include <emu/utils/debug.h>
+#include <emu/utils/debug.hpp>
+
+#define INSIDE_CPU_CPP
 
 namespace Processor {
 
@@ -19,7 +21,7 @@ uint8_t CPU::fetch()
 
 
 /* Definitions of all opcodes and addressing modes */
-#include "opcodes.cpp"
+#include <emu/core/opcodes.cpp>
 
 /* Executes a single instruction. */
 void CPU::execute(uint8_t opcode)
@@ -323,7 +325,7 @@ void CPU::reset()
     bus->reset();
 }
 
-#include "disass.cpp"
+#include <emu/core/disassemble.cpp>
 
 /* Prints info about the instruction which has just been executed and
  * the status of the registers. */
@@ -353,3 +355,5 @@ void CPU::printinfo(FILE *logfile)
 }
 
 }
+
+#undef INSIDE_CPU_CPP

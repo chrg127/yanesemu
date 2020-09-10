@@ -1,6 +1,6 @@
-#include <emu/nesrom.h>
+#include <emu/nesrom.hpp>
 #define DEBUG
-#include <emu/utils/debug.h>
+#include <emu/utils/debug.hpp>
 
 namespace nesrom {
 
