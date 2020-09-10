@@ -1,4 +1,4 @@
-#include "bus.h"
+#include <emu/core/bus.h>
 
 #include <cstdio>
 #include <cstring>

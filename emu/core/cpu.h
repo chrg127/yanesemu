@@ -9,9 +9,7 @@
 namespace Processor {
 
 class CPU {
-    Bus &bus;
-
-    uint8_t curropcode;
+    Bus *bus = nullptr;
 
     union Reg16 {
         struct {
@@ -27,14 +25,15 @@ class CPU {
         }
     };
 
+    uint8_t curropcode;
     Reg16 op;       // operand
     Reg16 result;   // for results in addrmode_* functions
 
     Reg16 pc;
-    uint8_t accum;
-    uint8_t xreg;
-    uint8_t yreg;
-    uint8_t sp;
+    uint8_t accum   = 0;
+    uint8_t xreg    = 0;
+    uint8_t yreg    = 0;
+    uint8_t sp      = 0;
 
     struct {
         bool carry      = 0;
@@ -72,11 +71,11 @@ class CPU {
     } procstatus;
 
     // interrupt signals
-    int cycles;
+    int cycles      = 0;
     bool nmipending = false;
-    bool execnmi = false;
+    bool execnmi    = false;
     bool irqpending = false;
-    bool execirq = false;
+    bool execirq    = false;
 
     uint8_t fetch();
     void execute(uint8_t opcode);
@@ -88,37 +87,26 @@ class CPU {
     void irqpoll();
     void nmipoll();
 
-    inline uint16_t buildval16(uint8_t low, uint8_t hi)
-    {
-        return (hi << 8) | low;
-    }
-
-    /* Increment cycles and forwards the address to bus.read() */
     inline uint8_t readmem(uint16_t addr)
     {
         cycle();
-        return bus.read(addr);
+        return bus->read(addr);
     }
 
     inline void writemem(uint16_t addr, uint8_t val)
     {
         cycle();
-        bus.write(addr, val);
+        bus->write(addr, val);
     }
 
-// Definitions of all opcodes and addressing modes.
 #include "opcodes.h"
 
 public:
-    CPU(Bus &b)
-        : bus(b), pc(0), accum(0),
-          xreg(0), yreg(0), sp(0), cycles(0)
+    CPU(Bus *b) : bus(b)
     {
-        bus.write_enable = false;
+        bus->write_enable = false;
         procstatus.reset();
     }
-
-    ~CPU() { }
 
     void main();
     void power(uint8_t *prgrom, size_t romsize);
@@ -128,7 +116,7 @@ public:
     void disassemble(uint8_t op1, uint8_t op2, FILE *f);
     void printinfo(FILE *logfile);
 
-    uint8_t peek_opcode()
+    uint8_t peek_opcode() const
     { return curropcode; }
 };
 

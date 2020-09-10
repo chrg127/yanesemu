@@ -1,41 +1,21 @@
-#include "nesrom.h"
+#include <emu/nesrom.h>
 #define DEBUG
-#include "debug.h"
+#include <emu/utils/debug.h>
 
 namespace nesrom {
 
 enum ErrID : int {
-    SUCCESS, ERRINVFORMAT, ERRNES20, FNOTFOUND
+    ERRID_SUCCESS = 0, ERRID_INVFORMAT, ERRID_NES20, ERRID_FNOTFOUND,
 };
 
-static const char *rom_error_msg[] = {
-    "no errors", "invalid NES format", "NES 2.0 not yet supported", "can't open rom file"
+static std::string rom_errmsg[] = {
+    "no errors", "invalid NES format", "NES 2.0 not yet supported", "can't open rom file",
 };
 
 
-ROM::ROM()
-{
-    file = NULL;
-    fformat = Format::INVALID;
 
-    // set all of these to 0, just to be secure.
-    prgrom = chrrom = nullptr;
-    mapper = submapper = 0;
-    prgrom_size = chrrom_size = prgram_size = chrram_size = eeprom_size = chrnvram_size = 0;
-    mapper = submapper = 0;
-    nametab_mirroring = HORZ;
-    has_battery = has_trainer = has_fourscreenmode = false;
-    region = NTSC;
-    console_type = NES;
-    cpu_ppu_timing = 0;
-    vs_ppu_type = vs_hw_type = 0;
-    has_bus_conflicts = false;
-    misc_roms_num = 0;
-    def_expansion_dev = 0;
-    has_prgram = has_chrram = false;
-}
-
-int ROM::parseheader()
+/* NOTE: private functions */
+bool ROM::parseheader()
 {
     read(HEADER_LEN, header);
     fformat = Format::INVALID;
@@ -43,12 +23,12 @@ int ROM::parseheader()
         fformat = Format::INES;
     if (fformat == Format::INES && (header[7] & 0xC) == 0x8) {
         //fformat = Format::NES20;
-        dbgmsg = ErrID::ERRNES20;
-        return 1;
+        debugmsg = ERRID_NES20;
+        return false;
     }
     if (fformat == Format::INVALID) {
-        dbgmsg = ErrID::ERRINVFORMAT;
-        return 1;
+        debugmsg = ERRID_INVFORMAT;
+        return false;
     }
 
     prgrom_size = header[4];
@@ -68,7 +48,7 @@ int ROM::parseheader()
         parse_ines();
     else if (fformat == Format::NES20)
         parse_nes20();
-    return 0;
+    return true;
 }
 
 void ROM::parse_ines()
@@ -116,7 +96,7 @@ void ROM::parse_nes20()
     cpu_ppu_timing =  header[12] & 3;
 
     vs_ppu_type = vs_hw_type = 0;
-    if (console_type == VSSYSTEM) {
+    if (console_type == CONSOLE_TYPE_VSSYSTEM) {
         vs_ppu_type = header[13] & 0xF;
         vs_hw_type = header[13] & 0xF0;
     } else if (console_type == 3)
@@ -127,20 +107,21 @@ void ROM::parse_nes20()
         def_expansion_dev = header[15] & 0x3F;
 }
 
-int ROM::open(char * const name)
+
+
+/* NOTE: public functions */
+bool ROM::open(const std::string &fname)
 {
-    if (!name) {
-        dbgmsg = ErrID::FNOTFOUND;
-        return 1;
+    romfile = std::fopen(fname.c_str(), "rb");
+    if (!romfile) {
+        debugmsg = ERRID_FNOTFOUND;
+        return false;
     }
-    fname = name;
-    file = std::fopen(name, "rb");
-    if (!file) {
-        dbgmsg = ErrID::FNOTFOUND;
-        return 1;
-    }
-    if (parseheader() == 1)
-        return 1;
+    filename = fname;
+
+    if (!parseheader())
+        return false;
+
     // get trainer
     if (has_trainer)
         read(TRAINER_LEN, trainer);
@@ -148,23 +129,19 @@ int ROM::open(char * const name)
     if (!has_prgram) {
         prgrom = new uint8_t[prgrom_size*16384];
         read(prgrom_size*16384, prgrom);
-    } else {
-        prgrom = nullptr;
     }
     if (!has_chrram) {
         chrrom = new uint8_t[chrrom_size*8192];
         read(chrrom_size*8192, chrrom);
-    } else {
-        chrrom = nullptr;
     }
 
-    return 0;
+    return true;
 }
 
 void ROM::close()
 {
-    if (file)
-        fclose(file);
+    if (romfile)
+        fclose(romfile);
     if (prgrom)
         delete[] prgrom;
     if (chrrom)
@@ -175,7 +152,7 @@ void ROM::printinfo(FILE *logfile)
 {
     if (!logfile)
         return;
-    std::fprintf(logfile, "%s: ", fname);
+    std::fprintf(logfile, "%s: ", filename.c_str());
     if (fformat == Format::INES)
         std::fprintf(logfile, "iNES");
     else
@@ -191,7 +168,7 @@ void ROM::printinfo(FILE *logfile)
     if (chrnvram_size != 0)
         std::fprintf(logfile, ", %d CHR NVRAM", chrnvram_size);
 
-    if (nametab_mirroring == HORZ)
+    if (nametab_mirroring == NAMETAB_HORZ)
         std::fprintf(logfile, ", H-Mirror");
     else
         std::fprintf(logfile, ", V-Mirror");
@@ -204,9 +181,10 @@ void ROM::printinfo(FILE *logfile)
     std::puts("");
 }
 
-const char *ROM::get_errormsg()
+std::string &ROM::geterr()
 {
-    return rom_error_msg[dbgmsg];
+    return rom_errmsg[debugmsg];
 }
 
 } // namespace nesrom
+

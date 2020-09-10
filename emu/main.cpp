@@ -1,12 +1,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
-#include "cmdargs.h"
-#include "bus.h"
-#include "cpu.h"
-#include "nesrom.h"
+#include <emu/utils/cmdargs.h>
+#include <emu/core/bus.h>
+#include <emu/core/cpu.h>
+#include <emu/nesrom.h>
 #define DEBUG
-#include "debug.h"
+#include <emu/utils/debug.h>
 
 enum Args : uint32_t {
     ARG_BREAK_ON_BRK = 0x01,
@@ -32,6 +32,9 @@ static CommandLine::ArgFlags flags(NUM_FLAGS);
 static char *progname;
 static const char *version_str = "0.1";
 
+void print_usage();
+FILE *logopen(uint32_t arg);
+
 void print_usage()
 {
     std::fprintf(stderr, "Usage: %s [args...] <ROM file>\n", progname);
@@ -45,27 +48,27 @@ void print_usage()
 // static const char *def_log  = "other/output.log";
 // static const char *def_dump = "other/memdump.log";
 
-bool open_file(FILE **f, uint32_t arg)
+FILE *logopen(uint32_t arg)
 {
+    FILE *f;
+    
     if ((flags.bits & arg) == 0)
-        return true;
+        return nullptr;
 
     std::string &s = flags.get_choice(arg);
     if (s == "stdout")
-        *f  = stdout;
+        f  = stdout;
     else if (s == "stderr")
-        *f  = stderr;
+        f  = stderr;
     else if (s == "")
-        *f = nullptr;
+        f = nullptr;
     else {
         const char *cs = s.c_str();
-        *f = fopen(cs, "w");
-        if (!(*f)) {
-            error("%s: no such file or directory\n", cs);
-            return false;
-        }
+        f = fopen(cs, "w");
+        if (!f)
+            error("can't open %s for writing\n", cs);
     }
-    return true;
+    return f;
 }
 
 int main(int argc, char *argv[])
@@ -74,7 +77,7 @@ int main(int argc, char *argv[])
     FILE *logfile, *dumpfile;
     nesrom::ROM rom;
     Processor::Bus bus;
-    Processor::CPU cpu(bus);
+    Processor::CPU cpu(&bus);
     bool done = false;
     int counter;
     
@@ -94,19 +97,16 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if (flags.item == nullptr) {
+    if (flags.item == "") {
         error("ROM file not specified\n");
         return 1;
-    } else if (rom.open(flags.item) != 0) {
-        error("%s\n", rom.get_errormsg());
+    } else if (!rom.open(flags.item)) {
+        error("%s\n", rom.geterr().c_str());
         return 1;
     }
     
-    logfile = dumpfile = nullptr;
-    if (!open_file(&logfile, ARG_LOG_FILE))
-        return 1;
-    if (!open_file(&dumpfile, ARG_DUMP_FILE))
-        return 1;
+    logfile = logopen(ARG_LOG_FILE);
+    dumpfile = logopen(ARG_DUMP_FILE);
     
     rom.printinfo(logfile);
     cpu.power(rom.get_prgrom(), rom.get_prgrom_size());

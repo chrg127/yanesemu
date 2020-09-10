@@ -18,9 +18,9 @@ struct ArgOption {
 };
 
 struct ArgFlags {
-    uint32_t bits = 0;                 /* what arguments have been found */                 
-    std::string *choices;              /* the choices found for any arg that accept them */ 
-    char *item = nullptr;              /* the not-an-option item */
+    uint32_t bits = 0;      /* what arguments have been found */                 
+    std::string *choices;   /* the choices found for any arg that accept them */ 
+    std::string item = "";  /* the not-an-option item */
     
     ArgFlags(int n) 
     {

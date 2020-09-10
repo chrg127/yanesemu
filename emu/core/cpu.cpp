@@ -1,12 +1,12 @@
-#include "cpu.h"
+#include <emu/core/cpu.h>
 
 #include <cstdio>
 #include <cctype>
 #include <cstring>
-#include "nesrom.h"
+#include <emu/nesrom.h>
 
 #define DEBUG
-#include "debug.h"
+#include <emu/utils/debug.h>
 
 namespace Processor {
 
@@ -296,11 +296,11 @@ void CPU::main()
 /* Emulates the start/reset function of the 6502. */
 void CPU::power(uint8_t *prgrom, size_t romsize)
 {
-    bus.initmem(prgrom, romsize);
+    bus->initmem(prgrom, romsize);
     sp = 0;
     pc = 0;
     interrupt(true);
-    bus.write_enable = true;
+    bus->write_enable = true;
 }
 
 /* Sends an IRQ signal. Used by other devices. */
@@ -320,7 +320,7 @@ void CPU::reset()
 {
     pc = sp = accum = xreg = yreg = 0;
     procstatus.reset();
-    bus.reset();
+    bus->reset();
 }
 
 #include "disass.cpp"

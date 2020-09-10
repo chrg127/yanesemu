@@ -1,7 +1,7 @@
-#include "cmdargs.h"
+#include <emu/utils/cmdargs.h>
 
 #include <cmath>
-#include "debug.h"
+#include <emu/utils/debug.h>
 
 namespace CommandLine {
 
@@ -89,7 +89,7 @@ void ArgParser::parse_args(ArgFlags &f, int argc, char *argv[])
             }
         } else {
             if (argc == 1)
-                f.item = *argv;
+                f.item = std::string(*argv);
             else
                 warning("invalid option: %s (missing beginning -)\n", *argv);
         }
