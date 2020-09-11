@@ -10,7 +10,7 @@
 
 #define INSIDE_CPU_CPP
 
-namespace Processor {
+namespace Core {
 
 /* NOTE: private functions */
 /* Fetch next opcode from memory */
@@ -216,15 +216,15 @@ void CPU::interrupt(bool reset)
     // there's a special handling for the reset interrupt. more research should
     // be done for a better solution.
     if (reset) 
-        vec = Mem::RESETVEC;
+        vec = RESETVEC;
     else if (nmipending) {
         nmipending = false;
-        vec = Mem::NMIVEC;
+        vec = NMIVEC;
     } else if (irqpending) {
         irqpending = false;
-        vec = Mem::IRQBRKVEC;
+        vec = IRQBRKVEC;
     } else
-        vec = Mem::IRQBRKVEC;
+        vec = IRQBRKVEC;
     pc.low = readmem(vec);
     pc.high = readmem(vec+1);
 }
@@ -354,6 +354,6 @@ void CPU::printinfo(FILE *logfile)
     std::fputs("\n", logfile);
 }
 
-}
+} // namespace Core
 
 #undef INSIDE_CPU_CPP

@@ -1,6 +1,6 @@
 #ifndef INSIDE_CPU_CPP
 #error "Only emu/core/cpu.cpp may #include this file."
-#endif
+#else
 
 inline static void print_implied(FILE *f, const char *name)
 {
@@ -244,3 +244,4 @@ void CPU::disassemble(uint8_t op1, uint8_t op2, FILE *f)
 #undef INSTR_IMPL
 }
 
+#endif

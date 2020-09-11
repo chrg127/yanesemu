@@ -8,7 +8,7 @@
 
 #define INSIDE_CPU_HPP
 
-namespace Processor {
+namespace Core {
 
 class CPU {
     Bus *bus = nullptr;

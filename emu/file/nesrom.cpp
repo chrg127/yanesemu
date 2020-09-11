@@ -2,7 +2,7 @@
 #define DEBUG
 #include <emu/utils/debug.hpp>
 
-namespace nesrom {
+namespace File {
 
 enum ErrID : int {
     ERRID_SUCCESS = 0, ERRID_INVFORMAT, ERRID_NES20, ERRID_FNOTFOUND,

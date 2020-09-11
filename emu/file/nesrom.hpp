@@ -8,7 +8,7 @@
 const int HEADER_LEN = 16;
 const int TRAINER_LEN = 512;
 
-namespace nesrom {
+namespace File {
 
 enum NametabMirror : int {
     NAMETAB_HORZ = 0,

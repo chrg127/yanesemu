@@ -1,4 +1,4 @@
-VPATH=emu:emu/core:emu/utils
+VPATH=emu:emu/core:emu/utils:emu/file
 HEADERS = nesrom.hpp \
 		  bus.hpp cpu.hpp memorymap.hpp \
 		  cmdargs.hpp debug.hpp
