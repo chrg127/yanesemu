@@ -1,5 +1,6 @@
-/* to be included only by cpu.cpp */
-
+#ifndef INSIDE_CPU_CPP
+#error "Only emu/core/cpu.cpp may #include this file."
+#else
 
 /* NOTE: All instructions have an impled cycle from fetching the instruction
  * itself. (The call is done in CPU::main())
@@ -613,3 +614,4 @@ void CPU::instr_nop()
     last_cycle();
 }
 
+#endif

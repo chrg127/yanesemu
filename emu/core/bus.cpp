@@ -1,16 +1,15 @@
-#include <emu/core/bus.h>
+#include <emu/core/bus.hpp>
 
 #include <cstdio>
 #include <cstring>
 
-namespace Processor {
+namespace Core {
 
 /* copies rom memory and initizializes all other memory to 0 */
 void Bus::initmem(uint8_t *prgrom, size_t romsize)
 {
-    std::memset(memory, 0, Mem::PRGROM_START-1);
-    std::memcpy(memory+Mem::PRGROM_START, prgrom + romsize - (Mem::PRGROM_SIZE+1),
-            Mem::PRGROM_SIZE);
+    std::memset(memory, 0, PRGROM_START-1);
+    std::memcpy(memory+PRGROM_START, prgrom + romsize - (PRGROM_SIZE+1), PRGROM_SIZE);
 }
 
 /* reads memory from the specified address */
@@ -34,7 +33,7 @@ void Bus::memdump(FILE *dumpfile)
     
     if (!dumpfile)
         return;
-    for (i = 0; i < Mem::MEMSIZE; ) {
+    for (i = 0; i < MEMSIZE; ) {
         std::fprintf(dumpfile, "%04X: ", i);
         for (j = 0; j < 16; j++) {
             std::fprintf(dumpfile, "%02X ", memory[i]);
@@ -44,4 +43,4 @@ void Bus::memdump(FILE *dumpfile)
     }
 }
 
-} // namespace Processor
+} // namespace Core

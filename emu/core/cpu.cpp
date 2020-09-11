@@ -1,14 +1,16 @@
-#include <emu/core/cpu.h>
+#include <emu/core/cpu.hpp>
 
 #include <cstdio>
 #include <cctype>
 #include <cstring>
-#include <emu/nesrom.h>
+#include <emu/nesrom.hpp>
 
 #define DEBUG
-#include <emu/utils/debug.h>
+#include <emu/utils/debug.hpp>
 
-namespace Processor {
+#define INSIDE_CPU_CPP
+
+namespace Core {
 
 /* NOTE: private functions */
 /* Fetch next opcode from memory */
@@ -19,7 +21,7 @@ uint8_t CPU::fetch()
 
 
 /* Definitions of all opcodes and addressing modes */
-#include "opcodes.cpp"
+#include <emu/core/opcodes.cpp>
 
 /* Executes a single instruction. */
 void CPU::execute(uint8_t opcode)
@@ -214,15 +216,15 @@ void CPU::interrupt(bool reset)
     // there's a special handling for the reset interrupt. more research should
     // be done for a better solution.
     if (reset) 
-        vec = Mem::RESETVEC;
+        vec = RESETVEC;
     else if (nmipending) {
         nmipending = false;
-        vec = Mem::NMIVEC;
+        vec = NMIVEC;
     } else if (irqpending) {
         irqpending = false;
-        vec = Mem::IRQBRKVEC;
+        vec = IRQBRKVEC;
     } else
-        vec = Mem::IRQBRKVEC;
+        vec = IRQBRKVEC;
     pc.low = readmem(vec);
     pc.high = readmem(vec+1);
 }
@@ -323,7 +325,7 @@ void CPU::reset()
     bus->reset();
 }
 
-#include "disass.cpp"
+#include <emu/core/disassemble.cpp>
 
 /* Prints info about the instruction which has just been executed and
  * the status of the registers. */
@@ -352,4 +354,6 @@ void CPU::printinfo(FILE *logfile)
     std::fputs("\n", logfile);
 }
 
-}
+} // namespace Core
+
+#undef INSIDE_CPU_CPP

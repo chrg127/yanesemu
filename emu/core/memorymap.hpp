@@ -1,7 +1,7 @@
 #ifndef MEMORYMAP_H_INCLUDED
 #define MEMORYMAP_H_INCLUDED
 
-namespace Mem {
+namespace Core {
 
 /* General defines for memory map sections. */
 const int MEMSIZE              = 0xFFFF;
@@ -86,4 +86,5 @@ const int IRQBRKVEC            = 0xFFFE;
 
 #endif
 
-}
+} // namespace Core
+

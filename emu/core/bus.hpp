@@ -4,9 +4,9 @@
 #include <cstdio>
 #include <cstdint>
 #include <cstddef>
-#include "memorymap.h"
+#include <emu/core/memorymap.hpp>
 
-namespace Processor {
+namespace Core {
 
 class Bus {
     uint8_t *memory;
@@ -16,7 +16,7 @@ public:
 
     Bus() : write_enable(false)
     {
-        memory = new uint8_t[Mem::MEMSIZE];
+        memory = new uint8_t[MEMSIZE];
     }
 
     ~Bus()
@@ -32,6 +32,6 @@ public:
     { }
 };
 
-} // namespace Processor
+} // namespace Core
 
 #endif
