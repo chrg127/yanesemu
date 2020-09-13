@@ -86,10 +86,12 @@ public:
 
     inline FILE *releasebuf()
     {
+        FILE *toret = buf;
         mode = Mode::READ;
         filesize = 0;
         filename = "";
-        return buf;
+        buf = nullptr;
+        return toret;
     }
 
 
