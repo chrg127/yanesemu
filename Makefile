@@ -1,8 +1,9 @@
 VPATH=emu:emu/core:emu/utils:emu/file
-HEADERS = nesrom.hpp \
+HEADERS = nesrom.hpp filebuf.hpp \
 		  bus.hpp cpu.hpp memorymap.hpp ppu.hpp types.hpp \
 		  cmdargs.hpp debug.hpp
-OBJS = main.o nesrom.o \
+OBJS = main.o \
+	   nesrom.o filebuf.o \
 	   cpu.o bus.o \
 	   cmdargs.o
 LIBS = -lm

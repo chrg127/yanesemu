@@ -2,75 +2,77 @@
 #error "Only emu/core/cpu.cpp may #include this file."
 #else
 
-inline static void print_implied(FILE *f, const char *name)
+inline static void print_implied(File::FileBuf &f, const char *name)
 {
-    std::fprintf(f, "%s\n", name);
+    f.printf("%s\n", name);
 }
 
-inline static void print_imm(FILE *f, const char *name, uint8_t op)
+inline static void print_imm(File::FileBuf &f, const char *name, uint8_t op)
 {
-    std::fprintf(f, "%s #$%02X\n", name, op);
+    f.printf("%s #$%02X\n", name, op);
 }
 
-inline static void print_accum(FILE *f, const char *name)
+inline static void print_accum(File::FileBuf &f, const char *name)
 {
-    std::fprintf(f, "%s A\n", name);
+    f.printf("%s A\n", name);
 }
 
-inline static void print_zero(FILE *f, const char *name, uint8_t op)
+inline static void print_zero(File::FileBuf &f, const char *name, uint8_t op)
 {
-    std::fprintf(f, "%s $%02X\n", name, op);
+    f.printf("%s $%02X\n", name, op);
 }
 
-inline static void print_zerox(FILE *f, const char *name, uint8_t op)
+inline static void print_zerox(File::FileBuf &f, const char *name, uint8_t op)
 {
-    std::fprintf(f, "%s $%02X,x\n", name, op);
+    f.printf("%s $%02X,x\n", name, op);
 }
 
-inline static void print_zeroy(FILE *f, const char *name, uint8_t op)
+inline static void print_zeroy(File::FileBuf &f, const char *name, uint8_t op)
 {
-    std::fprintf(f, "%s $%02X,y\n", name, op);
+    f.printf("%s $%02X,y\n", name, op);
 }
 
-inline static void print_abs(FILE *f, const char *name, uint8_t low, uint8_t hi)
+inline static void print_abs(File::FileBuf &f, const char *name, uint8_t low, uint8_t hi)
 {
-    std::fprintf(f, "%s $%02X%02X\n", name, hi, low);
+    f.printf("%s $%02X%02X\n", name, hi, low);
 }
 
-inline static void print_absx(FILE *f, const char *name, uint8_t low, uint8_t hi)
+inline static void print_absx(File::FileBuf &f, const char *name, uint8_t low, uint8_t hi)
 {
-    std::fprintf(f, "%s $%02X%02X,x\n", name, hi, low);
+    f.printf("%s $%02X%02X,x\n", name, hi, low);
 }
 
-inline static void print_absy(FILE *f, const char *name, uint8_t low, uint8_t hi)
+inline static void print_absy(File::FileBuf &f, const char *name, uint8_t low, uint8_t hi)
 {
-    std::fprintf(f, "%s $%02X%02X,y\n", name, hi, low);
+    f.printf("%s $%02X%02X,y\n", name, hi, low);
 }
 
-inline static void print_ind(FILE *f, const char *name, uint8_t low, uint8_t hi)
+inline static void print_ind(File::FileBuf &f, const char *name, uint8_t low, uint8_t hi)
 {
-    std::fprintf(f, "%s ($%02X%02X)\n", name, hi, low);
+    f.printf("%s ($%02X%02X)\n", name, hi, low);
 }
 
-inline static void print_indx(FILE *f, const char *name, uint8_t op)
+inline static void print_indx(File::FileBuf &f, const char *name, uint8_t op)
 {
-    std::fprintf(f, "%s ($%02X,x)\n", name, op);
+    f.printf("%s ($%02X,x)\n", name, op);
 }
 
-inline static void print_indy(FILE *f, const char *name, uint8_t op)
+inline static void print_indy(File::FileBuf &f, const char *name, uint8_t op)
 {
-    std::fprintf(f, "%s ($%02X),y\n", name, op);
+    f.printf("%s ($%02X),y\n", name, op);
 }
 
-inline static void print_branch(FILE *f, const char *name, uint8_t disp, bool took)
+inline static void print_branch(File::FileBuf &f, const char *name, uint8_t disp, bool took)
 {
-    std::fprintf(f, "%s %d %s\n", name, (int8_t) disp, (took) ? "[Branch taken]" : "[Branch not taken]");
+    f.printf("%s %d %s\n", name, (int8_t) disp, (took) ? "[Branch taken]" : "[Branch not taken]");
 }
 
-void CPU::disassemble(uint8_t op1, uint8_t op2, FILE *f)
+void CPU::disassemble(File::FileBuf &f)
 {
-    if (!f)
+    if (!f.isopen())
         return;
+    uint8_t op1 = op.low;
+    uint8_t op2 = op.high;
 
 #define INSTR_IMPLD(id, name) \
     case id: print_implied(f, #name); return;
@@ -81,7 +83,7 @@ void CPU::disassemble(uint8_t op1, uint8_t op2, FILE *f)
 #define INSTR_ACCUM(id, name) \
     case id: print_accum(f, #name); return;
 
-    std::fprintf(f, "Instruction [%02X] ", curropcode);
+    f.printf("Instruction [%02X] ", curropcode);
     switch(curropcode) {
         INSTR_IMPLD(0x00, BRK)
         INSTR_AMODE(0x01, ORA, indx, op1)
@@ -234,7 +236,7 @@ void CPU::disassemble(uint8_t op1, uint8_t op2, FILE *f)
         INSTR_AMODE(0xFD, SBC, absx, op1, op2)
         INSTR_AMODE(0xFE, INC, absx, op1, op2)
         default:
-            std::fprintf(f, "UNKNOWN\n");
+            f.printf("UNKNOWN\n");
             return;
     }
 

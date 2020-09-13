@@ -3,7 +3,7 @@
 #include <cmath>
 #include <emu/utils/debug.hpp>
 
-namespace CommandLine {
+namespace Utils {
 
 std::string &ArgFlags::get_choice(int arg)
 {

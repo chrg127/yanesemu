@@ -3,9 +3,14 @@
 #include <emu/utils/cmdargs.hpp>
 #include <emu/core/bus.hpp>
 #include <emu/core/cpu.hpp>
+#include <emu/file/filebuf.hpp>
 #include <emu/file/nesrom.hpp>
 #define DEBUG
 #include <emu/utils/debug.hpp>
+
+static const char *version_str = "0.1";
+static const int NUM_FLAGS = 5;
+static Utils::ArgFlags flags(NUM_FLAGS);
 
 enum Args : uint32_t {
     ARG_BREAK_ON_BRK = 0x01,
@@ -15,8 +20,7 @@ enum Args : uint32_t {
     ARG_VERSION      = 0x40000000,
 };
 
-const int NUM_FLAGS = 5;
-static CommandLine::ArgOption cmdflags[] = {
+static Utils::ArgOption cmdflags[] = {
     { 'b', ARG_BREAK_ON_BRK, "break-on-brk", "Stops emulation when BRK is encountered.", false, false, {} },
     { 'l', ARG_LOG_FILE,     "log-file",     "The file where to log instructions. "
                                              "Pass \"stdout\" to print to stdout, "
@@ -27,14 +31,11 @@ static CommandLine::ArgOption cmdflags[] = {
     { 'h', ARG_HELP,         "help",         "Print this help text and quit",            false, false, {} },
     { 'v', ARG_VERSION,      "version",      "Shows the program's version",              false, false, {} },
 };
-static CommandLine::ArgFlags flags(NUM_FLAGS);
-static char *progname;
-static const char *version_str = "0.1";
 
-void print_usage();
-FILE *logopen(uint32_t arg);
+void print_usage(const char *progname);
+void logopen(File::FileBuf &f, uint32_t arg);
 
-void print_usage()
+void print_usage(const char *progname)
 {
     std::fprintf(stderr, "Usage: %s [args...] <ROM file>\n", progname);
     std::fprintf(stderr, "Valid arguments:\n");
@@ -47,48 +48,42 @@ void print_usage()
 // static const char *def_log  = "other/output.log";
 // static const char *def_dump = "other/memdump.log";
 
-FILE *logopen(uint32_t arg)
+void logopen(File::FileBuf &f, uint32_t arg)
 {
-    FILE *f;
-    
     if ((flags.bits & arg) == 0)
-        return nullptr;
+        return;
 
     std::string &s = flags.get_choice(arg);
     if (s == "stdout")
-        f  = stdout;
+        f.assoc(stdout, File::Mode::WRITE);
     else if (s == "stderr")
-        f  = stderr;
+        f.assoc(stderr, File::Mode::WRITE);
     else if (s == "")
-        f = nullptr;
+        return;
     else {
-        const char *cs = s.c_str();
-        f = fopen(cs, "w");
-        if (!f)
-            error("can't open %s for writing\n", cs);
+        if (!f.open(s, File::Mode::WRITE))
+            error("can't open %s for writing\n", s.c_str());
     }
-    return f;
 }
 
 int main(int argc, char *argv[])
 {
-    CommandLine::ArgParser parser(cmdflags, NUM_FLAGS);
-    FILE *logfile, *dumpfile;
+    Utils::ArgParser parser(cmdflags, NUM_FLAGS);
+    File::FileBuf logfile, dumpfile;
     File::ROM rom;
     Core::Bus bus;
     Core::CPU cpu(&bus);
     bool done = false;
     int counter;
     
-    progname = *argv;
     if (argc < 2) {
-        print_usage();
+        print_usage(*argv);
         return 1;
     }
 
     parser.parse_args(flags, argc, argv);
     if (flags.bits & ARG_HELP) {
-        print_usage();
+        print_usage(*argv);
         return 0;
     }
     if (flags.bits & ARG_VERSION) {
@@ -103,9 +98,9 @@ int main(int argc, char *argv[])
         error("%s\n", rom.geterr().c_str());
         return 1;
     }
-    
-    logfile = logopen(ARG_LOG_FILE);
-    dumpfile = logopen(ARG_DUMP_FILE);
+
+    logopen(logfile, ARG_LOG_FILE);
+    logopen(dumpfile, ARG_DUMP_FILE);
     
     rom.printinfo(logfile);
     cpu.power(rom.get_prgrom(), rom.get_prgrom_size());
@@ -113,6 +108,7 @@ int main(int argc, char *argv[])
     while (!done) {
         cpu.main();
         cpu.printinfo(logfile);
+        cpu.disassemble(logfile);
         if (flags.bits & ARG_BREAK_ON_BRK && cpu.peek_opcode() == 0) {
             DBGPRINT("got BRK, stopping emulation\n");
             bus.memdump(dumpfile);
@@ -124,13 +120,7 @@ int main(int argc, char *argv[])
             done = true;
         }
     }
-    if (logfile)
-        std::fputs("", logfile);
 
-    if (logfile && logfile != stdout && logfile != stderr)
-        fclose(logfile);
-    if (dumpfile && dumpfile != stdout && dumpfile != stderr)
-        fclose(dumpfile);
     return 0;
 }
 

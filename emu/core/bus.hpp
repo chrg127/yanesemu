@@ -1,9 +1,13 @@
 #ifndef BUS_H_INCLUDED
 #define BUS_H_INCLUDED
 
-#include <cstdio>
 #include <emu/core/memorymap.hpp>
 #include <emu/core/types.hpp>
+
+// forward decls
+namespace File {
+    class FileBuf;
+}
 
 namespace Core {
 
@@ -26,7 +30,7 @@ public:
     void initmem(uint8_t *prgrom, size_t romsize);
     uint8_t read(uint16_t addr);
     void write(uint16_t addr, uint8_t val);
-    void memdump(FILE *dumpfile);
+    void memdump(File::FileBuf &f);
     void reset()
     { }
 };

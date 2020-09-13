@@ -1,11 +1,13 @@
 #ifndef NESROM_H_INCLUDED
 #define NESROM_H_INCLUDED
 
-#include <cstdio>
 #include <cstdint>
 #include <string>
 
 namespace File {
+
+// forward decls
+class FileBuf;
 
 const int HEADER_LEN = 16;
 const int TRAINER_LEN = 512;
@@ -132,7 +134,7 @@ public:
 
     bool open(const std::string &name);
     void close();
-    void printinfo(FILE *logfile);
+    void printinfo(File::FileBuf &f);
     std::string &geterr();
 
     Format file_format() const

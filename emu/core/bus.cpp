@@ -1,6 +1,6 @@
 #include <emu/core/bus.hpp>
 
-#include <cstdio>
+#include <emu/file/filebuf.hpp>
 #include <cstring>
 
 namespace Core {
@@ -27,19 +27,19 @@ void Bus::write(uint16_t addr, uint8_t val)
 }
 
 /* prints the contents of current memory to a file with name fname */
-void Bus::memdump(FILE *dumpfile)
+void Bus::memdump(File::FileBuf &df)
 {
     int i, j;
     
-    if (!dumpfile)
+    if (!df.isopen())
         return;
     for (i = 0; i < CPUMap::MEMSIZE; ) {
-        std::fprintf(dumpfile, "%04X: ", i);
+        df.printf("%04X: ", i);
         for (j = 0; j < 16; j++) {
-            std::fprintf(dumpfile, "%02X ", memory[i]);
+            df.printf("%02X ", memory[i]);
             i++;
         }
-        std::fputs("\n", dumpfile);
+        df.putc('\n');
     }
 }
 

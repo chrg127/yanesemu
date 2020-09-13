@@ -5,7 +5,7 @@
 #include <string>
 #include <cstdint>
 
-namespace CommandLine {
+namespace Utils {
 
 struct ArgOption {
     char opt;

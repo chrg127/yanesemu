@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cctype>
 #include <cstring>
+#include <emu/file/filebuf.hpp>
 #include <emu/file/nesrom.hpp>
 
 #define DEBUG
@@ -12,16 +13,15 @@
 
 namespace Core {
 
+#include <emu/core/opcodes.cpp>
+#include <emu/core/disassemble.cpp>
+
 /* NOTE: private functions */
 /* Fetch next opcode from memory */
 uint8_t CPU::fetch()
 {
     return readmem(pc.reg++);
 }
-
-
-/* Definitions of all opcodes and addressing modes */
-#include <emu/core/opcodes.cpp>
 
 /* Executes a single instruction. */
 void CPU::execute(uint8_t opcode)
@@ -325,33 +325,30 @@ void CPU::reset()
     bus->reset();
 }
 
-#include <emu/core/disassemble.cpp>
-
 /* Prints info about the instruction which has just been executed and
  * the status of the registers. */
-void CPU::printinfo(FILE *logfile)
+void CPU::printinfo(File::FileBuf &lf)
 {
-    if (!logfile)
+    if (!lf.isopen())
         return;
 
-    disassemble(op.low, op.high, logfile);
-    std::fprintf(logfile, "PC: %04X A: %02X X: %02X Y: %02X S: %02X ",
+    // disassemble(op.low, op.high, logfile);
+    lf.printf("PC: %04X A: %02X X: %02X Y: %02X S: %02X ",
                    pc.reg, accum, xreg, yreg, sp);
 
-#define WRITEFLAG(f, c) \
-    std::fprintf(logfile, "%c", (f == 1) ? std::toupper(c) : std::tolower(c) )
-    WRITEFLAG(procstatus.neg,       'n');
-    WRITEFLAG(procstatus.ov,        'v');
-    WRITEFLAG(procstatus.unused,    'u');
-    WRITEFLAG(procstatus.breakf,    'b');
-    WRITEFLAG(procstatus.decimal,   'd');
-    WRITEFLAG(procstatus.intdis,    'i');
-    WRITEFLAG(procstatus.zero,      'z');
-    WRITEFLAG(procstatus.carry,     'c');
+#define WRITEFLAG(f, c) lf.printf("%c", (f == 1) ? std::toupper(c) : std::tolower(c) )
+    WRITEFLAG(procstatus.neg,     'n');
+    WRITEFLAG(procstatus.ov,      'v');
+    WRITEFLAG(procstatus.unused,  'u');
+    WRITEFLAG(procstatus.breakf,  'b');
+    WRITEFLAG(procstatus.decimal, 'd');
+    WRITEFLAG(procstatus.intdis,  'i');
+    WRITEFLAG(procstatus.zero,    'z');
+    WRITEFLAG(procstatus.carry,   'c');
 #undef WRITEFLAG
 
-    std::fprintf(logfile, " cycles: %d", cycles);
-    std::fputs("\n", logfile);
+    lf.printf(" cycles: %d", cycles);
+    lf.putc('\n');
 }
 
 } // namespace Core

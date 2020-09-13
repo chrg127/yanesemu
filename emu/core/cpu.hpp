@@ -7,6 +7,11 @@
 
 #define INSIDE_CPU_HPP
 
+// forward decls
+namespace File {
+    class FileBuf;
+}
+
 namespace Core {
 
 class CPU {
@@ -180,8 +185,8 @@ public:
     void fire_irq();
     void fire_nmi();
     void reset();
-    void disassemble(uint8_t op1, uint8_t op2, FILE *f);
-    void printinfo(FILE *logfile);
+    void disassemble(File::FileBuf &f);
+    void printinfo(File::FileBuf &f);
 
     uint8_t peek_opcode() const
     { return curropcode; }
