@@ -8,8 +8,8 @@ namespace Core {
 /* copies rom memory and initizializes all other memory to 0 */
 void Bus::initmem(uint8_t *prgrom, size_t romsize)
 {
-    std::memset(memory, 0, PRGROM_START-1);
-    std::memcpy(memory+PRGROM_START, prgrom + romsize - (PRGROM_SIZE+1), PRGROM_SIZE);
+    std::memset(memory, 0, CPUMap::PRGROM_START-1);
+    std::memcpy(memory+CPUMap::PRGROM_START, prgrom + romsize - (CPUMap::PRGROM_SIZE+1), CPUMap::PRGROM_SIZE);
 }
 
 /* reads memory from the specified address */
@@ -33,7 +33,7 @@ void Bus::memdump(FILE *dumpfile)
     
     if (!dumpfile)
         return;
-    for (i = 0; i < MEMSIZE; ) {
+    for (i = 0; i < CPUMap::MEMSIZE; ) {
         std::fprintf(dumpfile, "%04X: ", i);
         for (j = 0; j < 16; j++) {
             std::fprintf(dumpfile, "%02X ", memory[i]);

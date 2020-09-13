@@ -5,10 +5,10 @@
 #include <cstdint>
 #include <string>
 
+namespace File {
+
 const int HEADER_LEN = 16;
 const int TRAINER_LEN = 512;
-
-namespace File {
 
 enum NametabMirror : int {
     NAMETAB_HORZ = 0,
@@ -149,6 +149,6 @@ public:
     { return prgrom_size*16384; }
 };
 
-} //namespace nesrom
+} // namespace File
 
 #endif

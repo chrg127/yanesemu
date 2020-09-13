@@ -216,15 +216,15 @@ void CPU::interrupt(bool reset)
     // there's a special handling for the reset interrupt. more research should
     // be done for a better solution.
     if (reset) 
-        vec = RESETVEC;
+        vec = CPUMap::RESETVEC;
     else if (nmipending) {
         nmipending = false;
-        vec = NMIVEC;
+        vec = CPUMap::NMIVEC;
     } else if (irqpending) {
         irqpending = false;
-        vec = IRQBRKVEC;
+        vec = CPUMap::IRQBRKVEC;
     } else
-        vec = IRQBRKVEC;
+        vec = CPUMap::IRQBRKVEC;
     pc.low = readmem(vec);
     pc.high = readmem(vec+1);
 }

@@ -15,7 +15,7 @@ public:
 
     Bus() : write_enable(false)
     {
-        memory = new uint8_t[MEMSIZE];
+        memory = new uint8_t[CPUMap::MEMSIZE];
     }
 
     ~Bus()
