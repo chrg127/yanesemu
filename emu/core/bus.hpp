@@ -2,9 +2,8 @@
 #define BUS_H_INCLUDED
 
 #include <cstdio>
-#include <cstdint>
-#include <cstddef>
 #include <emu/core/memorymap.hpp>
+#include <emu/core/types.hpp>
 
 namespace Core {
 

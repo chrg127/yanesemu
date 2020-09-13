@@ -3,6 +3,8 @@
 
 namespace Core {
 
+namespace CPUMap {
+
 /* General defines for memory map sections. */
 const int MEMSIZE              = 0xFFFF;
 
@@ -84,7 +86,46 @@ const int NMIVEC               = 0xFFFA;
 const int RESETVEC             = 0xFFFC;
 const int IRQBRKVEC            = 0xFFFE;
 
-#endif
+} // namespace CPUMap
+
+namespace PPUMap : uint16_t {
+
+enum PATTERNTAB {
+    TAB0_START  = 0x0000,
+    TAB0_END    = 0x0FFF,
+    TAB1_START  = 0x1000,
+    TAB1_END    = 0x1FFF,
+    TAB_SIZE    = 0x1000,
+};
+
+enum NAMETAB : uint16_t {
+    TAB0_START  = 0x2000,
+    TAB0_END    = 0x23FF,
+    TAB1_START  = 0x2400,
+    TAB1_END    = 0x27FF,
+    TAB2_START  = 0x2800,
+    TAB2_END    = 0x2BFF,
+    TAB3_START  = 0x2C00,
+    TAB3_END    = 0x2FFF,
+    TAB_SIZE    = 0x0400,
+    MIRROR_START = 0x3000;
+    MIRROR_END   = 0x3EFF;
+    MIRROR_SIZE  = 0x0F00;
+};
+
+enum PALRAM : uint16_t {
+    START = 0x3F00;
+    END   = 0x3F1F;
+    SIZE  = 0x0020;
+    MIRROR_START    = 0x3F20;
+    MIRROR_END      = 0x3FFF;
+    MIRROR_SIZE     = 0x0E00;
+};
+
+const uint16_t 
 
 } // namespace Core
+
+#endif
+
 

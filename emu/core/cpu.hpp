@@ -1,9 +1,8 @@
-#ifndef NESCPU_H_INCLUDED
-#define NESCPU_H_INCLUDED
+#ifndef NESCPU_HPP_INCLUDED
+#define NESCPU_HPP_INCLUDED
 
 #include <cstdio>
-#include <cstdint>
-#include <cstddef>
+#include <emu/core/types.hpp>
 #include <emu/core/bus.hpp>
 
 #define INSIDE_CPU_HPP
@@ -12,20 +11,6 @@ namespace Core {
 
 class CPU {
     Bus *bus = nullptr;
-
-    union Reg16 {
-        struct {
-            uint8_t low, high;
-        };
-        uint16_t reg;
-
-        Reg16() : reg(0) { }
-        Reg16(uint16_t val) : reg(val) { }
-        inline void operator=(uint16_t val)
-        {
-            reg = val;
-        }
-    };
 
     uint8_t curropcode;
     Reg16 op;       // operand
@@ -42,7 +27,7 @@ class CPU {
         bool intdis     = 0;
         bool decimal    = 0;
         bool breakf     = 0;
-        bool unused     = 0;
+        bool unused     = 1;
         bool ov         = 0;
         bool neg        = 0;
 
