@@ -5,7 +5,7 @@
 #include <emu/core/types.hpp>
 
 // forward decls
-namespace File {
+namespace IO {
     class FileBuf;
 }
 
@@ -30,7 +30,7 @@ public:
     void initmem(uint8_t *prgrom, size_t romsize);
     uint8_t read(uint16_t addr);
     void write(uint16_t addr, uint8_t val);
-    void memdump(File::FileBuf &f);
+    void memdump(IO::FileBuf &f);
     void reset()
     { }
 };

@@ -27,7 +27,7 @@ void Bus::write(uint16_t addr, uint8_t val)
 }
 
 /* prints the contents of current memory to a file with name fname */
-void Bus::memdump(File::FileBuf &df)
+void Bus::memdump(IO::FileBuf &df)
 {
     int i, j;
     

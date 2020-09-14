@@ -8,7 +8,7 @@
 #include <cstdarg>
 #include <string>
 
-namespace File {
+namespace IO {
 
 enum class Mode {
     READ,

@@ -1,10 +1,9 @@
 #ifndef NESROM_H_INCLUDED
 #define NESROM_H_INCLUDED
 
-#include <cstdint>
-#include <string>
+#include <emu/file/filebuf.hpp>
 
-namespace File {
+namespace IO {
 
 // forward decls
 class FileBuf;
@@ -70,9 +69,7 @@ enum VsHardware : int {
     VSHW_DUALSYS_RAID,
 };
 
-class ROM {
-    FILE *romfile = nullptr;
-    std::string filename;
+class ROM : FileBuf {
     int debugmsg = 0;
 
     enum class Format {
@@ -120,22 +117,18 @@ class ROM {
     bool parseheader();
     void parse_ines();
     void parse_nes20();
-    inline void read(size_t n, uint8_t *buf)
-    {
-        std::fread(buf, 1, n, romfile);
-    }
 
 public:
-
     ~ROM()
     {
-        close();
+        if (prgrom)
+            delete[] prgrom;
+        if (chrrom)
+            delete[] chrrom;
     }
 
-    bool open(const std::string &name);
-    void close();
-    void printinfo(File::FileBuf &f);
-    std::string &geterr();
+    bool open(const std::string &s);
+    void printinfo(IO::FileBuf &f);
 
     Format file_format() const
     { return fformat; }

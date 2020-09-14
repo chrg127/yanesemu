@@ -4,7 +4,7 @@
 #define DEBUG
 #include <emu/utils/debug.hpp>
 
-namespace File {
+namespace IO {
 
 enum ErrID : int {
     ERRID_SUCCESS = 0, ERRID_INVFORMAT, ERRID_NES20, ERRID_FNOTFOUND,
@@ -19,7 +19,7 @@ static std::string rom_errmsg[] = {
 /* NOTE: private functions */
 bool ROM::parseheader()
 {
-    read(HEADER_LEN, header);
+    readb(header, HEADER_LEN);
     fformat = Format::INVALID;
     if (header[0] == 'N' && header[1] == 'E' && header[2] == 'S' && header[3] == 0x1A)
         fformat = Format::INES;
@@ -109,50 +109,33 @@ void ROM::parse_nes20()
         def_expansion_dev = header[15] & 0x3F;
 }
 
-
-
-/* NOTE: public functions */
-bool ROM::open(const std::string &fname)
+bool ROM::open(const std::string &s)
 {
-    romfile = std::fopen(fname.c_str(), "rb");
-    if (!romfile) {
-        debugmsg = ERRID_FNOTFOUND;
+    if (FileBuf::open(s, Mode::READ))
         return false;
-    }
-    filename = fname;
 
     if (!parseheader())
         return false;
 
     // get trainer
     if (has_trainer)
-        read(TRAINER_LEN, trainer);
+        readb(trainer, TRAINER_LEN);
     // allocate program ROM and character ROM
     if (!has_prgram) {
         prgrom = new uint8_t[prgrom_size*16384];
-        read(prgrom_size*16384, prgrom);
+        readb(prgrom, prgrom_size*16384);
     }
     if (!has_chrram) {
         chrrom = new uint8_t[chrrom_size*8192];
-        read(chrrom_size*8192, chrrom);
+        readb(chrrom, chrrom_size*8192);
     }
 
     return true;
 }
 
-void ROM::close()
-{
-    if (romfile)
-        fclose(romfile);
-    if (prgrom)
-        delete[] prgrom;
-    if (chrrom)
-        delete[] chrrom;
-}
-
 void ROM::printinfo(FileBuf &lf)
 {
-    if (lf.isopen())
+    if (!lf.isopen())
         return;
     lf.printf("%s: ", filename.c_str());
     if (fformat == Format::INES)
@@ -183,10 +166,10 @@ void ROM::printinfo(FileBuf &lf)
     lf.putc('\n');
 }
 
-std::string &ROM::geterr()
-{
-    return rom_errmsg[debugmsg];
-}
+// std::string &ROM::geterr()
+// {
+//     return rom_errmsg[debugmsg];
+// }
 
 } // namespace nesrom
 

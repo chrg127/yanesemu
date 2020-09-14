@@ -2,72 +2,72 @@
 #error "Only emu/core/cpu.cpp may #include this file."
 #else
 
-inline static void print_implied(File::FileBuf &f, const char *name)
+inline static void print_implied(IO::FileBuf &f, const char *name)
 {
     f.printf("%s\n", name);
 }
 
-inline static void print_imm(File::FileBuf &f, const char *name, uint8_t op)
+inline static void print_imm(IO::FileBuf &f, const char *name, uint8_t op)
 {
     f.printf("%s #$%02X\n", name, op);
 }
 
-inline static void print_accum(File::FileBuf &f, const char *name)
+inline static void print_accum(IO::FileBuf &f, const char *name)
 {
     f.printf("%s A\n", name);
 }
 
-inline static void print_zero(File::FileBuf &f, const char *name, uint8_t op)
+inline static void print_zero(IO::FileBuf &f, const char *name, uint8_t op)
 {
     f.printf("%s $%02X\n", name, op);
 }
 
-inline static void print_zerox(File::FileBuf &f, const char *name, uint8_t op)
+inline static void print_zerox(IO::FileBuf &f, const char *name, uint8_t op)
 {
     f.printf("%s $%02X,x\n", name, op);
 }
 
-inline static void print_zeroy(File::FileBuf &f, const char *name, uint8_t op)
+inline static void print_zeroy(IO::FileBuf &f, const char *name, uint8_t op)
 {
     f.printf("%s $%02X,y\n", name, op);
 }
 
-inline static void print_abs(File::FileBuf &f, const char *name, uint8_t low, uint8_t hi)
+inline static void print_abs(IO::FileBuf &f, const char *name, uint8_t low, uint8_t hi)
 {
     f.printf("%s $%02X%02X\n", name, hi, low);
 }
 
-inline static void print_absx(File::FileBuf &f, const char *name, uint8_t low, uint8_t hi)
+inline static void print_absx(IO::FileBuf &f, const char *name, uint8_t low, uint8_t hi)
 {
     f.printf("%s $%02X%02X,x\n", name, hi, low);
 }
 
-inline static void print_absy(File::FileBuf &f, const char *name, uint8_t low, uint8_t hi)
+inline static void print_absy(IO::FileBuf &f, const char *name, uint8_t low, uint8_t hi)
 {
     f.printf("%s $%02X%02X,y\n", name, hi, low);
 }
 
-inline static void print_ind(File::FileBuf &f, const char *name, uint8_t low, uint8_t hi)
+inline static void print_ind(IO::FileBuf &f, const char *name, uint8_t low, uint8_t hi)
 {
     f.printf("%s ($%02X%02X)\n", name, hi, low);
 }
 
-inline static void print_indx(File::FileBuf &f, const char *name, uint8_t op)
+inline static void print_indx(IO::FileBuf &f, const char *name, uint8_t op)
 {
     f.printf("%s ($%02X,x)\n", name, op);
 }
 
-inline static void print_indy(File::FileBuf &f, const char *name, uint8_t op)
+inline static void print_indy(IO::FileBuf &f, const char *name, uint8_t op)
 {
     f.printf("%s ($%02X),y\n", name, op);
 }
 
-inline static void print_branch(File::FileBuf &f, const char *name, uint8_t disp, bool took)
+inline static void print_branch(IO::FileBuf &f, const char *name, uint8_t disp, bool took)
 {
     f.printf("%s %d %s\n", name, (int8_t) disp, (took) ? "[Branch taken]" : "[Branch not taken]");
 }
 
-void CPU::disassemble(File::FileBuf &f)
+void CPU::disassemble(IO::FileBuf &f)
 {
     if (!f.isopen())
         return;

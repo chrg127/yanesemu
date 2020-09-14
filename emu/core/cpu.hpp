@@ -185,8 +185,8 @@ public:
     void fire_irq();
     void fire_nmi();
     void reset();
-    void disassemble(File::FileBuf &f);
-    void printinfo(File::FileBuf &f);
+    void disassemble(IO::FileBuf &f);
+    void printinfo(IO::FileBuf &f);
 
     uint8_t peek_opcode() const
     { return curropcode; }

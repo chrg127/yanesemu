@@ -1,25 +1,6 @@
-#include "filebuf.hpp"
+#include <emu/file/filebuf.hpp>
 
-namespace File {
-
-bool FileBuf::assoc(FILE *f, Mode m)
-{
-    // sanitize checks
-    if (f == stdin && m != Mode::READ)
-        return false;
-    if ((f == stdout || f == stderr) && m != Mode::WRITE)
-        return false;
-    buf = f;
-    mode = m;
-    if (f == stdin || f == stdout || f == stderr)
-        filesize = 0;
-    else {
-        std::fseek(buf, 0, SEEK_END);
-        filesize = std::ftell(buf);
-        std::fseek(buf, 0, SEEK_SET);
-    }
-    return true;
-}
+namespace IO {
 
 bool FileBuf::open(const std::string &s, Mode m)
 {
@@ -50,18 +31,24 @@ void FileBuf::close()
     filesize = 0;
 }
 
-// bool FileBuf::reopen(Mode m)
-// {
-//     switch (m) {
-//     case Mode::READ:   buf = std::freopen(s.c_str(), "r");  break;
-//     case Mode::WRITE:  buf = std::freopen(s.c_str(), "w");  break;
-//     case Mode::MODIFY: buf = std::freopen(s.c_str(), "r+"); break;
-//     case Mode::APPEND: buf = std::freopen(s.c_str(), "a");  break;
-//     }
-//     if (!buf)
-//         return false;
-//     return true
-// }
+bool FileBuf::assoc(FILE *f, Mode m)
+{
+    // sanitize checks
+    if (f == stdin && m != Mode::READ)
+        return false;
+    if ((f == stdout || f == stderr) && m != Mode::WRITE)
+        return false;
+    buf = f;
+    mode = m;
+    if (f == stdin || f == stdout || f == stderr)
+        filesize = 0;
+    else {
+        std::fseek(buf, 0, SEEK_END);
+        filesize = std::ftell(buf);
+        std::fseek(buf, 0, SEEK_SET);
+    }
+    return true;
+}
 
 bool FileBuf::getline(std::string &s, int delim)
 {
@@ -77,7 +64,6 @@ bool FileBuf::getline(std::string &s, int delim)
         return false;
     return true;
 }
-
 
 } // namespace File
 

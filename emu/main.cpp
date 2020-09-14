@@ -33,7 +33,7 @@ static Utils::ArgOption cmdflags[] = {
 };
 
 void print_usage(const char *progname);
-void logopen(File::FileBuf &f, uint32_t arg);
+void logopen(IO::FileBuf &f, uint32_t arg);
 
 void print_usage(const char *progname)
 {
@@ -48,20 +48,20 @@ void print_usage(const char *progname)
 // static const char *def_log  = "other/output.log";
 // static const char *def_dump = "other/memdump.log";
 
-void logopen(File::FileBuf &f, uint32_t arg)
+void logopen(IO::FileBuf &f, uint32_t arg)
 {
     if ((flags.bits & arg) == 0)
         return;
 
     std::string &s = flags.get_choice(arg);
     if (s == "stdout")
-        f.assoc(stdout, File::Mode::WRITE);
+        f.assoc(stdout, IO::Mode::WRITE);
     else if (s == "stderr")
-        f.assoc(stderr, File::Mode::WRITE);
+        f.assoc(stderr, IO::Mode::WRITE);
     else if (s == "")
         return;
     else {
-        if (!f.open(s, File::Mode::WRITE))
+        if (!f.open(s, IO::Mode::WRITE))
             error("can't open %s for writing\n", s.c_str());
     }
 }
@@ -69,8 +69,8 @@ void logopen(File::FileBuf &f, uint32_t arg)
 int main(int argc, char *argv[])
 {
     Utils::ArgParser parser(cmdflags, NUM_FLAGS);
-    File::FileBuf logfile, dumpfile;
-    File::ROM rom;
+    IO::FileBuf logfile, dumpfile;
+    IO::ROM rom;
     Core::Bus bus;
     Core::CPU cpu(&bus);
     bool done = false;
@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
         error("ROM file not specified\n");
         return 1;
     } else if (!rom.open(flags.item)) {
-        error("%s\n", rom.geterr().c_str());
+        error("can't open rom\n");
         return 1;
     }
 
