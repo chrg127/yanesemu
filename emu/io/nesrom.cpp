@@ -1,6 +1,6 @@
-#include <emu/file/nesrom.hpp>
+#include <emu/io/nesrom.hpp>
 
-#include <emu/file/filebuf.hpp>
+#include <emu/io/file.hpp>
 #define DEBUG
 #include <emu/utils/debug.hpp>
 
@@ -111,7 +111,7 @@ void ROM::parse_nes20()
 
 bool ROM::open(const std::string &s)
 {
-    if (FileBuf::open(s, Mode::READ))
+    if (File::open(s, Mode::READ))
         return false;
 
     if (!parseheader())
@@ -133,7 +133,7 @@ bool ROM::open(const std::string &s)
     return true;
 }
 
-void ROM::printinfo(FileBuf &lf)
+void ROM::printinfo(File &lf)
 {
     if (!lf.isopen())
         return;

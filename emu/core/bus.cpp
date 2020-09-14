@@ -1,6 +1,6 @@
 #include <emu/core/bus.hpp>
 
-#include <emu/file/filebuf.hpp>
+#include <emu/io/file.hpp>
 #include <cstring>
 
 namespace Core {
@@ -27,7 +27,7 @@ void Bus::write(uint16_t addr, uint8_t val)
 }
 
 /* prints the contents of current memory to a file with name fname */
-void Bus::memdump(IO::FileBuf &df)
+void Bus::memdump(IO::File &df)
 {
     int i, j;
     

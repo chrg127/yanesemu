@@ -3,8 +3,8 @@
 #include <emu/utils/cmdargs.hpp>
 #include <emu/core/bus.hpp>
 #include <emu/core/cpu.hpp>
-#include <emu/file/filebuf.hpp>
-#include <emu/file/nesrom.hpp>
+#include <emu/io/file.hpp>
+#include <emu/io/nesrom.hpp>
 #define DEBUG
 #include <emu/utils/debug.hpp>
 
@@ -33,7 +33,7 @@ static Utils::ArgOption cmdflags[] = {
 };
 
 void print_usage(const char *progname);
-void logopen(IO::FileBuf &f, uint32_t arg);
+void logopen(IO::File &f, uint32_t arg);
 
 void print_usage(const char *progname)
 {
@@ -48,7 +48,7 @@ void print_usage(const char *progname)
 // static const char *def_log  = "other/output.log";
 // static const char *def_dump = "other/memdump.log";
 
-void logopen(IO::FileBuf &f, uint32_t arg)
+void logopen(IO::File &f, uint32_t arg)
 {
     if ((flags.bits & arg) == 0)
         return;
@@ -69,7 +69,7 @@ void logopen(IO::FileBuf &f, uint32_t arg)
 int main(int argc, char *argv[])
 {
     Utils::ArgParser parser(cmdflags, NUM_FLAGS);
-    IO::FileBuf logfile, dumpfile;
+    IO::File logfile, dumpfile;
     IO::ROM rom;
     Core::Bus bus;
     Core::CPU cpu(&bus);

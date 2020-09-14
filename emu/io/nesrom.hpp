@@ -1,12 +1,12 @@
 #ifndef NESROM_H_INCLUDED
 #define NESROM_H_INCLUDED
 
-#include <emu/file/filebuf.hpp>
+#include <emu/io/file.hpp>
 
 namespace IO {
 
 // forward decls
-class FileBuf;
+class File;
 
 const int HEADER_LEN = 16;
 const int TRAINER_LEN = 512;
@@ -69,7 +69,7 @@ enum VsHardware : int {
     VSHW_DUALSYS_RAID,
 };
 
-class ROM : FileBuf {
+class ROM : File {
     int debugmsg = 0;
 
     enum class Format {
@@ -128,7 +128,7 @@ public:
     }
 
     bool open(const std::string &s);
-    void printinfo(IO::FileBuf &f);
+    void printinfo(IO::File &f);
 
     Format file_format() const
     { return fformat; }

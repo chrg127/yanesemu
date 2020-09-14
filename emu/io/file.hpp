@@ -1,7 +1,7 @@
 /* Simple, safe and inheritable self-closing File class. No Windows support. */
 
-#ifndef FILEBUF_HPP_INCLUDED
-#define FILEBUF_HPP_INCLUDED
+#ifndef FILE_HPP_INCLUDED
+#define FILE_HPP_INCLUDED
 
 #include <cstdio>
 #include <cstddef>
@@ -17,7 +17,7 @@ enum class Mode {
     APPEND,
 };
 
-class FileBuf {
+class File {
 protected:
     FILE *buf = nullptr;
     long filesize = 0;
@@ -25,13 +25,13 @@ protected:
     std::string filename;
 
 public:
-    FileBuf() = default;
-    FileBuf(const std::string &s, Mode m)
+    File() = default;
+    File(const std::string &s, Mode m)
     { open(s, m); }
-    FileBuf(FILE *f, Mode m)
+    File(FILE *f, Mode m)
     { assoc(f, m); }
 
-    ~FileBuf()
+    ~File()
     { close(); }
 
     /* open/close functions */

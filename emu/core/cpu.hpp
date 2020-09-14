@@ -9,7 +9,7 @@
 
 // forward decls
 namespace File {
-    class FileBuf;
+    class File;
 }
 
 namespace Core {
@@ -185,8 +185,8 @@ public:
     void fire_irq();
     void fire_nmi();
     void reset();
-    void disassemble(IO::FileBuf &f);
-    void printinfo(IO::FileBuf &f);
+    void disassemble(IO::File &f);
+    void printinfo(IO::File &f);
 
     uint8_t peek_opcode() const
     { return curropcode; }

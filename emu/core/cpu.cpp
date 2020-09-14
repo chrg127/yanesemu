@@ -3,8 +3,8 @@
 #include <cstdio>
 #include <cctype>
 #include <cstring>
-#include <emu/file/filebuf.hpp>
-#include <emu/file/nesrom.hpp>
+#include <emu/io/file.hpp>
+#include <emu/io/nesrom.hpp>
 
 #define DEBUG
 #include <emu/utils/debug.hpp>
@@ -327,7 +327,7 @@ void CPU::reset()
 
 /* Prints info about the instruction which has just been executed and
  * the status of the registers. */
-void CPU::printinfo(IO::FileBuf &lf)
+void CPU::printinfo(IO::File &lf)
 {
     if (!lf.isopen())
         return;

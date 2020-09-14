@@ -1,8 +1,8 @@
-#include <emu/file/filebuf.hpp>
+#include <emu/io/file.hpp>
 
 namespace IO {
 
-bool FileBuf::open(const std::string &s, Mode m)
+bool File::open(const std::string &s, Mode m)
 {
     close();
 
@@ -22,7 +22,7 @@ bool FileBuf::open(const std::string &s, Mode m)
     return false;
 }
 
-void FileBuf::close()
+void File::close()
 {
     if (!buf || buf == stdin || buf == stdout || buf == stderr)
         return;
@@ -31,7 +31,7 @@ void FileBuf::close()
     filesize = 0;
 }
 
-bool FileBuf::assoc(FILE *f, Mode m)
+bool File::assoc(FILE *f, Mode m)
 {
     // sanitize checks
     if (f == stdin && m != Mode::READ)
@@ -50,7 +50,7 @@ bool FileBuf::assoc(FILE *f, Mode m)
     return true;
 }
 
-bool FileBuf::getline(std::string &s, int delim)
+bool File::getline(std::string &s, int delim)
 {
     // could probably be optimized.
     int c;
