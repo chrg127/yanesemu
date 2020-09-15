@@ -7,27 +7,27 @@ bool File::open(const std::string &s, Mode m)
     close();
 
     switch (m) {
-    case Mode::READ:   buf = std::fopen(s.c_str(), "r");  break;
-    case Mode::WRITE:  buf = std::fopen(s.c_str(), "w");  break;
-    case Mode::MODIFY: buf = std::fopen(s.c_str(), "r+"); break;
-    case Mode::APPEND: buf = std::fopen(s.c_str(), "a");  break;
+    case Mode::READ:   fbuf = std::fopen(s.c_str(), "r");  break;
+    case Mode::WRITE:  fbuf = std::fopen(s.c_str(), "w");  break;
+    case Mode::MODIFY: fbuf = std::fopen(s.c_str(), "r+"); break;
+    case Mode::APPEND: fbuf = std::fopen(s.c_str(), "a");  break;
     }
-    if (!buf)
-        return true;
+    if (!fbuf)
+        return false;
     mode = m;
     filename = s;
-    std::fseek(buf, 0, SEEK_END);
-    filesize = std::ftell(buf);
-    std::fseek(buf, 0, SEEK_SET);
-    return false;
+    std::fseek(fbuf, 0, SEEK_END);
+    filesize = std::ftell(fbuf);
+    std::fseek(fbuf, 0, SEEK_SET);
+    return true;
 }
 
 void File::close()
 {
-    if (!buf || buf == stdin || buf == stdout || buf == stderr)
+    if (!fbuf || fbuf == stdin || fbuf == stdout || fbuf == stderr)
         return;
-    fclose(buf);
-    buf = nullptr;
+    fclose(fbuf);
+    fbuf = nullptr;
     filesize = 0;
 }
 
@@ -38,14 +38,14 @@ bool File::assoc(FILE *f, Mode m)
         return false;
     if ((f == stdout || f == stderr) && m != Mode::WRITE)
         return false;
-    buf = f;
+    fbuf = f;
     mode = m;
     if (f == stdin || f == stdout || f == stderr)
         filesize = 0;
     else {
-        std::fseek(buf, 0, SEEK_END);
-        filesize = std::ftell(buf);
-        std::fseek(buf, 0, SEEK_SET);
+        std::fseek(fbuf, 0, SEEK_END);
+        filesize = std::ftell(fbuf);
+        std::fseek(fbuf, 0, SEEK_SET);
     }
     return true;
 }
@@ -55,14 +55,12 @@ bool File::getline(std::string &s, int delim)
     // could probably be optimized.
     int c;
     
-    if (!buf || (mode != Mode::READ && mode != Mode::MODIFY))
+    if (!fbuf || (mode != Mode::READ && mode != Mode::MODIFY))
         return false;
     s.erase();
     while (c = getc(), c != delim && c != EOF)
         s += c;
-    if (c == EOF)
-        return false;
-    return true;
+    return (c == EOF) ? false : true;
 }
 
 } // namespace File

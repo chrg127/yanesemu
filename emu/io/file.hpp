@@ -16,9 +16,15 @@ enum class Mode {
     APPEND,
 };
 
+enum class BufMode {
+    UNBUF,
+    LINEBUF,
+    FULLBUF,
+};
+
 class File {
 protected:
-    FILE *buf = nullptr;
+    FILE *fbuf = nullptr;
     long filesize = 0;
     Mode mode = Mode::READ;
     std::string filename;
@@ -37,77 +43,86 @@ public:
     bool open(const std::string &s, Mode m);
     void close();
     bool assoc(FILE *f, Mode m);
-    // bool reopen();
 
     inline bool isopen()
-    { return buf ? true : false; }
+    { return fbuf ? true : false; }
 
     inline long size() const
     { return filesize; }
 
     inline bool eof()
     {
-        if (!buf)
+        if (!fbuf)
             return true;
-        return std::feof(buf) == 0 ? false : true;
+        return std::feof(fbuf) == 0 ? false : true;
     }
 
     inline bool error()
     {   
-        if (!buf)
+        if (!fbuf)
             return true;
-        return ferror(buf) == 0 ? false : true;
+        return ferror(fbuf) == 0 ? false : true;
     }
 
     inline int flush()
     {
-        if (!buf || mode == Mode::READ)
-            return EOF;
-        return fflush(buf);
+        return (!fbuf || mode == Mode::READ) ?
+            EOF : fflush(fbuf);
     }
 
     inline int seek(long offset, int origin)
     {
-        if (!buf)
-            return 1;
-        return fseek(buf, offset, origin);
+        return (!fbuf) ? 1 : fseek(fbuf, offset, origin);
+    }
+
+    inline void set_buffer_mode(BufMode m)
+    {
+        switch (m) {
+        case BufMode::UNBUF: setvbuf(fbuf, nullptr, _IONBF, 0);
+        case BufMode::LINEBUF: setvbuf(fbuf, nullptr, _IOLBF, 0);
+        case BufMode::FULLBUF: setvbuf(fbuf, nullptr, _IOFBF, 0);
+        }
     }
     
     /* 
      * strictly for compatibility with existing FILE APIs.
-     * if state invalidation might be a concern, use releasebuf()
+     * if state invalidation might be a concern, use releasefbuf()
      */
-    inline FILE *getbuf()
-    { return buf; }
+    inline FILE *getfbuf()
+    { return fbuf; }
 
     inline int getfd()
-    { return fileno(buf); }
+    { return fileno(fbuf); }
 
-    inline FILE *releasebuf()
+    inline FILE *releasefbuf()
     {
-        FILE *toret = buf;
+        FILE *toret = fbuf;
         mode = Mode::READ;
         filesize = 0;
         filename = "";
-        buf = nullptr;
+        fbuf = nullptr;
         return toret;
     }
 
 
 
     /* Read functions */
-    inline std::size_t readb(void *inbuf, std::size_t bn)
+    inline std::size_t readb(void *infbuf, std::size_t bn)
     {
-        if (!buf || (mode != Mode::READ && mode != Mode::MODIFY))
-            return EOF;
-        return std::fread(inbuf, 1, bn, buf);
+        return (!fbuf || (mode != Mode::READ && mode != Mode::MODIFY)) ?
+            EOF : std::fread(infbuf, 1, bn, fbuf);
     }
 
     inline int getc()
     {
-        if (!buf || (mode != Mode::READ && mode != Mode::MODIFY))
-            return EOF;
-        return std::fgetc(buf);
+        return (!fbuf || (mode != Mode::READ && mode != Mode::MODIFY)) ?
+            EOF : std::fgetc(fbuf);
+    }
+
+    inline int ungetc(int c)
+    {
+        return (!fbuf || (mode != Mode::READ && mode != Mode::MODIFY)) ?
+            EOF : std::ungetc(c, fbuf);
     }
 
     bool getline(std::string &s, int delim = '\n');
@@ -124,23 +139,20 @@ public:
     /* write functions */
     inline std::size_t writeb(void *what, std::size_t nb)
     {
-        if (!buf || mode == Mode::READ)
-            return 0;
-        return std::fwrite(what, 1, nb, buf);
+        return (!fbuf || mode == Mode::READ) ? 0 :
+            std::fwrite(what, 1, nb, fbuf);
     }
 
     inline int putc(char c)
     {
-        if (!buf || mode == Mode::READ)
-            return EOF;
-        return std::fputc(c, buf);
+        return (!fbuf || mode == Mode::READ) ?
+            EOF : std::fputc(c, fbuf);
     }
     
     inline int putstr(const std::string &s)
     {
-        if (!buf || mode == Mode::READ)
-            return EOF;
-        return std::fputs(s.c_str(), buf);
+        return (!fbuf || mode == Mode::READ) ?
+            EOF : std::fputs(s.c_str(), fbuf);
     }
 
     inline int printf(const char *fmt, ...)
@@ -148,11 +160,11 @@ public:
     __attribute__((format(printf, 2, 3)))
 #endif
     {
-        if (!buf || mode == Mode::READ)
+        if (!fbuf || mode == Mode::READ)
             return 0;
         va_list ap;
         va_start(ap, fmt);
-        int toret = vfprintf(buf, fmt, ap);
+        int toret = vfprintf(fbuf, fmt, ap);
         va_end(ap);
         return toret;
     }

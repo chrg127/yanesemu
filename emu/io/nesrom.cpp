@@ -111,7 +111,7 @@ void ROM::parse_nes20()
 
 bool ROM::open(const std::string &s)
 {
-    if (File::open(s, Mode::READ))
+    if (!File::open(s, Mode::READ))
         return false;
 
     if (!parseheader())
