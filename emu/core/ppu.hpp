@@ -1,5 +1,9 @@
-#include <emu/core/memorymap.hpp>
+#ifndef PPU_HPP_INCLUDED
+#define PPU_HPP_INCLUDED
+
 #include <emu/core/types.hpp>
+#include <emu/core/memorymap.hpp>
+#include <emu/core/ppubus.hpp>
 
 namespace Core {
 
@@ -28,30 +32,40 @@ enum PPU_STATUS : int {
     LBITS       = 0x1F,
     SPR_OV      = 0x20,
     SPR_ZERO    = 0x40,
-    VBLANK      = 0x80;
+    VBLANK      = 0x80,
 };
 
 // NOTE: ppu_internal_data_bus exists, where should be put?
 
 class PPU {
-    Bus *bus = nullptr;
+    PPUBus *bus = nullptr;
+    uint8_t *oam = nullptr;
     
-    uint8_t gamepak_rom_ram[];
-    uint8_t console_ram[];
-    uint8_t palette[];
-    uint8_t oam[];
-    
-    struct {
-        uint8_t ctrl;       // $2000, write
-        uint8_t mask;       // $2001, write
-        uint8_t status;     // $2002, read
-        uint8_t oam_addr;   // $2003, write
-        uint8_t oam_data;   // $2004, read/write
-        uint8_t scroll;     // $2005, write twice
-        uint8_t address;    // $2006, write twice
-        uint8_t data;       // $2007, read/write
-        uint8_t oam_dma     // $4014, write
-    } regs;
+    uint8_t ctrl;
+    uint8_t mask;
+    uint8_t status;
+    uint8_t oam_addr;
+    uint8_t oam_data;
+    uint8_t scroll;
+    uint8_t address;
+    uint8_t ppu_data;
+    uint8_t oam_dma;
+
+public:
+    PPU()
+    {
+        oam = new uint8_t[PPUMap::OAM_SIZE];
+    }
+
+    ~PPU()
+    {
+        delete[] oam;
+    }
+
+    uint8_t readreg(const uint16_t which) const;
+    void writereg(const uint16_t which, const uint8_t data);
 };
 
-}
+} // namespace Core
+
+#endif

@@ -8,7 +8,7 @@ namespace Core {
 namespace CPUMap {
 
 /* General defines for memory map sections. */
-const uint16_t MEMSIZE              = 0xFFFF;
+const int MEMSIZE              = 0xFFFF+1;
 
 const uint16_t RAM_START            = 0;
 const uint16_t RAM_END              = 0x07FF;
@@ -92,12 +92,14 @@ const uint16_t IRQBRKVEC            = 0xFFFE;
 
 namespace PPUMap {
 
+const int MEMSIZE = 0x4000+1;
+
 enum { //PATTERNTAB : uint16_t {
-    PATTERN_TAB0_START  = 0x0000,
-    PATTERN_TAB0_END    = 0x0FFF,
-    PATTERN_TAB1_START  = 0x1000,
-    PATTERN_TAB1_END    = 0x1FFF,
-    PATTERN_TAB_SIZE    = 0x1000,
+    PATTERN_TABLEFT_START  = 0x0000,
+    PATTERN_TABLEFT_END    = 0x0FFF,
+    PATTERN_TABRIGHT_START = 0x1000,
+    PATTERN_TABRIGHT_END   = 0x1FFF,
+    PATTERN_TAB_SIZE       = 0x1000,
 };
 
 enum { //NAMETAB : uint16_t {
@@ -123,6 +125,8 @@ enum { //PALRAM : uint16_t {
     PALRAM_MIRROR_END      = 0x3FFF,
     PALRAM_MIRROR_SIZE     = 0x0E00,
 };
+
+const uint16_t OAM_SIZE = 0x100;
 
 } // namespace PPUMap
 

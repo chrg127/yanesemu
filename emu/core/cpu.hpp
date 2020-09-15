@@ -1,16 +1,14 @@
 #ifndef NESCPU_HPP_INCLUDED
 #define NESCPU_HPP_INCLUDED
 
-#include <cstdio>
+#include <cstddef>
 #include <emu/core/types.hpp>
 #include <emu/core/bus.hpp>
 
 #define INSIDE_CPU_HPP
 
 // forward decls
-namespace File {
-    class File;
-}
+namespace IO { class File; }
 
 namespace Core {
 

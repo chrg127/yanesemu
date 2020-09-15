@@ -332,7 +332,6 @@ void CPU::printinfo(IO::File &lf)
     if (!lf.isopen())
         return;
 
-    // disassemble(op.low, op.high, logfile);
     lf.printf("PC: %04X A: %02X X: %02X Y: %02X S: %02X ",
                    pc.reg, accum, xreg, yreg, sp);
 

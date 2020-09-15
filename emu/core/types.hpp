@@ -1,7 +1,6 @@
 #ifndef CORE_TYPES_HPP_INCLUDED
 #define CORE_TYPES_HPP_INCLUDED
 
-#include <cstddef>
 #include <cstdint>
 
 namespace Core {
@@ -20,6 +19,6 @@ union Reg16 {
     }
 };
 
-}
+} // namespace Core
 
 #endif

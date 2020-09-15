@@ -8,7 +8,7 @@ namespace Core {
 /* copies rom memory and initizializes all other memory to 0 */
 void Bus::initmem(uint8_t *prgrom, size_t romsize)
 {
-    std::memset(memory, 0, CPUMap::PRGROM_START-1);
+    std::memset(memory, 0, CPUMap::MEMSIZE);
     std::memcpy(memory+CPUMap::PRGROM_START, prgrom + romsize - (CPUMap::PRGROM_SIZE+1), CPUMap::PRGROM_SIZE);
 }
 
@@ -31,6 +31,7 @@ void Bus::memdump(IO::File &df)
 {
     int i, j;
     
+    df.printf("=== CPU Memory ===\n");
     if (!df.isopen())
         return;
     for (i = 0; i < CPUMap::MEMSIZE; ) {
@@ -41,6 +42,7 @@ void Bus::memdump(IO::File &df)
         }
         df.putc('\n');
     }
+    df.putc('\n');
 }
 
 } // namespace Core

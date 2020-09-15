@@ -1,8 +1,9 @@
 #ifndef BUS_H_INCLUDED
 #define BUS_H_INCLUDED
 
-#include <emu/core/memorymap.hpp>
+#include <cstddef>
 #include <emu/core/types.hpp>
+#include <emu/core/memorymap.hpp>
 
 // forward decls
 namespace IO {
