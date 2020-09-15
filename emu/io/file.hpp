@@ -4,7 +4,6 @@
 #define FILE_HPP_INCLUDED
 
 #include <cstdio>
-#include <cstddef>
 #include <cstdarg>
 #include <string>
 
@@ -97,7 +96,7 @@ public:
 
 
     /* Read functions */
-    inline size_t readb(void *inbuf, size_t bn)
+    inline std::size_t readb(void *inbuf, std::size_t bn)
     {
         if (!buf || (mode != Mode::READ && mode != Mode::MODIFY))
             return EOF;
@@ -123,7 +122,7 @@ public:
 
 
     /* write functions */
-    inline size_t writeb(void *what, size_t nb)
+    inline std::size_t writeb(void *what, std::size_t nb)
     {
         if (!buf || mode == Mode::READ)
             return 0;

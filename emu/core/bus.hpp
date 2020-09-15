@@ -28,7 +28,7 @@ public:
         delete[] memory;
     }
 
-    void initmem(uint8_t *prgrom, size_t romsize);
+    void initmem(uint8_t *prgrom, std::size_t romsize);
     uint8_t read(uint16_t addr);
     void write(uint16_t addr, uint8_t val);
     void memdump(IO::File &f);

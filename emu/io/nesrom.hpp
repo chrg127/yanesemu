@@ -140,7 +140,7 @@ public:
     { return has_chrram; }
     uint8_t *get_prgrom() const
     { return prgrom; }
-    size_t get_prgrom_size() const
+    std::size_t get_prgrom_size() const
     { return prgrom_size*16384; }
 };
 

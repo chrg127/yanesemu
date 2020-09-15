@@ -6,7 +6,7 @@
 namespace Core {
 
 /* copies rom memory and initizializes all other memory to 0 */
-void Bus::initmem(uint8_t *prgrom, size_t romsize)
+void Bus::initmem(uint8_t *prgrom, std::size_t romsize)
 {
     std::memset(memory, 0, CPUMap::MEMSIZE);
     std::memcpy(memory+CPUMap::PRGROM_START, prgrom + romsize - (CPUMap::PRGROM_SIZE+1), CPUMap::PRGROM_SIZE);
