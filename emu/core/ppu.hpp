@@ -3,9 +3,80 @@
 
 #include <emu/core/types.hpp>
 #include <emu/core/memorymap.hpp>
-#include <emu/core/ppubus.hpp>
 
 namespace Core {
+
+// forward decls
+class PPUBus;
+
+class PPU {
+    PPUBus *bus = nullptr;
+    uint8_t *oam = nullptr;
+
+    bool did_reset = false;
+    
+    // ppu's internal data bus. gets filled on reading and writing to regs.
+    uint8_t ppu_io_latch;
+
+    uint8_t ctrl;
+    uint8_t mask;
+    uint8_t status;
+    uint8_t oam_addr;
+    uint8_t oam_data;
+    struct {
+        uint8_t x = 0, y = 0;
+        bool latch = false;
+
+        void operator=(uint8_t data)
+        {
+            // ((!latch) ? x : y) = data;
+            if (!latch)
+                x = data;
+            else
+                y = data;
+            latch ^= 1;
+        }
+
+        inline void clear()
+        { x = y = latch = 0; }
+    } scroll;
+    struct {
+        uint8_t hi = 0, lo = 0;
+        bool latch = false;
+
+        void operator=(uint8_t data)
+        {
+            if (!latch)
+                hi = data;
+            else
+                lo = data;
+            latch ^= 1;
+        }
+
+        inline void clear()
+        { hi = lo = latch = 0; }
+    } address;
+    uint8_t ppu_data;
+    uint8_t oam_dma;
+
+    uint8_t scroll_latch, address_latch;
+
+public:
+    PPU()
+    {
+        oam = new uint8_t[PPUMap::OAM_SIZE];
+    }
+
+    ~PPU()
+    {
+        delete[] oam;
+    }
+    
+    void power(uint8_t *chrrom);
+    void reset();
+    uint8_t readreg(const uint16_t which);
+    void writereg(const uint16_t which, const uint8_t data);
+};
 
 enum PPU_CTRL : int {
     NAMETABLE_ADDR      = 0x03, // 0: $2000, 1: $2400, 2: $2800, 3: $2C00
@@ -33,37 +104,6 @@ enum PPU_STATUS : int {
     SPR_OV      = 0x20,
     SPR_ZERO    = 0x40,
     VBLANK      = 0x80,
-};
-
-// NOTE: ppu_internal_data_bus exists, where should be put?
-
-class PPU {
-    PPUBus *bus = nullptr;
-    uint8_t *oam = nullptr;
-    
-    uint8_t ctrl;
-    uint8_t mask;
-    uint8_t status;
-    uint8_t oam_addr;
-    uint8_t oam_data;
-    uint8_t scroll;
-    uint8_t address;
-    uint8_t ppu_data;
-    uint8_t oam_dma;
-
-public:
-    PPU()
-    {
-        oam = new uint8_t[PPUMap::OAM_SIZE];
-    }
-
-    ~PPU()
-    {
-        delete[] oam;
-    }
-
-    uint8_t readreg(const uint16_t which) const;
-    void writereg(const uint16_t which, const uint8_t data);
 };
 
 } // namespace Core

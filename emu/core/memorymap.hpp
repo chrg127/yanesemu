@@ -26,14 +26,14 @@ const uint16_t RAM_MIRROR3_START    = 0x1800;
 const uint16_t RAM_MIRROR3_END      = 0x17FF;
 
 enum PPUREG : int {
-    CTRL    = 0x2000,
-    MASK    = 0x2001,
-    STATUS  = 0x2002,
-    OAMADDR = 0x2003,
-    OAMDATA = 0x2004,
-    SCROLL  = 0x2005,
-    ADDR    = 0x2006,
-    DATA    = 0x2007,
+    PPU_CTRL    = 0x2000,
+    PPU_MASK    = 0x2001,
+    PPU_STATUS  = 0x2002,
+    PPU_OAM_ADDR = 0x2003,
+    PPU_OAM_DATA = 0x2004,
+    PPU_SCROLL  = 0x2005,
+    PPU_ADDR    = 0x2006,
+    PPU_DATA    = 0x2007,
 };
 
 const uint16_t PPU_MIRROR_START  = 0x2008;
@@ -67,7 +67,7 @@ enum APUREG : int {
     APU_FC          = 0x4017,
 };
 
-const uint16_t OAMDMA               = 0x4014;
+const uint16_t PPU_OAM_DMA               = 0x4014;
 const uint16_t JOYREG1              = 0x4016;
 const uint16_t JOYREG2              = 0x4017;
 
