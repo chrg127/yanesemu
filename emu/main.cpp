@@ -69,7 +69,7 @@ void logopen(IO::File &f, uint32_t arg)
 int main(int argc, char *argv[])
 {
     Utils::ArgParser parser(cmdflags, NUM_FLAGS);
-    IO::File logfile, dumpfile;
+    IO::File logfile, dumpfile, fout;
     IO::ROM rom;
     Core::Bus bus;
     Core::CPU cpu(&bus);
@@ -101,8 +101,9 @@ int main(int argc, char *argv[])
 
     logopen(logfile, ARG_LOG_FILE);
     logopen(dumpfile, ARG_DUMP_FILE);
-    
-    rom.printinfo(logfile);
+    fout.assoc(stdout, IO::Mode::WRITE);
+
+    rom.printinfo(fout);
     cpu.power(rom.get_prgrom(), rom.get_prgrom_size());
     counter = 20;
     while (!done) {
