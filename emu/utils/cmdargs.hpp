@@ -21,15 +21,36 @@ struct ArgFlags {
     uint32_t bits = 0;      /* what arguments have been found */                 
     std::string *choices;   /* the choices found for any arg that accept them */ 
     std::string item = "";  /* the not-an-option item */
-    
-    ArgFlags(int n) 
-    {
-        choices = new std::string[n];
-    }
+
+    ArgFlags() : choices(nullptr)
+    { }
+    ArgFlags(int n) : choices(new std::string[n])
+    { }
 
     ~ArgFlags()
-    { 
-        delete[] choices;
+    {
+        if (choices)
+            delete[] choices;
+    }
+
+    ArgFlags(ArgFlags &&f)
+    {
+        bits = f.bits;
+        choices = f.choices;
+        item = f.item;
+        f.choices = nullptr;
+        f.bits = 0;
+        f.item = "";
+    }
+
+    ArgFlags &operator=(ArgFlags &&f)
+    {
+        bits = f.bits;
+        choices = f.choices;
+        item = f.item;
+        f.choices = nullptr;
+        f.bits = 0;
+        return *this;
     }
 
     std::string &get_choice(int arg);
@@ -49,7 +70,7 @@ public:
         : args(a), nargs(n)
     { }
 
-    void parse_args(ArgFlags &f, int argc, char *argv[]);
+    ArgFlags parse_args(int argc, char *argv[]);
 };
 
 } // namespace CommandLine

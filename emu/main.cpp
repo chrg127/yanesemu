@@ -10,7 +10,7 @@
 
 static const char *version_str = "0.1";
 static const int NUM_FLAGS = 5;
-static Utils::ArgFlags flags(NUM_FLAGS);
+static Utils::ArgFlags flags;
 
 enum Args : uint32_t {
     ARG_BREAK_ON_BRK = 0x01,
@@ -75,13 +75,13 @@ int main(int argc, char *argv[])
     Core::CPU cpu(&bus);
     bool done = false;
     int counter;
-    
+
     if (argc < 2) {
         print_usage(*argv);
         return 1;
     }
 
-    parser.parse_args(flags, argc, argv);
+    flags = parser.parse_args(argc, argv);
     if (flags.bits & ARG_HELP) {
         print_usage(*argv);
         return 0;

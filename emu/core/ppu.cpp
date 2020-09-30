@@ -38,8 +38,8 @@ uint8_t PPU::readreg(const uint16_t which)
     case CPUMap::PPU_CTRL:     break;
     case CPUMap::PPU_MASK:     break;
     case CPUMap::PPU_STATUS:
-        ppu_io_latch |= (status & 0xE0);
-        scroll.latch = address.latch = false
+        // ppu_io_latch |= (status & 0xE0);
+        // scroll.latch = address.latch = false
         break;
     case CPUMap::PPU_OAM_ADDR: break;
     case CPUMap::PPU_OAM_DATA: ppu_io_latch = oam_data; break;

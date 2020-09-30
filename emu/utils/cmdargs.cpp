@@ -74,10 +74,11 @@ bool ArgParser::check_arg(ArgFlags &flags, const char *arg, const char *argnext)
 }
 
 // NOTE: public functions
-void ArgParser::parse_args(ArgFlags &f, int argc, char *argv[])
+ArgFlags ArgParser::parse_args(int argc, char *argv[])
 {
     bool skip_arg = false;
-    
+    ArgFlags f(nargs);
+
     for (int i = 0; i < nargs; i++)
         f.choices[i] = "";
     while (++argv, --argc > 0) {
@@ -94,6 +95,7 @@ void ArgParser::parse_args(ArgFlags &f, int argc, char *argv[])
                 warning("invalid option: %s (missing beginning -)\n", *argv);
         }
     }
+    return f;
 }
 
 } // namespace CommandLine
