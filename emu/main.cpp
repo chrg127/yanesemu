@@ -108,7 +108,9 @@ int main(int argc, char *argv[])
     counter = 20;
     while (!done) {
         cpu.main();
-        cpu.disassemble(logfile);
+        logfile.printf("Instruction [%02X] ", cpu.peek_opcode());
+        logfile.putstr(cpu.disassemble().c_str());
+        logfile.putc('\n');
         cpu.printinfo(logfile);
         if (flags.bits & ARG_BREAK_ON_BRK && cpu.peek_opcode() == 0) {
             DBGPRINT("got BRK, stopping emulation\n");

@@ -2,88 +2,109 @@
 #error "Only emu/core/cpu.cpp may #include this file."
 #else
 
-inline static void print_implied(IO::File &f, const char *name)
+inline static std::string disass_implied(const char name[4])
 {
-    f.printf("%s\n", name);
+    return std::string(name);
 }
 
-inline static void print_imm(IO::File &f, const char *name, uint8_t op)
+inline static std::string disass_imm(const char name[4], uint8_t op)
 {
-    f.printf("%s #$%02X\n", name, op);
+    char res[3+3+2+1];
+    sprintf(res, "%s #$%02X", name, op);
+    return std::string(res);
 }
 
-inline static void print_accum(IO::File &f, const char *name)
+inline static std::string disass_accum(const char name[4])
 {
-    f.printf("%s A\n", name);
+    char res[3+2+1];
+    sprintf(res, "%s A", name);
+    return std::string(res);
 }
 
-inline static void print_zero(IO::File &f, const char *name, uint8_t op)
+inline static std::string disass_zero(const char name[4], uint8_t op)
 {
-    f.printf("%s $%02X\n", name, op);
+    char res[3+2+2+1];
+    sprintf(res, "%s $%02X", name, op);
+    return std::string(res);
 }
 
-inline static void print_zerox(IO::File &f, const char *name, uint8_t op)
+inline static std::string disass_zerox(const char name[4], uint8_t op)
 {
-    f.printf("%s $%02X,x\n", name, op);
+    char res[3+2+2+2+1];
+    sprintf(res, "%s $%02X,x", name, op);
+    return std::string(res);
 }
 
-inline static void print_zeroy(IO::File &f, const char *name, uint8_t op)
+inline static std::string disass_zeroy(const char name[4], uint8_t op)
 {
-    f.printf("%s $%02X,y\n", name, op);
+    char res[3+2+2+2+1];
+    sprintf(res, "%s $%02X,y", name, op);
+    return std::string(res);
 }
 
-inline static void print_abs(IO::File &f, const char *name, uint8_t low, uint8_t hi)
+inline static std::string disass_abs(const char name[4], uint8_t low, uint8_t hi)
 {
-    f.printf("%s $%02X%02X\n", name, hi, low);
+    char res[3+2+2+2+1];
+    sprintf(res, "%s $%02X%02X", name, hi, low);
+    return std::string(res);
 }
 
-inline static void print_absx(IO::File &f, const char *name, uint8_t low, uint8_t hi)
+inline static std::string disass_absx(const char name[4], uint8_t low, uint8_t hi)
 {
-    f.printf("%s $%02X%02X,x\n", name, hi, low);
+    char res[3+2+2+2+2+1];
+    sprintf(res, "%s $%02X%02X,x", name, hi, low);
+    return std::string(res);
 }
 
-inline static void print_absy(IO::File &f, const char *name, uint8_t low, uint8_t hi)
+inline static std::string disass_absy(const char name[4], uint8_t low, uint8_t hi)
 {
-    f.printf("%s $%02X%02X,y\n", name, hi, low);
+    char res[3+2+2+2+2+1];
+    sprintf(res, "%s $%02X%02X,y", name, hi, low);
+    return std::string(res);
 }
 
-inline static void print_ind(IO::File &f, const char *name, uint8_t low, uint8_t hi)
+inline static std::string disass_ind(const char name[4], uint8_t low, uint8_t hi)
 {
-    f.printf("%s ($%02X%02X)\n", name, hi, low);
+    char res[3+3+2+2+1+1];
+    sprintf(res, "%s ($%02X%02X)", name, hi, low);
+    return std::string(res);
 }
 
-inline static void print_indx(IO::File &f, const char *name, uint8_t op)
+inline static std::string disass_indx(const char name[4], uint8_t op)
 {
-    f.printf("%s ($%02X,x)\n", name, op);
+    char res[3+3+2+3+1];
+    sprintf(res, "%s ($%02X,x)", name, op);
+    return std::string(res);
 }
 
-inline static void print_indy(IO::File &f, const char *name, uint8_t op)
+inline static std::string disass_indy(const char name[4], uint8_t op)
 {
-    f.printf("%s ($%02X),y\n", name, op);
+    char res[3+3+2+3+1];
+    sprintf(res, "%s ($%02X),y", name, op);
+    return std::string(res);
 }
 
-inline static void print_branch(IO::File &f, const char *name, uint8_t disp, bool took)
+inline static std::string disass_branch(const char name[4], uint8_t addr, bool took)
 {
-    f.printf("%s %d %s\n", name, (int8_t) disp, (took) ? "[Branch taken]" : "[Branch not taken]");
+    char res[3+1+5+1+18+1];
+    sprintf(res, "%s $%04X %s", name, addr, (took) ? "[Branch taken]" : "[Branch not taken]");
+    return std::string(res);
 }
 
-void CPU::disassemble(IO::File &f)
+std::string CPU::disassemble()
 {
-    if (!f.isopen())
-        return;
     uint8_t op1 = op.low;
     uint8_t op2 = op.high;
 
 #define INSTR_IMPLD(id, name) \
-    case id: print_implied(f, #name); return;
+    case id: return disass_implied(#name);
 #define INSTR_AMODE(id, name, mode, ...) \
-    case id: print_##mode(f, #name, __VA_ARGS__); return;
+    case id: return disass_##mode(#name, __VA_ARGS__);
 #define INSTR_BRNCH(id, name, expr) \
-    case id: print_branch(f, #name, op1, expr); return;
+    case id: return disass_branch(#name, op1, expr);
 #define INSTR_ACCUM(id, name) \
-    case id: print_accum(f, #name); return;
+    case id: disass_accum(#name); return "";
 
-    f.printf("Instruction [%02X] ", curropcode);
     switch(curropcode) {
         INSTR_IMPLD(0x00, BRK)
         INSTR_AMODE(0x01, ORA, indx, op1)
@@ -236,8 +257,7 @@ void CPU::disassemble(IO::File &f)
         INSTR_AMODE(0xFD, SBC, absx, op1, op2)
         INSTR_AMODE(0xFE, INC, absx, op1, op2)
         default:
-            f.printf("UNKNOWN\n");
-            return;
+            return "[Unknown]";
     }
 
 #undef INSTR_IMPLD

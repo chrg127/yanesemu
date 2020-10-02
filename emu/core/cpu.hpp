@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <emu/core/types.hpp>
 #include <emu/core/bus.hpp>
+#include <string>
 
 #define INSIDE_CPU_HPP
 
@@ -183,7 +184,7 @@ public:
     void fire_irq();
     void fire_nmi();
     void reset();
-    void disassemble(IO::File &f);
+    std::string disassemble();
     void printinfo(IO::File &f);
 
     uint8_t peek_opcode() const
