@@ -1,5 +1,13 @@
-// #define error(...)      do { std::fprintf(stderr, "error: " __VA_ARGS__); } while (0)
-// #define warning(...)    do { std::fprintf(stderr, "warning: " __VA_ARGS__); } while (0)
+/*
+ * debug.h: debugging utilities: a collection of macros and inline functions to
+ * be used for debugging and error messages.
+ * #define DEBUG to use the macros. error message functions need not to define
+ * it.
+ */
+#ifndef DEBUG_HPP_INCLUDED
+#define DEBUG_HPP_INCLUDED
+
+#include <cstdio>
 #include <cstdarg>
 
 inline void
@@ -42,3 +50,4 @@ warning(const char *fmt, ...)
 #define DBGPRINTHEX16(val)  ;
 #endif
 
+#endif

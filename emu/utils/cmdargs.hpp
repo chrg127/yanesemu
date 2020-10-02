@@ -1,5 +1,11 @@
-#ifndef CMDLINE_H_INCLUDED
-#define CMDLINE_H_INCLUDED
+#ifndef CMDARGS_H_INCLUDED
+#define CMDARGS_H_INCLUDED
+
+/* 
+ * simple libray for command argument. arguments must be passed in the form:
+ * <program name> <--options> <item>
+ * that is, options must be present before the item.
+ */
 
 #include <vector>
 #include <string>
@@ -8,17 +14,17 @@
 namespace Utils {
 
 struct ArgOption {
-    char opt;
-    int flagbit;
-    std::string long_opt;
-    std::string desc;
-    bool has_choices;
-    bool accept_any_choice;
-    std::vector<std::string> choices;
+    char opt;               /* short option */
+    int flagbit;            /* corresponding flag bit */
+    std::string long_opt;   /* long option */
+    std::string desc;       /* a description (can be used for usage text) */
+    bool has_choices;       /* if the option accept choices */
+    bool accept_any_choice; /* if we can pick up any choice */
+    std::vector<std::string> choices;   /* if we can't, what choices are ammissible */
 };
 
 struct ArgFlags {
-    uint32_t bits = 0;      /* what arguments have been found */                 
+    uint32_t bits = 0;      /* what arguments have been found */
     std::string *choices;   /* the choices found for any arg that accept them */ 
     std::string item = "";  /* the not-an-option item */
 
@@ -33,32 +39,15 @@ struct ArgFlags {
             delete[] choices;
     }
 
-    ArgFlags(ArgFlags &&f)
-    {
-        bits = f.bits;
-        choices = f.choices;
-        item = f.item;
-        f.choices = nullptr;
-        f.bits = 0;
-        f.item = "";
-    }
-
-    ArgFlags &operator=(ArgFlags &&f)
-    {
-        bits = f.bits;
-        choices = f.choices;
-        item = f.item;
-        f.choices = nullptr;
-        f.bits = 0;
-        return *this;
-    }
+    ArgFlags(ArgFlags &&f);
+    ArgFlags &operator=(ArgFlags &&f);
 
     std::string &get_choice(int arg);
 };
 
 class ArgParser {
     ArgOption *args;     /* array of arguments */
-    int nargs;          /* size of array */
+    int nargs;           /* size of array */
 
     int find_opt(char c);
     int find_opt(std::string s);
@@ -76,4 +65,3 @@ public:
 } // namespace CommandLine
 
 #endif
-

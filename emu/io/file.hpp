@@ -1,7 +1,7 @@
-/* Simple, safe and inheritable self-closing File class. No Windows support. */
-
 #ifndef FILE_HPP_INCLUDED
 #define FILE_HPP_INCLUDED
+
+/* Simple, safe and inheritable self-closing File class. No Windows support. */
 
 #include <cstdio>
 #include <cstdarg>
@@ -148,7 +148,7 @@ public:
         return (!fbuf || mode == Mode::READ) ?
             EOF : std::fputc(c, fbuf);
     }
-    
+
     inline int putstr(const std::string &s)
     {
         return (!fbuf || mode == Mode::READ) ?

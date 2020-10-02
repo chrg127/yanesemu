@@ -1,9 +1,27 @@
 #include <emu/utils/cmdargs.hpp>
 
 #include <cmath>
+#include <utility>
 #include <emu/utils/debug.hpp>
 
 namespace Utils {
+
+ArgFlags::ArgFlags(ArgFlags &&f)
+{
+    std::swap(bits, f.bits);
+    std::swap(item, f.item);
+    choices = f.choices;
+    f.choices = nullptr;
+}
+
+ArgFlags &ArgFlags::operator=(ArgFlags &&f)
+{
+    std::swap(bits, f.bits);
+    std::swap(item, f.item);
+    choices = f.choices;
+    f.choices = nullptr;
+    return *this;
+}
 
 std::string &ArgFlags::get_choice(int arg)
 {
