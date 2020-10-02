@@ -14,52 +14,26 @@ class PPU {
     uint8_t *oam = nullptr;
 
     bool did_reset = false;
-    
-    // ppu's internal data bus. gets filled on reading and writing to regs.
-    uint8_t ppu_io_latch;
 
+    // ppu's internal data bus. gets filled on reading and writing to regs.
+    uint8_t io_latch;
+    
+    // registers
     uint8_t ctrl;
     uint8_t mask;
     uint8_t status;
     uint8_t oam_addr;
     uint8_t oam_data;
     struct {
-        uint8_t x = 0, y = 0;
-        bool latch = false;
-
-        void operator=(uint8_t data)
-        {
-            // ((!latch) ? x : y) = data;
-            if (!latch)
-                x = data;
-            else
-                y = data;
-            latch ^= 1;
-        }
+        uint8_t latch;
+        uint16_t scroll;
+        uint16_t addr;
 
         inline void clear()
-        { x = y = latch = 0; }
-    } scroll;
-    struct {
-        uint8_t hi = 0, lo = 0;
-        bool latch = false;
-
-        void operator=(uint8_t data)
-        {
-            if (!latch)
-                hi = data;
-            else
-                lo = data;
-            latch ^= 1;
-        }
-
-        inline void clear()
-        { hi = lo = latch = 0; }
-    } address;
+        { scroll = addr = latch = 0; }
+    } addr_latch;
     uint8_t ppu_data;
     uint8_t oam_dma;
-
-    uint8_t scroll_latch, address_latch;
 
 public:
     PPU()
