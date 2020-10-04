@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include <string>
+#include <string_view>
 
 namespace IO {
 
@@ -31,7 +32,7 @@ protected:
 
 public:
     File() = default;
-    File(const std::string &s, Mode m)
+    File(std::string_view s, Mode m)
     { open(s, m); }
     File(FILE *f, Mode m)
     { assoc(f, m); }
@@ -39,8 +40,15 @@ public:
     ~File()
     { close(); }
 
+    // File(const File &f) = delete;
+    File(File &&f)
+    { operator=(std::move(f)); }
+
+    // File &operator=(const File &f) = delete;
+    File &operator=(File &&f);
+
     /* open/close functions */
-    bool open(const std::string &s, Mode m);
+    bool open(std::string_view s, Mode m);
     void close();
     bool assoc(FILE *f, Mode m);
 
@@ -83,8 +91,11 @@ public:
         case BufMode::FULLBUF: setvbuf(fbuf, nullptr, _IOFBF, 0);
         }
     }
-    
-    /* 
+
+    inline std::string getfilename()
+    { return filename; }
+
+    /*
      * strictly for compatibility with existing FILE APIs.
      * if state invalidation might be a concern, use releasefbuf()
      */
@@ -107,10 +118,10 @@ public:
 
 
     /* Read functions */
-    inline std::size_t readb(void *infbuf, std::size_t bn)
+    inline std::size_t readb(void *where, std::size_t bn)
     {
         return (!fbuf || (mode != Mode::READ && mode != Mode::MODIFY)) ?
-            EOF : std::fread(infbuf, 1, bn, fbuf);
+            EOF : std::fread(where, 1, bn, fbuf);
     }
 
     inline int getc()
@@ -126,6 +137,7 @@ public:
     }
 
     bool getline(std::string &s, int delim = '\n');
+
     inline std::string getall()
     {
         std::string s, tmp;
@@ -133,7 +145,7 @@ public:
             s += tmp + '\n';
         return s;
     }
-    
+
 
 
     /* write functions */
@@ -149,10 +161,10 @@ public:
             EOF : std::fputc(c, fbuf);
     }
 
-    inline int putstr(const std::string &s)
+    inline int putstr(std::string_view s)
     {
         return (!fbuf || mode == Mode::READ) ?
-            EOF : std::fputs(s.c_str(), fbuf);
+            EOF : std::fputs(s.data(), fbuf);
     }
 
     inline int printf(const char *fmt, ...)
@@ -170,6 +182,6 @@ public:
     }
 };
 
-} // namespace File
+} // namespace IO
 
 #endif

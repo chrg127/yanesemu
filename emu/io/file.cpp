@@ -1,16 +1,29 @@
-#include <emu/io/file.hpp>
+// #include <emu/io/file.hpp>
+#include "file.hpp"
+
+#include <utility>
 
 namespace IO {
 
-bool File::open(const std::string &s, Mode m)
+File &File::operator=(File &&f)
+{
+    fbuf = f.fbuf;
+    f.fbuf = nullptr;
+    std::swap(filesize, f.filesize);
+    mode = f.mode;
+    std::swap(filename, f.filename);
+    return *this;
+}
+
+bool File::open(std::string_view s, Mode m)
 {
     close();
 
     switch (m) {
-    case Mode::READ:   fbuf = std::fopen(s.c_str(), "r");  break;
-    case Mode::WRITE:  fbuf = std::fopen(s.c_str(), "w");  break;
-    case Mode::MODIFY: fbuf = std::fopen(s.c_str(), "r+"); break;
-    case Mode::APPEND: fbuf = std::fopen(s.c_str(), "a");  break;
+    case Mode::READ:   fbuf = std::fopen(s.data(), "r");  break;
+    case Mode::WRITE:  fbuf = std::fopen(s.data(), "w");  break;
+    case Mode::MODIFY: fbuf = std::fopen(s.data(), "r+"); break;
+    case Mode::APPEND: fbuf = std::fopen(s.data(), "a");  break;
     }
     if (!fbuf)
         return false;
@@ -54,7 +67,7 @@ bool File::getline(std::string &s, int delim)
 {
     // could probably be optimized.
     int c;
-    
+
     if (!fbuf || (mode != Mode::READ && mode != Mode::MODIFY))
         return false;
     s.erase();
@@ -63,5 +76,5 @@ bool File::getline(std::string &s, int delim)
     return (c == EOF) ? false : true;
 }
 
-} // namespace File
+} // namespace IO
 

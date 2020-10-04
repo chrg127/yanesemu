@@ -7,14 +7,8 @@
 namespace IO {
 
 enum ErrID : int {
-    ERRID_SUCCESS = 0, ERRID_INVFORMAT, ERRID_NES20, ERRID_FNOTFOUND,
+    ERRID_SUCCESS = 0, ERRID_INVFORMAT, ERRID_NES20, ERRID_INVNAME,
 };
-
-static std::string rom_errmsg[] = {
-    "no errors", "invalid NES format", "NES 2.0 not yet supported", "can't open rom file",
-};
-
-
 
 /* NOTE: private functions */
 bool ROM::parseheader()
@@ -25,11 +19,11 @@ bool ROM::parseheader()
         fformat = Format::INES;
     if (fformat == Format::INES && (header[7] & 0xC) == 0x8) {
         //fformat = Format::NES20;
-        debugmsg = ERRID_NES20;
+        errid = ERRID_NES20;
         return false;
     }
     if (fformat == Format::INVALID) {
-        debugmsg = ERRID_INVFORMAT;
+        errid = ERRID_INVFORMAT;
         return false;
     }
 
@@ -111,12 +105,12 @@ void ROM::parse_nes20()
 
 bool ROM::open(const std::string &s)
 {
-    if (!File::open(s, Mode::READ))
+    if (!File::open(s, Mode::READ)) {
+        errid = ERRID_INVNAME;
         return false;
-
+    }
     if (!parseheader())
         return false;
-
     // get trainer
     if (has_trainer)
         readb(trainer, TRAINER_LEN);
@@ -166,10 +160,13 @@ void ROM::printinfo(File &lf)
     lf.putc('\n');
 }
 
-// std::string &ROM::geterr()
-// {
-//     return rom_errmsg[debugmsg];
-// }
+std::string_view ROM::geterr()
+{
+    static std::string_view rom_errmsg[] = {
+        "no errors", "invalid NES format", "NES 2.0 not yet supported", "can't open rom file",
+    };
+    return rom_errmsg[errid];
+}
 
 } // namespace nesrom
 

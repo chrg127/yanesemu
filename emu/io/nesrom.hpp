@@ -5,12 +5,6 @@
 
 namespace IO {
 
-// forward decls
-class File;
-
-const int HEADER_LEN = 16;
-const int TRAINER_LEN = 512;
-
 enum NametabMirror : int {
     NAMETAB_HORZ = 0,
     NAMETAB_VERT,
@@ -70,7 +64,10 @@ enum VsHardware : int {
 };
 
 class ROM : File {
-    int debugmsg = 0;
+    static const int HEADER_LEN = 16;
+    static const int TRAINER_LEN = 512;
+
+    int errid = 0;
 
     enum class Format {
         INVALID,
@@ -129,6 +126,7 @@ public:
 
     bool open(const std::string &s);
     void printinfo(IO::File &f);
+    std::string_view geterr();
 
     Format file_format() const
     { return fformat; }
