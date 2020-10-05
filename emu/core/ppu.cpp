@@ -28,6 +28,11 @@ void PPU::reset()
     did_reset = true;
 }
 
+void PPU::main()
+{
+    
+}
+
 /* PPU I/O consists of an internal latch that is filled with data when writing
  * and is filled and returned for reading */
 uint8_t PPU::readreg(const uint16_t which)
@@ -79,6 +84,21 @@ void PPU::writereg(const uint16_t which, const uint8_t data)
         break;
 #endif
     }
+}
+
+void PPU::render()
+{
+
+}
+
+void PPU::scanline()
+{
+
+}
+
+void PPU::sprite_evaluation()
+{
+
 }
 
 } // namespace Core

@@ -92,6 +92,7 @@ class CPU {
     using InstrFuncRead = void (CPU::*)(const uint8_t);
     using InstrFuncMod = uint8_t (CPU::*)(uint8_t);
 
+    // opcodes.cpp
     void addrmode_imm_read(InstrFuncRead f);
     void addrmode_zero_read(InstrFuncRead f);
     void addrmode_zerox_read(InstrFuncRead f);

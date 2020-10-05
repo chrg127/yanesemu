@@ -94,7 +94,8 @@ namespace PPUMap {
 
 const int MEMSIZE = 0x4000+1;
 
-enum { //PATTERNTAB : uint16_t {
+/* pattern table is simply the graphics in the rom */
+enum {
     PATTERN_TABLEFT_START  = 0x0000,
     PATTERN_TABLEFT_END    = 0x0FFF,
     PATTERN_TABRIGHT_START = 0x1000,
@@ -102,7 +103,8 @@ enum { //PATTERNTAB : uint16_t {
     PATTERN_TAB_SIZE       = 0x1000,
 };
 
-enum { //NAMETAB : uint16_t {
+/* nametables are the part of memory where the ppu lays out backgrounds */
+enum {
     NAME_TAB0_START  = 0x2000,
     NAME_TAB0_END    = 0x23FF,
     NAME_TAB1_START  = 0x2400,
@@ -117,7 +119,7 @@ enum { //NAMETAB : uint16_t {
     NAME_TAB_MIRROR_SIZE  = 0x0F00,
 };
 
-enum { //PALRAM : uint16_t {
+enum {
     PALRAM_START           = 0x3F00,
     PALRAM_END             = 0x3F1F,
     PALRAM_SIZE            = 0x0020,

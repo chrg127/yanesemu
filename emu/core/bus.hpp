@@ -18,10 +18,8 @@ class Bus {
 public:
     bool write_enable = false;
 
-    Bus() : write_enable(false)
-    {
-        memory = new uint8_t[CPUMap::MEMSIZE];
-    }
+    Bus() : memory(new uint8_t[CPUMap::MEMSIZE]), write_enable(false)
+    { }
 
     ~Bus()
     {

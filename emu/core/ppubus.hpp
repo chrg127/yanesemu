@@ -10,12 +10,10 @@ namespace IO { class File; }
 namespace Core {
 
 class PPUBus {
-    uint8_t *memory = nullptr;
+    uint8_t *memory;
 public:
-    PPUBus()
-    {
-        memory = new uint8_t[PPUMap::MEMSIZE];
-    }
+    PPUBus() : memory(new uint8_t[PPUMap::MEMSIZE])
+    { }
 
     ~PPUBus()
     {
