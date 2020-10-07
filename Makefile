@@ -1,11 +1,11 @@
 VPATH=emu:emu/core:emu/utils:emu/io
 HEADERS = nesrom.hpp file.hpp \
 		  bus.hpp cpu.hpp memorymap.hpp ppu.hpp types.hpp ppubus.hpp \
-		  cmdargs.hpp debug.hpp
+		  cmdargs.hpp debug.hpp stringops.hpp
 OBJS = main.o \
 	   nesrom.o file.o \
 	   cpu.o bus.o ppu.o ppubus.o \
-	   cmdargs.o
+	   cmdargs.o stringops.o
 LIBS = -lm
 
 CXX = g++

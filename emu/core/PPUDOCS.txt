@@ -1,0 +1,58 @@
+I will post documentation about pattern tables, nametables and attribute
+tables here, for the sake of keeping everything in one place.
+
+Pattern tables - the Graphics data in the ROM. In technical terms, what's
+inside the CHR ROM. The pattern table is always mapped to the CHR part of
+the ROM.
+
+Nametable - This is where info gets muddy, since NESDev doesn't even seem
+to ever mentions what do these contain. These contain pointers, or
+indexes, to the pattern tables.
+
+Attribute table - A nametable also comes with this. These hold pointers,
+or indexes, to the palette table.
+
+To create a pixel, fetch an entry from the nametable, look it up on the
+pattern table, fetch the attribute for that entry, look it up on the
+palette table, and send pixel info.
+
+*** How to write to a nametable ***
+we shouldn't care about this, since it's from the game programmer's
+perspective, but we shall learn about it to understand the PPU.
+first you want to set up PPU CTRL so it selects the right nametable and
+other stuff. then you want to select an address to write to using PPU
+ADDR ($2006) like so:
+    lda #$21
+    sta $2006
+    lda #$08
+    sta $2006
+PPU ADDR is write twice. after writing to this reg, you have to use
+PPU DATA to write... data to vram. note that this must be done when
+the screen is black, i.e. during v-blank. an example: set next 200 bytes
+to 0:
+        ldx #$00
+        lda #$00
+  loop: sta $2007
+        cpx #$c8    ; 200 in hex
+        bne loop
+a better example can be found in Super Mario Bros's disassembly. it has a
+routine called "InitializeNameTables" which does exactly that. There you
+can find the details, this is only a high-level (and probably incorrect)
+overview.
+
+*** Writing to OAM ***
+you may notice that OAM ADDR ($2003) and OAM DATA ($2004) are basically the
+equivalent of those described earlier... yep it's the same strategy. what's
+interesting is that OAM DMA ($4014) also exists. (description to be written
+later).
+
+*** Scrolling ***
+it's simple. the value in PPU SCROLL ($2005) is the top left corner. the value
+itself is the low byte an index, or pointer, into a nametable. the high byte
+is indicated by bit 0 and 1 of PPU CTRL ($2000). example: let's say i want
+to render starting from the middle of nametable 1 (horizontal). then:
+    lda #$80    ; x coord
+    sta $2005
+    lda #$00    ; y coord
+    lda #%00000001  ; select nametable 1
+
