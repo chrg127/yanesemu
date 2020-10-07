@@ -1,7 +1,8 @@
 *.out
 debug/
 release/
-other/
 *.swp
 tags
-test/
+*.o
+*.nes
+test/smbdis.asm

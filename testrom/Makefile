@@ -3,3 +3,6 @@ all: test.o
 
 test.o: test.asm
 	ca65 test.asm -o test.o
+
+clean:
+	rm test.o test.nes
