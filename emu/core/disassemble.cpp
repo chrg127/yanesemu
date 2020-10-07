@@ -9,86 +9,63 @@ inline static std::string disass_implied(const char name[4])
 
 inline static std::string disass_imm(const char name[4], uint8_t op)
 {
-    char res[3+3+2+1];
-    sprintf(res, "%s #$%02X", name, op);
-    return std::string(res);
+    return Utils::strprintf("%s #$%02X", name, op);
 }
 
 inline static std::string disass_accum(const char name[4])
 {
-    char res[3+2+1];
-    sprintf(res, "%s A", name);
-    return std::string(res);
+    return Utils::strprintf("%s A", name);
 }
 
 inline static std::string disass_zero(const char name[4], uint8_t op)
 {
-    char res[3+2+2+1];
-    sprintf(res, "%s $%02X", name, op);
-    return std::string(res);
+    return Utils::strprintf("%s $%02X", name, op);
 }
 
 inline static std::string disass_zerox(const char name[4], uint8_t op)
 {
-    char res[3+2+2+2+1];
-    sprintf(res, "%s $%02X,x", name, op);
-    return std::string(res);
+    return Utils::strprintf("%s $%02X,x", name, op);
 }
 
 inline static std::string disass_zeroy(const char name[4], uint8_t op)
 {
-    char res[3+2+2+2+1];
-    sprintf(res, "%s $%02X,y", name, op);
-    return std::string(res);
+    return Utils::strprintf("%s $%02X,y", name, op);
 }
 
 inline static std::string disass_abs(const char name[4], uint8_t low, uint8_t hi)
 {
-    char res[3+2+2+2+1];
-    sprintf(res, "%s $%02X%02X", name, hi, low);
-    return std::string(res);
+    return Utils::strprintf("%s $%02X%02X", name, hi, low);
 }
 
 inline static std::string disass_absx(const char name[4], uint8_t low, uint8_t hi)
 {
-    char res[3+2+2+2+2+1];
-    sprintf(res, "%s $%02X%02X,x", name, hi, low);
-    return std::string(res);
+    return Utils::strprintf("%s $%02X%02X,x", name, hi, low);
 }
 
 inline static std::string disass_absy(const char name[4], uint8_t low, uint8_t hi)
 {
-    char res[3+2+2+2+2+1];
-    sprintf(res, "%s $%02X%02X,y", name, hi, low);
-    return std::string(res);
+    return Utils::strprintf("%s $%02X%02X,y", name, hi, low);
 }
 
 inline static std::string disass_ind(const char name[4], uint8_t low, uint8_t hi)
 {
-    char res[3+3+2+2+1+1];
-    sprintf(res, "%s ($%02X%02X)", name, hi, low);
-    return std::string(res);
+    return Utils::strprintf("%s ($%02X%02X)", name, hi, low);
 }
 
 inline static std::string disass_indx(const char name[4], uint8_t op)
 {
-    char res[3+3+2+3+1];
-    sprintf(res, "%s ($%02X,x)", name, op);
-    return std::string(res);
+    return Utils::strprintf("%s ($%02X,x)", name, op);
 }
 
 inline static std::string disass_indy(const char name[4], uint8_t op)
 {
-    char res[3+3+2+3+1];
-    sprintf(res, "%s ($%02X),y", name, op);
-    return std::string(res);
+    return Utils::strprintf("%s ($%02X),y", name, op);
 }
 
 inline static std::string disass_branch(const char name[4], uint8_t addr, bool took)
 {
-    char res[3+1+5+1+18+1];
-    sprintf(res, "%s $%04X %s", name, addr, (took) ? "[Branch taken]" : "[Branch not taken]");
-    return std::string(res);
+    return Utils::strprintf("%s $%04X %s", name, addr,
+            (took) ? "[Branch taken]" : "[Branch not taken]");
 }
 
 std::string CPU::disassemble()

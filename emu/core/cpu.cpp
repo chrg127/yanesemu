@@ -5,7 +5,7 @@
 #include <cstring>
 #include <emu/io/file.hpp>
 #include <emu/io/nesrom.hpp>
-
+#include <emu/utils/stringops.hpp>
 #define DEBUG
 #include <emu/utils/debug.hpp>
 
