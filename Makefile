@@ -1,12 +1,16 @@
-VPATH=emu:emu/core:emu/utils:emu/io
-HEADERS = nesrom.hpp file.hpp \
-		  bus.hpp cpu.hpp memorymap.hpp ppu.hpp types.hpp ppubus.hpp \
-		  cmdargs.hpp debug.hpp stringops.hpp
+VPATH=emu:emu/core:emu/utils:emu/io:emu/video
+HEADERS = bus.hpp cpu.hpp memorymap.hpp ppu.hpp types.hpp ppubus.hpp \
+		  nesrom.hpp file.hpp \
+		  cmdargs.hpp debug.hpp stringops.hpp \
+		  video.hpp videosdl.hpp
+
 OBJS = main.o \
-	   nesrom.o file.o \
 	   cpu.o bus.o ppu.o ppubus.o \
-	   cmdargs.o stringops.o
-LIBS = -lm
+	   nesrom.o file.o \
+	   cmdargs.o stringops.o \
+	   video.o
+
+LIBS = -lm -lSDL2
 
 CXX = g++
 CFLAGS = -I. -std=c++17 -Wall -Wextra -pipe \
@@ -17,25 +21,23 @@ DEBDIR = debug
 DEBOBJDIR = $(DEBDIR)/obj
 DEBPRGNAME = emu
 DEBCFLAGS = -g
-#RELDIR = release
-#RELOBJDIR = $(RELDIR)/obj
-#RELPRGNAME = emu-release
-#RELCFLAGS = -O2
+RELDIR = release
+RELOBJDIR = $(RELDIR)/obj
+RELPRGNAME = emu-release
+RELCFLAGS = -O2
 
 DEBOBJS = $(patsubst %,$(DEBOBJDIR)/%,$(OBJS))
-#RELOBJS = $(patsubst %,$(RELOBJDIR)/%,$(OBJS))
+RELOBJS = $(patsubst %,$(RELOBJDIR)/%,$(OBJS))
 
-default: directories debug
-
-print:
-	@echo "using objects:" $(DEBOBJS) "and headers:" $(HEADERS)
+default: debug
 
 directories:
-	mkdir -p $(DEBDIR) $(DEBOBJDIR)
-#$(RELDIR) $(RELOBJDIR)
+	mkdir -p $(DEBDIR) $(DEBOBJDIR) $(RELDIR) $(RELOBJDIR)
 
+debug: directories
 debug: CFLAGS += $(DEBCFLAGS)
 debug: $(DEBPRGNAME)
+	@echo "using objects:" $(DEBOBJS) "and headers:" $(HEADERS)
 
 $(DEBOBJDIR)/%.o: %.cpp $(HEADERS)
 	$(CXX) $(CFLAGS) -c $< -o $@
@@ -43,7 +45,18 @@ $(DEBOBJDIR)/%.o: %.cpp $(HEADERS)
 $(DEBPRGNAME): $(DEBOBJS)
 	$(CXX) $(DEBOBJS) -o $(DEBDIR)/$(DEBPRGNAME) $(LIBS)
 
+release: directories
+release: CFLAGS += $(RELCFLAGS)
+release: $(RELPRGNAME)
+	@echo "using objects:" $(DEBOBJS) "and headers:" $(HEADERS)
+
+$(RELOBJDIR)/%.o: %.cpp $(HEADERS)
+	$(CXX) $(CFLAGS) -c $< -o $@
+
+$(RELPRGNAME): $(RELOBJS)
+	$(CXX) $(RELOBJS) -o $(RELDIR)/$(RELPRGNAME) $(LIBS)
+
 .PHONY: clean
 clean:
-	rm -f $(DEBDIR)/$(OBJDIR)/*.o $(DEBDIR)/$(PRGNAME)
+	rm -f $(DEBOBJDIR)/*.o $(DEBDIR)/$(DEBPRGNAME) $(RELOBJDIR)/*.o $(RELDIR)/$(RELPRGNAME)
 
