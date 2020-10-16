@@ -1,7 +1,16 @@
 #include <emu/video/video.hpp>
 
-#include <emu/utils/debug.hpp>
-
 #ifdef VIDEO_USE_SDL
 #include <emu/video/videosdl.cpp>
 #endif
+
+namespace Video {
+
+void Video::reset()
+{
+    if (driver)
+        delete driver;
+    driver = new DriverSDL();
+}
+
+}
