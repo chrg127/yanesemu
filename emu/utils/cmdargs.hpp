@@ -42,12 +42,13 @@ struct ArgFlags {
     ArgFlags(ArgFlags &&f);
     ArgFlags &operator=(ArgFlags &&f);
 
-    std::string &get_choice(int arg);
+    std::string &get_choice(const int arg);
 };
 
 class ArgParser {
     ArgOption *args;     /* array of arguments */
     int nargs;           /* size of array */
+    const char *progname; /* for print_usage */
 
     int find_opt(char c);
     int find_opt(std::string s);
@@ -55,11 +56,12 @@ class ArgParser {
     bool check_arg(ArgFlags &flags, const char *arg, const char *argnext);
 
 public:
-    ArgParser(ArgOption *a, int n)
-        : args(a), nargs(n)
+    ArgParser(const char *name, ArgOption *a, int n)
+        : args(a), nargs(n), progname(name)
     { }
 
     ArgFlags parse_args(int argc, char *argv[]);
+    void print_usage();
 };
 
 } // namespace CommandLine

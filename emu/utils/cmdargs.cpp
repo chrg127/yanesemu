@@ -23,7 +23,7 @@ ArgFlags &ArgFlags::operator=(ArgFlags &&f)
     return *this;
 }
 
-std::string &ArgFlags::get_choice(int arg)
+std::string &ArgFlags::get_choice(const int arg)
 {
     int i = std::log2(arg);
     return choices[i];
@@ -114,6 +114,16 @@ ArgFlags ArgParser::parse_args(int argc, char *argv[])
         }
     }
     return f;
+}
+
+void ArgParser::print_usage()
+{
+    std::fprintf(stderr, "Usage: %s [args...] <ROM file>\n", progname);
+    std::fprintf(stderr, "Valid arguments:\n");
+    for (int i = 0; i < nargs; i++) {
+        std::fprintf(stderr, "\t-%c, --%s\t\t%s\n",
+                args[i].opt, args[i].long_opt.c_str(), args[i].desc.c_str());
+    }
 }
 
 } // namespace CommandLine
