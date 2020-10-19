@@ -1,8 +1,9 @@
 VPATH=emu:emu/core:emu/utils:emu/io:emu/video
+
 HEADERS = bus.hpp cpu.hpp memorymap.hpp ppu.hpp types.hpp ppubus.hpp \
 		  nesrom.hpp file.hpp \
 		  cmdargs.hpp debug.hpp stringops.hpp \
-		  video.hpp videosdl.hpp
+		  video.hpp
 
 OBJS = main.o \
 	   cpu.o bus.o ppu.o ppubus.o \
@@ -14,47 +15,34 @@ LIBS = -lm -lSDL2
 
 CXX = g++
 CFLAGS = -I. -std=c++17 -Wall -Wextra -pipe \
-		 -Wuninitialized -Wcast-align -Wcast-qual -Wpointer-arith \
+		 -Wcast-align -Wcast-qual -Wpointer-arith \
 		 -Wformat=2 -Wmissing-declarations -Wmissing-include-dirs \
 
 DEBDIR = debug
-DEBOBJDIR = $(DEBDIR)/obj
 DEBPRGNAME = emu
 DEBCFLAGS = -g
+DEBOBJS = $(patsubst %,$(DEBDIR)/%,$(OBJS))
 RELDIR = release
-RELOBJDIR = $(RELDIR)/obj
-RELPRGNAME = emu-release
-RELCFLAGS = -O2
 
-DEBOBJS = $(patsubst %,$(DEBOBJDIR)/%,$(OBJS))
-RELOBJS = $(patsubst %,$(RELOBJDIR)/%,$(OBJS))
+all: debug
 
-default: debug
+# these are special - they #include other .cpp files
+$(DEBDIR)/cpu.o: emu/core/cpu.cpp emu/core/opcodes.cpp emu/core/disassemble.cpp $(HEADERS)
+	$(CXX) $(CFLAGS) -c $< -o $@
+$(DEBDIR)/video.o: emu/video/video.cpp emu/video/videosdl.cpp $(HEADERS)
+	$(CXX) $(CFLAGS) -c $< -o $@
+
+$(DEBDIR)/%.o: %.cpp $(HEADERS)
+	$(CXX) $(CFLAGS) -c $< -o $@
 
 directories:
-	mkdir -p $(DEBDIR) $(DEBOBJDIR) $(RELDIR) $(RELOBJDIR)
+	mkdir -p $(DEBDIR) $(RELDIR)
 
-debug: directories
 debug: CFLAGS += $(DEBCFLAGS)
-debug: $(DEBPRGNAME)
-	@echo "using objects:" $(DEBOBJS) "and headers:" $(HEADERS)
-
-$(DEBOBJDIR)/%.o: %.cpp $(HEADERS)
-	$(CXX) $(CFLAGS) -c $< -o $@
+debug: directories $(DEBPRGNAME)
 
 $(DEBPRGNAME): $(DEBOBJS)
 	$(CXX) $(DEBOBJS) -o $(DEBDIR)/$(DEBPRGNAME) $(LIBS)
-
-release: directories
-release: CFLAGS += $(RELCFLAGS)
-release: $(RELPRGNAME)
-	@echo "using objects:" $(DEBOBJS) "and headers:" $(HEADERS)
-
-$(RELOBJDIR)/%.o: %.cpp $(HEADERS)
-	$(CXX) $(CFLAGS) -c $< -o $@
-
-$(RELPRGNAME): $(RELOBJS)
-	$(CXX) $(RELOBJS) -o $(RELDIR)/$(RELPRGNAME) $(LIBS)
 
 .PHONY: clean
 clean:

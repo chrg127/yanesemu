@@ -15,7 +15,7 @@ struct Driver {
     { }
     virtual void poll()
     { };
-    virtual uint8_t *getpixels()
+    virtual uint32_t *getpixels()
     { return nullptr; }
     virtual int getw() const
     { return 0; }
@@ -39,8 +39,8 @@ public:
             delete driver;
     }
 
-    struct Buffer {
-        uint8_t *buf;
+    struct Screen {
+        uint32_t *buf;
         int w, h;
     };
 
@@ -54,7 +54,7 @@ public:
     inline void poll()
     { driver->poll(); }
 
-    inline Buffer getpixels()
+    inline Screen getpixels()
     {
         return { driver->getpixels(),
                 driver->getw(),

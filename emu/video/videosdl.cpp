@@ -1,20 +1,21 @@
 #include <SDL2/SDL.h>
 #include <cstring>
+#define DEBUG
 #include <emu/utils/debug.hpp>
 
 namespace Video {
 
 class DriverSDL : public Driver {
     SDL_Window *wnd = nullptr;
-    SDL_Texture *main_texture = nullptr;
     SDL_Renderer *renderer = nullptr;
+    uint32_t *buffer = nullptr;
     int width = 0, height = 0;
-    int pitch = 0;
-    uint8_t *buffer = nullptr;
+    // SDL_Texture *main_texture = nullptr;
+    // int pitch = 0;
     bool buf_changed = false;
     bool isclosed = false;
 
-    void update_texture();
+    // void update_texture();
 
 public:
 
@@ -23,7 +24,7 @@ public:
     void render() override;
     void clear() override;
     void poll() override;
-    uint8_t *getpixels() override;
+    uint32_t *getpixels() override;
     bool closed() override
     { return isclosed; }
     int getw() const override
@@ -34,24 +35,24 @@ public:
 
 DriverSDL::~DriverSDL()
 {
-    if (wnd)
-        SDL_DestroyWindow(wnd);
-    if (main_texture)
-        SDL_DestroyTexture(main_texture);
     if (renderer)
         SDL_DestroyRenderer(renderer);
+    if (wnd)
+        SDL_DestroyWindow(wnd);
     wnd = nullptr;
-    main_texture = nullptr;
     renderer = nullptr;
+    // if (main_texture)
+    //     SDL_DestroyTexture(main_texture);
+    // main_texture = nullptr;
 }
 
 bool DriverSDL::create()
 {
-    void *tbuf;
-
-    SDL_Init(SDL_INIT_VIDEO);
+    if (SDL_Init(SDL_INIT_VIDEO) == -1)
+        goto err;
     width = 640;
     height = 480;
+
     wnd = SDL_CreateWindow("Window Test", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
             width, height, SDL_RENDERER_PRESENTVSYNC);
     if (!wnd)
@@ -59,13 +60,9 @@ bool DriverSDL::create()
     renderer = SDL_CreateRenderer(wnd, -1, SDL_RENDERER_ACCELERATED);
     if (!renderer)
         goto err;
-    main_texture = SDL_CreateTexture(renderer, SDL_GetWindowPixelFormat(wnd), SDL_TEXTUREACCESS_STREAMING, width, height);
-    if (!main_texture)
-        goto err;
-    buffer = new uint8_t[width*height];
-    SDL_LockTexture(main_texture, nullptr, &tbuf, &pitch);
-    std::memcpy(buffer, tbuf, width*height);
-    SDL_UnlockTexture(main_texture);
+    buffer = new uint32_t[width*height];
+    std::memset(buffer, 0, width*height);
+    clear();
     return true;
 
 err:
@@ -75,10 +72,11 @@ err:
 
 void DriverSDL::render()
 {
-   static SDL_Rect rect = { 0, 0, width, height };
-   update_texture();
-   SDL_RenderCopy(renderer, main_texture, nullptr, &rect);
-   SDL_RenderPresent(renderer);
+    for (int i = 0; i < width*height; i++) {
+        SDL_SetRenderDrawColor(renderer, buffer[i] >> 24, buffer[i] >> 16, buffer[i] >> 8, buffer[i]);
+        SDL_RenderDrawPoint(renderer, i%width, i/width);
+    }
+    SDL_RenderPresent(renderer);
 }
 
 void DriverSDL::clear()
@@ -97,21 +95,21 @@ void DriverSDL::poll()
     }
 }
 
-uint8_t *DriverSDL::getpixels()
+uint32_t *DriverSDL::getpixels()
 {
     return buffer;
 }
 
 
 
-void DriverSDL::update_texture()
-{
-    void *tbuf;
+// void DriverSDL::update_texture()
+// {
+//     void *tbuf;
 
-    SDL_LockTexture(main_texture, nullptr, &tbuf, &pitch);
-    std::memcpy(tbuf, buffer, width*height);
-    SDL_UnlockTexture(main_texture);
-    buf_changed = true;
-}
+//     SDL_LockTexture(main_texture, nullptr, &tbuf, &pitch);
+//     std::memcpy(tbuf, buffer, pitch*height);
+//     SDL_UnlockTexture(main_texture);
+//     buf_changed = true;
+// }
 
 } // namespace Video
