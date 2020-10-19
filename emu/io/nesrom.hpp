@@ -63,11 +63,12 @@ enum VsHardware : int {
     VSHW_DUALSYS_RAID,
 };
 
-class ROM : File {
+class ROM {
+    File romfile;
+    int errid = 0;
+
     static const int HEADER_LEN = 16;
     static const int TRAINER_LEN = 512;
-
-    int errid = 0;
 
     enum class Format {
         INVALID,
@@ -81,9 +82,9 @@ class ROM : File {
     uint16_t mapper   = 0;
     uint8_t submapper = 0;
 
-    uint8_t *prgrom = nullptr;
+    uint8_t *prgrom         = nullptr;
     uint32_t prgrom_size    = 0;
-    uint8_t *chrrom = nullptr;
+    uint8_t *chrrom         = nullptr;
     uint32_t chrrom_size    = 0;
 
     bool has_prgram         = false;
@@ -122,6 +123,8 @@ public:
             delete[] prgrom;
         if (chrrom)
             delete[] chrrom;
+        prgrom = nullptr;
+        chrrom = nullptr;
     }
 
     bool open(const std::string &s);
@@ -140,6 +143,10 @@ public:
     { return prgrom; }
     std::size_t get_prgrom_size() const
     { return prgrom_size*16384; }
+    uint8_t *get_chrrom() const
+    { return chrrom; }
+    std::size_t get_chrrom_size() const
+    { return chrrom_size*16384; }
 };
 
 } // namespace File

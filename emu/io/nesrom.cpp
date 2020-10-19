@@ -13,7 +13,7 @@ enum ErrID : int {
 /* NOTE: private functions */
 bool ROM::parseheader()
 {
-    readb(header, HEADER_LEN);
+    romfile.readb(header, HEADER_LEN);
     fformat = Format::INVALID;
     if (header[0] == 'N' && header[1] == 'E' && header[2] == 'S' && header[3] == 0x1A)
         fformat = Format::INES;
@@ -105,7 +105,7 @@ void ROM::parse_nes20()
 
 bool ROM::open(const std::string &s)
 {
-    if (!File::open(s, Mode::READ)) {
+    if (!romfile.open(s, Mode::READ)) {
         errid = ERRID_INVNAME;
         return false;
     }
@@ -113,15 +113,15 @@ bool ROM::open(const std::string &s)
         return false;
     // get trainer
     if (has_trainer)
-        readb(trainer, TRAINER_LEN);
+        romfile.readb(trainer, TRAINER_LEN);
     // allocate program ROM and character ROM
     if (!has_prgram) {
         prgrom = new uint8_t[prgrom_size*16384];
-        readb(prgrom, prgrom_size*16384);
+        romfile.readb(prgrom, prgrom_size*16384);
     }
     if (!has_chrram) {
         chrrom = new uint8_t[chrrom_size*8192];
-        readb(chrrom, chrrom_size*8192);
+        romfile.readb(chrrom, chrrom_size*8192);
     }
 
     return true;
@@ -131,7 +131,7 @@ void ROM::printinfo(File &lf)
 {
     if (!lf.isopen())
         return;
-    lf.printf("%s: ", filename.c_str());
+    lf.printf("%s: ", romfile.getfilename().c_str());
     if (fformat == Format::INES)
         lf.printf("iNES");
     else
