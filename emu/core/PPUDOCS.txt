@@ -56,3 +56,35 @@ to render starting from the middle of nametable 1 (horizontal). then:
     lda #$00    ; y coord
     lda #%00000001  ; select nametable 1
 
+*** Sprites? ***
+fuck sprites (for now).
+
+*** scanlines ***
+there are exactly 261 scanlines, of which one (261th or -1th) is a dummy.
+they are divided in visible and non-visible (v-blank) scanlines. the PPU
+renders on visible scanlines starting at scanline 0, stops rendering at
+scanline 240 (the first empty one), sets v-blank on scanline 241, then
+resumes rendering once it has looped back to scanline 0. there are exactly
+340 cycles for every scanline.
+
+*** for every cycle ***
+So what's actually the PPU's "main loop"?
+It's complicated. Let's split this into two sections:
+
+*** background rendering ***
+...on visible scanlines, i.e. scanline 0-239. starting at cycle 1, the PPU
+will start rending pixels, while also fetching background data. the fetches
+performed are:
+    - nametable table byte
+    - attribute table byte
+    - pattern table tile low
+    - pattern table tile high
+where is this data put into? well... internal latches apparently. so where
+does the PPU gets the rendering data from?
+...shift registers. according to nesdev.com, there are 4 of these, 2 are 16
+bits wide and contain <whatever>, the other 2 are 8 bit and contain the
+attribute (palette) data.
+
+ -------- --------  -------- --------  --------  --------
+ ^
+
