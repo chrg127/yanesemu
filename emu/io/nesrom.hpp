@@ -146,7 +146,7 @@ public:
     uint8_t *get_chrrom() const
     { return chrrom; }
     std::size_t get_chrrom_size() const
-    { return chrrom_size*16384; }
+    { return chrrom_size*8192; }
 };
 
 } // namespace File
