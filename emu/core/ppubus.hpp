@@ -11,6 +11,7 @@ namespace Core {
 
 class PPUBus {
     uint8_t *memory;
+
 public:
     PPUBus() : memory(new uint8_t[PPUMap::MEMSIZE])
     { }

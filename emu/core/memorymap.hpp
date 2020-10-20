@@ -25,7 +25,7 @@ const uint16_t RAM_MIRROR2_END      = 0x17FF;
 const uint16_t RAM_MIRROR3_START    = 0x1800;
 const uint16_t RAM_MIRROR3_END      = 0x17FF;
 
-enum PPUREG : int {
+enum {
     PPU_CTRL    = 0x2000,
     PPU_MASK    = 0x2001,
     PPU_STATUS  = 0x2002,
@@ -40,7 +40,7 @@ const uint16_t PPU_MIRROR_START  = 0x2008;
 const uint16_t PPU_MIRROR_END    = 0x3FFF;
 const uint16_t PPU_MIRROR_SIZE   = 0x1FF8;
 
-enum APUREG : int {
+enum {
     PULSE1_VOL      = 0x4000,
     PULSE1_SWEEP    = 0x4001,
     PULSE1_TLOW     = 0x4002,

@@ -9,14 +9,14 @@ void PPUBus::initmem(uint8_t *chrrom)
 {
     std::memset(memory, 0, PPUMap::MEMSIZE);
     // the CHR ROM is mapped to both pattern tables
-    std::memcpy(memory, chrrom, PPUMap::PATTERN_TABRIGHT_END);
+    std::memcpy(memory, chrrom, PPUMap::PATTERN_TABRIGHT_END+1);
 }
 
 // literally the same as Bus::memdump...
 void PPUBus::memdump(IO::File &df)
 {
     int i, j;
-    
+
     df.printf("=== PPU memory ===\n");
     if (!df.isopen())
         return;

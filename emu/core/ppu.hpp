@@ -3,6 +3,7 @@
 
 #include <emu/core/types.hpp>
 #include <emu/core/memorymap.hpp>
+#include <emu/io/file.hpp>
 
 namespace Core {
 
@@ -10,18 +11,13 @@ namespace Core {
 class PPUBus;
 
 class PPU {
-    static const int SCANLINE_COUNT = 240;
-    static const int SCANLINE_WIDTH = 256;
-
     PPUBus *bus = nullptr;
     uint8_t *oam = nullptr;
-    uint8_t *vram = nullptr;    // 2 KiB
-
-    bool did_reset = false;
+    uint8_t *vram_mem = nullptr; // 2 KiB
 
     // ppu's internal data bus. gets filled on reading and writing to regs.
     uint8_t io_latch;
-    
+
     // registers
     uint8_t ctrl;
     uint8_t mask;
@@ -32,49 +28,52 @@ class PPU {
         uint8_t latch;
         uint16_t scroll;
         uint16_t addr;
+        bool toggle = 0;    // needed, unfortunately, for a few operations
 
         inline void clear()
-        { scroll = addr = latch = 0; }
+        { scroll = addr = latch = toggle = 0; }
     } addr_latch;
     uint8_t ppu_data;
     uint8_t oam_dma;
 
-    // nmi regs
-    bool nmi_occurred, nmi_output;
-    /*
-     * Start of vertical blanking: Set NMI_occurred in PPU to true.
-     * End of vertical blanking, sometime in pre-render scanline:
-     * Set NMI_occurred to false. 
-     * Read PPUSTATUS: Return old status of NMI_occurred in bit 7, then
-     * set NMI_occurred to false.
-     * Write to PPUCTRL: Set NMI_output to bit 7.
-     */
-    
-    // rendering regs
-    // background
     struct {
-        uint8_t vram_addr;
-        uint8_t tmp_vram_addr;
-        uint8_t fine_x_scroll;
-        bool write_toggle;
-        uint16_t shift16_1, shift16_2;
-        uint8_t shift8_1, shift8_2;
-    } bg_regs;
+        uint16_t addr; // 15 bits
+        uint16_t tmp;  // 15 bits
+        uint8_t fine_x_scroll; // 3 bits
+        // low - for the low bg byte
+        // high - for the high bg byte
+        // both hold data for two tiles and are shifted every cycle
+        Reg16 shift_low, shift_high;
+        // these two hold info for one tile, not two
+        uint8_t shift_attr1, shift_attr2;
+    } vram;
 
     struct {
-        uint8_t shift_regs[8];
+        uint8_t nt, at, lowbg, hibg;
+    } internal_latch;
+
+    struct {
+        uint8_t shifts[8];
         uint8_t latches[8];
         uint8_t counters[8];
-    } sprite_regs;
+    } oam_regs;
 
-    void render();
-    void scanline();
-    void sprite_evaluation();
+    int lineno = 0, linec = 0;
+
+    void scanline_render();
+    void scanline_empty();
+    void fetch_nt();
+    void fetch_at();
+    void fetch_lowbg();
+    void fetch_highbg();
 
 public:
-    PPU() : oam(new uint8_t[PPUMap::OAM_SIZE])
+    PPU(PPUBus *b) : bus(b), oam(new uint8_t[PPUMap::OAM_SIZE])
     { }
-
+    PPU(const PPU &) = delete;
+    PPU(PPU &&) = delete;
+    PPU &operator=(const PPU &) = delete;
+    PPU &operator=(PPU &&) = delete;
     ~PPU()
     {
         delete[] oam;
@@ -85,6 +84,7 @@ public:
     void main();
     uint8_t readreg(const uint16_t which);
     void writereg(const uint16_t which, const uint8_t data);
+    void printinfo(IO::File &log);
 };
 
 enum {
@@ -93,7 +93,7 @@ enum {
     PPU_CTRL_SPR_ADDR            = 0x08, // 0: $0000, 1: $1000
     PPU_CTRL_BG_ADDR             = 0x10, // 0: $0000, 1: $1000
     PPU_CTRL_SPRSIZE             = 0x20, // 0: 8x8, 1: 16x16
-    PPU_CTRL_MASTER_SLAVE_SELECT = 0x40, // 0: read backdrop from ext pins, 1: out color on ext pins
+    PPU_EXT_BUS_DIR              = 0x40, // 0: read bg color from ext-pins; 1: discouraged use
     PPU_CTRL_NMI_ENABLE          = 0x80, // 0: off, 1: on
 };
 
@@ -109,10 +109,10 @@ enum {
 };
 
 enum PPU_STATUS : int {
-    LBITS       = 0x1F,
-    SPR_OV      = 0x20,
-    SPR_ZERO    = 0x40,
-    VBLANK      = 0x80,
+    PPU_STATUS_LBITS       = 0x1F,
+    PPU_STATUS_SPR_OV      = 0x20,
+    PPU_STATUS_SPR_ZERO    = 0x40,
+    PPU_STATUS_VBLANK      = 0x80,
 };
 
 } // namespace Core
