@@ -4,6 +4,8 @@
 #include <emu/core/types.hpp>
 #include <emu/core/memorymap.hpp>
 #include <emu/io/file.hpp>
+#include "oam.hpp"
+#include "background.hpp"
 
 namespace Core {
 
@@ -12,18 +14,15 @@ class PPUBus;
 
 class PPU {
     PPUBus *bus = nullptr;
-    uint8_t *oam = nullptr;
-    uint8_t *vram_mem = nullptr; // 2 KiB
+    OAM oam;
+    Background background;
 
     // ppu's internal data bus. gets filled on reading and writing to regs.
     uint8_t io_latch;
 
-    // registers
     uint8_t ctrl;
     uint8_t mask;
     uint8_t status;
-    uint8_t oam_addr;
-    uint8_t oam_data;
     struct {
         uint8_t latch;
         uint16_t scroll;
@@ -36,48 +35,36 @@ class PPU {
     uint8_t ppu_data;
     uint8_t oam_dma;
 
-    struct {
-        uint16_t addr; // 15 bits
-        uint16_t tmp;  // 15 bits
-        uint8_t fine_x_scroll; // 3 bits
-        // low - for the low bg byte
-        // high - for the high bg byte
-        // both hold data for two tiles and are shifted every cycle
-        Reg16 shift_low, shift_high;
-        // these two hold info for one tile, not two
-        uint8_t shift_attr1, shift_attr2;
-    } vram;
+    bool nmi_enabled;
+    bool ext_bus_dir;
+    uint8_t vram_increment;
 
     struct {
-        uint8_t nt, at, lowbg, hibg;
-    } internal_latch;
+        bool greyscale, red, green, blue;
+    } effects;
 
-    struct {
-        uint8_t shifts[8];
-        uint8_t latches[8];
-        uint8_t counters[8];
-    } oam_regs;
-
-    int lineno = 0, linec = 0;
+    int cycle;
 
     void scanline_render();
     void scanline_empty();
-    void fetch_nt();
-    void fetch_at();
-    void fetch_lowbg();
-    void fetch_highbg();
+    inline int getrow(int cycle)
+    {
+        return cycle/340;
+    }
+    inline int getcol(int cycle)
+    {
+        return cycle%340;
+    }
 
 public:
-    PPU(PPUBus *b) : bus(b), oam(new uint8_t[PPUMap::OAM_SIZE])
+    PPU(PPUBus *b) : bus(b)
     { }
     PPU(const PPU &) = delete;
     PPU(PPU &&) = delete;
     PPU &operator=(const PPU &) = delete;
     PPU &operator=(PPU &&) = delete;
     ~PPU()
-    {
-        delete[] oam;
-    }
+    { }
 
     void power(uint8_t *chrrom);
     void reset();

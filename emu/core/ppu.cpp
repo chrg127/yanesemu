@@ -44,25 +44,25 @@ void PPU::main()
 uint8_t PPU::readreg(const uint16_t which)
 {
     switch (which) {
-    case CPUMap::PPU_CTRL:      break;
-    case CPUMap::PPU_MASK:      break;
-    case CPUMap::PPU_STATUS:
+    case 0x2000: case 0x2001: case 0x2003:
+    case 0x2005: case 0x2006: case 0x4014:
+        break;
+
+    case 0x2002:
         io_latch |= (status & 0xE0);
         status &= 0x60; // set vblank / nmi_occurred to false
         addr_latch.latch = 0;
         addr_latch.toggle = 0;
         break;
-    case CPUMap::PPU_OAM_ADDR:  break;
-    case CPUMap::PPU_OAM_DATA:
+
+    case 0x2004:
         io_latch = oam_data;
         break;
-    case CPUMap::PPU_SCROLL:    break;
-    case CPUMap::PPU_ADDR:      break;
-    case CPUMap::PPU_DATA:
+    case 0x2007:
         io_latch = ppu_data;
         vram.addr += ((ctrl & PPU_CTRL_VRAM_INCREMENT) == 0) ? 1 : 32;
         break;
-    case CPUMap::PPU_OAM_DMA:   break;
+
 #ifdef DEBUG
     default:
         assert(false);
@@ -76,55 +76,75 @@ void PPU::writereg(const uint16_t which, const uint8_t data)
 {
     io_latch = data;
     switch (which) {
-    case CPUMap::PPU_CTRL:
-        vram.tmp = (io_latch & 0x3) | (vram.tmp & 0xF3FF);
-        ctrl = io_latch;
-        break;
-    case CPUMap::PPU_MASK:
-        mask = io_latch;
-        break;
-    case CPUMap::PPU_STATUS:
-        break;
-    case CPUMap::PPU_OAM_ADDR:
-        oam_addr = io_latch;
-        break;
-    case CPUMap::PPU_OAM_DATA:
-        oam_data = io_latch;
+    case 0x2000:
+        nmi_enabled = data & 0x80;
+        ext_bus_dir = data & 0x40;
+        vram_increment = (data & 0x04) ? 32 : 1;
+        oam.sprsize = data & 0x20;
+        background.patterntab_addr = data & 0x10;
+        oam.patterntab_addr = data & 0x08;
+        background.nt_base_addr = data & 0x03;
+        background.tmp = (data & 0x03) | (background.tmp & 0xF3FF);
         break;
 
-    case CPUMap::PPU_SCROLL:
-        addr_latch.scroll = io_latch << 8 | addr_latch.latch;
-        addr_latch.latch = io_latch;
+    case 0x2001:
+        effects.greyscale        = data & 0x01;
+        background.show_leftmost = data & 0x02;
+        oam.show_leftmost        = data & 0x04;
+        background.show          = data & 0x08;
+        oam.show                 = data & 0x10;
+        effects.red              = data & 0x20;
+        effects.green            = data & 0x40;
+        effects.blue             = data & 0x80;
+        break;
+
+    case 0x2002:
+        break;
+
+    case 0x2003:
+        oam.addr = data;
+        break;
+
+    case 0x2004:
+        oam.data = data;
+        oam.addr++;
+        break;
+
+    case 0x2005:
+        addr_latch.scroll = data << 8 | addr_latch.latch;
+        addr_latch.latch = data;
         if (addr_latch.toggle == 0) {
-            vram.tmp = (io_latch & 0xF8) | (vram.tmp & 0xFFE0);
-            vram.fine_x_scroll = (io_latch & 0x7);
+            background.tmp = (data & 0xF8) | (background.tmp & 0xFFE0);
+            vram.fine_x_scroll = (data & 0x7);
         } else {
-            vram.tmp = (io_latch & 0x7) | (vram.tmp & 0x8FFF);
-            vram.tmp = (io_latch & 0xC0) | (vram.tmp & 0xF3FF);
-            vram.tmp = (io_latch & 0xC0) | (vram.tmp & 0xFF1F);
+            background.tmp = (data & 0x07) | (background.tmp & 0x8FFF);
+            background.tmp = (data & 0xC0) | (background.tmp & 0xF3FF);
+            background.tmp = (data & 0xC0) | (background.tmp & 0xFF1F);
         }
         addr_latch.toggle ^= 1;
         break;
 
-    case CPUMap::PPU_ADDR:
-        addr_latch.addr = io_latch << 8 | addr_latch.latch;
-        addr_latch.latch = io_latch;
+    case 0x2006:
+        addr_latch.addr = data << 8 | addr_latch.latch;
+        addr_latch.latch = data;
         if (addr_latch.toggle == 0)
-            vram.tmp = (io_latch & 0x3F) | (vram.tmp & 0x80);
+            background.tmp = (data & 0x3F) | (background.tmp & 0x80);
         else {
-            vram.tmp = (vram.tmp & 0xFF00) | io_latch;
-            vram.addr = vram.tmp;
+            background.tmp = (background.tmp & 0xFF00) | data;
+            background.addr = background.tmp;
         }
         addr_latch.toggle ^= 1;
         break;
 
-    case CPUMap::PPU_DATA:
-        ppu_data = io_latch;
-        vram.addr += ((ctrl & PPU_CTRL_VRAM_INCREMENT) == 0) ? 1 : 32;
+    case 0x2007:
+        ppu_data = data;
+        background.addr += vram_increment;
         break;
+
     case CPUMap::PPU_OAM_DMA:
-        oam_dma = io_latch;
+        oam.dma = data;
         break;
+
 #ifdef DEBUG
     default:
         assert(false);
@@ -135,9 +155,8 @@ void PPU::writereg(const uint16_t which, const uint8_t data)
 
 void PPU::scanline_render()
 {
-    // bg event first
-    if ((linec >= 1 && linec <= 256) ||
-        (linec >= 321 && linec <= 340)) {
+    int col = getcol();
+    if ((col >= 1 && col <= 256) || (col >= 321 && col <= 340)) {
         switch (linec % 8) {
         case 1: case 2: fetch_nt(); break;
         case 3: case 4: fetch_at(); break;
