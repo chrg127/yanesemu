@@ -5,44 +5,30 @@
 
 namespace Core {
 
-void PPUBus::initmem(uint8_t *chrrom)
+PPUBus::PPUBus(int mirroring)
 {
-    std::memset(memory, 0, PPUMap::MEMSIZE);
-    // the CHR ROM is mapped to both pattern tables
-    std::memcpy(memory, chrrom, PPUMap::PATTERN_TABRIGHT_END+1);
+    if (mirroring == 0) // v-mirror
+        get_nt_addr = [](uint16_t x) { return x |= 0x0800; };
+    else if (mirroring == 1)
+        get_nt_addr = [](uint16_t x) { return x |= 0x0400; };
+    // else, mapper defined
 }
 
-// literally the same as Bus::memdump...
-void PPUBus::memdump(IO::File &df)
+void PPUBus::initmem(uint8_t *chrrom)
 {
-    int i, j;
-
-    df.printf("=== PPU memory ===\n");
-    if (!df.isopen())
-        return;
-    for (i = 0; i < CPUMap::MEMSIZE; ) {
-        df.printf("%04X: ", i);
-        for (j = 0; j < 16; j++) {
-            df.printf("%02X ", memory[i]);
-            i++;
-        }
-        df.putc('\n');
-    }
-    df.putc('\n');
+    std::memset(memory, 0, 0x4000);
+    // the CHR ROM is mapped to both pattern tables
+    std::memcpy(memory, chrrom, 0x2000);
 }
 
 uint8_t &PPUBus::operator[](const uint16_t addr)
 {
-    if (addr >= PPUMap::NAME_TAB0_START && addr <= PPUMap::NAME_TAB_MIRROR_END)
-        // $2000 < addr < $3EFF, or inside nametable space
-        return memory[0x2000 + (addr & 0x0FFF)];
-    else if (addr >= PPUMap::PALRAM_START && addr <= PPUMap::PALRAM_MIRROR_END)
-        // $3F00 < addr < $3FFF, or inside palette ram space
+    if (addr >= 0x2000 && addr <= 0x3FFF)       // inside nametable space
+        return memory[get_nt_addr(0x2000 + (addr & 0x0FFF))];
+    else if (addr >= 0x3F00 && addr <= 0x3FFF)  // $3F00 < addr < $3FFF, or inside palette ram space
         return memory[0x3F00 + (addr & 0x00FF) % 0x20];
-    else
-        // everything else; ignore array bounds
+    else    // everything else
         return memory[addr];
 }
 
-}
-
+} // namespace Core

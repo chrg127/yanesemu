@@ -92,7 +92,7 @@ const uint16_t IRQBRKVEC            = 0xFFFE;
 
 namespace PPUMap {
 
-const int MEMSIZE = 0x4000+1;
+const int MEMSIZE = 0x4000;
 
 enum {
     PATTERN_TABLEFT_START  = 0x0000,
