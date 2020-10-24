@@ -1,6 +1,8 @@
 #ifndef BACKGROUND_HPP_INCLUDED
 #define BACKGROUND_HPP_INCLUDED
 
+#include <cstdint>
+
 namespace Core {
 
 struct Background {
@@ -11,8 +13,10 @@ struct Background {
     bool show;
     bool show_leftmost;
 
-    uint16_t addr, tmp;
-    uint8_t fine_x_scroll:
+    uint16_t vram_addr, tmp;
+    uint8_t finex;
+    uint8_t vram_increment;
+
     // low - for the low bg byte
     // high - for the high bg byte
     // both hold data for two tiles and are shifted every cycle
@@ -31,6 +35,7 @@ struct Background {
     Background & operator= (const Background &) = delete;
     Background & operator= (Background &&) = delete;
 
+    void power();
     uint8_t read(uint16_t addr);
     void write(uint16_t addr, uint8_t data);
     void cycle();
@@ -38,6 +43,8 @@ struct Background {
     void fetch_at();
     void fetch_lowbg();
     void fetch_highbg();
+    uint8_t readdata();
+    void writedata(uint8_t data);
 };
 
 }
