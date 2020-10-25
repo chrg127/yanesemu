@@ -9,7 +9,7 @@ namespace Core {
 
 void PPU::power(uint8_t *chrrom)
 {
-    bus.initmem(chrrom);
+    vram.initmem(chrrom);
     bg.power();
     oam.power();
 }
@@ -21,7 +21,7 @@ void PPU::reset()
 void PPU::main()
 {
     if (vblank) {
-        scanline_render();
+        // scanline_render();
         return;
     }
     if (getrow() == 241 && getcol() == 1) {
@@ -29,7 +29,7 @@ void PPU::main()
         return;
     }
     // else
-    scanline_empty();
+    // scanline_empty();
 }
 
 uint8_t PPU::readreg(const uint16_t which)
@@ -50,7 +50,7 @@ uint8_t PPU::readreg(const uint16_t which)
         return io_latch;
 
     case 0x2007:
-        io_latch = bg.readdata();
+        io_latch = vram.read();
         return io_latch;
 
 #ifdef DEBUG
@@ -70,12 +70,12 @@ void PPU::writereg(const uint16_t which, const uint8_t data)
     case 0x2000:
         nmi_enabled         = data & 0x80;
         ext_bus_dir         = data & 0x40;
-        bg.vram_increment = (data & 0x04) ? 32 : 1;
+        vram.increment      = (data & 0x04) ? 32 : 1;
         oam.sprsize         = data & 0x20;
         bg.patterntab_addr  = data & 0x10;
         oam.patterntab_addr = data & 0x08;
-        bg.nt_base_addr = data & 0x03;
-        bg.tmp = (data & 0x03) | (bg.tmp & 0xF3FF);
+        bg.nt_base_addr     = data & 0x03;
+        vram.tmp.reg        = (data & 0x03) | (vram.tmp.reg & 0xF3FF);
         break;
 
     case 0x2001:
@@ -103,27 +103,27 @@ void PPU::writereg(const uint16_t which, const uint8_t data)
 
     case 0x2005:
         if (latch.toggle == 0) {
-            bg.tmp = (data & 0xF8) | (bg.tmp & 0xFFE0);
-            bg.finex = (data & 0x7);
+            vram.tmp.reg = (data & 0xF8) | (vram.tmp.reg & 0xFFE0);
+            vram.finex   = (data & 0x7);
         } else {
-            bg.tmp = (data & 0x07) | (bg.tmp & 0x8FFF);
-            bg.tmp = (data & 0xF8) | (bg.tmp & 0xFC1F);
+            vram.tmp.reg = (data & 0x07) | (vram.tmp.reg & 0x8FFF);
+            vram.tmp.reg = (data & 0xF8) | (vram.tmp.reg & 0xFC1F);
         }
         latch.toggle ^= 1;
         break;
 
     case 0x2006:
         if (latch.toggle == 0) {
-            bg.tmp = (data & 0x3F) | (bg.tmp & 0xC0FF);
+            vram.tmp.high = data & 0x3F;
         } else {
-            bg.tmp = (bg.tmp & 0xFF00) | data;
-            bg.vram_addr = bg.tmp;
+            vram.tmp.low = data;
+            vram.addr = vram.tmp.reg;
         }
         latch.toggle ^= 1;
         break;
 
     case 0x2007:
-        bg.writedata(data);
+        vram.write(data);
         break;
 
     case CPUMap::PPU_OAM_DMA:
@@ -138,35 +138,34 @@ void PPU::writereg(const uint16_t which, const uint8_t data)
     }
 }
 
-void PPU::scanline_render()
-{
-    int col = getcol();
-    if ((col >= 1 && col <= 256) || (col >= 321 && col <= 340)) {
-        switch (col % 8) {
-        case 1: case 2: bg.fetch_nt(); break;
-        case 3: case 4: bg.fetch_at(); break;
-        case 5: case 6: bg.fetch_lowbg(); break;
-        case 7: case 0:
-            bg.fetch_highbg();
-            // inc_v();
-            break;
-        }
-    }
+// void PPU::scanline_render()
+// {
+//     int col = getcol();
+//     if ((col >= 1 && col <= 256) || (col >= 321 && col <= 340)) {
+//         switch (col % 8) {
+//         case 1: case 2: bg.fetch_nt(); break;
+//         case 3: case 4: bg.fetch_at(); break;
+//         case 5: case 6: bg.fetch_lowbg(); break;
+//         case 7: case 0:
+//             bg.fetch_highbg();
+//             // inc_v();
+//             break;
+//         }
+//     }
 
-    if (getrow() == 261 && col == 1) {
-        // clear_stuff();
-    }
-}
-
-void PPU::scanline_empty()
-{
-
-}
+//     if (getrow() == 261 && col == 1) {
+//         // clear_stuff();
+//     }
+// }
 
 void PPU::printinfo(IO::File &log)
 {
     log.printf("lineno: %d, linec: %d\n", getrow(), getcol());
 }
+
+#include <emu/core/vram.cpp>
+#include <emu/core/background.cpp>
+#include <emu/core/oam.cpp>
 
 } // namespace Core
 

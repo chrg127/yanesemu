@@ -1,20 +1,20 @@
 #ifndef PPU_HPP_INCLUDED
 #define PPU_HPP_INCLUDED
 
+#include <functional>
 #include <emu/core/types.hpp>
 #include <emu/core/memorymap.hpp>
 #include <emu/io/file.hpp>
-#include "ppubus.hpp"
-#include "oam.hpp"
-#include "background.hpp"
 
 namespace Core {
 
-// forward decls
-class PPUBus;
-
 class PPU {
-    PPUBus bus;
+
+#include <emu/core/vram.hpp>
+#include <emu/core/background.hpp>
+#include <emu/core/oam.hpp>
+
+    VRAM vram;
     OAM oam;
     Background bg;
 
@@ -34,28 +34,28 @@ class PPU {
 
     int cycle;
 
-    void scanline_render();
-    void scanline_empty();
+    // void scanline_render();
+    // void scanline_empty();
     inline int getrow()
-    {
-        return cycle/340;
-    }
+    { return cycle/340; }
     inline int getcol()
-    {
-        return cycle%340;
-    }
+    { return cycle%340; }
+
+    friend class Background;
+    friend class OAM;
+    friend class PPUBus;
 
 public:
-    PPU()
-    { }
+    // PPU()
+    // { }
 
-    PPU(const PPU &) = delete;
-    PPU(PPU &&) = delete;
-    PPU &operator=(const PPU &) = delete;
-    PPU &operator=(PPU &&) = delete;
+    // PPU(const PPU &) = delete;
+    // PPU(PPU &&) = delete;
+    // PPU &operator=(const PPU &) = delete;
+    // PPU &operator=(PPU &&) = delete;
 
-    ~PPU()
-    { }
+    // ~PPU()
+    // { }
 
     void power(uint8_t *chrrom);
     void reset();

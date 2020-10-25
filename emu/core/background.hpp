@@ -1,21 +1,8 @@
-#ifndef BACKGROUND_HPP_INCLUDED
-#define BACKGROUND_HPP_INCLUDED
-
-#include <cstdint>
-
-namespace Core {
-
 struct Background {
-    uint8_t *vram_mem = nullptr; // 2 KiB
-
     bool patterntab_addr;
     uint8_t nt_base_addr;
     bool show;
     bool show_leftmost;
-
-    uint16_t vram_addr, tmp;
-    uint8_t finex;
-    uint8_t vram_increment;
 
     // low - for the low bg byte
     // high - for the high bg byte
@@ -28,25 +15,10 @@ struct Background {
         uint8_t nt, at, lowbg, hibg;
     } internal_latch;
 
-    Background() : vram_mem(new uint8_t[2048])
-    { }
-    Background(const Background &) = delete;
-    Background(Background &&) = delete;
-    Background & operator= (const Background &) = delete;
-    Background & operator= (Background &&) = delete;
-
     void power();
-    uint8_t read(uint16_t addr);
-    void write(uint16_t addr, uint8_t data);
     void cycle();
     void fetch_nt();
     void fetch_at();
     void fetch_lowbg();
     void fetch_highbg();
-    uint8_t readdata();
-    void writedata(uint8_t data);
 };
-
-}
-
-#endif

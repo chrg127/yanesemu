@@ -1,6 +1,7 @@
 VPATH=emu:emu/core:emu/utils:emu/io:emu/video
 
-HEADERS = bus.hpp cpu.hpp memorymap.hpp ppu.hpp types.hpp ppubus.hpp \
+HEADERS = bus.hpp cpu.hpp memorymap.hpp types.hpp \
+		  ppu.hpp vram.hpp background.hpp oam.hpp \
 		  nesrom.hpp file.hpp \
 		  cmdargs.hpp debug.hpp stringops.hpp \
 		  video.hpp
@@ -29,6 +30,10 @@ all: debug
 # these are special - they #include other .cpp files
 $(DEBDIR)/cpu.o: emu/core/cpu.cpp emu/core/opcodes.cpp emu/core/disassemble.cpp $(HEADERS)
 	$(CXX) $(CFLAGS) -c $< -o $@
+
+$(DEBDIR)/ppu.o: emu/core/ppu.cpp emu/core/vram.cpp emu/core/background.cpp emu/core/oam.cpp $(HEADERS)
+	$(CXX) $(CFLAGS) -c $< -o $@
+
 $(DEBDIR)/video.o: emu/video/video.cpp emu/video/videosdl.cpp $(HEADERS)
 	$(CXX) $(CFLAGS) -c $< -o $@
 
