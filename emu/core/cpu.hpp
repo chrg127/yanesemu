@@ -2,9 +2,9 @@
 #define NESCPU_HPP_INCLUDED
 
 #include <cstddef>
-#include <emu/core/types.hpp>
-#include <emu/core/bus.hpp>
 #include <string>
+#include <emu/core/types.hpp>
+#include <emu/core/memorymap.hpp>
 
 #define INSIDE_CPU_HPP
 
@@ -14,7 +14,10 @@ namespace IO { class File; }
 namespace Core {
 
 class CPU {
-    Bus *bus = nullptr;
+
+#include "bus.hpp"
+
+    Bus bus;
 
     uint8_t curropcode;
     Reg16 op;       // operand
@@ -80,13 +83,13 @@ class CPU {
     inline uint8_t readmem(uint16_t addr)
     {
         cycle();
-        return bus->read(addr);
+        return bus.read(addr);
     }
 
     inline void writemem(uint16_t addr, uint8_t val)
     {
         cycle();
-        bus->write(addr, val);
+        bus.write(addr, val);
     }
 
     using InstrFuncRead = void (CPU::*)(const uint8_t);
@@ -174,9 +177,9 @@ class CPU {
     void instr_nop();
 
 public:
-    CPU(Bus *b) : bus(b)
+    CPU()
     {
-        bus->write_enable = false;
+        bus.write_enable = false;
         procstatus.reset();
     }
 
@@ -187,12 +190,13 @@ public:
     void reset();
     std::string disassemble();
     void printinfo(IO::File &f);
-
-    uint8_t peek_opcode() const
+    inline const uint8_t *getmemory()
+    { return bus.getmemory(); }
+    inline uint8_t peek_opcode() const
     { return curropcode; }
 };
 
-}
+} // namespace Core
 
 #undef INSIDE_CPU_HPP
 

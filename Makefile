@@ -7,7 +7,7 @@ HEADERS = bus.hpp cpu.hpp memorymap.hpp types.hpp \
 		  video.hpp
 
 OBJS = main.o \
-	   cpu.o bus.o ppu.o ppubus.o \
+	   cpu.o ppu.o \
 	   nesrom.o file.o \
 	   cmdargs.o stringops.o \
 	   video.o
@@ -28,7 +28,7 @@ RELDIR = release
 all: debug
 
 # these are special - they #include other .cpp files
-$(DEBDIR)/cpu.o: emu/core/cpu.cpp emu/core/opcodes.cpp emu/core/disassemble.cpp $(HEADERS)
+$(DEBDIR)/cpu.o: emu/core/cpu.cpp emu/core/bus.cpp emu/core/opcodes.cpp emu/core/disassemble.cpp $(HEADERS)
 	$(CXX) $(CFLAGS) -c $< -o $@
 
 $(DEBDIR)/ppu.o: emu/core/ppu.cpp emu/core/vram.cpp emu/core/background.cpp emu/core/oam.cpp $(HEADERS)

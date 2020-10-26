@@ -3,7 +3,6 @@
 #include <cstdio>
 #include <cctype>
 #include <cstring>
-#include <emu/io/file.hpp>
 #include <emu/io/nesrom.hpp>
 #include <emu/utils/stringops.hpp>
 #define DEBUG
@@ -13,6 +12,7 @@
 
 namespace Core {
 
+#include <emu/core/bus.cpp>
 #include <emu/core/opcodes.cpp>
 #include <emu/core/disassemble.cpp>
 
@@ -298,11 +298,11 @@ void CPU::main()
 /* Emulates the start/reset function of the 6502. */
 void CPU::power(uint8_t *prgrom, std::size_t romsize)
 {
-    bus->initmem(prgrom, romsize);
+    bus.initmem(prgrom, romsize);
     sp = 0;
     pc = 0;
     interrupt(true);
-    bus->write_enable = true;
+    bus.write_enable = true;
 }
 
 /* Sends an IRQ signal. Used by other devices. */
@@ -322,7 +322,7 @@ void CPU::reset()
 {
     pc = sp = accum = xreg = yreg = 0;
     procstatus.reset();
-    bus->reset();
+    bus.reset();
 }
 
 /* Prints info about the instruction which has just been executed and

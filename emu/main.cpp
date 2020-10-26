@@ -1,18 +1,14 @@
 #include <cstdio>
 #include <cstdlib>
 #include <emu/utils/cmdargs.hpp>
-#include <emu/core/bus.hpp>
 #include <emu/core/cpu.hpp>
+// #include <emu/core/ppu.hpp>
 #include <emu/io/file.hpp>
 #include <emu/io/nesrom.hpp>
+#include <emu/video/video.hpp>
+#include <cmath>
 #define DEBUG
 #include <emu/utils/debug.hpp>
-
-#include <emu/core/ppu.hpp>
-#include <emu/core/ppubus.hpp>
-#include <emu/video/video.hpp>
-
-#include <cmath>
 
 static const char *version_str = "0.1";
 static const int NUM_FLAGS = 5;
@@ -102,8 +98,8 @@ int main(int argc, char *argv[])
     IO::File logfile, dumpfile, fout(stdout, IO::Mode::WRITE);
     IO::ROM rom;
     Video::Video v;
-    Core::PPUBus ppubus;
-    Core::PPU ppu(&ppubus);
+    Core::CPU cpu;
+    // Core::PPU ppu;
 
     if (argc < 2) {
         parser.print_usage();
@@ -139,11 +135,11 @@ int main(int argc, char *argv[])
     //     v.poll();
     //     v.render();
     // }
-    ppu.power(rom.get_chrrom());
+    // ppu.power(rom.get_chrrom());
     int counter = 0;
     for (;;) {
-        ppu.main();
-        ppu.printinfo(logfile);
+        // ppu.main();
+        // ppu.printinfo(logfile);
         if (++counter == 100)
             break;
     }
