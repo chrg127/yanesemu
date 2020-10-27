@@ -2,7 +2,7 @@ VPATH=emu:emu/core:emu/utils:emu/io:emu/video
 
 HEADERS = bus.hpp cpu.hpp memorymap.hpp types.hpp \
 		  ppu.hpp vram.hpp background.hpp oam.hpp \
-		  nesrom.hpp file.hpp \
+		  cartridge.hpp file.hpp \
 		  cmdargs.hpp debug.hpp stringops.hpp \
 		  video.hpp
 
