@@ -79,14 +79,14 @@ void PPU::writereg(const uint16_t which, const uint8_t data)
         break;
 
     case 0x2001:
-        effects.greyscale        = data & 0x01;
-        bg.show_leftmost = data & 0x02;
-        oam.show_leftmost        = data & 0x04;
-        bg.show          = data & 0x08;
-        oam.show                 = data & 0x10;
-        effects.red              = data & 0x20;
-        effects.green            = data & 0x40;
-        effects.blue             = data & 0x80;
+        effects.greyscale   = data & 0x01;
+        bg.show_leftmost    = data & 0x02;
+        oam.show_leftmost   = data & 0x04;
+        bg.show             = data & 0x08;
+        oam.show            = data & 0x10;
+        effects.red         = data & 0x20;
+        effects.green       = data & 0x40;
+        effects.blue        = data & 0x80;
         break;
 
     case 0x2002:

@@ -34,9 +34,11 @@ public:
         return *this;
     }
 
-    explicit operator bool()
+    explicit operator bool() const
     { return locked; }
 
+    inline uint8_t *getmem() const
+    { return locked ? nullptr : mem; }
     inline std::size_t getsize() const
     { return size; }
 

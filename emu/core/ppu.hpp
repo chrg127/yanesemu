@@ -4,7 +4,7 @@
 #include <functional>
 #include <emu/core/types.hpp>
 #include <emu/core/memorymap.hpp>
-#include <emu/io/file.hpp>
+#include <emu/utils/file.hpp>
 
 namespace Core {
 
@@ -46,8 +46,8 @@ class PPU {
     friend class PPUBus;
 
 public:
-    // PPU()
-    // { }
+    PPU(int mirroring) : vram(mirroring)
+    { }
 
     // PPU(const PPU &) = delete;
     // PPU(PPU &&) = delete;
