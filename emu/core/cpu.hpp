@@ -6,18 +6,24 @@
 #include <emu/core/types.hpp>
 #include <emu/core/memorymap.hpp>
 
-#define INSIDE_CPU_HPP
-
-// forward decls
 namespace IO { class File; }
 
 namespace Core {
 
 class CPU {
 
-#include "bus.hpp"
+    struct Bus {
+        uint8_t memory[CPUMap::MEMSIZE];
+        bool write_enable = false;
 
-    Bus bus;
+        void init(uint8_t *prgrom, uint32_t romsize);
+        uint8_t read(uint16_t addr);
+        void write(uint16_t addr, uint8_t val);
+        void reset()
+        { }
+        const uint8_t *getmemory()
+        { return memory; }
+    } bus;
 
     uint8_t curropcode;
     Reg16 op;       // operand
@@ -184,7 +190,7 @@ public:
     }
 
     void main();
-    void power(uint8_t *prgrom, size_t romsize);
+    void power(uint8_t *prgrom, uint32_t romsize);
     void fire_irq();
     void fire_nmi();
     void reset();
