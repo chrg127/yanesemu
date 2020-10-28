@@ -121,7 +121,7 @@ bool Cartridge::open(std::string_view s)
     return true;
 }
 
-void Cartridge::printinfo(IO::File &log)
+void Cartridge::printinfo(IO::File &log) const
 {
     if (!log.isopen())
         return;
@@ -154,7 +154,7 @@ void Cartridge::printinfo(IO::File &log)
     log.putc('\n');
 }
 
-std::string_view Cartridge::geterr()
+std::string_view Cartridge::geterr() const
 {
     static std::string_view rom_errmsg[] = {
         "no errors", "invalid NES format", "NES 2.0 not yet supported", "can't open rom file",

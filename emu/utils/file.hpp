@@ -1,14 +1,14 @@
-#ifndef FILE_HPP_INCLUDED
-#define FILE_HPP_INCLUDED
+/* Simple, safe and inheritable self-closing File class. No Windows support (yet). */
 
-/* Simple, safe and inheritable self-closing File class. No Windows support. */
+#ifndef UTILS_FILE_HPP_INCLUDED
+#define UTILS_FILE_HPP_INCLUDED
 
 #include <cstdio>
 #include <cstdarg>
 #include <string>
 #include <string_view>
 
-namespace IO {
+namespace Utils {
 
 enum class Mode {
     READ,
@@ -52,7 +52,7 @@ public:
     void close();
     bool assoc(FILE *f, Mode m);
 
-    inline bool isopen()
+    inline bool isopen() const
     { return fbuf ? true : false; }
 
     inline long size() const
@@ -66,7 +66,7 @@ public:
     }
 
     inline bool error()
-    {   
+    {
         if (!fbuf)
             return true;
         return ferror(fbuf) == 0 ? false : true;
@@ -92,14 +92,14 @@ public:
         }
     }
 
-    inline std::string getfilename()
+    inline std::string getfilename() const
     { return filename; }
 
     /*
      * strictly for compatibility with existing FILE APIs.
      * if state invalidation might be a concern, use releasefbuf()
      */
-    inline FILE *getfbuf()
+    inline FILE *getfbuf() const
     { return fbuf; }
 
     inline int getfd()
@@ -167,10 +167,10 @@ public:
             EOF : std::fputs(s.data(), fbuf);
     }
 
-    inline int printf(const char *fmt, ...)
 #if defined(__GNUC__) || defined(__MINGW32__) || defined (__MINGW64__)
     __attribute__((format(printf, 2, 3)))
 #endif
+    inline int printf(const char *fmt, ...)
     {
         if (!fbuf || mode == Mode::READ)
             return 0;

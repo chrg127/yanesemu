@@ -2,9 +2,9 @@
 #include <cstdlib>
 #include <emu/utils/cmdargs.hpp>
 #include <emu/core/cpu.hpp>
-// #include <emu/core/ppu.hpp>
-#include <emu/io/file.hpp>
-#include <emu/io/nesrom.hpp>
+#include <emu/core/ppu.hpp>
+#include <emu/utils/file.hpp>
+#include <emu/core/cartridge.hpp>
 #include <emu/video/video.hpp>
 #include <cmath>
 #define DEBUG
@@ -55,7 +55,7 @@ void logopen(IO::File &f, Utils::ArgFlags &flags, const uint32_t arg)
     }
 }
 
-void dump(IO::File &df, const uint8_t *const mem, const std::size_t size)
+void dump(IO::File &df, const uint8_t *mem, const std::size_t size)
 {
     std::size_t i, j;
 
@@ -68,38 +68,14 @@ void dump(IO::File &df, const uint8_t *const mem, const std::size_t size)
     df.putc('\n');
 }
 
-void write_chrrom(Video::Video::Screen sc, uint8_t *rom, size_t size)
-{
-    static const uint32_t colortab[] = { 0x000000FF, 0x888888FF, 0xBBBBBBFF, 0xFFFFFFFF };
-    static const int rowsize = 128;
-
-    for (size_t i = 0; i < size; i += 16) {
-        std::printf("tile %ld [%ld], x = %ld, y = %ld\n", i/16, i, (i/2)%rowsize, ((i/2)/rowsize)*8);
-        for (int j = 0; j < 8; j++) {
-            for (int b = 0b10000000; b != 0; b >>= 1) {
-                bool bit1 = rom[i+j] & b;
-                bool bit2 = rom[i+j+8] & b;
-                int tabi = bit1+bit2;
-                uint32_t pixel = colortab[tabi];
-                int x = ((i/2) % rowsize) + (7-std::log2(b));
-                int y = ((i/2)/rowsize)*8 + j;
-
-                std::printf("tabi = %d, pixel = %08X, x = %d, y = %d\n", tabi, pixel, x, y);
-
-                sc.buf[y*sc.w + x] = pixel;
-            }
-        }
-    }
-}
-
 int main(int argc, char *argv[])
 {
     Utils::ArgParser parser(*argv, cmdflags, NUM_FLAGS);
     IO::File logfile, dumpfile, fout(stdout, IO::Mode::WRITE);
-    IO::ROM rom;
+    Core::Cartridge cart;
     Video::Video v;
     Core::CPU cpu;
-    // Core::PPU ppu;
+    Core::PPU ppu(0);
 
     if (argc < 2) {
         parser.print_usage();
@@ -119,15 +95,16 @@ int main(int argc, char *argv[])
     } else if (flags.item == "") {
         error("ROM file not specified\n");
         return 1;
-    } else if (!rom.open(flags.item)) {
-        error("can't open rom\n");
-        return 1;
-    } else if (!v.create()) {
-        error("can't initialize video subsytem\n");
-        return 1;
     }
+    // else if (!cart.open(flags.item)) {
+    //     error("can't open rom file\n");
+    //     return 1;
+    // } else if (!v.create()) {
+    //     error("can't initialize video subsytem\n");
+    //     return 1;
+    // }
 
-    rom.printinfo(fout);
+    cart.printinfo(fout);
     // dump(dumpfile, rom.get_chrrom(), rom.get_chrrom_size());
     // Video::Video::Screen sc = v.getpixels();
     // write_chrrom(sc, rom.get_chrrom(), rom.get_chrrom_size());
@@ -135,14 +112,14 @@ int main(int argc, char *argv[])
     //     v.poll();
     //     v.render();
     // }
-    // ppu.power(rom.get_chrrom());
-    int counter = 0;
-    for (;;) {
-        // ppu.main();
-        // ppu.printinfo(logfile);
-        if (++counter == 100)
-            break;
-    }
+    // ppu.power(cart.get_chrrom());
+    // int counter = 0;
+    // for (;;) {
+    //     ppu.main();
+    //     ppu.printinfo(logfile);
+    //     if (++counter == 100)
+    //         break;
+    // }
     return 0;
 }
 

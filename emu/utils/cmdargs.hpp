@@ -1,5 +1,5 @@
-#ifndef CMDARGS_H_INCLUDED
-#define CMDARGS_H_INCLUDED
+#ifndef UTILS_CMDARGS_HPP_INCLUDED
+#define UTILS_CMDARGS_HPP_INCLUDED
 
 /* 
  * simple libray for command argument. arguments must be passed in the form:
@@ -64,6 +64,6 @@ public:
     void print_usage();
 };
 
-} // namespace CommandLine
+} // namespace Utils
 
 #endif

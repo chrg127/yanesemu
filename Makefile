@@ -1,15 +1,13 @@
 VPATH=emu:emu/core:emu/utils:emu/io:emu/video
 
-HEADERS = cpu.hpp memorymap.hpp types.hpp \
-		  ppu.hpp vram.hpp background.hpp oam.hpp \
-		  cartridge.hpp file.hpp \
-		  cmdargs.hpp debug.hpp stringops.hpp \
+HEADERS = background.hpp cartridge.hpp cpu.hpp memorymap.hpp \
+		  oam.hpp ppu.hpp rom.hpp types.hpp vram.hpp \
+		  cmdargs.hpp file.hpp debug.hpp stringops.hpp \
 		  video.hpp
 
 OBJS = main.o \
 	   cpu.o ppu.o cartridge.o \
-	   file.o \
-	   cmdargs.o stringops.o \
+	   file.o cmdargs.o stringops.o \
 	   video.o
 
 LIBS = -lm -lSDL2

@@ -1,11 +1,10 @@
-#ifndef NESCPU_HPP_INCLUDED
-#define NESCPU_HPP_INCLUDED
+#ifndef CORE_CPU_HPP_INCLUDED
+#define CORE_CPU_HPP_INCLUDED
 
 #include <cstddef>
 #include <string>
 #include <emu/core/types.hpp>
 #include <emu/core/memorymap.hpp>
-#include <emu/core/rom.hpp>
 
 namespace IO { class File; }
 
@@ -195,8 +194,8 @@ public:
     void fire_irq();
     void fire_nmi();
     void reset();
-    std::string disassemble();
-    void printinfo(IO::File &f);
+    std::string disassemble() const;
+    void printinfo(IO::File &f) const;
     inline const uint8_t *getmemory() const
     { return bus.getmemory(); }
     inline uint32_t getsize() const

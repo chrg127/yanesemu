@@ -1,5 +1,5 @@
-#ifndef PPU_HPP_INCLUDED
-#define PPU_HPP_INCLUDED
+#ifndef CORE_PPU_HPP_INCLUDED
+#define CORE_PPU_HPP_INCLUDED
 
 #include <functional>
 #include <emu/core/types.hpp>

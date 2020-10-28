@@ -328,7 +328,7 @@ void CPU::reset()
 
 /* Prints info about the instruction which has just been executed and
  * the status of the registers. */
-void CPU::printinfo(IO::File &lf)
+void CPU::printinfo(IO::File &lf) const
 {
     if (!lf.isopen())
         return;

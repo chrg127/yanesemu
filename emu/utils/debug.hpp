@@ -1,20 +1,17 @@
-/*
- * debug.h: debugging utilities: a collection of macros and inline functions to
+/* debug.h: debugging utilities: a collection of macros and inline functions to
  * be used for debugging and error messages.
  * #define DEBUG to use the macros. error message functions need not to define
- * it.
- */
-#ifndef DEBUG_HPP_INCLUDED
-#define DEBUG_HPP_INCLUDED
+ * it. */
+#ifndef UTILS_DEBUG_HPP_INCLUDED
+#define UTILS_DEBUG_HPP_INCLUDED
 
 #include <cstdio>
 #include <cstdarg>
 
-inline void
 #if defined(__GNUC__) || defined(__MINGW32__) || defined (__MINGW64__)
     __attribute__((format(printf, 1, 2)))
 #endif
-error(const char *fmt, ...)
+inline void error(const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
@@ -23,11 +20,10 @@ error(const char *fmt, ...)
     va_end(args);
 }
 
-inline void
 #if defined(__GNUC__) || defined(__MINGW32__) || defined (__MINGW64__)
     __attribute__((format(printf, 1, 2)))
 #endif
-warning(const char *fmt, ...)
+inline void warning(const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
@@ -37,7 +33,6 @@ warning(const char *fmt, ...)
 }
 
 #ifdef DEBUG
-#include <cstdio>
 #include <cassert>
 #define DBGPRINT(str)       do { std::fprintf(stderr, str); } while (0)
 #define DBGPRINTF(fmt, ...) do { std::fprintf(stderr, fmt, __VA_ARGS__); } while (0)

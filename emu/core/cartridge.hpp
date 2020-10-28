@@ -1,11 +1,10 @@
-#ifndef CARTRIDGE_HPP_INCLUDED
-#define CARTRIDGE_HPP_INCLUDED
+#ifndef CORE_CARTRIDGE_HPP_INCLUDED
+#define CORE_CARTRIDGE_HPP_INCLUDED
 
 #include <cstdint>
-#include <string>
 #include <string_view>
+#include <emu/core/types.hpp>
 #include <emu/utils/file.hpp>
-#include <emu/core/rom.hpp>
 
 namespace Core {
 
@@ -115,14 +114,14 @@ public:
     { }
 
     bool open(std::string_view s);
-    void printinfo(IO::File &f);
-    std::string_view geterr();
+    void printinfo(IO::File &f) const;
+    std::string_view geterr() const;
 
     Format file_format() const
     { return fformat; }
-    ROM &get_prgrom()
+    const ROM &get_prgrom()
     { return prgrom; }
-    ROM &get_chrrom()
+    const ROM &get_chrrom()
     { return chrrom; }
     uint16_t mappertype() const
     { return mapper; }
