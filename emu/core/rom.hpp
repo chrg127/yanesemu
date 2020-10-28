@@ -1,5 +1,0 @@
-
-#ifndef CORE_ROM_HPP_INCLUDED
-#define CORE_ROM_HPP_INCLUDED
-
-#endif

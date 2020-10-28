@@ -2,7 +2,7 @@
 #error "this file must be #include'd from cpu.cpp"
 #else
 
-void CPU::Bus::init(ROM &prgrom)
+void CPU::Bus::init(const ROM &prgrom)
 {
     std::memset(memory, 0, CPUMap::MEMSIZE);
     prgrom.copy_to(memory+CPUMap::PRGROM_START, prgrom.getsize() - (CPUMap::PRGROM_SIZE+1), CPUMap::PRGROM_SIZE);

@@ -297,7 +297,7 @@ void CPU::main()
 }
 
 /* Emulates the start/reset function of the 6502. */
-void CPU::power(ROM &prgrom)
+void CPU::power(const ROM &prgrom)
 {
     bus.init(prgrom);
     sp = 0;

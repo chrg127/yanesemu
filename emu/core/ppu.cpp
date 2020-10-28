@@ -9,7 +9,7 @@
 
 namespace Core {
 
-void PPU::power(ROM &chrrom)
+void PPU::power(const ROM &chrrom)
 {
     vram.initmem(chrrom);
     bg.power();

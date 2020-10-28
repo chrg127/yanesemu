@@ -1,7 +1,7 @@
 VPATH=emu:emu/core:emu/utils:emu/io:emu/video
 
 HEADERS = background.hpp cartridge.hpp cpu.hpp memorymap.hpp \
-		  oam.hpp ppu.hpp rom.hpp types.hpp vram.hpp \
+		  oam.hpp ppu.hpp types.hpp vram.hpp \
 		  cmdargs.hpp file.hpp debug.hpp stringops.hpp \
 		  video.hpp
 

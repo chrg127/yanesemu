@@ -16,7 +16,7 @@ class CPU {
         uint8_t memory[CPUMap::MEMSIZE];
         bool write_enable = false;
 
-        void init(ROM &prgrom);
+        void init(const ROM &prgrom);
         uint8_t read(uint16_t addr);
         void write(uint16_t addr, uint8_t val);
         void reset()
@@ -190,7 +190,7 @@ public:
     }
 
     void main();
-    void power(ROM &prgrom);
+    void power(const ROM &prgrom);
     void fire_irq();
     void fire_nmi();
     void reset();

@@ -87,11 +87,9 @@ bool ArgParser::check_arg(ArgFlags &flags, const char *arg, const char *argnext)
                 warning("invalid choice %s for option %s (will be ignored)\n", argnext, arg);
         }
     }
-
     return skip && valid;
 }
 
-// NOTE: public functions
 ArgFlags ArgParser::parse_args(int argc, char *argv[])
 {
     bool skip_arg = false;

@@ -9,7 +9,7 @@ struct VRAM {
 
     VRAM(int mirroring);
 
-    void initmem(ROM &chrrom);
+    void initmem(const ROM &chrrom);
     uint8_t &getref(const uint16_t addr);
     uint8_t read();
     void write(uint8_t data);
