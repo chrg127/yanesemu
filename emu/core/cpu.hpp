@@ -6,7 +6,7 @@
 #include <emu/core/types.hpp>
 #include <emu/core/memorymap.hpp>
 
-namespace IO { class File; }
+namespace Utils { class File; }
 
 namespace Core {
 
@@ -195,7 +195,7 @@ public:
     void fire_nmi();
     void reset();
     std::string disassemble() const;
-    void printinfo(IO::File &f) const;
+    void printinfo(Utils::File &f) const;
     inline const uint8_t *getmemory() const
     { return bus.getmemory(); }
     inline uint32_t getsize() const

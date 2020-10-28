@@ -10,27 +10,28 @@
 
 namespace Utils {
 
-enum class Mode {
-    READ,
-    WRITE,
-    MODIFY,
-    APPEND,
-};
-
-enum class BufMode {
-    UNBUF,
-    LINEBUF,
-    FULLBUF,
-};
-
 class File {
-protected:
     FILE *fbuf = nullptr;
     long filesize = 0;
+public:
+    enum class Mode {
+        READ,
+        WRITE,
+        MODIFY,
+        APPEND,
+    };
+private:
     Mode mode = Mode::READ;
     std::string filename;
 
 public:
+
+    enum class BufMode {
+        UNBUF,
+        LINEBUF,
+        FULLBUF,
+    };
+
     File() = default;
     File(std::string_view s, Mode m)
     { open(s, m); }
@@ -182,6 +183,6 @@ public:
     }
 };
 
-} // namespace IO
+} // namespace Utils
 
 #endif

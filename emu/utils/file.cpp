@@ -2,7 +2,7 @@
 
 #include <utility>
 
-namespace IO {
+namespace Utils {
 
 File &File::operator=(File &&f)
 {
@@ -75,5 +75,5 @@ bool File::getline(std::string &s, int delim)
     return (c == EOF) ? false : true;
 }
 
-} // namespace IO
+} // namespace Utils
 

@@ -160,7 +160,7 @@ void PPU::writereg(const uint16_t which, const uint8_t data)
 //     }
 // }
 
-void PPU::printinfo(IO::File &log)
+void PPU::printinfo(Utils::File &log)
 {
     log.printf("lineno: %d, linec: %d\n", getrow(), getcol());
 }

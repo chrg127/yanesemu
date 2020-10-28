@@ -10,6 +10,8 @@
 #define DEBUG
 #include <emu/utils/debug.hpp>
 
+using Utils::File;
+
 static const char *version_str = "0.1";
 static const int NUM_FLAGS = 5;
 
@@ -33,29 +35,29 @@ static Utils::ArgOption cmdflags[] = {
     { 'v', ARG_VERSION,      "version",      "Shows the program's version",              false, false, {} },
 };
 
-void logopen(IO::File &f, Utils::ArgFlags &flags, const uint32_t arg);
-void dump(IO::File &df, const uint8_t *const mem, const std::size_t size);
+void logopen(File &f, Utils::ArgFlags &flags, const uint32_t arg);
+void dump(File &df, const uint8_t *const mem, const std::size_t size);
 void write_chrrom(Video::Video::Screen sc, uint8_t *rom, size_t size);
 
-void logopen(IO::File &f, Utils::ArgFlags &flags, const uint32_t arg)
+void logopen(File &f, Utils::ArgFlags &flags, const uint32_t arg)
 {
     if ((flags.bits & arg) == 0)
         return;
 
     std::string &s = flags.get_choice(arg);
     if (s == "stdout")
-        f.assoc(stdout, IO::Mode::WRITE);
+        f.assoc(stdout, File::Mode::WRITE);
     else if (s == "stderr")
-        f.assoc(stderr, IO::Mode::WRITE);
+        f.assoc(stderr, File::Mode::WRITE);
     else if (s == "")
         return;
     else {
-        if (!f.open(s, IO::Mode::WRITE))
+        if (!f.open(s, File::Mode::WRITE))
             error("can't open %s for writing\n", s.c_str());
     }
 }
 
-void dump(IO::File &df, const uint8_t *mem, const std::size_t size)
+void dump(File &df, const uint8_t *mem, const std::size_t size)
 {
     std::size_t i, j;
 
@@ -71,7 +73,7 @@ void dump(IO::File &df, const uint8_t *mem, const std::size_t size)
 int main(int argc, char *argv[])
 {
     Utils::ArgParser parser(*argv, cmdflags, NUM_FLAGS);
-    IO::File logfile, dumpfile, fout(stdout, IO::Mode::WRITE);
+    File logfile, dumpfile, fout(stdout, File::Mode::WRITE);
     Core::Cartridge cart;
     Video::Video v;
     Core::CPU cpu;

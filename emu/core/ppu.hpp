@@ -55,7 +55,7 @@ public:
     void main();
     uint8_t readreg(const uint16_t which);
     void writereg(const uint16_t which, const uint8_t data);
-    void printinfo(IO::File &log);
+    void printinfo(Utils::File &log);
 };
 
 } // namespace Core

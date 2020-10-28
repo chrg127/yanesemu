@@ -66,7 +66,7 @@ enum VsHardware : int {
 };
 
 class Cartridge {
-    IO::File romfile;
+    Utils::File romfile;
     int errid = 0;
     enum class Format {
         INVALID,
@@ -114,7 +114,7 @@ public:
     { }
 
     bool open(std::string_view s);
-    void printinfo(IO::File &f) const;
+    void printinfo(Utils::File &f) const;
     std::string_view geterr() const;
 
     Format file_format() const

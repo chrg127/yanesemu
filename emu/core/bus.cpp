@@ -20,23 +20,4 @@ void CPU::Bus::write(uint16_t addr, uint8_t val)
     memory[addr] = val;
 }
 
-/* prints the contents of current memory to a file with name fname */
-// void Bus::memdump(IO::File &df)
-// {
-//     int i, j;
-    
-//     df.printf("=== CPU Memory ===\n");
-//     if (!df.isopen())
-//         return;
-//     for (i = 0; i < CPUMap::MEMSIZE; ) {
-//         df.printf("%04X: ", i);
-//         for (j = 0; j < 16; j++) {
-//             df.printf("%02X ", memory[i]);
-//             i++;
-//         }
-//         df.putc('\n');
-//     }
-//     df.putc('\n');
-// }
-
 #endif
