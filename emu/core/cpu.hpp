@@ -5,6 +5,7 @@
 #include <string>
 #include <emu/core/types.hpp>
 #include <emu/core/memorymap.hpp>
+#include <emu/core/rom.hpp>
 
 namespace IO { class File; }
 
@@ -16,12 +17,12 @@ class CPU {
         uint8_t memory[CPUMap::MEMSIZE];
         bool write_enable = false;
 
-        void init(uint8_t *prgrom, uint32_t romsize);
+        void init(ROM &prgrom);
         uint8_t read(uint16_t addr);
         void write(uint16_t addr, uint8_t val);
         void reset()
         { }
-        const uint8_t *getmemory()
+        const uint8_t *getmemory() const
         { return memory; }
     } bus;
 
@@ -190,14 +191,16 @@ public:
     }
 
     void main();
-    void power(uint8_t *prgrom, uint32_t romsize);
+    void power(ROM &prgrom);
     void fire_irq();
     void fire_nmi();
     void reset();
     std::string disassemble();
     void printinfo(IO::File &f);
-    inline const uint8_t *getmemory()
+    inline const uint8_t *getmemory() const
     { return bus.getmemory(); }
+    inline uint32_t getsize() const
+    { return CPUMap::MEMSIZE; }
     inline uint8_t peek_opcode() const
     { return curropcode; }
 };

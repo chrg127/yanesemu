@@ -4,6 +4,7 @@
 #include <functional>
 #include <emu/core/types.hpp>
 #include <emu/core/memorymap.hpp>
+#include <emu/core/rom.hpp>
 #include <emu/utils/file.hpp>
 
 namespace Core {
@@ -49,15 +50,7 @@ public:
     PPU(int mirroring) : vram(mirroring)
     { }
 
-    // PPU(const PPU &) = delete;
-    // PPU(PPU &&) = delete;
-    // PPU &operator=(const PPU &) = delete;
-    // PPU &operator=(PPU &&) = delete;
-
-    // ~PPU()
-    // { }
-
-    void power(uint8_t *chrrom);
+    void power(ROM &chrrom);
     void reset();
     void main();
     uint8_t readreg(const uint16_t which);

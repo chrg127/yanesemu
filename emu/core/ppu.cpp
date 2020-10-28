@@ -5,9 +5,11 @@
 #define DEBUG
 #include <emu/utils/debug.hpp>
 
+#define INSIDE_PPU_CPP
+
 namespace Core {
 
-void PPU::power(uint8_t *chrrom)
+void PPU::power(ROM &chrrom)
 {
     vram.initmem(chrrom);
     bg.power();
@@ -168,4 +170,6 @@ void PPU::printinfo(IO::File &log)
 #include <emu/core/oam.cpp>
 
 } // namespace Core
+
+#undef INSIDE_PPU_CPP
 

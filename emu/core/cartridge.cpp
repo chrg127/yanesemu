@@ -97,7 +97,7 @@ void Cartridge::parse_nes20()
     //     def_expansion_dev = header[15] & 0x3F;
 }
 
-bool Cartridge::open(const std::string &s)
+bool Cartridge::open(std::string_view s)
 {
     if (!romfile.open(s, IO::Mode::READ)) {
         errid = ERRID_INVNAME;

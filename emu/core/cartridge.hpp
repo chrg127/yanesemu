@@ -1,5 +1,5 @@
-#ifndef NESROM_H_INCLUDED
-#define NESROM_H_INCLUDED
+#ifndef CARTRIDGE_HPP_INCLUDED
+#define CARTRIDGE_HPP_INCLUDED
 
 #include <cstdint>
 #include <string>
@@ -114,7 +114,7 @@ public:
     ~Cartridge()
     { }
 
-    bool open(const std::string &s);
+    bool open(std::string_view s);
     void printinfo(IO::File &f);
     std::string_view geterr();
 

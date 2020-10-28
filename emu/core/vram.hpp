@@ -9,13 +9,13 @@ struct VRAM {
 
     VRAM(int mirroring);
 
-    void initmem(uint8_t *chrrom);
+    void initmem(ROM &chrrom);
     uint8_t &getref(const uint16_t addr);
     uint8_t read();
     void write(uint8_t data);
     const uint8_t *getmemory() const
     { return memory; }
-    size_t getmemsize() const
+    uint32_t getmemsize() const
     { return PPUMap::MEMSIZE; }
 
     friend class PPU;

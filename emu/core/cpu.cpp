@@ -3,8 +3,8 @@
 #include <cstdio>
 #include <cctype>
 #include <cstring>
+#include <emu/core/cartridge.hpp>
 #include <emu/utils/file.hpp>
-#include <emu/io/nesrom.hpp>
 #include <emu/utils/stringops.hpp>
 #define DEBUG
 #include <emu/utils/debug.hpp>
@@ -297,9 +297,9 @@ void CPU::main()
 }
 
 /* Emulates the start/reset function of the 6502. */
-void CPU::power(uint8_t *prgrom, uint32_t romsize)
+void CPU::power(ROM &prgrom)
 {
-    bus.init(prgrom, romsize);
+    bus.init(prgrom);
     sp = 0;
     pc = 0;
     interrupt(true);

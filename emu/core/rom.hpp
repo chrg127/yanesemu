@@ -3,18 +3,22 @@
  * lock() to lock the ROM and make it read-only. A ROM can be reset(), but
  * doing so will erase the contents. */
 
+#ifndef ROM_HPP_INCLUDED
+#define ROM_HPP_INCLUDED
+
 #include <cstddef>
 #include <cstdint>
 #include <utility>
+#include <cstring>
 
 class ROM {
     uint8_t *mem = nullptr;
-    std::size_t size = 0;
+    uint32_t size = 0;
     bool locked = false;
 
 public:
     ROM() = default;
-    ROM(std::size_t s)
+    ROM(uint32_t s)
     { alloc(s); }
     ~ROM()
     { reset(); }
@@ -39,10 +43,10 @@ public:
 
     inline uint8_t *getmem() const
     { return locked ? nullptr : mem; }
-    inline std::size_t getsize() const
+    inline uint32_t getsize() const
     { return size; }
 
-    inline void alloc(std::size_t s)
+    inline void alloc(uint32_t s)
     {
         if (!locked) {
             mem = new uint8_t[s];
@@ -59,16 +63,24 @@ public:
         locked = false;
     }
 
-    inline void write(std::size_t i, uint8_t data)
+    inline void write(uint32_t i, uint8_t data)
     {
         if (!locked)
             mem[i] = data;
     }
 
     inline void lock()
-    { locked = true; }
+    {
+        locked = true;
+    }
 
-    inline uint8_t operator[](uint8_t addr)
+    inline uint8_t operator[](uint8_t addr) const
     { return mem[addr]; }
+
+    inline void copy_to(uint8_t *buf, uint32_t start = 0, uint32_t len = 0) const
+    {
+        std::memcpy(buf, mem+start, len);
+    }
 };
 
+#endif

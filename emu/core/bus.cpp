@@ -2,20 +2,17 @@
 #error "this file must be #include'd from cpu.cpp"
 #else
 
-/* copies rom memory and initizializes all other memory to 0 */
-void CPU::Bus::initmem(uint8_t *prgrom, std::size_t romsize)
+void CPU::Bus::init(ROM &prgrom)
 {
     std::memset(memory, 0, CPUMap::MEMSIZE);
-    std::memcpy(memory+CPUMap::PRGROM_START, prgrom + romsize - (CPUMap::PRGROM_SIZE+1), CPUMap::PRGROM_SIZE);
+    prgrom.copy_to(memory+CPUMap::PRGROM_START, prgrom.getsize() - (CPUMap::PRGROM_SIZE+1), CPUMap::PRGROM_SIZE);
 }
 
-/* reads memory from the specified address */
 uint8_t CPU::Bus::read(uint16_t addr)
 {
     return memory[addr];
 }
 
-/* writes val to the specified address */
 void CPU::Bus::write(uint16_t addr, uint8_t val)
 {
     if (!write_enable)

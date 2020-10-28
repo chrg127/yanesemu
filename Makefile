@@ -1,14 +1,14 @@
 VPATH=emu:emu/core:emu/utils:emu/io:emu/video
 
-HEADERS = bus.hpp cpu.hpp memorymap.hpp types.hpp \
+HEADERS = cpu.hpp memorymap.hpp types.hpp \
 		  ppu.hpp vram.hpp background.hpp oam.hpp \
 		  cartridge.hpp file.hpp \
 		  cmdargs.hpp debug.hpp stringops.hpp \
 		  video.hpp
 
 OBJS = main.o \
-	   cpu.o ppu.o \
-	   nesrom.o file.o \
+	   cpu.o ppu.o cartridge.o \
+	   file.o \
 	   cmdargs.o stringops.o \
 	   video.o
 
@@ -24,6 +24,7 @@ DEBPRGNAME = emu
 DEBCFLAGS = -g
 DEBOBJS = $(patsubst %,$(DEBDIR)/%,$(OBJS))
 RELDIR = release
+RELPRGNAME = emu-release
 
 all: debug
 
@@ -51,5 +52,5 @@ $(DEBPRGNAME): $(DEBOBJS)
 
 .PHONY: clean
 clean:
-	rm -f $(DEBOBJDIR)/*.o $(DEBDIR)/$(DEBPRGNAME) $(RELOBJDIR)/*.o $(RELDIR)/$(RELPRGNAME)
+	rm -rf $(DEBDIR)/*.o $(DEBDIR)/$(DEBPRGNAME) $(RELDIR)/*.o $(RELDIR)/$(RELPRGNAME)
 

@@ -1,3 +1,7 @@
+#ifndef INSIDE_PPU_CPP
+#error "This file must only be #include'd by ppu.cpp."
+#else
+
 PPU::VRAM::VRAM(int mirroring)
 {
     std::memset(memory, 0, 0x4000);
@@ -8,9 +12,9 @@ PPU::VRAM::VRAM(int mirroring)
     // else, mapper defined
 }
 
-void PPU::VRAM::initmem(uint8_t *chrrom)
+void PPU::VRAM::initmem(ROM &chrrom)
 {
-    std::memcpy(memory, chrrom, 0x2000);
+    chrrom.copy_to(memory, 0, 0x2000);
 }
 
 uint8_t &PPU::VRAM::getref(const uint16_t addr)
@@ -38,3 +42,5 @@ void PPU::VRAM::write(uint8_t data)
     towrite = data;
     addr += increment;
 }
+
+#endif
