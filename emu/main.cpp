@@ -44,7 +44,7 @@ void logopen(File &f, Utils::ArgFlags &flags, const uint32_t arg)
     if ((flags.bits & arg) == 0)
         return;
 
-    std::string &s = flags.get_choice(arg);
+    std::string_view s = flags.get_choice(arg);
     if (s == "stdout")
         f.assoc(stdout, File::Mode::WRITE);
     else if (s == "stderr")
@@ -53,7 +53,7 @@ void logopen(File &f, Utils::ArgFlags &flags, const uint32_t arg)
         return;
     else {
         if (!f.open(s, File::Mode::WRITE))
-            error("can't open %s for writing\n", s.c_str());
+            error("can't open %s for writing\n", s.data());
     }
 }
 
@@ -94,26 +94,26 @@ int main(int argc, char *argv[])
     } else if (flags.bits & ARG_VERSION) {
         fout.printf("%s\n", version_str);
         return 0;
-    } else if (flags.item == "") {
+    } else if (flags.get_item() == "") {
         error("ROM file not specified\n");
         return 1;
     }
-    // else if (!cart.open(flags.item)) {
-    //     error("can't open rom file\n");
-    //     return 1;
-    // } else if (!v.create()) {
-    //     error("can't initialize video subsytem\n");
-    //     return 1;
-    // }
+    else if (!cart.open(flags.get_item())) {
+        error("can't open rom file\n");
+        return 1;
+    } else if (!v.create()) {
+        error("can't initialize video subsytem\n");
+        return 1;
+    }
 
     cart.printinfo(fout);
     // dump(dumpfile, rom.get_chrrom(), rom.get_chrrom_size());
     // Video::Video::Screen sc = v.getpixels();
     // write_chrrom(sc, rom.get_chrrom(), rom.get_chrrom_size());
-    // while (!v.closed()) {
-    //     v.poll();
-    //     v.render();
-    // }
+    while (!v.closed()) {
+        v.poll();
+        v.render();
+    }
     // ppu.power(cart.get_chrrom());
     // int counter = 0;
     // for (;;) {

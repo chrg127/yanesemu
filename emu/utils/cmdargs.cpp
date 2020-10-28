@@ -23,7 +23,7 @@ ArgFlags &ArgFlags::operator=(ArgFlags &&f)
     return *this;
 }
 
-std::string &ArgFlags::get_choice(const int arg)
+std::string_view ArgFlags::get_choice(const int arg) const
 {
     int i = std::log2(arg);
     return choices[i];
@@ -38,7 +38,7 @@ int ArgParser::find_opt(char c)
     return -1;
 }
 
-int ArgParser::find_opt(std::string s)
+int ArgParser::find_opt(std::string_view s)
 {
     for (int i = 0; i < nargs; i++) {
         if (args[i].long_opt == s)
@@ -47,12 +47,12 @@ int ArgParser::find_opt(std::string s)
     return -1;
 }
 
-bool ArgParser::get_choice(ArgFlags &flags, int i, std::string choice)
+bool ArgParser::get_choice(ArgFlags &flags, int i, std::string_view choice)
 {
     bool found = false;
 
     if (!args[i].accept_any_choice) {
-        for (auto s : args[i].choices) {
+        for (auto &s : args[i].choices) {
             if (choice == s) {
                 found = true;
                 break;
@@ -69,8 +69,8 @@ bool ArgParser::check_arg(ArgFlags &flags, const char *arg, const char *argnext)
 {
     int i;
     bool valid = false, skip = false;
-    
-    i = (arg[1] == '-') ? find_opt(std::string(arg+2)) : find_opt(arg[1]);
+
+    i = (arg[1] == '-') ? find_opt(std::string_view(arg+2)) : find_opt(arg[1]);
     if (i == -1) {
         warning("invalid option: %s (will be ignored)\n", arg);
         return false;
@@ -82,7 +82,7 @@ bool ArgParser::check_arg(ArgFlags &flags, const char *arg, const char *argnext)
         if (!argnext)
             warning("%s: must specify a choice\n", arg);
         else {
-            valid = get_choice(flags, i, std::string(argnext));
+            valid = get_choice(flags, i, std::string_view(argnext));
             if (!valid)
                 warning("invalid choice %s for option %s (will be ignored)\n", argnext, arg);
         }
@@ -107,22 +107,21 @@ ArgFlags ArgParser::parse_args(int argc, char *argv[])
                 argc--;
             }
         } else {
-            if (argc == 1)
-                f.item = std::string(*argv);
-            else
-                warning("invalid option: %s (missing beginning -)\n", *argv);
+            if (f.item != "")
+                warning("%s: item already specified", *argv);
+            f.item = std::string_view(*argv);
         }
     }
     return f;
 }
 
-void ArgParser::print_usage()
+void ArgParser::print_usage() const
 {
-    std::fprintf(stderr, "Usage: %s [args...] <ROM file>\n", progname);
+    std::fprintf(stderr, "Usage: %s [args...] <ROM file>\n", progname.data());
     std::fprintf(stderr, "Valid arguments:\n");
     for (int i = 0; i < nargs; i++) {
         std::fprintf(stderr, "\t-%c, --%s\t\t%s\n",
-                args[i].opt, args[i].long_opt.c_str(), args[i].desc.c_str());
+                args[i].opt, args[i].long_opt.data(), args[i].desc.data());
     }
 }
 
