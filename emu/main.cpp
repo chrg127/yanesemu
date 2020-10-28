@@ -1,12 +1,9 @@
-#include <cstdio>
-#include <cstdlib>
-#include <emu/utils/cmdargs.hpp>
-#include <emu/core/cpu.hpp>
-#include <emu/core/ppu.hpp>
-#include <emu/utils/file.hpp>
-#include <emu/core/cartridge.hpp>
-#include <emu/video/video.hpp>
 #include <cmath>
+#include <emu/core/cpu.hpp>
+#include <emu/core/cartridge.hpp>
+#include <emu/utils/cmdargs.hpp>
+#include <emu/utils/file.hpp>
+#include <emu/video/video.hpp>
 #define DEBUG
 #include <emu/utils/debug.hpp>
 
@@ -37,7 +34,6 @@ static Utils::ArgOption cmdflags[] = {
 
 void logopen(File &f, Utils::ArgFlags &flags, const uint32_t arg);
 void dump(File &df, const uint8_t *const mem, const std::size_t size);
-void write_chrrom(Video::Video::Screen sc, uint8_t *rom, size_t size);
 
 void logopen(File &f, Utils::ArgFlags &flags, const uint32_t arg)
 {
@@ -72,12 +68,11 @@ void dump(File &df, const uint8_t *mem, const std::size_t size)
 
 int main(int argc, char *argv[])
 {
-    Utils::ArgParser parser(*argv, cmdflags, NUM_FLAGS);
     File logfile, dumpfile, fout(stdout, File::Mode::WRITE);
+    Utils::ArgParser parser(*argv, cmdflags, NUM_FLAGS);
     Core::Cartridge cart;
     Video::Video v;
     Core::CPU cpu;
-    Core::PPU ppu(0);
 
     if (argc < 2) {
         parser.print_usage();
@@ -97,8 +92,7 @@ int main(int argc, char *argv[])
     } else if (flags.get_item() == "") {
         error("ROM file not specified\n");
         return 1;
-    }
-    else if (!cart.open(flags.get_item())) {
+    } else if (!cart.open(flags.get_item())) {
         error("can't open rom file\n");
         return 1;
     } else if (!v.create()) {
@@ -107,59 +101,27 @@ int main(int argc, char *argv[])
     }
 
     cart.printinfo(fout);
-    // dump(dumpfile, rom.get_chrrom(), rom.get_chrrom_size());
-    // Video::Video::Screen sc = v.getpixels();
-    // write_chrrom(sc, rom.get_chrrom(), rom.get_chrrom_size());
+    cpu.power(cart.get_prgrom());
+    int counter = 200;
     while (!v.closed()) {
         v.poll();
         v.render();
+        cpu.main();
+        logfile.printf("Instruction [%02X] ", cpu.peek_opcode());
+        logfile.putstr(cpu.disassemble().c_str());
+        logfile.putc('\n');
+        cpu.printinfo(logfile);
+        if (flags.bits & ARG_BREAK_ON_BRK && cpu.peek_opcode() == 0) {
+            DBGPRINT("got BRK, stopping emulation\n");
+            dump(dumpfile, cpu.getmemory(), cpu.getsize());
+            break;
+        }
+        if (--counter < 0) {
+            cpu.reset();
+            dump(dumpfile, cpu.getmemory(), cpu.getsize());
+            break;
+        }
     }
-    // ppu.power(cart.get_chrrom());
-    // int counter = 0;
-    // for (;;) {
-    //     ppu.main();
-    //     ppu.printinfo(logfile);
-    //     if (++counter == 100)
-    //         break;
-    // }
     return 0;
 }
 
-    // cpu.power(rom.get_prgrom(), rom.get_prgrom_size());
-    // counter = 20;
-    // while (!done) {
-    //     cpu.main();
-    //     logfile.printf("Instruction [%02X] ", cpu.peek_opcode());
-    //     logfile.putstr(cpu.disassemble().c_str());
-    //     logfile.putc('\n');
-    //     cpu.printinfo(logfile);
-    //     if (flags.bits & ARG_BREAK_ON_BRK && cpu.peek_opcode() == 0) {
-    //         DBGPRINT("got BRK, stopping emulation\n");
-    //         bus.memdump(dumpfile);
-    //         done = true;
-    //     }
-    //     if (--counter < 0) {
-    //         cpu.reset();
-    //         bus.memdump(dumpfile);
-    //         done = true;
-    //     }
-    // }
-
-    // Core::Bus bus;
-    // Core::CPU cpu(&bus);
-    // bool done = false;
-    // int counter;
-    // Core::PPUBus pbus;
-    // Core::PPU ppu(&pbus);
-    // bool done = false;
-
-    // ppu.writereg(0x2000, 0b10000001);
-    // ppu.writereg(0x2001, 0b00000000);
-    // ppu.writereg(0x2005, 0);
-    // ppu.writereg(0x2005, 0);
-    // ppu.writereg(0x2006, 0);
-    // ppu.writereg(0x2006, 0);
-    // ppu.power(rom.get_chrrom());
-    // while (!done) {
-    //     ppu.main();
-    // }

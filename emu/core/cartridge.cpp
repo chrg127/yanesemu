@@ -109,12 +109,12 @@ bool Cartridge::open(std::string_view s)
     if (has.trainer)
         romfile.readb(trainer, TRAINER_LEN);
     if (!has.prgram) {
-        prgrom.alloc(header[4]);
+        prgrom.alloc(header[4]*16384);
         romfile.readb(prgrom.getmem(), prgrom.getsize());
         prgrom.lock();
     }
     if (!has.chrram) {
-        chrrom.alloc(header[5]);
+        chrrom.alloc(header[5]*8192);
         romfile.readb(chrrom.getmem(), chrrom.getsize());
         chrrom.lock();
     }
