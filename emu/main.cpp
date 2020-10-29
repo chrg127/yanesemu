@@ -30,9 +30,6 @@ static Utils::ArgOption cmdflags[] = {
 };
 static Utils::ArgParser parser("yanesemu", "0.1", cmdflags, 5);
 
-void logopen(File &f, Utils::ArgFlags &flags, const uint32_t arg);
-void dump(File &df, const uint8_t *const mem, const std::size_t size);
-
 void logopen(File &f, Utils::ArgFlags &flags, const uint32_t arg)
 {
     if ((flags.bits & arg) == 0)
@@ -66,7 +63,7 @@ void dump(File &df, const uint8_t *mem, const std::size_t size)
 
 int main(int argc, char *argv[])
 {
-    File logfile, dumpfile, fout(stdout, File::Mode::WRITE);
+    File logfile, dumpfile;
     Core::Cartridge cart;
     Video::Video v;
     Core::CPU cpu;
@@ -97,7 +94,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    cart.printinfo(fout);
+    cart.printinfo(logfile);
     cpu.power(cart.get_prgrom());
     int counter = 200;
     while (!v.closed()) {

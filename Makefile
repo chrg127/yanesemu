@@ -15,7 +15,7 @@ LIBS = -lm -lSDL2
 CXX = g++
 CFLAGS = -I. -std=c++17 -Wall -Wextra -pipe \
 		 -Wcast-align -Wcast-qual -Wpointer-arith \
-		 -Wformat=2 -Wmissing-declarations -Wmissing-include-dirs \
+		 -Wformat=2 -Wmissing-include-dirs \
 
 DEBDIR = debug
 DEBPRGNAME = emu
