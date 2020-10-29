@@ -9,9 +9,6 @@
 
 using Utils::File;
 
-static const char *version_str = "0.1";
-static const int NUM_FLAGS = 5;
-
 enum {
     ARG_BREAK_ON_BRK = 0x01,
     ARG_LOG_FILE     = 0x02,
@@ -31,6 +28,7 @@ static Utils::ArgOption cmdflags[] = {
     { 'h', ARG_HELP,         "help",         "Print this help text and quit",            false, false, {} },
     { 'v', ARG_VERSION,      "version",      "Shows the program's version",              false, false, {} },
 };
+static Utils::ArgParser parser("yanesemu", "0.1", cmdflags, 5);
 
 void logopen(File &f, Utils::ArgFlags &flags, const uint32_t arg);
 void dump(File &df, const uint8_t *const mem, const std::size_t size);
@@ -69,7 +67,6 @@ void dump(File &df, const uint8_t *mem, const std::size_t size)
 int main(int argc, char *argv[])
 {
     File logfile, dumpfile, fout(stdout, File::Mode::WRITE);
-    Utils::ArgParser parser(*argv, cmdflags, NUM_FLAGS);
     Core::Cartridge cart;
     Video::Video v;
     Core::CPU cpu;
@@ -87,7 +84,7 @@ int main(int argc, char *argv[])
         parser.print_usage();
         return 0;
     } else if (flags.bits & ARG_VERSION) {
-        fout.printf("%s\n", version_str);
+        parser.print_version();
         return 0;
     } else if (flags.get_item() == "") {
         error("ROM file not specified\n");

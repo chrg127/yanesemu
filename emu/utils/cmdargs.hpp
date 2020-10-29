@@ -52,6 +52,7 @@ class ArgParser {
     ArgOption *args;            /* array of arguments */
     const int nargs;                  /* size of array */
     std::string_view progname;  /* for print_usage */
+    std::string_view verstr;    /* for print_version */
 
     int find_opt(char c);
     int find_opt(std::string_view s);
@@ -59,12 +60,13 @@ class ArgParser {
     bool check_arg(ArgFlags &flags, const char *arg, const char *argnext);
 
 public:
-    ArgParser(std::string_view name, ArgOption *a, int n)
-        : args(a), nargs(n), progname(name)
+    ArgParser(std::string_view name, std::string_view ver, ArgOption *a, int n)
+        : args(a), nargs(n), progname(name), verstr(ver)
     { }
 
     ArgFlags parse_args(int argc, char *argv[]);
     void print_usage() const;
+    void print_version() const;
 };
 
 } // namespace Utils
