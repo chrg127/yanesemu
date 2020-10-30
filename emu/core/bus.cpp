@@ -10,6 +10,8 @@ void CPU::Bus::init(const ROM &prgrom)
 
 uint8_t CPU::Bus::read(uint16_t addr)
 {
+    if (addr == 0x2002)
+        return 0xFF;
     return memory[addr];
 }
 

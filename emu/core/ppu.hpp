@@ -21,16 +21,17 @@ class PPU {
     // ppu's internal data bus. gets filled on reading and writing to regs.
     uint8_t io_latch;
     struct {
-        bool toggle = 0; // used by PPUSCROLL and PPUADDR
+        bool toggle; // used by PPUSCROLL and PPUADDR
     } latch;
     bool nmi_enabled;
     bool ext_bus_dir;
     struct {
-        bool greyscale, red, green, blue;
+        bool grey, red, green, blue;
     } effects;
     bool vblank;
     bool spr0hit;
     bool sprov;
+    bool odd_frame;
 
     int cycle;
 
@@ -47,7 +48,9 @@ class PPU {
 
 public:
     PPU(int mirroring) : vram(mirroring)
-    { }
+    {
+        bg.vram = &vram;
+    }
 
     void power(const ROM &chrrom);
     void reset();
@@ -55,6 +58,11 @@ public:
     uint8_t readreg(const uint16_t which);
     void writereg(const uint16_t which, const uint8_t data);
     void printinfo(Utils::File &log);
+
+    inline const uint8_t *getmemory() const
+    { return vram.memory; }
+    inline uint32_t getmemsize() const
+    { return PPUMap::MEMSIZE; }
 };
 
 } // namespace Core

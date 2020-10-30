@@ -11,13 +11,42 @@ namespace Core {
 
 void PPU::power(const ROM &chrrom)
 {
-    vram.initmem(chrrom);
+    vram.power(chrrom);
     bg.power();
     oam.power();
+    nmi_enabled   = 0;
+    ext_bus_dir   = 0;
+    effects.grey  = 0;
+    effects.red   = 0;
+    effects.green = 0;
+    effects.blue  = 0;
+    // small note to myself:
+    // most games check this in an infinite loop
+    // to break out of the loop, set this to 1
+    vblank  = 0;
+    spr0hit = 0;
+    sprov   = 1;
+    latch.toggle = 0;
+    odd_frame = 0;
+    // randomize oam, palette, nt ram, chr ram
 }
 
 void PPU::reset()
 {
+    vram.reset();
+    bg.reset();
+    oam.reset();
+    nmi_enabled   = 0;
+    ext_bus_dir   = 0;
+    effects.grey  = 0;
+    effects.red   = 0;
+    effects.green = 0;
+    effects.blue  = 0;
+    // spr0hit = random
+    // sprov = random
+    latch.toggle = 0;
+    odd_frame = 0;
+    // randomize oam
 }
 
 void PPU::main()
@@ -81,7 +110,7 @@ void PPU::writereg(const uint16_t which, const uint8_t data)
         break;
 
     case 0x2001:
-        effects.greyscale   = data & 0x01;
+        effects.grey   = data & 0x01;
         bg.show_leftmost    = data & 0x02;
         oam.show_leftmost   = data & 0x04;
         bg.show             = data & 0x08;

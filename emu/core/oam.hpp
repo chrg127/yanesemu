@@ -14,6 +14,7 @@ struct OAM {
     uint8_t counters[8];
 
     void power();
+    void reset();
     uint8_t read(uint16_t addr);
     void write(uint16_t addr, uint8_t data);
 };

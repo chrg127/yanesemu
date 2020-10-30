@@ -8,15 +8,18 @@ struct VRAM {
     uint8_t buf;
 
     VRAM(int mirroring);
-
-    void initmem(const ROM &chrrom);
+    void power(const ROM &chrrom);
+    void reset();
     uint8_t &getref(const uint16_t addr);
     uint8_t read();
+    uint8_t read(uint16_t addr);
     void write(uint8_t data);
-    const uint8_t *getmemory() const
-    { return memory; }
-    uint32_t getmemsize() const
-    { return PPUMap::MEMSIZE; }
+    void write(uint16_t addr, uint8_t data);
+    // uint8_t & operator[](uint16_t addr);
+    inline void incv()
+    {
+        addr += increment;
+    }
 
     friend class PPU;
 };

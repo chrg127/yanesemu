@@ -12,9 +12,21 @@ PPU::VRAM::VRAM(int mirroring)
     // else, mapper defined
 }
 
-void PPU::VRAM::initmem(const ROM &chrrom)
+void PPU::VRAM::power(const ROM &chrrom)
 {
     chrrom.copy_to(memory, 0, 0x2000);
+    increment = 1; // ctrl = 0
+    buf     = 0;
+    finex   = 0;
+    tmp     = 0;
+}
+
+void PPU::VRAM::reset()
+{
+    increment = 1; // ctrl = 0
+    buf     = 0;
+    finex   = 0;
+    // tmp = unchanged
 }
 
 uint8_t &PPU::VRAM::getref(const uint16_t addr)
@@ -30,9 +42,12 @@ uint8_t &PPU::VRAM::getref(const uint16_t addr)
 /* read from the current vram address and increase the address */
 uint8_t PPU::VRAM::read()
 {
-    uint8_t toret = getref(addr);
-    addr += increment;
-    return toret;
+    return getref(addr);
+}
+
+uint8_t PPU::VRAM::read(uint16_t ad)
+{
+    return getref(ad);
 }
 
 /* write to the current vram address and increase the address */
@@ -40,7 +55,23 @@ void PPU::VRAM::write(uint8_t data)
 {
     uint8_t &towrite = getref(addr);
     towrite = data;
-    addr += increment;
 }
+
+void PPU::VRAM::write(uint16_t ad, uint8_t data)
+{
+    uint8_t &towrite = getref(ad);
+    towrite = data;
+}
+
+// uint8_t & operator[](uint16_t addr)
+// {
+//     addr += increment;
+//     if (addr >= 0x2000 && addr <= 0x3FFF)       // inside nametable space
+//         return memory[get_nt_addr(0x2000 + (addr & 0x0FFF))];
+//     else if (addr >= 0x3F00 && addr <= 0x3FFF)  // $3F00 < addr < $3FFF, or inside palette ram space
+//         return memory[0x3F00 + (addr & 0x00FF) % 0x20];
+//     else
+//         return memory[addr];
+// }
 
 #endif

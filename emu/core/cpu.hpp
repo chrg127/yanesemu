@@ -5,6 +5,7 @@
 #include <string>
 #include <emu/core/types.hpp>
 #include <emu/core/memorymap.hpp>
+#include <emu/core/ppu.hpp>
 
 namespace Utils { class File; }
 
@@ -15,6 +16,7 @@ class CPU {
     struct Bus {
         uint8_t memory[CPUMap::MEMSIZE];
         bool write_enable = false;
+        PPU *ppu;
 
         void init(const ROM &prgrom);
         uint8_t read(uint16_t addr);
@@ -202,6 +204,9 @@ public:
     { return CPUMap::MEMSIZE; }
     inline uint8_t peek_opcode() const
     { return curropcode; }
+
+    inline void attach_ppu(PPU *ppu)
+    { bus.ppu = ppu; }
 };
 
 } // namespace Core
