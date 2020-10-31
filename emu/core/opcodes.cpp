@@ -269,13 +269,13 @@ void CPU::instr_branch(bool take)
     // cycles: 2+1+1
     Reg16 tmp;
 
+    pc_branch = pc.reg;
     last_cycle();
     op.low = fetch();
     tmp = pc;
     if (!take)
         return;
     cycle();
-    pc_branch = pc.reg;
     pc.reg += (int8_t) op.low;
     last_cycle();
     if (tmp.high != pc.high)
@@ -532,15 +532,18 @@ void CPU::instr_jsr()
 {
     // cycles: 6
     op.low = fetch();
+    // also, http://nesdev.com/6502_cpu.txt says that first the low byte is
+    // copied, then the high byte is fetched. doing the ops in this order is
+    // wrong and a bug, fetch the high byte first before doing whatever with pc.
+    op.high = fetch();
     pc.reg--;
     // internal operation, 1 cycle
     cycle();
     push(pc.high);
     push(pc.low);
-    pc.low = op.low;
     // the original hardware technically fetches the next operand right into the pc's high byte.
     // I save it in op.high first to enable disassembling.
-    op.high = fetch();
+    pc.low = op.low;
     pc.high = op.high;
     last_cycle();
 }
