@@ -35,11 +35,18 @@ class PPU {
 
     int cycle;
 
+    void fetch_nt();
+    void fetch_at();
+    void fetch_lowbg();
+    void fetch_highbg();
+    void bg_cycle();
+    void dot256();
+
     // void scanline_render();
     // void scanline_empty();
-    inline int getrow()
+    inline int get_x()
     { return cycle/340; }
-    inline int getcol()
+    inline int get_y()
     { return cycle%340; }
 
     friend class Background;

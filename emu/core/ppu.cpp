@@ -194,6 +194,14 @@ void PPU::printinfo(Utils::File &log)
     log.printf("lineno: %d, linec: %d\n", getrow(), getcol());
 }
 
+void PPU::dot256()
+{
+    int tmp = vram.increment;
+    vram.increment = 32;
+    vram.incv();
+    vram.increment = tmp;
+}
+
 #include <emu/core/vram.cpp>
 #include <emu/core/background.cpp>
 #include <emu/core/oam.cpp>
