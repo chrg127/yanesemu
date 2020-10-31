@@ -62,9 +62,10 @@ inline static std::string disass_indy(const char name[4], uint8_t op)
     return Utils::strprintf("%s ($%02X),y", name, op);
 }
 
-inline static std::string disass_branch(const char name[4], uint8_t addr, bool took)
+inline static std::string disass_branch(const char name[4], int8_t disp,
+        uint16_t addr, bool took)
 {
-    return Utils::strprintf("%s $%04X %s", name, addr,
+    return Utils::strprintf("%s %d [$%04X] %s", name, disp, addr,
             (took) ? "[Branch taken]" : "[Branch not taken]");
 }
 
@@ -75,7 +76,7 @@ std::string CPU::disassemble() const
 #define INSTR_AMODE(id, name, mode, ...) \
     case id: return disass_##mode(#name, __VA_ARGS__);
 #define INSTR_BRNCH(id, name, expr) \
-    case id: return disass_branch(#name, op.low, expr);
+    case id: return disass_branch(#name, (int8_t) op.low, pc_branch + (int8_t) op.low, expr);
 #define INSTR_ACCUM(id, name) \
     case id: return disass_accum(#name);
 

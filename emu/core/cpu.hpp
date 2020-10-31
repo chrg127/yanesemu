@@ -30,6 +30,7 @@ class CPU {
     uint8_t curropcode;
     Reg16 op;       // operand
     Reg16 result;   // for results in addrmode_* functions
+    uint16_t pc_branch; // save this for disassembling branch instructions
 
     Reg16 pc;
     uint8_t accum   = 0;

@@ -275,6 +275,7 @@ void CPU::instr_branch(bool take)
     if (!take)
         return;
     cycle();
+    pc_branch = pc.reg;
     pc.reg += (int8_t) op.low;
     last_cycle();
     if (tmp.high != pc.high)
