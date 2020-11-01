@@ -5,7 +5,7 @@ struct VRAM {
     Reg16 tmp;
     uint8_t finex;
     uint8_t increment;
-    uint8_t buf;
+    uint8_t readbuf;
 
     VRAM(int mirroring);
     void power(const ROM &chrrom);
@@ -13,8 +13,10 @@ struct VRAM {
     uint16_t address();
     uint8_t read();
     uint8_t read(uint16_t addr);
+    uint8_t readdata();
     void write(uint8_t data);
     void write(uint16_t addr, uint8_t data);
+    void writedata(uint8_t data);
     void incv();
 
     friend class PPU;

@@ -16,7 +16,7 @@ void PPU::VRAM::power(const ROM &chrrom)
 {
     chrrom.copy_to(memory, 0, 0x2000);
     increment = 1; // ctrl = 0
-    buf     = 0;
+    readbuf     = 0;
     finex   = 0;
     tmp     = 0;
 }
@@ -24,7 +24,7 @@ void PPU::VRAM::power(const ROM &chrrom)
 void PPU::VRAM::reset()
 {
     increment = 1; // ctrl = 0
-    buf     = 0;
+    readbuf     = 0;
     finex   = 0;
     // tmp = unchanged
 }
@@ -60,9 +60,26 @@ void PPU::VRAM::write(uint16_t addr, uint8_t data)
     memory[address(addr)] = data;
 }
 
-void incv()
+void PPU::VRAM::incv()
 {
-    vaddr += increment;
+    vaddr = (vaddr + increment) & 0x7FFF;
+}
+
+uint8_t PPU::VRAM::readdata()
+{
+    uint8_t toret;
+    if (vaddr <= 0x3EFF) {
+        toret = readbuf;
+        readbuf = memory[address(vaddr)];
+    } else
+        toret = memory[address(vaddr)];
+    incv();
+    return toret;
+}
+
+void PPU::VRAM::writedata(uint8_t data)
+{
+    memory[address(vaddr++)] = data;
 }
 
 #endif

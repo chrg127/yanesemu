@@ -39,15 +39,15 @@ void PPU::fetch_highbg()
     bg.latch.hibg = vram.read(bg.latch.nt+8);
 }
 
-void PPU::bg_cycle(int col)
+void PPU::bg_cycle(int x, int y)
 {
-    switch (get_y(cycle) % 8) {
+    switch (y % 8) {
     case 1: case 2: fetch_nt(); break;
     case 3: case 4: fetch_at(); break;
     case 5: case 6: fetch_lowbg(); break;
     case 7: case 0:
         fetch_highbg();
-        vram.incv();
+        x == 256 ? vram.incv() : dot256();
         break;
     }
     shift_attr1 >>= 1;
