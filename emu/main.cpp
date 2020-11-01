@@ -32,6 +32,32 @@ static Utils::ArgOption cmdflags[] = {
     { 'v', ARG_VERSION,      "version",      "Shows the program's version",              false, false, {} },
 };
 
+class Emulator {
+    Core::CPU cpu;
+    Core::PPU ppu;
+
+    void init(Core::Cartridge &cart)
+    {
+        cpu.power(cart.get_prgrom());
+        ppu.power(cart.get_chrrom(), 0);
+    }
+
+    void run()
+    {
+        cpu.main();
+        ppu.main();
+    }
+
+    void log(File &log)
+    {
+        cpu.printinfo(logfile);
+        logfile.printf("Instruction [%02X] ", cpu.peek_opcode());
+        logfile.putstr(cpu.disassemble().c_str());
+        logfile.putc('\n');
+    }
+};
+static Emulator emu;
+
 void logopen(File &f, Utils::ArgFlags &flags, const uint32_t arg);
 void dump(File &df, const uint8_t *const mem, const std::size_t size);
 
@@ -72,7 +98,6 @@ int main(int argc, char *argv[])
     Utils::ArgParser parser(*argv, cmdflags, NUM_FLAGS);
     Core::Cartridge cart;
     Video::Video v;
-    Core::CPU cpu;
 
     if (argc < 2) {
         parser.print_usage();
@@ -87,7 +112,7 @@ int main(int argc, char *argv[])
         parser.print_usage();
         return 0;
     } else if (flags.bits & ARG_VERSION) {
-        fout.printf("%s\n", version_str);
+        parser.print_v
         return 0;
     } else if (flags.get_item() == "") {
         error("ROM file not specified\n");
@@ -106,11 +131,6 @@ int main(int argc, char *argv[])
     while (!v.closed()) {
         v.poll();
         v.render();
-        cpu.printinfo(logfile);
-        cpu.main();
-        logfile.printf("Instruction [%02X] ", cpu.peek_opcode());
-        logfile.putstr(cpu.disassemble().c_str());
-        logfile.putc('\n');
         if (flags.bits & ARG_BREAK_ON_BRK && cpu.peek_opcode() == 0) {
             DBGPRINT("got BRK, stopping emulation\n");
             dump(dumpfile, cpu.getmemory(), cpu.getsize());
