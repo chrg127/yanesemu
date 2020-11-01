@@ -9,9 +9,9 @@
 
 namespace Core {
 
-void PPU::power(const ROM &chrrom)
+void PPU::power(const ROM &chrrom, int mirroring)
 {
-    vram.power(chrrom);
+    vram.power(chrrom, mirroring);
     bg.power();
     oam.power();
     nmi_enabled   = 0;

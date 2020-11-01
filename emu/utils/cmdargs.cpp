@@ -3,6 +3,7 @@
 #include <cmath>
 #include <utility>
 #include <emu/utils/debug.hpp>
+#include <emu/utils/file.hpp>
 
 namespace Utils {
 
@@ -115,12 +116,19 @@ ArgFlags ArgParser::parse_args(int argc, char *argv[])
 
 void ArgParser::print_usage() const
 {
-    std::fprintf(stderr, "Usage: %s [args...] <ROM file>\n", progname.data());
-    std::fprintf(stderr, "Valid arguments:\n");
+    Utils::File fout(stderr, Utils::File::Mode::WRITE);
+    fout.printf("Usage: %s [args...] <ROM file>\n", progname.data());
+    fout.printf("Valid arguments:\n");
     for (int i = 0; i < nargs; i++) {
-        std::fprintf(stderr, "\t-%c, --%s\t\t%s\n",
+        fout.printf("\t-%c, --%s\t\t%s\n",
                 args[i].opt, args[i].long_opt.data(), args[i].desc.data());
     }
 }
 
-} // namespace CommandLine
+void ArgParser::print_version() const
+{
+    Utils::File fout(stderr, Utils::File::Mode::WRITE);
+    fout.printf("%s: version %s\n", progname.data(), verstr.data());
+}
+
+} // namespace Utils

@@ -6,3 +6,4 @@ tags
 *.o
 *.nes
 test/smbdis.asm
+testrom/smbdis.asm

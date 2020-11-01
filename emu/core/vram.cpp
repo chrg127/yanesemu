@@ -12,7 +12,7 @@ PPU::VRAM::VRAM(int mirroring)
     // else, mapper defined
 }
 
-void PPU::VRAM::power(const ROM &chrrom)
+void PPU::VRAM::power(const ROM &chrrom, int mirroring)
 {
     chrrom.copy_to(memory, 0, 0x2000);
     increment = 1; // ctrl = 0

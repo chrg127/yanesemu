@@ -54,12 +54,10 @@ class PPU {
     friend class PPUBus;
 
 public:
-    PPU(int mirroring) : vram(mirroring)
-    {
-        bg.vram = &vram;
-    }
+    PPU()
+    { }
 
-    void power(const ROM &chrrom);
+    void power(const ROM &chrrom, int mirroring);
     void reset();
     void main();
     uint8_t readreg(const uint16_t which);

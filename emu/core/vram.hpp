@@ -7,8 +7,9 @@ struct VRAM {
     uint8_t increment;
     uint8_t readbuf;
 
-    VRAM(int mirroring);
-    void power(const ROM &chrrom);
+    VRAM() { };
+
+    void power(const ROM &chrrom, int mirroring);
     void reset();
     uint16_t address();
     uint8_t read();
