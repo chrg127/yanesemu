@@ -51,16 +51,16 @@ void PPU::reset()
 
 void PPU::main()
 {
-    if (vblank) {
-        // scanline_render();
-        return;
+    int x = get_x(cycle), y = get_y(cycle);
+    if (y >= 0 && y <= 239 &&
+       (x >= 1 && x <= 256) || (x >= 321 && x <= 340)) {
+        bg_cycle(x, y);
     }
-    if (getrow() == 241 && getcol() == 1) {
+
+    if (x == 241 && y == 1) {
         vblank = 1;
         return;
     }
-    // else
-    // scanline_empty();
 }
 
 uint8_t PPU::readreg(const uint16_t which)
@@ -81,7 +81,7 @@ uint8_t PPU::readreg(const uint16_t which)
         return io_latch;
 
     case 0x2007:
-        io_latch = vram.read();
+        io_latch = vram.readdata();
         return io_latch;
 
 #ifdef DEBUG
@@ -154,11 +154,7 @@ void PPU::writereg(const uint16_t which, const uint8_t data)
         break;
 
     case 0x2007:
-        vram.write(data);
-        break;
-
-    case CPUMap::PPU_OAM_DMA:
-        oam.dma = data;
+        vram.writedata(data);
         break;
 
 #ifdef DEBUG
@@ -192,6 +188,14 @@ void PPU::writereg(const uint16_t which, const uint8_t data)
 void PPU::printinfo(Utils::File &log)
 {
     log.printf("lineno: %d, linec: %d\n", getrow(), getcol());
+}
+
+void PPU::dot256()
+{
+    int tmp = vram.increment;
+    vram.increment = 32;
+    vram.incv();
+    vram.increment = tmp;
 }
 
 #include <emu/core/vram.cpp>

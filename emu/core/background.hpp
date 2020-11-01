@@ -1,7 +1,4 @@
 struct Background {
-    // temp
-    VRAM *vram;
-
     bool patterntab_addr;
     uint8_t nt_base_addr;
     bool show;
@@ -15,15 +12,9 @@ struct Background {
     uint8_t shift_attr1, shift_attr2;
 
     struct {
-        uint8_t nt, at, lowbg, hibg;
-    } internal_latch;
+        uint8_t nt, attr, lowbg, hibg;
+    } latch;
 
     void power();
     void reset();
-    void cycle();
-    void fetch_nt();
-    void fetch_at();
-    void fetch_lowbg();
-    void fetch_highbg();
-    void cycle(int col);
 };

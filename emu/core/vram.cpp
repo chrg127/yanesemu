@@ -16,7 +16,7 @@ void PPU::VRAM::power(const ROM &chrrom)
 {
     chrrom.copy_to(memory, 0, 0x2000);
     increment = 1; // ctrl = 0
-    buf     = 0;
+    readbuf     = 0;
     finex   = 0;
     tmp     = 0;
 }
@@ -24,54 +24,62 @@ void PPU::VRAM::power(const ROM &chrrom)
 void PPU::VRAM::reset()
 {
     increment = 1; // ctrl = 0
-    buf     = 0;
+    readbuf     = 0;
     finex   = 0;
     // tmp = unchanged
 }
 
-uint8_t &PPU::VRAM::getref(const uint16_t addr)
+uint16_t address(uint16_t addr)
 {
-    if (addr >= 0x2000 && addr <= 0x3FFF)       // inside nametable space
-        return memory[get_nt_addr(0x2000 + (addr & 0x0FFF))];
-    else if (addr >= 0x3F00 && addr <= 0x3FFF)  // $3F00 < addr < $3FFF, or inside palette ram space
-        return memory[0x3F00 + (addr & 0x00FF) % 0x20];
+    if (addr >= 0x2000 && addr <= 0x3FFF)
+        return get_nt_addr(0x2000 + (addr & 0x0FFF));
+    else if (addr >= 0x3F00 && addr <= 0x3FFF)
+        return 0x3F00 + (addr & 0x00FF) % 0x20;
     else
-        return memory[addr];
+        return addr;
 }
 
-/* read from the current vram address and increase the address */
 uint8_t PPU::VRAM::read()
 {
-    return getref(addr);
+    return memory[address(vaddr)];
 }
 
-uint8_t PPU::VRAM::read(uint16_t ad)
+uint8_t PPU::VRAM::read(uint16_t addr)
 {
-    return getref(ad);
+    return memory[address(addr)];
 }
 
 /* write to the current vram address and increase the address */
 void PPU::VRAM::write(uint8_t data)
 {
-    uint8_t &towrite = getref(addr);
-    towrite = data;
+    memory[address(vaddr)] = data;
 }
 
-void PPU::VRAM::write(uint16_t ad, uint8_t data)
+void PPU::VRAM::write(uint16_t addr, uint8_t data)
 {
-    uint8_t &towrite = getref(ad);
-    towrite = data;
+    memory[address(addr)] = data;
 }
 
-// uint8_t & operator[](uint16_t addr)
-// {
-//     addr += increment;
-//     if (addr >= 0x2000 && addr <= 0x3FFF)       // inside nametable space
-//         return memory[get_nt_addr(0x2000 + (addr & 0x0FFF))];
-//     else if (addr >= 0x3F00 && addr <= 0x3FFF)  // $3F00 < addr < $3FFF, or inside palette ram space
-//         return memory[0x3F00 + (addr & 0x00FF) % 0x20];
-//     else
-//         return memory[addr];
-// }
+void PPU::VRAM::incv()
+{
+    vaddr = (vaddr + increment) & 0x7FFF;
+}
+
+uint8_t PPU::VRAM::readdata()
+{
+    uint8_t toret;
+    if (vaddr <= 0x3EFF) {
+        toret = readbuf;
+        readbuf = memory[address(vaddr)];
+    } else
+        toret = memory[address(vaddr)];
+    incv();
+    return toret;
+}
+
+void PPU::VRAM::writedata(uint8_t data)
+{
+    memory[address(vaddr++)] = data;
+}
 
 #endif

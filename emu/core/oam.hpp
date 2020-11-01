@@ -7,7 +7,6 @@ struct OAM {
     bool show_leftmost;
     uint8_t addr;
     uint8_t data;
-    uint8_t dma;
 
     uint8_t shifts[8];
     uint8_t latches[8];
