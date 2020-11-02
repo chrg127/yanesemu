@@ -1,5 +1,4 @@
-#include <cmath>
-#include <emu/core/cpu.hpp>
+#include <emu/emulator.hpp>
 #include <emu/core/cartridge.hpp>
 #include <emu/utils/cmdargs.hpp>
 #include <emu/utils/file.hpp>
@@ -29,66 +28,8 @@ static Utils::ArgOption cmdflags[] = {
     { 'v', ARG_VERSION,      "version",      "Shows the program's version",              false, false, {} },
 };
 
-class Emulator {
-    Core::CPU cpu;
-    Core::PPU ppu;
-
-    void init(Core::Cartridge &cart)
-    {
-        cpu.power(cart.get_prgrom());
-        ppu.power(cart.get_chrrom(), 0);
-    }
-
-    void run()
-    {
-        cpu.main();
-        ppu.main();
-    }
-
-    void log(File &log)
-    {
-        cpu.printinfo(logfile);
-        logfile.printf("Instruction [%02X] ", cpu.peek_opcode());
-        logfile.putstr(cpu.disassemble().c_str());
-        logfile.putc('\n');
-    }
-};
-static Emulator emu;
-
-void logopen(File &f, Utils::ArgFlags &flags, const uint32_t arg);
-void dump(File &df, const uint8_t *const mem, const std::size_t size);
 static Utils::ArgParser parser("yanesemu", "0.1", cmdflags, 5);
-
-void logopen(File &f, Utils::ArgFlags &flags, const uint32_t arg)
-{
-    if ((flags.bits & arg) == 0)
-        return;
-
-    std::string_view s = flags.get_choice(arg);
-    if (s == "stdout")
-        f.assoc(stdout, File::Mode::WRITE);
-    else if (s == "stderr")
-        f.assoc(stderr, File::Mode::WRITE);
-    else if (s == "")
-        return;
-    else {
-        if (!f.open(s, File::Mode::WRITE))
-            error("can't open %s for writing\n", s.data());
-    }
-}
-
-void dump(File &df, const uint8_t *mem, const std::size_t size)
-{
-    std::size_t i, j;
-
-    for (i = 0; i < size; i++) {
-        df.printf("%04lX: ", i);
-        for (j = 0; j < 16; j++)
-            df.printf("%02X ", mem[i++]);
-        df.putc('\n');
-    }
-    df.putc('\n');
-}
+static Emulator emu;
 
 int main(int argc, char *argv[])
 {
@@ -100,6 +41,19 @@ int main(int argc, char *argv[])
         parser.print_usage();
         return 1;
     }
+
+    auto logopen = [](File &f, Utils::ArgFlags &flags, uint32_t arg) {
+        if ((flags.bits & arg) == 0)
+            return;
+        std::string_view s = flags.get_choice(arg);
+        if      (s == "stdout") f.assoc(stdout, File::Mode::WRITE);
+        else if (s == "stderr") f.assoc(stderr, File::Mode::WRITE);
+        else if (s == "")       return;
+        else {
+            if (!f.open(s, File::Mode::WRITE))
+                error("can't open %s for writing\n", s.data());
+        }
+    };
 
     Utils::ArgFlags flags = parser.parse_args(argc, argv);
     logopen(logfile, flags, ARG_LOG_FILE);
@@ -121,24 +75,16 @@ int main(int argc, char *argv[])
         error("can't initialize video subsytem\n");
         return 1;
     }
-
+    
+    emu.init(cart);
     cart.printinfo(logfile);
-    cpu.power(cart.get_prgrom());
-    int counter = 200;
     while (!v.closed()) {
         v.poll();
         v.render();
-        if (flags.bits & ARG_BREAK_ON_BRK && cpu.peek_opcode() == 0) {
-            DBGPRINT("got BRK, stopping emulation\n");
-            dump(dumpfile, cpu.getmemory(), cpu.getsize());
-            break;
-        }
-        if (--counter < 0) {
-            cpu.reset();
-            dump(dumpfile, cpu.getmemory(), cpu.getsize());
-            break;
-        }
+        emu.log(logfile);
+        emu.run();
     }
+    emu.dump(dumpfile);
     return 0;
 }
 
