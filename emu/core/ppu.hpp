@@ -33,22 +33,13 @@ class PPU {
     bool sprov;
     bool odd_frame;
 
-    int cycle;
+    int cycles;
 
     void fetch_nt();
     void fetch_at();
     void fetch_lowbg();
     void fetch_highbg();
-    void bg_cycle();
-    void dot256();
-
-    // void scanline_render();
-    // void scanline_empty();
-    inline int get_x()
-    { return cycle/340; }
-    inline int get_y()
-    { return cycle%340; }
-
+    
     friend class Background;
     friend class OAM;
     friend class PPUBus;
