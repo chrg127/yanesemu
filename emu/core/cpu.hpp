@@ -29,8 +29,6 @@ class CPU {
 
     uint8_t curropcode;
     Reg16 op;       // operand
-    Reg16 result;   // for results in addrmode_* functions
-    uint16_t pc_branch; // save this for disassembling branch instructions
 
     Reg16 pc;
     uint8_t accum   = 0;
@@ -199,13 +197,13 @@ public:
     void reset();
     std::string disassemble() const;
     void printinfo(Utils::File &f) const;
+
+    inline int get_cycles()
+    { return cycles; }
     inline const uint8_t *getmemory() const
     { return bus.getmemory(); }
-    inline uint32_t getsize() const
-    { return CPUMap::MEMSIZE; }
     inline uint8_t peek_opcode() const
     { return curropcode; }
-
     inline void attach_ppu(PPU *ppu)
     { bus.ppu = ppu; }
 };

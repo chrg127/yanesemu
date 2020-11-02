@@ -269,7 +269,6 @@ void CPU::instr_branch(bool take)
     // cycles: 2+1+1
     Reg16 tmp;
 
-    pc_branch = pc.reg;
     last_cycle();
     op.low = fetch();
     tmp = pc;
