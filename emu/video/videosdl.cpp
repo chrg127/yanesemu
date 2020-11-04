@@ -88,7 +88,7 @@ void DriverSDL::clear()
 
 void DriverSDL::poll()
 {
-    SDL_Event ev;
+    static SDL_Event ev;
     while (SDL_PollEvent(&ev) != 0) {
         if (ev.type == SDL_QUIT)
             isclosed = true;
