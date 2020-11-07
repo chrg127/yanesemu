@@ -11,7 +11,7 @@ struct VRAM {
 
     void power(const ROM &chrrom, int mirroring);
     void reset();
-    uint16_t address();
+    uint16_t address(uint16_t addr);
     uint8_t read();
     uint8_t read(uint16_t addr);
     uint8_t readdata();

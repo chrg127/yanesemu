@@ -2,7 +2,7 @@
 #error "This file must only be #include'd by ppu.cpp."
 #else
 
-PPU::VRAM::VRAM(int mirroring)
+void PPU::VRAM::power(const ROM &chrrom, int mirroring)
 {
     std::memset(memory, 0, 0x4000);
     if (mirroring == 0) // v-mirror
@@ -10,10 +10,6 @@ PPU::VRAM::VRAM(int mirroring)
     else if (mirroring == 1)
         get_nt_addr = [](uint16_t x) { return x |= 0x0400; };
     // else, mapper defined
-}
-
-void PPU::VRAM::power(const ROM &chrrom, int mirroring)
-{
     chrrom.copy_to(memory, 0, 0x2000);
     increment = 1; // ctrl = 0
     readbuf     = 0;
@@ -29,7 +25,7 @@ void PPU::VRAM::reset()
     // tmp = unchanged
 }
 
-uint16_t address(uint16_t addr)
+uint16_t PPU::VRAM::address(uint16_t addr)
 {
     if (addr >= 0x2000 && addr <= 0x3FFF)
         return get_nt_addr(0x2000 + (addr & 0x0FFF));

@@ -164,7 +164,7 @@ void PPU::lcycle(unsigned int cycle)
             copy_vert();
         cycletab[cycle](this);
     }
-    if constexpr(Line == 240 || Line >= 242 && Line != 261)
+    if constexpr(Line == 240 || (Line >= 242 && Line != 261))
         idlec();
 }
 
