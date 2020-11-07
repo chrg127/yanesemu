@@ -7,19 +7,19 @@ using namespace Core;
 void Emulator::init(Cartridge &cart)
 {
     cpu.power(cart.get_prgrom());
-    // cpu.attach_ppu(&ppu);
-    // ppu.power(cart.get_chrrom(), 0);
+    cpu.attach_ppu(&ppu);
+    ppu.power(cart.get_chrrom(), 0);
 }
 
 void Emulator::run()
 {
     cpu.main();
-    // int curr_cycle = cpu.get_cycles();
-    // int cycle_diff = curr_cycle - cycle;
+    int curr_cycle = cpu.get_cycles();
+    int cycle_diff = curr_cycle - cycle;
     // run 3 ppu cycles for 1 cpu cycle
-    // for (int i = 0; i < cycle_diff*3; i++)
-    //     ppu.main();
-    // cycle = curr_cycle;
+    for (int i = 0; i < cycle_diff*3; i++)
+        ppu.main();
+    cycle = curr_cycle;
 }
 
 void Emulator::log(File &logfile)

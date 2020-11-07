@@ -38,11 +38,14 @@ inline void warning(const char *fmt, ...)
 #define DBGPRINTF(fmt, ...) do { std::fprintf(stderr, fmt, __VA_ARGS__); } while (0)
 #define GPRINTHEX8(val)     do { std::printf("%02X", val); } while (0)
 #define DBGPRINTHEX16(val)  do { std::printf("%04X", val); } while (0)
+#define DBGPUTC(c)          ;
+//do { std::putchar(c); } while (0)
 #else
 #define DBGPRINT(str)       ;
 #define DBGPRINTF(fmt, ...) ;
 #define DBGPRINTHEX8(val)   ;
 #define DBGPRINTHEX16(val)  ;
+#define DBGPUTC(c)          ;
 #endif
 
 #endif

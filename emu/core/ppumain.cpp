@@ -1,6 +1,6 @@
 void PPU::idlec()
 {
-    putchar('.');
+    DBGPUTC('.');
 }
 
 void PPU::begin_frame()
@@ -8,59 +8,60 @@ void PPU::begin_frame()
     if (odd_frame) {
         cycles++;
         cycle_fetchnt(0);
-    } else
-        putchar('0');
+    } else {
+        DBGPUTC('0');
+    }
     odd_frame^=1;
 }
 
 void PPU::cycle_fetchnt(bool cycle)
 {
-    putchar('n');
+    DBGPUTC('n');
 }
 
 void PPU::cycle_fetchattr(bool cycle)
 {
-    putchar('a');
+    DBGPUTC('a');
 }
 
 void PPU::cycle_fetchlowbg(bool cycle)
 {
-    putchar('l');
+    DBGPUTC('l');
 }
 
 void PPU::cycle_fetchhighbg(bool cycle)
 {
-    putchar('h');
+    DBGPUTC('h');
 }
 
 void PPU::cycle_incvhorz()
 {
-    putchar('+');
+    DBGPUTC('+');
 }
 
 void PPU::cycle_incvvert()
 {
-    putchar('^');
+    DBGPUTC('^');
 }
 
 void PPU::cycle_copyhoriz()
 {
-    putchar('c');
+    DBGPUTC('c');
 }
 
 void PPU::vblank_begin()
 {
-    putchar('v');
+    DBGPUTC('v');
 }
 
 void PPU::vblank_end()
 {
-    putchar('e');
+    DBGPUTC('e');
 }
 
 void PPU::copy_vert()
 {
-    putchar('c');
+    DBGPUTC('c');
 }
 
 template <unsigned Cycle>
@@ -149,8 +150,9 @@ void PPU::lcycle(unsigned int cycle)
 {
     static_assert(Line <= 261);
     assert(cycle <= 340);
-    if (cycle == 0)
-        putchar('\n');
+    if (cycle == 0) {
+        DBGPUTC('\n');
+    }
     if constexpr(Line == 0)
         cycle == 0 ? begin_frame() : cycletab[cycle](this);
     if constexpr(Line < 240 && Line != 0)

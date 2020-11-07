@@ -71,11 +71,12 @@ int main(int argc, char *argv[])
     } else if (!cart.open(flags.get_item())) {
         error("can't open rom file\n");
         return 1;
-    } else if (!v.create()) {
-        error("can't initialize video subsytem\n");
-        return 1;
     }
-    
+    // else if (!v.create()) {
+    //     error("can't initialize video subsytem\n");
+    //     return 1;
+    // }
+
     emu.init(cart);
     cart.printinfo(logfile);
     while (!v.closed()) {

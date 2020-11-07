@@ -11,12 +11,14 @@ namespace Utils { class File; }
 
 namespace Core {
 
+class PPU;
+
 class CPU {
 
     struct Bus {
         uint8_t memory[CPUMap::MEMSIZE];
         bool write_enable = false;
-        // PPU *ppu;
+        PPU *ppu;
 
         void init(const ROM &prgrom);
         uint8_t read(uint16_t addr);
@@ -204,8 +206,8 @@ public:
     { return bus.getmemory(); }
     inline uint8_t peek_opcode() const
     { return curropcode; }
-    // inline void attach_ppu(PPU *ppu)
-    // { bus.ppu = ppu; }
+    inline void attach_ppu(PPU *ppu)
+    { bus.ppu = ppu; }
 };
 
 } // namespace Core
