@@ -1,13 +1,14 @@
 VPATH=emu:emu/core:emu/utils:emu/io:emu/video
 
-HEADERS = background.hpp cartridge.hpp cpu.hpp memorymap.hpp \
-		  oam.hpp ppu.hpp types.hpp vram.hpp \
+HEADERS = cartridge.hpp cpu.hpp memorymap.hpp types.hpp \
+		  ppu.hpp vram.hpp background.hpp oam.hpp \
 		  cmdargs.hpp file.hpp debug.hpp stringops.hpp \
 		  video.hpp \
 		  emulator.hpp
+		  #background.hpp oam.hpp ppu.hpp
 
 OBJS = main.o emulator.o \
-	   cpu.o ppu.o cartridge.o \
+	   cpu.o cartridge.o ppu.o \
 	   file.o cmdargs.o stringops.o \
 	   video.o
 
@@ -31,7 +32,7 @@ all: debug
 $(DEBDIR)/cpu.o: emu/core/cpu.cpp emu/core/bus.cpp emu/core/opcodes.cpp emu/core/disassemble.cpp $(HEADERS)
 	$(CXX) $(CFLAGS) -c $< -o $@
 
-$(DEBDIR)/ppu.o: emu/core/ppu.cpp emu/core/vram.cpp emu/core/background.cpp emu/core/oam.cpp $(HEADERS)
+$(DEBDIR)/ppu.o: emu/core/ppu.cpp emu/core/ppumain.cpp emu/core/vram.cpp emu/core/background.cpp emu/core/oam.cpp $(HEADERS)
 	$(CXX) $(CFLAGS) -c $< -o $@
 
 $(DEBDIR)/video.o: emu/video/video.cpp emu/video/videosdl.cpp $(HEADERS)
