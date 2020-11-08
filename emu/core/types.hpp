@@ -72,7 +72,7 @@ public:
     inline void reset()
     {
         if (mem)
-            delete mem;
+            delete[] mem;
         mem = nullptr;
         size = 0;
         locked = false;
