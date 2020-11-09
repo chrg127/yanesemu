@@ -3,14 +3,14 @@ void PPU::idlec()
     DBGPUTC('.');
 }
 
+// called at (340, 261)
 void PPU::begin_frame()
 {
     if (odd_frame) {
         cycles++;
-        cycle_fetchnt(0);
-    } else {
+        DBGPUTC('\n');
+    } else
         DBGPUTC('0');
-    }
     odd_frame^=1;
 }
 
@@ -153,18 +153,20 @@ void PPU::lcycle(unsigned int cycle)
     if (cycle == 0) {
         DBGPUTC('\n');
     }
-    if constexpr(Line == 0)
-        cycle == 0 ? begin_frame() : cycletab[cycle](this);
-    if constexpr(Line < 240 && Line != 0)
+    // if constexpr(Line == 0)
+    //     cycle == 0 ? begin_frame() : cycletab[cycle](this);
+    if constexpr(Line < 240)
         cycletab[cycle](this);
     if constexpr(Line == 241)
         cycle == 1 ? vblank_begin() : idlec();
     if constexpr(Line == 261) {
+        cycletab[cycle](this);
         if (cycle == 1)
             vblank_end();
         if (cycle > 278 && cycle < 306)
             copy_vert();
-        cycletab[cycle](this);
+        if (cycle == 340)
+            begin_frame();
     }
     if constexpr(Line == 240 || (Line >= 242 && Line != 261))
         idlec();
