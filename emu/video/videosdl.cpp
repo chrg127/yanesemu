@@ -13,7 +13,7 @@ class DriverSDL : public Driver {
     // SDL_Texture *main_texture = nullptr;
     // int pitch = 0;
     bool buf_changed = false;
-    bool isclosed = false;
+    bool isclosed = true;
 
     // void update_texture();
 
@@ -63,6 +63,7 @@ bool DriverSDL::create()
     buffer = new uint32_t[width*height];
     std::memset(buffer, 0, width*height);
     clear();
+    isclosed = false;
     return true;
 
 err:
@@ -72,10 +73,11 @@ err:
 
 void DriverSDL::render()
 {
-    for (int i = 0; i < width*height; i++) {
-        SDL_SetRenderDrawColor(renderer, buffer[i] >> 24, buffer[i] >> 16, buffer[i] >> 8, buffer[i]);
-        SDL_RenderDrawPoint(renderer, i%width, i/width);
-    }
+    clear();
+    // for (int i = 0; i < width*height; i++) {
+    //     SDL_SetRenderDrawColor(renderer, buffer[i] >> 24, buffer[i] >> 16, buffer[i] >> 8, buffer[i]);
+    //     SDL_RenderDrawPoint(renderer, i%width, i/width);
+    // }
     SDL_RenderPresent(renderer);
 }
 
@@ -83,7 +85,7 @@ void DriverSDL::clear()
 {
     SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
     SDL_RenderClear(renderer);
-    SDL_RenderPresent(renderer);
+    // SDL_RenderPresent(renderer);
 }
 
 void DriverSDL::poll()
