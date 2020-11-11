@@ -1,11 +1,8 @@
 VPATH=emu:emu/core:emu/utils:emu/io:emu/video
 
-HEADERS = cartridge.hpp cpu.hpp memorymap.hpp types.hpp \
-		  ppu.hpp vram.hpp background.hpp oam.hpp \
+HEADERS = cartridge.hpp cpu.hpp memorymap.hpp types.hpp ppu.hpp \
 		  cmdargs.hpp file.hpp debug.hpp stringops.hpp \
-		  video.hpp \
-		  emulator.hpp
-		  #background.hpp oam.hpp ppu.hpp
+		  video.hpp emulator.hpp
 
 OBJS = main.o emulator.o \
 	   cpu.o cartridge.o ppu.o \
@@ -17,7 +14,7 @@ LIBS = -lm -lSDL2
 CXX = g++
 CFLAGS = -I. -std=c++17 -Wall -Wextra -pipe \
 		 -Wcast-align -Wcast-qual -Wpointer-arith \
-		 -Wformat=2 -Wmissing-include-dirs \
+		 -Wformat=2 -Wmissing-include-dirs -Wno-unused-parameter
 
 DEBDIR = debug
 DEBPRGNAME = emu

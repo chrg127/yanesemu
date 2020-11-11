@@ -6,62 +6,76 @@ void PPU::idlec()
 // called at (340, 261)
 void PPU::begin_frame()
 {
+    assert(lines%262 == 261 && cycles%341 == 340);
     if (odd_frame) {
-        cycles++;
+        lines = 0;
+        cycles = 0;
         DBGPUTC('\n');
-    } else
+    } else {
         DBGPUTC('0');
+    }
     odd_frame^=1;
 }
 
 void PPU::cycle_fetchnt(bool cycle)
 {
+    fetch_nt(cycle);
     DBGPUTC('n');
 }
 
 void PPU::cycle_fetchattr(bool cycle)
 {
+    fetch_attr(cycle);
     DBGPUTC('a');
 }
 
 void PPU::cycle_fetchlowbg(bool cycle)
 {
+    fetch_lowbg(cycle);
     DBGPUTC('l');
 }
 
 void PPU::cycle_fetchhighbg(bool cycle)
 {
+    fetch_highbg(cycle);
     DBGPUTC('h');
 }
 
 void PPU::cycle_incvhorz()
 {
-    DBGPUTC('+');
+    vram.inc_horzpos();
+    // DBGPUTC('+');
 }
 
 void PPU::cycle_incvvert()
 {
-    DBGPUTC('^');
+    vram.inc_vertpos();
+    // DBGPUTC('^');
 }
 
-void PPU::cycle_copyhoriz()
+void PPU::cycle_copyhorz()
 {
-    DBGPUTC('c');
+    vram.copy_horzpos();
+    // DBGPUTC('c');
+}
+
+void PPU::cycle_copyvert()
+{
+    vram.copy_vertpos();
+    // DBGPUTC('c');
 }
 
 void PPU::vblank_begin()
 {
+    vblank = true;
+    // call NMI interrupt here
     DBGPUTC('v');
 }
 
 void PPU::vblank_end()
 {
+    vblank = false;
     DBGPUTC('e');
-}
-
-void PPU::copy_vert()
-{
-    DBGPUTC('c');
 }
 
 template <unsigned Cycle>
@@ -92,7 +106,7 @@ void PPU::ccycle()
         cycle_incvvert();
     }
     if constexpr(Cycle == 257)
-        cycle_copyhoriz();
+        cycle_copyhorz();
 }
 
 #define CCYCLE &PPU::ccycle
@@ -153,8 +167,6 @@ void PPU::lcycle(unsigned int cycle)
     if (cycle == 0) {
         DBGPUTC('\n');
     }
-    // if constexpr(Line == 0)
-    //     cycle == 0 ? begin_frame() : cycletab[cycle](this);
     if constexpr(Line < 240)
         cycletab[cycle](this);
     if constexpr(Line == 241)
@@ -164,7 +176,7 @@ void PPU::lcycle(unsigned int cycle)
         if (cycle == 1)
             vblank_end();
         if (cycle > 278 && cycle < 306)
-            copy_vert();
+            cycle_copyvert();
         if (cycle == 340)
             begin_frame();
     }
@@ -212,9 +224,8 @@ static std::function<void(PPU *, unsigned int)> linetab[] = {
 
 void PPU::main()
 {
-    int cycle = cycles%341;
-    int line = cycles/341%262;
-    linetab[line](this, cycle);
+    linetab[lines % 262](this, cycles % 341);
     cycles++;
+    lines += cycles % 341 == 0;
 }
 

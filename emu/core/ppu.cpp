@@ -16,6 +16,9 @@ void PPU::power(const ROM &chrrom, int mirroring)
     vram.power(chrrom, mirroring);
     bg.power();
     oam.power();
+    // ppu starts at the top of the picture
+    lines = 0;
+    cycles = 0;
     nmi_enabled   = 0;
     ext_bus_dir   = 0;
     effects.grey  = 0;

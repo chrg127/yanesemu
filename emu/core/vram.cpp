@@ -78,4 +78,52 @@ void PPU::VRAM::writedata(uint8_t data)
     memory[address(vaddr++)] = data;
 }
 
+void PPU::VRAM::inc_horzpos()
+{
+    // if ((vaddr & 0x001F) == 31) {
+    //     v &= ~0x001F;
+    //     v ^= 0x0400;
+    // } else
+    //     v += 1;
+    /*
+     * >>> def getwhole(x):
+     * ...     return ((x & 0x400) >> 5) | (x & 0x1F)
+     * >>> def recompose(x): return (x & 0x20) << 5 | (x & 0x1F)
+     * >>> def incv6(x):
+     * ...     tmp = getwhole(x)+1
+     * ...     return (x & ~0x41F) | recompose(tmp)
+     */
+    uint8_t x = ((vaddr & 0x400) >> 5) | ((vaddr & 0x1F) + 1);
+    vaddr = (vaddr & ~0x41F) | ((x & 0x20) << 5) | (x & 0x1F);
+}
+
+void PPU::VRAM::inc_vertpos()
+{
+    if ((vaddr & 0x7000) != 0x7000)
+        vaddr += 0x1000;
+    else {
+        vaddr &= ~0x7000;
+        int y = (vaddr & 0x03E0) >> 5;
+        if (y == 29) {
+            y = 0;
+            vaddr ^= 0x0800;
+        } else if (y == 31)
+            y = 0;
+        else
+            y += 1;
+        vaddr = (vaddr & ~0x03E0) | (y << 5);
+    }
+}
+
+void PPU::VRAM::copy_horzpos()
+{
+    // if rendering is enabled
+    vaddr = (tmp.reg & 0x41F) | (vaddr & ~0x41F);
+}
+
+void PPU::VRAM::copy_vertpos()
+{
+    vaddr = (tmp.reg & 0x7BE0) | (vaddr & ~0x7EB0);
+}
+
 #endif
