@@ -88,3 +88,7 @@ attribute (palette) data.
  -------- --------  -------- --------  --------  --------
  ^
 
+
+*** v details ***
+
+- v = 0 at power up. The PPU starts at the top of the picture (x = 0, y = 0).
