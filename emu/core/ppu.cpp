@@ -160,6 +160,7 @@ void PPU::writereg(const uint16_t which, const uint8_t data)
 #include "vram.cpp"
 #include "background.cpp"
 #include "oam.cpp"
+#include "palette.cpp"
 
 } // namespace Core
 

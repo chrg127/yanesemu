@@ -48,8 +48,14 @@ void PPU::Background::fill_shifts()
 
 }
 
-void PPU::output_pixel()
+uint24 PPU::bgpixel()
 {
-
+    bool lowbit = shift_low & fine_x;
+    bool hibit  = shift_high & fine_x;
+    bool at1 = shift_attr1 & fine_x;
+    bool at2 = shift_attr2 & fine_x;
+    uint8_t pal = at1 << 1 | at2;
+    uint8_t palind = hibit << 1 | lowbit;
+    return getcolor(0, pal, palind);
 }
 

@@ -98,6 +98,7 @@ class PPU {
     bool spr0hit;
     bool sprov;
     bool odd_frame;
+    uint24 *paltab; // pointer to an array of colors, loaded by load_palette()
 
     void begin_frame();
     void cycle_fetchnt(bool cycle);
@@ -115,7 +116,10 @@ class PPU {
     void fetch_attr(bool dofetch);
     void fetch_lowbg(bool dofetch);
     void fetch_highbg(bool dofetch);
-    void output_pixel();
+    void bgpixel();
+
+    void load_palette();
+    uint24 getcolor(bool select, uint8_t pal, uint8_t palind);
 
     friend class Background;
     friend class OAM;
