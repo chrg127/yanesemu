@@ -14,8 +14,11 @@ union Reg16 {
     };
     uint16_t reg;
 
-    Reg16() : reg(0) { }
-    Reg16(uint16_t val) : reg(val) { }
+    Reg16() : reg(0)
+    { }
+    Reg16(uint16_t val)
+    { operator=(val); }
+
     inline void operator=(uint16_t val)
     {
         reg = val;
@@ -99,5 +102,24 @@ public:
 };
 
 } // namespace Core
+
+struct uint24 {
+    uint8_t high, mid, low;
+
+    uint24() : high(0), mid(0), low(0)
+    { }
+    uint24(const uint32_t val)
+    { operator=(val); }
+
+    inline uint32_t value()
+    { return high << 16 | mid << 8 | low; }
+
+    void operator=(const uint32_t val)
+    {
+        high = val & 0x00FF0000;
+        mid  = val & 0x0000FF00;
+        low  = val & 0x000000FF;
+    }
+};
 
 #endif
