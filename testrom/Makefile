@@ -4,5 +4,6 @@ all: test.o
 test.o: test.asm
 	ca65 test.asm -o test.o
 
+.PHONY: clean
 clean:
 	rm test.o test.nes
