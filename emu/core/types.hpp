@@ -19,11 +19,27 @@ union Reg16 {
     Reg16(uint16_t val)
     { operator=(val); }
 
-    inline void operator=(uint16_t val)
+    inline void operator=(const uint16_t val)
     {
         reg = val;
     }
+    
+    template <typename T> // T = numeric type
+    inline Reg16 & operator&=(const T val)
+    { reg &= val; return *this; }
+
+    template <typename T> // T = numeric type
+    inline Reg16 & operator|=(const T val)
+    { reg |= val; return *this; }
 };
+
+template <typename T> // T = numeric type
+inline Reg16 operator&(Reg16 left, T right)
+{ return left & right; }
+
+template <typename T> // T = numeric type
+inline Reg16 operator|(Reg16 left, T right)
+{ return left & right; }
 
 /* a ROM represents readable memory. It has two states: at the start, it is
  * both readable and writable. After a function is done with writing, call
@@ -101,8 +117,6 @@ public:
     }
 };
 
-} // namespace Core
-
 struct uint24 {
     uint8_t high, mid, low;
 
@@ -114,12 +128,14 @@ struct uint24 {
     inline uint32_t value()
     { return high << 16 | mid << 8 | low; }
 
-    void operator=(const uint32_t val)
+    inline void operator=(const uint32_t val)
     {
         high = val & 0x00FF0000;
         mid  = val & 0x0000FF00;
         low  = val & 0x000000FF;
     }
 };
+
+} // namespace Core
 
 #endif
