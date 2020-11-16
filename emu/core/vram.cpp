@@ -13,7 +13,7 @@ void PPU::VRAM::power(const ROM &chrrom, int mirroring)
     chrrom.copy_to(memory, 0, 0x2000);
     increment = 1; // ctrl = 0
     readbuf     = 0;
-    finex   = 0;
+    fine_x   = 0;
     tmp     = 0;
 }
 
@@ -21,7 +21,7 @@ void PPU::VRAM::reset()
 {
     increment = 1; // ctrl = 0
     readbuf     = 0;
-    finex   = 0;
+    fine_x   = 0;
     // tmp = unchanged
 }
 
