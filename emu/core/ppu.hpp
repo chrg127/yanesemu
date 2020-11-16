@@ -19,7 +19,7 @@ class PPU {
         std::function <uint8_t (uint16_t)> get_nt_addr;
         uint16_t vaddr;
         Reg16 tmp;
-        uint8_t finex;
+        uint8_t fine_x;
         uint8_t increment;
         uint8_t readbuf;
 
@@ -116,7 +116,9 @@ class PPU {
     void fetch_attr(bool dofetch);
     void fetch_lowbg(bool dofetch);
     void fetch_highbg(bool dofetch);
-    void bgpixel();
+    void output_pixel();
+    uint24 output_bgpixel();
+    uint24 output_sppixel();
 
     void load_palette();
     uint24 getcolor(bool select, uint8_t pal, uint8_t palind);

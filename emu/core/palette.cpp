@@ -29,7 +29,7 @@ void PPU::load_palette()
 // color_index: which color of the palette
 // bg_or_sp: select if it's a background palette or a sprite palette
 // first 2 values are 2 bits big, not 8
-uint24 PPU::getcolor(bool select, uint8_t pal, uint8_t palind);
+uint24 PPU::getcolor(bool select, uint8_t pal, uint8_t palind)
 {
     // this is a 5 bit number
     uint8_t i = select << 4 | pal << 2 | palind;

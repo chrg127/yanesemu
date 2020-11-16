@@ -125,11 +125,11 @@ void PPU::writereg(const uint16_t which, const uint8_t data)
 
     case 0x2005:
         if (latch.toggle == 0) {
-            vram.tmp.reg = (data & 0xF8) | (vram.tmp.reg & 0xFFE0);
-            vram.finex   = (data & 0x7);
+            vram.tmp = (data &  0xF8) >> 3  | (vram.tmp & ~(0xF8 >> 3));
+            vram.fine_x = data & 0x7;
         } else {
-            vram.tmp.reg = (data & 0x07) | (vram.tmp.reg & 0x8FFF);
-            vram.tmp.reg = (data & 0xF8) | (vram.tmp.reg & 0xFC1F);
+            vram.tmp = (data &  0x07) << 12 | (vram.tmp & ~(0x07 << 12));
+            vram.tmp = (data & ~0xF8) << 2  | (vram.tmp & ~(0xF8 << 2 ));
         }
         latch.toggle ^= 1;
         break;
@@ -154,6 +154,16 @@ void PPU::writereg(const uint16_t which, const uint8_t data)
         break;
 #endif
     }
+}
+
+void PPU::output_pixel()
+{
+    // uint24 *pix;
+    uint24 bgpixel = output_bgpixel();
+    uint24 sppixel = output_sppixel();
+    // if (has_priority() || bgpix == 0) {
+    //     pix = &sppix;
+    // }
 }
 
 #include "ppumain.cpp"

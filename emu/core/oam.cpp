@@ -26,3 +26,7 @@ void PPU::OAM::write(uint16_t addr, uint8_t data)
 
 }
 
+uint24 PPU::output_sppixel()
+{
+    return 0;
+}
