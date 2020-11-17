@@ -65,16 +65,28 @@ void PPU::cycle_copyvert()
     // DBGPUTC('c');
 }
 
+void PPU::cycle_shift()
+{
+    bg.shift();
+}
+
+void PPU::cycle_fillshifts()
+{
+    bg.fill_shifts();
+}
+
 void PPU::vblank_begin()
 {
-    vblank = true;
+    vblank = 1;
     // call NMI interrupt here
     DBGPUTC('v');
 }
 
 void PPU::vblank_end()
 {
-    vblank = false;
+    vblank  = 0;
+    spr0hit = 0;
+    spr_ov  = 0;
     DBGPUTC('e');
 }
 
@@ -88,10 +100,7 @@ void PPU::background_cycle()
     if constexpr(Cycle == 5) cycle_fetchlowbg(0);
     if constexpr(Cycle == 6) cycle_fetchlowbg(1);
     if constexpr(Cycle == 7) cycle_fetchhighbg(0);
-    if constexpr(Cycle == 0) {
-        cycle_fetchhighbg(1);
-        cycle_incvhorz();
-    }
+    if constexpr(Cycle == 0) cycle_fetchhighbg(1);
 }
 
 /* this only models lines from 1 to 239 */
@@ -99,11 +108,18 @@ template <unsigned int Cycle>
 void PPU::ccycle()
 {
     static_assert(Cycle <= 340);
-    if constexpr((Cycle >= 1 && Cycle <= 255) || (Cycle >= 321 && Cycle <= 340))
+    // NOTE: between cycle 257 - 320 there are garbage fetches
+    if constexpr((Cycle >= 1 && Cycle <= 256) ||
+                 (Cycle >= 321 && Cycle <= 340)) {
         background_cycle<Cycle % 8>();
-    if constexpr(Cycle == 256) {
-        cycle_fetchhighbg(1);
-        cycle_incvvert();
+        if constexpr(Cycle % 8 == 1 && Cycle != 1)
+            cycle_fillshifts();
+        if constexpr(Cycle % 8 != 1)
+            cycle_shift();
+        if constexpr(Cycle % 8 == 0 && Cycle != 256)
+            cycle_incvhorz();
+        if constexpr(Cycle == 256)
+            cycle_incvvert();
     }
     if constexpr(Cycle == 257)
         cycle_copyhorz();

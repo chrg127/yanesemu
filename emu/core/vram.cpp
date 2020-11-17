@@ -25,59 +25,6 @@ void PPU::VRAM::reset()
     // tmp = unchanged
 }
 
-uint16_t PPU::VRAM::address(uint16_t addr)
-{
-    if (addr >= 0x2000 && addr <= 0x3FFF)
-        return get_nt_addr(0x2000 + (addr & 0x0FFF));
-    else if (addr >= 0x3F00 && addr <= 0x3FFF)
-        return 0x3F00 + (addr & 0x00FF) % 0x20;
-    else
-        return addr;
-}
-
-uint8_t PPU::VRAM::read()
-{
-    return memory[address(vaddr)];
-}
-
-uint8_t PPU::VRAM::read(uint16_t addr)
-{
-    return memory[address(addr)];
-}
-
-/* write to the current vram address and increase the address */
-void PPU::VRAM::write(uint8_t data)
-{
-    memory[address(vaddr)] = data;
-}
-
-void PPU::VRAM::write(uint16_t addr, uint8_t data)
-{
-    memory[address(addr)] = data;
-}
-
-void PPU::VRAM::incv()
-{
-    vaddr = (vaddr + increment) & 0x7FFF;
-}
-
-uint8_t PPU::VRAM::readdata()
-{
-    uint8_t toret;
-    if (vaddr <= 0x3EFF) {
-        toret = readbuf;
-        readbuf = memory[address(vaddr)];
-    } else
-        toret = memory[address(vaddr)];
-    incv();
-    return toret;
-}
-
-void PPU::VRAM::writedata(uint8_t data)
-{
-    memory[address(vaddr++)] = data;
-}
-
 void PPU::VRAM::inc_horzpos()
 {
     // if ((vaddr & 0x001F) == 31) {
@@ -124,6 +71,54 @@ void PPU::VRAM::copy_horzpos()
 void PPU::VRAM::copy_vertpos()
 {
     vaddr = (tmp.reg & 0x7BE0) | (vaddr & ~0x7EB0);
+}
+
+/* gets the actual address given any address. this accounts for mirroring. */
+uint16_t PPU::VRAM::address(uint16_t addr)
+{
+    if (addr >= 0x2000 && addr <= 0x3FFF)
+        return ntaddr(0x2000 + (addr & 0x0FFF));
+    else if (addr >= 0x3F00 && addr <= 0x3FFF)
+        return 0x3F00 + (addr & 0x00FF) % 0x20;
+    else
+        return addr;
+}
+
+uint8_t PPU::VRAM::read(uint16_t addr)
+{
+    return memory[address(addr)];
+}
+
+uint8_t PPU::VRAM::read()
+{
+    return memory[address(vaddr)];
+}
+
+void PPU::VRAM::write(uint8_t data)
+{
+    memory[address(vaddr)] = data;
+}
+
+void PPU::VRAM::write(uint16_t addr, uint8_t data)
+{
+    memory[address(addr)] = data;
+}
+
+uint8_t PPU::VRAM::readdata()
+{
+    uint8_t toret;
+    if (vaddr <= 0x3EFF) {
+        toret = readbuf;
+        readbuf = memory[address(vaddr)];
+    } else
+        toret = memory[address(vaddr)];
+    inc_horzpos();
+    return toret;
+}
+
+void PPU::VRAM::writedata(uint8_t data)
+{
+    memory[address(vaddr++)] = data;
 }
 
 #endif

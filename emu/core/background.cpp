@@ -43,6 +43,14 @@ void PPU::fetch_highbg(bool dofetch)
         bg.latch.hibg = vram.read(bg.latch.nt+8);
 }
 
+void PPU::Background::shift()
+{
+    shift_low   >>= 1;
+    shift_high  >>= 1;
+    shift_attr1 >>= 1;
+    shift_attr2 >>= 1
+}
+
 void PPU::Background::fill_shifts()
 {
 

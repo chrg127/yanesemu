@@ -15,21 +15,24 @@ class PPU {
     uint8_t output[256*224];
 
     struct VRAM {
-        uint8_t memory[PPUMap::MEMSIZE];
-        std::function <uint8_t (uint16_t)> get_nt_addr;
+        PPU &outer;
+
+        uint8_t memory[0x4000];
+        std::function<uint8_t(uint16_t)> ntaddr;
         uint16_t vaddr;
         Reg16 tmp;
         uint8_t fine_x;
         uint8_t increment;
         uint8_t readbuf;
 
+        VRAM(PPU &p) : outer(p)
+        { }
         void power(const ROM &chrrom, int mirroring);
         void reset();
         void inc_horzpos();
         void inc_vertpos();
         void copy_horzpos();
         void copy_vertpos();
-
         uint16_t address(uint16_t addr);
         uint8_t read();
         uint8_t read(uint16_t addr);
@@ -37,34 +40,35 @@ class PPU {
         void write(uint8_t data);
         void write(uint16_t addr, uint8_t data);
         void writedata(uint8_t data);
-        void incv();
-
-        friend class PPU;
     } vram;
 
     struct Background {
+        PPU &outer;
+
         bool patterntab_addr;
         uint8_t nt_base_addr;
         bool show;
         bool show_leftmost;
-
         // low - for the low bg byte
         // high - for the high bg byte
         // both hold data for two tiles and are shifted every cycle
         uint16_t shift_low, shift_high;
         // these two hold info for one tile, not two
         uint8_t shift_attr1, shift_attr2;
-
         struct {
             uint8_t nt, attr, lowbg, hibg;
         } latch;
 
+        Background(PPU &p) : outer(p)
+        { }
         void power();
         void reset();
         void fill_shifts();
     } bg;
 
     struct OAM {
+        PPU &outer;
+
         uint8_t oam[PPUMap::OAM_SIZE];
 
         bool sprsize;
@@ -73,11 +77,12 @@ class PPU {
         bool show_leftmost;
         uint8_t addr;
         uint8_t data;
-
         uint8_t shifts[8];
         uint8_t latches[8];
         uint8_t counters[8];
 
+        OAM(PPU &p) : outer(p)
+        { }
         void power();
         void reset();
         uint8_t read(uint16_t addr);
@@ -96,7 +101,7 @@ class PPU {
     } effects;
     bool vblank;
     bool spr0hit;
-    bool sprov;
+    bool spr_ov;
     bool odd_frame;
     uint24 *paltab; // pointer to an array of colors, loaded by load_palette()
 
@@ -109,6 +114,8 @@ class PPU {
     void cycle_incvvert();
     void cycle_copyhorz();
     void cycle_copyvert();
+    void cycle_shift();
+    void cycle_fillshifts();
     void vblank_begin();
     void vblank_end();
 
@@ -128,7 +135,7 @@ class PPU {
     friend class PPUBus;
 
 public:
-    PPU()
+    PPU() : vram(*this), bg(*this), oam(*this)
     { }
 
     void power(const ROM &chrrom, int mirroring);
