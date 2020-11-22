@@ -34,35 +34,42 @@ void PPU::fetch_attr(bool dofetch)
 void PPU::fetch_lowbg(bool dofetch)
 {
     if (dofetch)
-        bg.latch.lowbg = vram.read(bg.latch.nt);
+        bg.latch.lowbg = vram.read(0x1000*bg.patterntab_addr + bg.latch.nt);
 }
 
 void PPU::fetch_highbg(bool dofetch)
 {
     if (dofetch)
-        bg.latch.hibg = vram.read(bg.latch.nt+8);
+        bg.latch.hibg  = vram.read(0x1000*bg.patterntab_addr + bg.latch.nt+8);
 }
 
-void PPU::Background::shift()
+void PPU::Background::shift_run()
 {
-    shift_low   >>= 1;
-    shift_high  >>= 1;
-    shift_attr1 >>= 1;
-    shift_attr2 >>= 1
+    shift.low   >>= 1;
+    shift.high  >>= 1;
+    shift.attr1 >>= 1;
+    shift.attr1 |= shift.attrhigh_latch << 7;
+    shift.attr2 >>= 1;
+    shift.attr2 |= shift.attrlow_latch  << 7;
 }
 
 void PPU::Background::fill_shifts()
 {
-
+    shift.low  = latch.lowbg << 8 | (shift.low  & 0xFF);
+    shift.high = latch.hibg  << 8 | (shift.high & 0xFF);
+    uint16_t v = outer.vram.vaddr;
+    uint8_t attr_mask = 0b11 << (~((v >> 1 & 1) | (v >> 6 & 1)))*2;
+    shift.attrhigh_latch = latch.attr & attr_mask;
+    shift.attrlow_latch  = latch.attr & attr_mask;
 }
 
-uint24 PPU::output_bgpixel()
+uint8_t PPU::output_bgpixel()
 {
     uint8_t mask    = 1 << vram.fine_x;
-    bool lowbit     = bg.shift_low    & mask;
-    bool hibit      = bg.shift_high   & mask;
-    bool at1        = bg.shift_attr1  & mask;
-    bool at2        = bg.shift_attr2  & mask;
+    bool lowbit     = bg.shift.low    & mask;
+    bool hibit      = bg.shift.high   & mask;
+    bool at1        = bg.shift.attr1  & mask;
+    bool at2        = bg.shift.attr2  & mask;
     uint8_t pal     = at1   << 1 | at2;
     uint8_t palind  = hibit << 1 | lowbit;
     return getcolor(0, pal, palind);
