@@ -7,7 +7,7 @@
 #include <emu/core/memorymap.hpp>
 // #include <emu/core/ppu.hpp>
 
-namespace Utils { class File; }
+namespace Util { class File; }
 
 namespace Core {
 
@@ -198,7 +198,7 @@ public:
     void fire_nmi();
     void reset();
     std::string disassemble() const;
-    void printinfo(Utils::File &f) const;
+    void printinfo(Util::File &f) const;
 
     inline int get_cycles()
     { return cycles; }

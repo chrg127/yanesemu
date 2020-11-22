@@ -9,63 +9,63 @@ inline static std::string disass_implied(const char name[4])
 
 inline static std::string disass_imm(const char name[4], uint8_t op)
 {
-    return Utils::strprintf("%s #$%02X", name, op);
+    return Util::strprintf("%s #$%02X", name, op);
 }
 
 inline static std::string disass_accum(const char name[4])
 {
-    return Utils::strprintf("%s A", name);
+    return Util::strprintf("%s A", name);
 }
 
 inline static std::string disass_zero(const char name[4], uint8_t op)
 {
-    return Utils::strprintf("%s $%02X", name, op);
+    return Util::strprintf("%s $%02X", name, op);
 }
 
 inline static std::string disass_zerox(const char name[4], uint8_t op)
 {
-    return Utils::strprintf("%s $%02X,x", name, op);
+    return Util::strprintf("%s $%02X,x", name, op);
 }
 
 inline static std::string disass_zeroy(const char name[4], uint8_t op)
 {
-    return Utils::strprintf("%s $%02X,y", name, op);
+    return Util::strprintf("%s $%02X,y", name, op);
 }
 
 inline static std::string disass_abs(const char name[4], uint8_t low, uint8_t hi)
 {
-    return Utils::strprintf("%s $%02X%02X", name, hi, low);
+    return Util::strprintf("%s $%02X%02X", name, hi, low);
 }
 
 inline static std::string disass_absx(const char name[4], uint8_t low, uint8_t hi)
 {
-    return Utils::strprintf("%s $%02X%02X,x", name, hi, low);
+    return Util::strprintf("%s $%02X%02X,x", name, hi, low);
 }
 
 inline static std::string disass_absy(const char name[4], uint8_t low, uint8_t hi)
 {
-    return Utils::strprintf("%s $%02X%02X,y", name, hi, low);
+    return Util::strprintf("%s $%02X%02X,y", name, hi, low);
 }
 
 inline static std::string disass_ind(const char name[4], uint8_t low, uint8_t hi)
 {
-    return Utils::strprintf("%s ($%02X%02X)", name, hi, low);
+    return Util::strprintf("%s ($%02X%02X)", name, hi, low);
 }
 
 inline static std::string disass_indx(const char name[4], uint8_t op)
 {
-    return Utils::strprintf("%s ($%02X,x)", name, op);
+    return Util::strprintf("%s ($%02X,x)", name, op);
 }
 
 inline static std::string disass_indy(const char name[4], uint8_t op)
 {
-    return Utils::strprintf("%s ($%02X),y", name, op);
+    return Util::strprintf("%s ($%02X),y", name, op);
 }
 
 inline static std::string disass_branch(const char name[4], int8_t disp,
         uint16_t addr, bool took)
 {
-    return Utils::strprintf("%s %d [$%04X] %s", name, disp, addr,
+    return Util::strprintf("%s %d [$%04X] %s", name, disp, addr,
             (took) ? "[Branch taken]" : "[Branch not taken]");
 }
 

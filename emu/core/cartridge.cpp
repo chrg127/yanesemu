@@ -99,7 +99,7 @@ void Cartridge::parse_nes20()
 
 bool Cartridge::open(std::string_view s)
 {
-    if (!romfile.open(s, Utils::File::Mode::READ)) {
+    if (!romfile.open(s, Util::File::Mode::READ)) {
         errid = ERRID_INVNAME;
         return false;
     }
@@ -121,7 +121,7 @@ bool Cartridge::open(std::string_view s)
     return true;
 }
 
-void Cartridge::printinfo(Utils::File &log) const
+void Cartridge::printinfo(Util::File &log) const
 {
     if (!log.isopen())
         return;
