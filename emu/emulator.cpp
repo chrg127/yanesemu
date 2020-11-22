@@ -1,7 +1,7 @@
 #include <emu/emulator.hpp>
 #include <emu/core/memorymap.hpp>
 
-using Utils::File;
+using Util::File;
 using namespace Core;
 
 void Emulator::init(Cartridge &cart)

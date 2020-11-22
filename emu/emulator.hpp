@@ -14,8 +14,8 @@ class Emulator {
 public:
     void init(Core::Cartridge &cart);
     void run();
-    void log(Utils::File &logfile);
-    void dump(Utils::File &dumpfile);
+    void log(Util::File &logfile);
+    void dump(Util::File &dumpfile);
 };
 
 #endif
