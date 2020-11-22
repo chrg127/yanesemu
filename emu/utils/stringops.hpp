@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace Utils {
+namespace Util {
 
 // uncomment this to use the template version instead.
 // advantage is being more type-safe. disadvantage is generating code bloat.
@@ -38,6 +38,6 @@ std::string strprintf(const char *fmt, Args... args)
 
 std::vector<std::string> strsplit(const std::string &s, int delim = ',');
 
-} // namespace Utils
+} // namespace Util
 
 #endif

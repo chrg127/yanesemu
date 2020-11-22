@@ -4,7 +4,7 @@
 #include <cstdarg>
 #include <cstdlib>
 
-namespace Utils {
+namespace Util {
 
 #ifndef STRINGOPS_STRPRINTF_USE_TEMPLATE_VER
 #if defined(__GNUC__) || defined(__MINGW32__) || defined (__MINGW64__)
@@ -47,4 +47,4 @@ std::vector<std::string> strsplit(const std::string &s, int delim)
     return strvec;
 }
 
-} // namespace Utils
+} // namespace Util

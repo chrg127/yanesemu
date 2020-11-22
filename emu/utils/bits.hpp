@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-namespace Utils {
+namespace Util {
 
 inline constexpr unsigned long long to_kib(unsigned long long bytes) { return bytes*1024; }
 inline constexpr unsigned long long to_mib(unsigned long long bytes) { return bytes*1024*1024; }
@@ -30,6 +30,6 @@ inline uint32_t rotr32(const uint32_t x, const int k)
     return (x >> k) | (x << (32 - k));
 }
 
-} // namespace Utils
+} // namespace Util
 
 #endif

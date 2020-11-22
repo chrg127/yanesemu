@@ -11,7 +11,7 @@
 #include <string_view>
 #include <cstdint>
 
-namespace Utils {
+namespace Util {
 
 struct ArgOption {
     char opt;                   /* short option */
@@ -69,6 +69,6 @@ public:
     void print_version() const;
 };
 
-} // namespace Utils
+} // namespace Util
 
 #endif

@@ -5,7 +5,7 @@
 #include <emu/utils/debug.hpp>
 #include <emu/utils/file.hpp>
 
-namespace Utils {
+namespace Util {
 
 ArgFlags::ArgFlags(ArgFlags &&f)
 {
@@ -116,7 +116,7 @@ ArgFlags ArgParser::parse_args(int argc, char *argv[])
 
 void ArgParser::print_usage() const
 {
-    Utils::File fout(stderr, Utils::File::Mode::WRITE);
+    Util::File fout(stderr, Util::File::Mode::WRITE);
     fout.printf("Usage: %s [args...] <ROM file>\n", progname.data());
     fout.printf("Valid arguments:\n");
     for (int i = 0; i < nargs; i++) {
@@ -127,8 +127,8 @@ void ArgParser::print_usage() const
 
 void ArgParser::print_version() const
 {
-    Utils::File fout(stderr, Utils::File::Mode::WRITE);
+    Util::File fout(stderr, Util::File::Mode::WRITE);
     fout.printf("%s: version %s\n", progname.data(), verstr.data());
 }
 
-} // namespace Utils
+} // namespace Util
