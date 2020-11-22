@@ -49,12 +49,16 @@ class PPU {
         uint8_t nt_base_addr;
         bool show;
         bool show_leftmost;
-        // low - for the low bg byte
-        // high - for the high bg byte
-        // both hold data for two tiles and are shifted every cycle
-        uint16_t shift_low, shift_high;
-        // these two hold info for one tile, not two
-        uint8_t shift_attr1, shift_attr2;
+        struct {
+            // low - for the low bg byte
+            // high - for the high bg byte
+            // both hold data for two tiles and are shifted every cycle
+            uint16_t low, high;
+            // these two hold info for one tile, not two
+            // 1 - high, 2 - low
+            uint8_t attr1, attr2;
+            bool attrhigh_latch, attrlow_latch;
+        } shift;
         struct {
             uint8_t nt, attr, lowbg, hibg;
         } latch;
@@ -64,6 +68,7 @@ class PPU {
         void power();
         void reset();
         void fill_shifts();
+        void shift_run();
     } bg;
 
     struct OAM {
@@ -103,7 +108,7 @@ class PPU {
     bool spr0hit;
     bool spr_ov;
     bool odd_frame;
-    uint24 *paltab; // pointer to an array of colors, loaded by load_palette()
+    // uint24 *paltab; // pointer to an array of colors, loaded by load_palette()
 
     void begin_frame();
     void cycle_fetchnt(bool cycle);
@@ -116,6 +121,7 @@ class PPU {
     void cycle_copyvert();
     void cycle_shift();
     void cycle_fillshifts();
+    void cycle_outputpixel();
     void vblank_begin();
     void vblank_end();
 
@@ -124,11 +130,11 @@ class PPU {
     void fetch_lowbg(bool dofetch);
     void fetch_highbg(bool dofetch);
     void output_pixel();
-    uint24 output_bgpixel();
-    uint24 output_sppixel();
+    uint8_t output_bgpixel();
+    uint8_t output_sppixel();
 
-    void load_palette();
-    uint24 getcolor(bool select, uint8_t pal, uint8_t palind);
+    // void load_palette();
+    uint8_t getcolor(bool select, uint8_t pal, uint8_t palind);
 
     friend class Background;
     friend class OAM;

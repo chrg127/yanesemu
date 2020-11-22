@@ -6,9 +6,9 @@ void PPU::VRAM::power(const ROM &chrrom, int mirroring)
 {
     std::memset(memory, 0, 0x4000);
     if (mirroring == 0) // v-mirror
-        get_nt_addr = [](uint16_t x) { return x |= 0x0800; };
+        ntaddr = [](uint16_t x) { return x |= 0x0800; };
     else if (mirroring == 1)
-        get_nt_addr = [](uint16_t x) { return x |= 0x0400; };
+        ntaddr = [](uint16_t x) { return x |= 0x0400; };
     // else, mapper defined
     chrrom.copy_to(memory, 0, 0x2000);
     increment = 1; // ctrl = 0

@@ -67,7 +67,7 @@ void PPU::cycle_copyvert()
 
 void PPU::cycle_shift()
 {
-    bg.shift();
+    bg.shift_run();
 }
 
 void PPU::cycle_fillshifts()
@@ -88,6 +88,11 @@ void PPU::vblank_end()
     spr0hit = 0;
     spr_ov  = 0;
     DBGPUTC('e');
+}
+
+void PPU::cycle_outputpixel()
+{
+    output_pixel();
 }
 
 template <unsigned Cycle>
@@ -111,6 +116,7 @@ void PPU::ccycle()
     // NOTE: between cycle 257 - 320 there are garbage fetches
     if constexpr((Cycle >= 1 && Cycle <= 256) ||
                  (Cycle >= 321 && Cycle <= 340)) {
+        cycle_outputpixel();
         background_cycle<Cycle % 8>();
         if constexpr(Cycle % 8 == 1 && Cycle != 1)
             cycle_fillshifts();
@@ -242,6 +248,6 @@ void PPU::main()
 {
     linetab[lines % 262](this, cycles % 341);
     cycles++;
-    lines += cycles % 341 == 0;
+    lines += (cycles % 341 == 0);
 }
 

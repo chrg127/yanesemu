@@ -30,7 +30,7 @@ void PPU::power(const ROM &chrrom, int mirroring)
     // to break out of the loop, set this to 1
     vblank  = 0;
     spr0hit = 0;
-    sprov   = 1;
+    spr_ov  = 1;
     latch.toggle = 0;
     odd_frame = 0;
     // randomize oam, palette, nt ram, chr ram
@@ -62,7 +62,7 @@ uint8_t PPU::readreg(const uint16_t which)
         break;
 
     case 0x2002:
-        io_latch |= (vblank << 7 | spr0hit << 6 | sprov << 5);
+        io_latch |= (vblank << 7 | spr0hit << 6 | spr_ov << 5);
         vblank = 0;
         latch.toggle = 0;
         return io_latch;
@@ -158,12 +158,10 @@ void PPU::writereg(const uint16_t which, const uint8_t data)
 
 void PPU::output_pixel()
 {
-    // uint24 *pix;
-    uint24 bgpixel = output_bgpixel();
-    uint24 sppixel = output_sppixel();
-    // if (has_priority() || bgpix == 0) {
-    //     pix = &sppix;
-    // }
+    uint8_t bgpixel = output_bgpixel();
+    // uint24 sppixel = output_sppixel();
+    assert(lines <= 256 && cycles <= 239);
+    output[lines*239+cycles] = bgpixel;
 }
 
 #include "ppumain.cpp"
