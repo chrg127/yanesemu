@@ -75,7 +75,7 @@ public:
         return val;
     }
 
-    inline UInt operator++()
+    inline UInt operator--()
     {
         num = cast(num - 1);
         return *this;
