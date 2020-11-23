@@ -5,7 +5,7 @@
 #include <type_traits>
 #include <utility>
 
-/* the most common typedef */
+/* the most common typedef's */
 using uint8  = uint_least8_t;
 using uint16 = uint_least16_t;
 using uint32 = uint_least32_t;
@@ -34,12 +34,26 @@ public:
     template <typename T>
     UInt(const T val) { operator=(val); }
 
+    static constexpr inttype MAX = (~0ull & (~0ull >> (64 - Bits)));
+
     // permits conversions and casts from UInt<Bits> to inttype
     inline operator inttype() const
     { return num; }
 
-    inline inttype value()
+    inline inttype value() const
     { return num; }
+
+    template <typename T> inline UInt operator= (const T val) { num =  cast(val); return *this; }
+    template <typename T> inline UInt operator+=(const T val) { num += cast(val); return *this; }
+    template <typename T> inline UInt operator-=(const T val) { num -= cast(val); return *this; }
+    template <typename T> inline UInt operator*=(const T val) { num *= cast(val); return *this; }
+    template <typename T> inline UInt operator/=(const T val) { num /= cast(val); return *this; }
+    template <typename T> inline UInt operator&=(const T val) { num &= cast(val); return *this; }
+    template <typename T> inline UInt operator|=(const T val) { num |= cast(val); return *this; }
+    template <typename T> inline UInt operator%=(const T val) { num %= cast(val); return *this; }
+    template <typename T> inline UInt operator^=(const T val) { num ^= cast(val); return *this; }
+    template <typename T> inline UInt operator>>=(const T val) { num >>= cast(val); return *this; }
+    template <typename T> inline UInt operator<<=(const T val) { num <<= cast(val); return *this; }
 
     inline UInt operator++(int)
     {
@@ -54,14 +68,18 @@ public:
         return *this;
     }
 
-    template <typename T> inline UInt operator= (const T val)
-    { num =  cast(val); return *this; }
-    template <typename T> inline UInt operator+=(const T val)
-    { num += cast(val); return *this; }
-    template <typename T> inline UInt operator&=(const T val)
-    { num &= cast(val); return *this; }
+    inline UInt operator--(int)
+    {
+        auto val = *this;
+        num = cast(num-1);
+        return val;
+    }
 
-    static constexpr inttype MAX = (~0ull & (~0ull >> (64 - Bits)));
+    inline UInt operator++()
+    {
+        num = cast(num - 1);
+        return *this;
+    }
 };
 
 template <unsigned Bits, typename T>
