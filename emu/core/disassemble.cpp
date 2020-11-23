@@ -7,7 +7,7 @@ inline static std::string disass_implied(const char name[4])
     return std::string(name);
 }
 
-inline static std::string disass_imm(const char name[4], uint8_t op)
+inline static std::string disass_imm(const char name[4], uint8 op)
 {
     return Util::strprintf("%s #$%02X", name, op);
 }
@@ -17,47 +17,47 @@ inline static std::string disass_accum(const char name[4])
     return Util::strprintf("%s A", name);
 }
 
-inline static std::string disass_zero(const char name[4], uint8_t op)
+inline static std::string disass_zero(const char name[4], uint8 op)
 {
     return Util::strprintf("%s $%02X", name, op);
 }
 
-inline static std::string disass_zerox(const char name[4], uint8_t op)
+inline static std::string disass_zerox(const char name[4], uint8 op)
 {
     return Util::strprintf("%s $%02X,x", name, op);
 }
 
-inline static std::string disass_zeroy(const char name[4], uint8_t op)
+inline static std::string disass_zeroy(const char name[4], uint8 op)
 {
     return Util::strprintf("%s $%02X,y", name, op);
 }
 
-inline static std::string disass_abs(const char name[4], uint8_t low, uint8_t hi)
+inline static std::string disass_abs(const char name[4], uint8 low, uint8 hi)
 {
     return Util::strprintf("%s $%02X%02X", name, hi, low);
 }
 
-inline static std::string disass_absx(const char name[4], uint8_t low, uint8_t hi)
+inline static std::string disass_absx(const char name[4], uint8 low, uint8 hi)
 {
     return Util::strprintf("%s $%02X%02X,x", name, hi, low);
 }
 
-inline static std::string disass_absy(const char name[4], uint8_t low, uint8_t hi)
+inline static std::string disass_absy(const char name[4], uint8 low, uint8 hi)
 {
     return Util::strprintf("%s $%02X%02X,y", name, hi, low);
 }
 
-inline static std::string disass_ind(const char name[4], uint8_t low, uint8_t hi)
+inline static std::string disass_ind(const char name[4], uint8 low, uint8 hi)
 {
     return Util::strprintf("%s ($%02X%02X)", name, hi, low);
 }
 
-inline static std::string disass_indx(const char name[4], uint8_t op)
+inline static std::string disass_indx(const char name[4], uint8 op)
 {
     return Util::strprintf("%s ($%02X,x)", name, op);
 }
 
-inline static std::string disass_indy(const char name[4], uint8_t op)
+inline static std::string disass_indy(const char name[4], uint8 op)
 {
     return Util::strprintf("%s ($%02X),y", name, op);
 }
@@ -71,9 +71,9 @@ inline static std::string disass_branch(const char name[4], int8_t disp,
 
 std::string CPU::disassemble() const
 {
-    uint8_t instruction = bus.memory[pc.reg];
-    uint8_t op1 = bus.memory[pc.reg+1];
-    uint8_t op2 = bus.memory[pc.reg+2];
+    uint8 instruction = bus.memory[pc.reg];
+    uint8 op1 = bus.memory[pc.reg+1];
+    uint8 op2 = bus.memory[pc.reg+2];
 #define INSTR_IMPLD(id, name) \
     case id: return disass_implied(#name);
 #define INSTR_AMODE(id, name, mode, ...) \

@@ -1,8 +1,8 @@
 #ifndef CORE_CARTRIDGE_HPP_INCLUDED
 #define CORE_CARTRIDGE_HPP_INCLUDED
 
-#include <cstdint>
 #include <string_view>
+#include <emu/utils/unsigned.hpp>
 #include <emu/core/types.hpp>
 #include <emu/utils/file.hpp>
 
@@ -78,10 +78,10 @@ class Cartridge {
     ROM chrrom;
     static const int HEADER_LEN = 16;
     static const int TRAINER_LEN = 512;
-    uint8_t header[HEADER_LEN];
-    uint8_t trainer[TRAINER_LEN];
+    uint8 header[HEADER_LEN];
+    uint8 trainer[TRAINER_LEN];
     uint16_t mapper   = 0;
-    uint8_t submapper = 0;
+    uint8 submapper = 0;
 
     uint32_t prgram_size    = 0;
     uint32_t chrram_size    = 0;
@@ -93,8 +93,8 @@ class Cartridge {
     int cpu_ppu_timing      = CPUTIMING_RP2C02;
     int vs_ppu_type         = VSPPU_RP2C03B;
     int vs_hw_type          = VSHW_UNISYS_NORMAL;
-    uint8_t misc_roms_num       = 0;
-    uint8_t def_expansion_dev   = 0;
+    uint8 misc_roms_num       = 0;
+    uint8 def_expansion_dev   = 0;
 
     struct {
         bool prgram         = false;
