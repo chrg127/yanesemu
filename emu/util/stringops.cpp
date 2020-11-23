@@ -1,4 +1,4 @@
-#include <emu/utils/stringops.hpp>
+#include <emu/util/stringops.hpp>
 
 #include <cstdio>
 #include <cstdarg>

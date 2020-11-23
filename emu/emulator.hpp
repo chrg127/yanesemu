@@ -4,7 +4,7 @@
 #include <emu/core/cpu.hpp>
 #include <emu/core/ppu.hpp>
 #include <emu/core/cartridge.hpp>
-#include <emu/utils/file.hpp>
+#include <emu/util/file.hpp>
 
 class Emulator {
     Core::CPU cpu;

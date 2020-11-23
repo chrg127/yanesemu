@@ -1,9 +1,9 @@
-#include <emu/utils/cmdargs.hpp>
+#include <emu/util/cmdargs.hpp>
 
 #include <cmath>
 #include <utility>
-#include <emu/utils/debug.hpp>
-#include <emu/utils/file.hpp>
+#include <emu/util/debug.hpp>
+#include <emu/util/file.hpp>
 
 namespace Util {
 

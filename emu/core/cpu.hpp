@@ -3,7 +3,7 @@
 
 #include <cstddef>
 #include <string>
-#include <emu/utils/unsigned.hpp>
+#include <emu/util/unsigned.hpp>
 #include <emu/core/types.hpp>
 #include <emu/core/memorymap.hpp>
 // #include <emu/core/ppu.hpp>

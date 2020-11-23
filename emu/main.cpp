@@ -1,10 +1,10 @@
 #include <emu/emulator.hpp>
 #include <emu/core/cartridge.hpp>
-#include <emu/utils/cmdargs.hpp>
-#include <emu/utils/file.hpp>
+#include <emu/util/cmdargs.hpp>
+#include <emu/util/file.hpp>
 #include <emu/video/video.hpp>
 #define DEBUG
-#include <emu/utils/debug.hpp>
+#include <emu/util/debug.hpp>
 
 using Util::File;
 

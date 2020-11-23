@@ -1,4 +1,4 @@
-VPATH=emu:emu/core:emu/utils:emu/io:emu/video
+VPATH=emu:emu/core:emu/util:emu/io:emu/video
 
 HEADERS = cartridge.hpp cpu.hpp memorymap.hpp types.hpp ppu.hpp \
 		  cmdargs.hpp file.hpp debug.hpp stringops.hpp \

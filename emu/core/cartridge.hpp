@@ -2,9 +2,9 @@
 #define CORE_CARTRIDGE_HPP_INCLUDED
 
 #include <string_view>
-#include <emu/utils/unsigned.hpp>
+#include <emu/util/unsigned.hpp>
 #include <emu/core/types.hpp>
-#include <emu/utils/file.hpp>
+#include <emu/util/file.hpp>
 
 namespace Core {
 

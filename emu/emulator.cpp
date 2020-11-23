@@ -1,7 +1,7 @@
 #include <emu/emulator.hpp>
 
 #include <emu/core/memorymap.hpp>
-#include <emu/utils/unsigned.hpp>
+#include <emu/util/unsigned.hpp>
 
 using Util::File;
 using namespace Core;

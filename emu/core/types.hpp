@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <cstring>
 #include <utility>
-#include <emu/utils/unsigned.hpp>
+#include <emu/util/unsigned.hpp>
 
 namespace Core {
 

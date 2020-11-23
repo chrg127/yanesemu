@@ -4,10 +4,10 @@
 #include <cctype>
 #include <cstring>
 #include <emu/core/cartridge.hpp>
-#include <emu/utils/file.hpp>
-#include <emu/utils/stringops.hpp>
+#include <emu/util/file.hpp>
+#include <emu/util/stringops.hpp>
 #define DEBUG
-#include <emu/utils/debug.hpp>
+#include <emu/util/debug.hpp>
 
 #define INSIDE_CPU_CPP
 

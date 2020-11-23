@@ -5,7 +5,7 @@
 #include <cstring> // memset
 #include <functional>
 #define DEBUG
-#include <emu/utils/debug.hpp>
+#include <emu/util/debug.hpp>
 
 #define INSIDE_PPU_CPP
 
