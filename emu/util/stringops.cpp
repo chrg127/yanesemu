@@ -31,20 +31,23 @@ std::string strprintf(const char *fmt, ...)
 }
 #endif
 
-std::vector<std::string> strsplit(const std::string &s, int delim)
+std::vector<std::string> strsplit(const std::string &s, const int delim)
 {
-    std::vector<std::string> strvec;
-    std::string tmp;
+    std::size_t i = 0, p = 0;
+    std::vector<std::string> res;
 
-    for (auto &c : s) {
-        if (c != delim)
-            tmp += c;
-        else {
-            strvec.push_back(tmp);
-            tmp.erase();
+    while (i != s.size()) {
+        p = s.find(delim, i);
+        // no delimiter found?
+        if (p == s.npos) {
+            res.emplace_back(s.begin() + i, s.end());
+            break;
         }
+        // get substring
+        res.emplace_back(s.begin() + i, s.begin() + p);
+        i = p+1;
     }
-    return strvec;
+    return res;
 }
 
 } // namespace Util

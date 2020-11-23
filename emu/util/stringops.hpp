@@ -36,7 +36,7 @@ std::string strprintf(const char *fmt, Args... args)
 
 #endif
 
-std::vector<std::string> strsplit(const std::string &s, int delim = ',');
+std::vector<std::string> strsplit(const std::string &s, const int delim = ',');
 
 } // namespace Util
 

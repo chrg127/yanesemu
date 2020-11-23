@@ -1,12 +1,9 @@
 #ifndef CORE_CPU_HPP_INCLUDED
 #define CORE_CPU_HPP_INCLUDED
 
-#include <cstddef>
 #include <string>
-#include <emu/util/unsigned.hpp>
 #include <emu/core/types.hpp>
 #include <emu/core/memorymap.hpp>
-// #include <emu/core/ppu.hpp>
 
 namespace Util { class File; }
 
@@ -212,8 +209,6 @@ public:
 };
 
 } // namespace Core
-
-#undef INSIDE_CPU_HPP
 
 #endif
 

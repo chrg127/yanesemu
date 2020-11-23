@@ -2,8 +2,7 @@
 #define CORE_TYPES_HPP_INCLUDED
 
 #include <cstddef>
-#include <cstdint>
-#include <cstring>
+#include <cstring> // memcpy
 #include <utility>
 #include <emu/util/unsigned.hpp>
 
@@ -24,7 +23,7 @@ union Reg16 {
     {
         reg = val;
     }
-    
+
     template <typename T> // T = numeric type
     inline Reg16 & operator&=(const T val)
     { reg &= val; return *this; }

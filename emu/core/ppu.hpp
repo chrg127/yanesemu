@@ -4,7 +4,6 @@
 #include <functional>
 #include <emu/core/types.hpp>
 #include <emu/core/memorymap.hpp>
-#include <emu/util/file.hpp>
 
 namespace Core {
 
