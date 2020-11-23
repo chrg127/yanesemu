@@ -6,9 +6,9 @@ void PPU::VRAM::power(const ROM &chrrom, int mirroring)
 {
     std::memset(memory, 0, 0x4000);
     if (mirroring == 0) // v-mirror
-        ntaddr = [](uint16_t x) { return x |= 0x0800; };
+        ntaddr = [](uint16 x) { return x |= 0x0800; };
     else if (mirroring == 1)
-        ntaddr = [](uint16_t x) { return x |= 0x0400; };
+        ntaddr = [](uint16 x) { return x |= 0x0400; };
     // else, mapper defined
     chrrom.copy_to(memory, 0, 0x2000);
     increment = 1; // ctrl = 0
@@ -40,7 +40,7 @@ void PPU::VRAM::inc_horzpos()
      * ...     tmp = getwhole(x)+1
      * ...     return (x & ~0x41F) | recompose(tmp)
      */
-    uint8_t x = ((vaddr & 0x400) >> 5) | ((vaddr & 0x1F) + 1);
+    uint8 x = ((vaddr & 0x400) >> 5) | ((vaddr & 0x1F) + 1);
     vaddr = (vaddr & ~0x41F) | ((x & 0x20) << 5) | (x & 0x1F);
 }
 
@@ -74,7 +74,7 @@ void PPU::VRAM::copy_vertpos()
 }
 
 /* gets the actual address given any address. this accounts for mirroring. */
-uint16_t PPU::VRAM::address(uint16_t addr)
+uint16 PPU::VRAM::address(uint16 addr)
 {
     if (addr >= 0x2000 && addr <= 0x3FFF)
         return ntaddr(0x2000 + (addr & 0x0FFF));
@@ -84,29 +84,29 @@ uint16_t PPU::VRAM::address(uint16_t addr)
         return addr;
 }
 
-uint8_t PPU::VRAM::read(uint16_t addr)
+uint8 PPU::VRAM::read(uint16 addr)
 {
     return memory[address(addr)];
 }
 
-uint8_t PPU::VRAM::read()
+uint8 PPU::VRAM::read()
 {
     return memory[address(vaddr)];
 }
 
-void PPU::VRAM::write(uint8_t data)
+void PPU::VRAM::write(uint8 data)
 {
     memory[address(vaddr)] = data;
 }
 
-void PPU::VRAM::write(uint16_t addr, uint8_t data)
+void PPU::VRAM::write(uint16 addr, uint8 data)
 {
     memory[address(addr)] = data;
 }
 
-uint8_t PPU::VRAM::readdata()
+uint8 PPU::VRAM::readdata()
 {
-    uint8_t toret;
+    uint8 toret;
     if (vaddr <= 0x3EFF) {
         toret = readbuf;
         readbuf = memory[address(vaddr)];
@@ -116,7 +116,7 @@ uint8_t PPU::VRAM::readdata()
     return toret;
 }
 
-void PPU::VRAM::writedata(uint8_t data)
+void PPU::VRAM::writedata(uint8 data)
 {
     memory[address(vaddr++)] = data;
 }

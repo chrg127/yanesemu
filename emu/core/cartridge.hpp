@@ -80,13 +80,13 @@ class Cartridge {
     static const int TRAINER_LEN = 512;
     uint8 header[HEADER_LEN];
     uint8 trainer[TRAINER_LEN];
-    uint16_t mapper   = 0;
+    uint16 mapper   = 0;
     uint8 submapper = 0;
 
-    uint32_t prgram_size    = 0;
-    uint32_t chrram_size    = 0;
-    uint32_t eeprom_size    = 0;
-    uint32_t chrnvram_size  = 0;
+    uint32 prgram_size    = 0;
+    uint32 chrram_size    = 0;
+    uint32 eeprom_size    = 0;
+    uint32 chrnvram_size  = 0;
     int nametab_mirroring   = NAMETAB_HORZ;
     int region              = REGION_NTSC;
     int console_type        = CONSOLE_TYPE_NES;
@@ -123,7 +123,7 @@ public:
     { return prgrom; }
     const ROM &get_chrrom()
     { return chrrom; }
-    uint16_t mappertype() const
+    uint16 mappertype() const
     { return mapper; }
     bool hasprgram() const
     { return has.prgram; }

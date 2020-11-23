@@ -29,11 +29,11 @@
 // color_index: which color of the palette
 // bg_or_sp: select if it's a background palette or a sprite palette
 // first 2 values are 2 bits big, not 8
-uint8_t PPU::getcolor(bool select, uint8_t pal, uint8_t palind)
+uint8 PPU::getcolor(bool select, uint8 pal, uint8 palind)
 {
     // this is a 5 bit number
-    uint8_t i = select << 4 | pal << 2 | palind;
-    uint8_t color = vram.read(0x3F00 + i);
+    uint8 i = select << 4 | pal << 2 | palind;
+    uint8 color = vram.read(0x3F00 + i);
     return color;
 }
 

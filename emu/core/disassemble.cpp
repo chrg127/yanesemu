@@ -63,7 +63,7 @@ inline static std::string disass_indy(const char name[4], uint8 op)
 }
 
 inline static std::string disass_branch(const char name[4], int8_t disp,
-        uint16_t addr, bool took)
+        uint16 addr, bool took)
 {
     return Util::strprintf("%s %d [$%04X] %s", name, disp, addr,
             (took) ? "[Branch taken]" : "[Branch not taken]");

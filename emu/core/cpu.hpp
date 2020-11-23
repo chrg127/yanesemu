@@ -22,8 +22,8 @@ class CPU {
         PPU *ppu;
 
         void init(const ROM &prgrom);
-        uint8 read(uint16_t addr);
-        void write(uint16_t addr, uint8 val);
+        uint8 read(uint16 addr);
+        void write(uint16 addr, uint8 val);
         void reset()
         { }
         const uint8 *getmemory() const
@@ -90,13 +90,13 @@ class CPU {
     void irqpoll();
     void nmipoll();
 
-    inline uint8 readmem(uint16_t addr)
+    inline uint8 readmem(uint16 addr)
     {
         cycle();
         return bus.read(addr);
     }
 
-    inline void writemem(uint16_t addr, uint8 val)
+    inline void writemem(uint16 addr, uint8 val)
     {
         cycle();
         bus.write(addr, val);

@@ -203,7 +203,7 @@ void CPU::execute(uint8 opcode)
  * (reset, irq, nmi and brk) */
 void CPU::interrupt(bool reset)
 {
-    uint16_t vec;
+    uint16 vec;
 
     // one cycle for reading next instruction byte and throw away
     cycle();
