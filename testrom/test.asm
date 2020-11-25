@@ -91,7 +91,7 @@ resetram:
     sta $4015
 
     jsr waitvblank  ; wait again...
-    jsr resetspritebuf ; clear oam and nametables
+    jsr clear_spbuf ; clear oam and nametables
     jsr clearnt
 
     lda $2002   ; reset latch
@@ -121,8 +121,16 @@ loadpal_loop:   ; fill background palette
     sta scroll_x
     sta scroll_y
     jsr waitvblank
-    lda #$90    ;turn on nmi
+    jsr write_helloworld    ; and write a 'hello world'
+    lda #$20
+    sta $2006
+    lda #$00
+    sta $2006
+    sta $2005
+    lda #$80    ;turn on nmi
     sta $2000
+    lda #%00001010
+    sta $2001
 
 mainloop:
     jsr waitnmi
@@ -142,13 +150,13 @@ waitvblank:
     bpl waitvblank
     rts
 
-resetspritebuf:
+clear_spbuf:
     ldx #$00
     lda #$ff                ;y = ff, below bottom of screen
-resetspritebuf_loop:        ;puts all sprites off screen
+clear_spbuf_loop:        ;puts all sprites off screen
     sta spritebuf, x
     inx
-    bne resetspritebuf_loop
+    bne clear_spbuf_loop
     rts
 
 clearnt:
@@ -166,11 +174,44 @@ clearnt_loop:
     bne clearnt_loop
     dey
     bne clearnt_loop
+    rts
 
 joypad_poll:
     rts
 
 gamecode:
+    rts
+
+; writes a hello world at the center of the screen
+; assumes we are at the start of the game
+write_helloworld:
+    lda $2002
+    lda #$21    ; set starting pos to somewhat into the center
+    sta $2006
+    lda #$EC
+    sta $2006
+    lda #$07    ; and begin writing "hello world"
+    sta $2007
+    lda #$08    ; 'E'
+    sta $2007
+    lda #$09    ; 'L'
+    sta $2007
+    lda #$09    ; 'L'
+    sta $2007
+    lda #$0A    ; 'O'
+    sta $2007
+    lda #$00    ; ' '
+    sta $2007
+    lda #$0B    ; 'W'
+    sta $2007
+    lda #$0A    ; 'O'
+    sta $2007
+    lda #$0C    ; 'R'
+    sta $2007
+    lda #$09    ; 'L'
+    sta $2007
+    lda #$0D    ; 'D'
+    sta $2007
     rts
 
 nmi:
