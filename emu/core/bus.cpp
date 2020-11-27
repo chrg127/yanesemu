@@ -5,7 +5,8 @@
 void CPU::Bus::init(const ROM &prgrom)
 {
     std::memset(memory, 0, CPUMap::MEMSIZE);
-    prgrom.copy_to(memory+CPUMap::PRGROM_START, prgrom.getsize() - (CPUMap::PRGROM_SIZE+1), CPUMap::PRGROM_SIZE);
+    prgrom.copy_to(memory+CPUMap::PRGROM_START,
+           prgrom.getsize() - (CPUMap::PRGROM_SIZE+1), CPUMap::PRGROM_SIZE);
 }
 
 uint8 CPU::Bus::read(uint16 addr)

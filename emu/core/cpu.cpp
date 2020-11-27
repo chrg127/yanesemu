@@ -17,7 +17,6 @@ namespace Core {
 #include <emu/core/opcodes.cpp>
 #include <emu/core/disassemble.cpp>
 
-/* NOTE: private functions */
 /* Fetch next opcode from memory */
 uint8 CPU::fetch()
 {
@@ -274,7 +273,6 @@ void CPU::nmipoll()
 
 
 
-/* NOTE: public functions */
 /* Executes one whole fetch-decode-execute cycle, giving priority
  * to interrupt signals first. */
 void CPU::main()
@@ -291,7 +289,6 @@ void CPU::main()
         execirq = false;
         return;
     }
-
     curropcode = fetch();
     execute(curropcode);
 }
