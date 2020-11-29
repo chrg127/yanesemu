@@ -10,20 +10,20 @@ namespace CPUMap {
 /* General defines for memory map sections. */
 const int MEMSIZE              = 0xFFFF+1;
 
-const uint16_t RAM_START            = 0;
-const uint16_t RAM_END              = 0x07FF;
-const uint16_t RAM_SIZE             = 0x0800;
+const uint16 RAM_START            = 0;
+const uint16 RAM_END              = 0x07FF;
+const uint16 RAM_SIZE             = 0x0800;
 
-const uint16_t STACK_START          = 0x0100;
-const uint16_t STACK_END            = 0x01FF;
-const uint16_t STACK_SIZE           = 0xFF;
+const uint16 STACK_START          = 0x0100;
+const uint16 STACK_END            = 0x01FF;
+const uint16 STACK_SIZE           = 0xFF;
 
-const uint16_t RAM_MIRROR1_START    = 0x0800;
-const uint16_t RAM_MIRROR1_END      = 0x0FFF;
-const uint16_t RAM_MIRROR2_START    = 0x1000;
-const uint16_t RAM_MIRROR2_END      = 0x17FF;
-const uint16_t RAM_MIRROR3_START    = 0x1800;
-const uint16_t RAM_MIRROR3_END      = 0x17FF;
+const uint16 RAM_MIRROR1_START    = 0x0800;
+const uint16 RAM_MIRROR1_END      = 0x0FFF;
+const uint16 RAM_MIRROR2_START    = 0x1000;
+const uint16 RAM_MIRROR2_END      = 0x17FF;
+const uint16 RAM_MIRROR3_START    = 0x1800;
+const uint16 RAM_MIRROR3_END      = 0x17FF;
 
 enum {
     PPU_CTRL    = 0x2000,
@@ -36,9 +36,9 @@ enum {
     PPU_DATA    = 0x2007,
 };
 
-const uint16_t PPU_MIRROR_START  = 0x2008;
-const uint16_t PPU_MIRROR_END    = 0x3FFF;
-const uint16_t PPU_MIRROR_SIZE   = 0x1FF8;
+const uint16 PPU_MIRROR_START  = 0x2008;
+const uint16 PPU_MIRROR_END    = 0x3FFF;
+const uint16 PPU_MIRROR_SIZE   = 0x1FF8;
 
 enum {
     PULSE1_VOL      = 0x4000,
@@ -67,26 +67,26 @@ enum {
     APU_FC          = 0x4017,
 };
 
-const uint16_t PPU_OAM_DMA               = 0x4014;
-const uint16_t JOYREG1              = 0x4016;
-const uint16_t JOYREG2              = 0x4017;
+const uint16 PPU_OAM_DMA               = 0x4014;
+const uint16 JOYREG1              = 0x4016;
+const uint16 JOYREG2              = 0x4017;
 
-const uint16_t APU_DISABLED_START   = 0x4018;
-const uint16_t APU_DISABLED_END     = 0x401F;
+const uint16 APU_DISABLED_START   = 0x4018;
+const uint16 APU_DISABLED_END     = 0x401F;
 
-const uint16_t CART_SPACE_START     = 0x4020;
+const uint16 CART_SPACE_START     = 0x4020;
 
-const uint16_t SRAM_START           = 0x6000;
-const uint16_t SRAM_END             = 0x7FFF;
-const uint16_t SRAM_SIZE            = 0x1FFF;
+const uint16 SRAM_START           = 0x6000;
+const uint16 SRAM_END             = 0x7FFF;
+const uint16 SRAM_SIZE            = 0x1FFF;
 
-const uint16_t PRGROM_START         = 0x8000;
-const uint16_t PRGROM_END           = 0xFFFF;
-const uint16_t PRGROM_SIZE          = 0x7FFF;
+const uint16 PRGROM_START         = 0x8000;
+const uint16 PRGROM_END           = 0xFFFF;
+const uint16 PRGROM_SIZE          = 0x7FFF;
 
-const uint16_t NMIVEC               = 0xFFFA;
-const uint16_t RESETVEC             = 0xFFFC;
-const uint16_t IRQBRKVEC            = 0xFFFE;
+const uint16 NMIVEC               = 0xFFFA;
+const uint16 RESETVEC             = 0xFFFC;
+const uint16 IRQBRKVEC            = 0xFFFE;
 
 } // namespace CPUMap
 
@@ -126,7 +126,7 @@ enum {
     PALRAM_MIRROR_SIZE     = 0x0E00,
 };
 
-const uint16_t OAM_SIZE = 0x100;
+const uint16 OAM_SIZE = 0x100;
 
 } // namespace PPUMap
 

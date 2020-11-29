@@ -1,12 +1,12 @@
 #include <emu/emulator.hpp>
 #include <emu/core/cartridge.hpp>
-#include <emu/utils/cmdargs.hpp>
-#include <emu/utils/file.hpp>
+#include <emu/util/cmdargs.hpp>
+#include <emu/util/file.hpp>
 #include <emu/video/video.hpp>
 #define DEBUG
-#include <emu/utils/debug.hpp>
+#include <emu/util/debug.hpp>
 
-using Utils::File;
+using Util::File;
 
 enum {
     ARG_BREAK_ON_BRK = 0x01,
@@ -16,7 +16,7 @@ enum {
     ARG_VERSION      = 0x40000000,
 };
 
-static Utils::ArgOption cmdflags[] = {
+static Util::ArgOption cmdflags[] = {
     { 'b', ARG_BREAK_ON_BRK, "break-on-brk", "Stops emulation when BRK is encountered.", false, false, {} },
     { 'l', ARG_LOG_FILE,     "log-file",     "The file where to log instructions. "
                                              "Pass \"stdout\" to print to stdout, "
@@ -28,7 +28,7 @@ static Utils::ArgOption cmdflags[] = {
     { 'v', ARG_VERSION,      "version",      "Shows the program's version",              false, false, {} },
 };
 
-static Utils::ArgParser parser("yanesemu", "0.1", cmdflags, 5);
+static Util::ArgParser parser("yanesemu", "0.1", cmdflags, 5);
 static Emulator emu;
 
 int main(int argc, char *argv[])
@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    auto logopen = [](File &f, Utils::ArgFlags &flags, uint32_t arg) {
+    auto logopen = [](File &f, Util::ArgFlags &flags, uint32_t arg) {
         if ((flags.bits & arg) == 0)
             return;
         std::string_view s = flags.get_choice(arg);
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
         }
     };
 
-    Utils::ArgFlags flags = parser.parse_args(argc, argv);
+    Util::ArgFlags flags = parser.parse_args(argc, argv);
     logopen(logfile, flags, ARG_LOG_FILE);
     logopen(dumpfile, flags, ARG_DUMP_FILE);
 
@@ -72,10 +72,10 @@ int main(int argc, char *argv[])
         error("can't open rom file\n");
         return 1;
     }
-    // else if (!v.create()) {
-    //     error("can't initialize video subsytem\n");
-    //     return 1;
-    // }
+    else if (!v.create()) {
+        error("can't initialize video subsytem\n");
+        return 1;
+    }
 
     emu.init(cart);
     cart.printinfo(logfile);

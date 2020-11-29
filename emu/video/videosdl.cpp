@@ -1,7 +1,7 @@
 #include <SDL2/SDL.h>
 #include <cstring>
 #define DEBUG
-#include <emu/utils/debug.hpp>
+#include <emu/util/debug.hpp>
 
 namespace Video {
 

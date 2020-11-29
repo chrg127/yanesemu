@@ -58,24 +58,24 @@ void PPU::Background::shift_run()
 
 void PPU::Background::fill_shifts()
 {
-    uint16_t v = ppu.vram.vaddr;
+    uint16 v = ppu.vram.vaddr;
     shift.bglow  = latch.lowbg << 8 | (shift.bglow  & 0xFF);
     shift.bghigh = latch.hibg  << 8 | (shift.bghigh & 0xFF);
     // TODO: this doesn't do what you think it does.
-    uint8_t attr_mask = 0b11 << (~((v >> 1 & 1) | (v >> 6 & 1)))*2;
+    uint8 attr_mask = 0b11 << (~((v >> 1 & 1) | (v >> 6 & 1)))*2;
     shift.latchhigh = latch.attr & attr_mask;
     shift.latchlow  = latch.attr & attr_mask;
 }
 
-uint8_t PPU::Background::output_bgpixel()
+uint8 PPU::Background::output_bgpixel()
 {
-    uint8_t mask    = 1 << ppu.vram.fine_x;
+    uint8 mask    = 1 << ppu.vram.fine_x;
     bool lowbit     = shift.bglow    & mask;
     bool hibit      = shift.bghigh   & mask;
     bool at1        = shift.athigh  & mask;
     bool at2        = shift.atlow  & mask;
-    uint8_t pal     = at1   << 1 | at2;
-    uint8_t palind  = hibit << 1 | lowbit;
+    uint8 pal     = at1   << 1 | at2;
+    uint8 palind  = hibit << 1 | lowbit;
     return getcolor(0, pal, palind);
 }
 

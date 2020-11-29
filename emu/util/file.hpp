@@ -8,7 +8,7 @@
 #include <string>
 #include <string_view>
 
-namespace Utils {
+namespace Util {
 
 class File {
     FILE *fbuf = nullptr;
@@ -183,6 +183,6 @@ public:
     }
 };
 
-} // namespace Utils
+} // namespace Util
 
 #endif

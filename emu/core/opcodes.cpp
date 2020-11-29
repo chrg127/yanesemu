@@ -178,7 +178,7 @@ void CPU::addrmode_absx_modify(InstrFuncMod f)
 
 
 
-void CPU::addrmode_zero_write(uint8_t val)
+void CPU::addrmode_zero_write(uint8 val)
 {
     // cycles: 3
     op.low = fetch();
@@ -186,7 +186,7 @@ void CPU::addrmode_zero_write(uint8_t val)
     last_cycle();
 }
 
-void CPU::addrmode_zerox_write(uint8_t val)
+void CPU::addrmode_zerox_write(uint8 val)
 {
     // cycles: 4
     op.low = fetch();
@@ -195,7 +195,7 @@ void CPU::addrmode_zerox_write(uint8_t val)
     last_cycle();
 }
 
-void CPU::addrmode_zeroy_write(uint8_t val)
+void CPU::addrmode_zeroy_write(uint8 val)
 {
     // cycles: 4
     op.low = fetch();
@@ -204,7 +204,7 @@ void CPU::addrmode_zeroy_write(uint8_t val)
     last_cycle();
 }
 
-void CPU::addrmode_abs_write(uint8_t val)
+void CPU::addrmode_abs_write(uint8 val)
 {
     // cycles: 4
     op.low = fetch();
@@ -213,7 +213,7 @@ void CPU::addrmode_abs_write(uint8_t val)
     last_cycle();
 }
 
-void CPU::addrmode_absx_write(uint8_t val)
+void CPU::addrmode_absx_write(uint8 val)
 {
     // cycles: 5
     op.low = fetch();
@@ -223,7 +223,7 @@ void CPU::addrmode_absx_write(uint8_t val)
     last_cycle();
 }
 
-void CPU::addrmode_absy_write(uint8_t val)
+void CPU::addrmode_absy_write(uint8 val)
 {
     // cycles: 5
     op.low = fetch();
@@ -233,7 +233,7 @@ void CPU::addrmode_absy_write(uint8_t val)
     last_cycle();
 }
 
-void CPU::addrmode_indx_write(uint8_t val)
+void CPU::addrmode_indx_write(uint8 val)
 {
     // cycles: 6
     Reg16 res;
@@ -247,7 +247,7 @@ void CPU::addrmode_indx_write(uint8_t val)
     last_cycle();
 }
 
-void CPU::addrmode_indy_write(uint8_t val)
+void CPU::addrmode_indy_write(uint8 val)
 {
     // cycles: 6
     Reg16 res;
@@ -289,7 +289,7 @@ void CPU::instr_flag(bool &flag, bool v)
     flag = v;
 }
 
-void CPU::instr_transfer(uint8_t from, uint8_t &to)
+void CPU::instr_transfer(uint8 from, uint8 &to)
 {
     // cycles: 2
     last_cycle();
@@ -302,7 +302,7 @@ void CPU::instr_transfer(uint8_t from, uint8_t &to)
 
 
 // NOTE: all instruction functions.
-void CPU::instr_lda(const uint8_t val)
+void CPU::instr_lda(const uint8 val)
 {
     ;
     accum = val;
@@ -310,21 +310,21 @@ void CPU::instr_lda(const uint8_t val)
     procstatus.neg  = accum & 0x80;
 }
 
-void CPU::instr_ldx(const uint8_t val)
+void CPU::instr_ldx(const uint8 val)
 {
     xreg = val;
     procstatus.zero = xreg == 0;
     procstatus.neg  = xreg & 0x80;
 }
 
-void CPU::instr_ldy(const uint8_t val)
+void CPU::instr_ldy(const uint8 val)
 {
     yreg = val;
     procstatus.zero = yreg == 0;
     procstatus.neg  = yreg & 0x80;
 }
 
-void CPU::instr_cmp(const uint8_t val)
+void CPU::instr_cmp(const uint8 val)
 {
     int res = accum-val;
     procstatus.zero     = res == 0;
@@ -332,7 +332,7 @@ void CPU::instr_cmp(const uint8_t val)
     procstatus.carry    = res >= 0;
 }
 
-void CPU::instr_cpx(const uint8_t val)
+void CPU::instr_cpx(const uint8 val)
 {
     int res = xreg-val;
     procstatus.zero     = res == 0;
@@ -340,7 +340,7 @@ void CPU::instr_cpx(const uint8_t val)
     procstatus.carry    = res >= 0;
 }
 
-void CPU::instr_cpy(const uint8_t val)
+void CPU::instr_cpy(const uint8 val)
 {
     int res = yreg-val;
     procstatus.zero     = res == 0;
@@ -348,49 +348,49 @@ void CPU::instr_cpy(const uint8_t val)
     procstatus.carry    = res >= 0;
 }
 
-void CPU::instr_adc(const uint8_t val)
+void CPU::instr_adc(const uint8 val)
 {
     int sum = accum + val + procstatus.carry;
-    procstatus.zero     = (uint8_t) sum == 0;
+    procstatus.zero     = (uint8) sum == 0;
     procstatus.neg      = sum & 0x80;
     procstatus.carry    = sum > 0xFF;
     procstatus.ov       = (accum^sum) & ~(accum^val) & 0x80;
     accum = sum;
 }
 
-void CPU::instr_sbc(const uint8_t val)
+void CPU::instr_sbc(const uint8 val)
 {
-    uint8_t tmp = ~val;
+    uint8 tmp = ~val;
     int sum = accum + tmp + procstatus.carry;
-    procstatus.zero     = (uint8_t) sum == 0;
+    procstatus.zero     = (uint8) sum == 0;
     procstatus.neg      = sum & 0x80;
     procstatus.carry    = sum > 0xFF;
     procstatus.ov       = (accum^sum) & ~(accum^val) & 0x80;
     accum = sum;
 }
 
-void CPU::instr_ora(const uint8_t val)
+void CPU::instr_ora(const uint8 val)
 {
     accum |= val;
     procstatus.neg  = accum & 0x80;
     procstatus.zero = accum == 0;
 }
 
-void CPU::instr_and(const uint8_t val)
+void CPU::instr_and(const uint8 val)
 {
     accum &= val;
     procstatus.neg  = accum & 0x80;
     procstatus.zero = accum == 0;
 }
 
-void CPU::instr_eor(const uint8_t val)
+void CPU::instr_eor(const uint8 val)
 {
     accum ^= val;
     procstatus.neg  = accum & 0x80;
     procstatus.zero = accum == 0;
 }
 
-void CPU::instr_bit(const uint8_t val)
+void CPU::instr_bit(const uint8 val)
 {
     procstatus.neg  = (accum & val) == 0;
     procstatus.zero = val == 0;
@@ -399,7 +399,7 @@ void CPU::instr_bit(const uint8_t val)
 
 
 
-uint8_t CPU::instr_inc(uint8_t val)
+uint8 CPU::instr_inc(uint8 val)
 {
     val++;
     procstatus.zero = val == 0;
@@ -407,7 +407,7 @@ uint8_t CPU::instr_inc(uint8_t val)
     return val;
 }
 
-uint8_t CPU::instr_dec(uint8_t val)
+uint8 CPU::instr_dec(uint8 val)
 {
     val--;
     procstatus.zero = val == 0;
@@ -415,7 +415,7 @@ uint8_t CPU::instr_dec(uint8_t val)
     return val;
 }
 
-uint8_t CPU::instr_asl(uint8_t val)
+uint8 CPU::instr_asl(uint8 val)
 {
     procstatus.carry = val & 0x80;
     val <<= 1;
@@ -424,7 +424,7 @@ uint8_t CPU::instr_asl(uint8_t val)
     return val;
 }
 
-uint8_t CPU::instr_lsr(uint8_t val)
+uint8 CPU::instr_lsr(uint8 val)
 {
     procstatus.carry = val & 1;
     val >>= 1;
@@ -433,7 +433,7 @@ uint8_t CPU::instr_lsr(uint8_t val)
     return val;
 }
 
-uint8_t CPU::instr_rol(uint8_t val)
+uint8 CPU::instr_rol(uint8 val)
 {
     bool c = procstatus.carry;
     procstatus.carry = val & 0x80;
@@ -443,7 +443,7 @@ uint8_t CPU::instr_rol(uint8_t val)
     return val;
 }
 
-uint8_t CPU::instr_ror(uint8_t val)
+uint8 CPU::instr_ror(uint8 val)
 {
     bool c = procstatus.carry;
     procstatus.carry = val & 1;

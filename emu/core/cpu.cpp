@@ -4,10 +4,10 @@
 #include <cctype>
 #include <cstring>
 #include <emu/core/cartridge.hpp>
-#include <emu/utils/file.hpp>
-#include <emu/utils/stringops.hpp>
+#include <emu/util/file.hpp>
+#include <emu/util/stringops.hpp>
 #define DEBUG
-#include <emu/utils/debug.hpp>
+#include <emu/util/debug.hpp>
 
 #define INSIDE_CPU_CPP
 
@@ -17,15 +17,14 @@ namespace Core {
 #include <emu/core/opcodes.cpp>
 #include <emu/core/disassemble.cpp>
 
-/* NOTE: private functions */
 /* Fetch next opcode from memory */
-uint8_t CPU::fetch()
+uint8 CPU::fetch()
 {
     return readmem(pc.reg++);
 }
 
 /* Executes a single instruction. */
-void CPU::execute(uint8_t opcode)
+void CPU::execute(uint8 opcode)
 {
 #define INSTR_IMPLD(id, func) \
     case id: instr_##func(); return;
@@ -203,7 +202,7 @@ void CPU::execute(uint8_t opcode)
  * (reset, irq, nmi and brk) */
 void CPU::interrupt(bool reset)
 {
-    uint16_t vec;
+    uint16 vec;
 
     // one cycle for reading next instruction byte and throw away
     cycle();
@@ -231,14 +230,14 @@ void CPU::interrupt(bool reset)
 }
 
 /* Pushes a value to the hardware stack */
-void CPU::push(uint8_t val)
+void CPU::push(uint8 val)
 {
     writemem(0x0100+sp, val);
     sp--;
 }
 
 /* Pulls and returns a value from the hardware stack */
-uint8_t CPU::pull()
+uint8 CPU::pull()
 {
     ++sp;
     return readmem(0x0100+sp);
@@ -274,7 +273,6 @@ void CPU::nmipoll()
 
 
 
-/* NOTE: public functions */
 /* Executes one whole fetch-decode-execute cycle, giving priority
  * to interrupt signals first. */
 void CPU::main()
@@ -291,7 +289,6 @@ void CPU::main()
         execirq = false;
         return;
     }
-
     curropcode = fetch();
     execute(curropcode);
 }
@@ -328,7 +325,7 @@ void CPU::reset()
 
 /* Prints info about the instruction which has just been executed and
  * the status of the registers. */
-void CPU::printinfo(Utils::File &lf) const
+void CPU::printinfo(Util::File &lf) const
 {
     if (!lf.isopen())
         return;

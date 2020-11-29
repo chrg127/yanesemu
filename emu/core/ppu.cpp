@@ -5,7 +5,7 @@
 #include <cstring> // memset
 #include <functional>
 #define DEBUG
-#include <emu/utils/debug.hpp>
+#include <emu/util/debug.hpp>
 
 #define INSIDE_PPU_CPP
 
@@ -54,7 +54,7 @@ void PPU::reset()
     // randomize oam
 }
 
-uint8_t PPU::readreg(const uint16_t which)
+uint8 PPU::readreg(const uint16 which)
 {
     switch (which) {
     case 0x2000: case 0x2001: case 0x2003:
@@ -85,7 +85,7 @@ uint8_t PPU::readreg(const uint16_t which)
     return io_latch;
 }
 
-void PPU::writereg(const uint16_t which, const uint8_t data)
+void PPU::writereg(const uint16 which, const uint8 data)
 {
     io_latch = data;
     switch (which) {
@@ -158,7 +158,7 @@ void PPU::writereg(const uint16_t which, const uint8_t data)
 
 void PPU::output_pixel()
 {
-    uint8_t bgpixel = output_bgpixel();
+    uint8 bgpixel = output_bgpixel();
     // uint24 sppixel = output_sppixel();
     assert(lines <= 256 && cycles <= 239);
     output[lines*239+cycles] = bgpixel;

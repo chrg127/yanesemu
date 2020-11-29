@@ -4,7 +4,6 @@
 #include <functional>
 #include <emu/core/types.hpp>
 #include <emu/core/memorymap.hpp>
-#include <emu/utils/file.hpp>
 
 namespace Core {
 
@@ -12,18 +11,18 @@ class PPU {
     unsigned long cycles = 0;
     unsigned long lines  = 0;
 
-    uint8_t output[256*224];
+    uint8 output[256*224];
 
     struct VRAM {
         PPU &outer;
 
-        uint8_t memory[0x4000];
-        std::function<uint8_t(uint16_t)> ntaddr;
-        uint16_t vaddr;
+        uint8 memory[0x4000];
+        std::function<uint8(uint16)> ntaddr;
+        uint16 vaddr;
         Reg16 tmp;
-        uint8_t fine_x;
-        uint8_t increment;
-        uint8_t readbuf;
+        uint8 fine_x;
+        uint8 increment;
+        uint8 readbuf;
 
         VRAM(PPU &p) : outer(p)
         { }
@@ -33,29 +32,29 @@ class PPU {
         void inc_vertpos();
         void copy_horzpos();
         void copy_vertpos();
-        uint16_t address(uint16_t addr);
-        uint8_t read();
-        uint8_t read(uint16_t addr);
-        uint8_t readdata();
-        void write(uint8_t data);
-        void write(uint16_t addr, uint8_t data);
-        void writedata(uint8_t data);
+        uint16 address(uint16 addr);
+        uint8 read();
+        uint8 read(uint16 addr);
+        uint8 readdata();
+        void write(uint8 data);
+        void write(uint16 addr, uint8 data);
+        void writedata(uint8 data);
     } vram;
 
     struct Background {
         PPU &ppu;
 
         bool    patterntab_addr;
-        uint8_t   nt_base_addr;
+        uint8   nt_base_addr;
         bool    show;
         bool    show_leftmost;
         struct {
-            uint16_t bglow, bghigh;
-            uint8_t  atlow, athigh;
-            bool     latchlow, latchhigh;
+            uint16 bglow, bghigh;
+            uint8  atlow, athigh;
+            bool   latchlow, latchhigh;
         } shift;
         struct {
-            uint8_t nt, attr, lowbg, hibg;
+            uint8 nt, attr, lowbg, hibg;
         } latch;
 
         Background(PPU &p) : ppu(p)
@@ -73,28 +72,28 @@ class PPU {
     struct OAM {
         PPU &ppu;
 
-        uint8_t oam[PPUMap::OAM_SIZE];
+        uint8 oam[PPUMap::OAM_SIZE];
 
         bool sprsize;
         bool patterntab_addr;
         bool show;
         bool show_leftmost;
-        uint8_t addr;
-        uint8_t data;
-        uint8_t shifts[8];
-        uint8_t latches[8];
-        uint8_t counters[8];
+        uint8 addr;
+        uint8 data;
+        uint8 shifts[8];
+        uint8 latches[8];
+        uint8 counters[8];
 
         OAM(PPU &p) : outer(p)
         { }
         void power();
         void reset();
-        uint8_t read(uint16_t addr);
-        void write(uint16_t addr, uint8_t data);
+        uint8 read(uint16 addr);
+        void write(uint16 addr, uint8 data);
     } oam;
 
     // ppu's internal data bus. gets filled on reading and writing to regs.
-    uint8_t io_latch;
+    uint8 io_latch;
     struct {
         bool toggle; // used by PPUSCROLL and PPUADDR
     } latch;
@@ -125,11 +124,11 @@ class PPU {
     void vblank_end();
 
     void output_pixel();
-    uint8_t output_bgpixel();
-    uint8_t output_sppixel();
+    uint8 output_bgpixel();
+    uint8 output_sppixel();
 
     // void load_palette();
-    uint8_t getcolor(bool select, uint8_t pal, uint8_t palind);
+    uint8 getcolor(bool select, uint8 pal, uint8 palind);
 
     friend class Background;
     friend class OAM;
@@ -142,8 +141,8 @@ public:
     void power(const ROM &chrrom, int mirroring);
     void reset();
     void main();
-    uint8_t readreg(const uint16_t which);
-    void writereg(const uint16_t which, const uint8_t data);
+    uint8 readreg(const uint16 which);
+    void writereg(const uint16 which, const uint8 data);
 
     // for ppumain.cpp
     template <unsigned int Cycle>
@@ -154,9 +153,9 @@ public:
     void background_cycle();
     void idlec();
 
-    inline const uint8_t *getmemory() const
+    inline const uint8 *getmemory() const
     { return vram.memory; }
-    inline uint32_t getmemsize() const
+    inline uint32 getmemsize() const
     { return PPUMap::MEMSIZE; }
 };
 

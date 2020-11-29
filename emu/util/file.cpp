@@ -1,8 +1,8 @@
-#include <emu/utils/file.hpp>
+#include <emu/util/file.hpp>
 
 #include <utility>
 
-namespace Utils {
+namespace Util {
 
 File &File::operator=(File &&f)
 {
@@ -75,5 +75,5 @@ bool File::getline(std::string &s, int delim)
     return (c == EOF) ? false : true;
 }
 
-} // namespace Utils
+} // namespace Util
 

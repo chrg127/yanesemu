@@ -1,7 +1,9 @@
 #include <emu/emulator.hpp>
-#include <emu/core/memorymap.hpp>
 
-using Utils::File;
+#include <emu/core/memorymap.hpp>
+#include <emu/util/unsigned.hpp>
+
+using Util::File;
 using namespace Core;
 
 void Emulator::init(Cartridge &cart)
@@ -32,7 +34,7 @@ void Emulator::log(File &logfile)
 
 void Emulator::dump(File &dumpfile)
 {
-    auto dumpmem = [](File &df, const uint8_t *mem, const std::size_t size) {
+    auto dumpmem = [](File &df, const uint8 *mem, const std::size_t size) {
         std::size_t i, j;
 
         for (i = 0; i < size; i++) {

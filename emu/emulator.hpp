@@ -4,7 +4,7 @@
 #include <emu/core/cpu.hpp>
 #include <emu/core/ppu.hpp>
 #include <emu/core/cartridge.hpp>
-#include <emu/utils/file.hpp>
+#include <emu/util/file.hpp>
 
 class Emulator {
     Core::CPU cpu;
@@ -14,8 +14,8 @@ class Emulator {
 public:
     void init(Core::Cartridge &cart);
     void run();
-    void log(Utils::File &logfile);
-    void dump(Utils::File &dumpfile);
+    void log(Util::File &logfile);
+    void dump(Util::File &dumpfile);
 };
 
 #endif

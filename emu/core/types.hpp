@@ -2,28 +2,28 @@
 #define CORE_TYPES_HPP_INCLUDED
 
 #include <cstddef>
-#include <cstdint>
-#include <cstring>
+#include <cstring> // memcpy
 #include <utility>
+#include <emu/util/unsigned.hpp>
 
 namespace Core {
 
 union Reg16 {
     struct {
-        uint8_t low, high;
+        uint8 low, high;
     };
-    uint16_t reg;
+    uint16 reg;
 
     Reg16() : reg(0)
     { }
-    Reg16(uint16_t val)
+    Reg16(uint16 val)
     { operator=(val); }
 
-    inline void operator=(const uint16_t val)
+    inline void operator=(const uint16 val)
     {
         reg = val;
     }
-    
+
     template <typename T> // T = numeric type
     inline Reg16 & operator&=(const T val)
     { reg &= val; return *this; }
@@ -46,13 +46,13 @@ inline Reg16 operator|(Reg16 left, T right)
  * lock() to lock the ROM and make it read-only. A ROM can be reset(), but
  * doing so will erase the contents. */
 class ROM {
-    uint8_t *mem = nullptr;
-    uint32_t size = 0;
+    uint8 *mem = nullptr;
+    uint32 size = 0;
     bool locked = false;
 
 public:
     ROM() = default;
-    ROM(const uint32_t s)
+    ROM(const uint32 s)
     { alloc(s); }
     ~ROM()
     { reset(); }
@@ -75,15 +75,15 @@ public:
     explicit operator bool() const
     { return locked; }
 
-    inline uint8_t *getmem() const
+    inline uint8 *getmem() const
     { return locked ? nullptr : mem; }
-    inline uint32_t getsize() const
+    inline uint32 getsize() const
     { return size; }
 
-    inline void alloc(const uint32_t s)
+    inline void alloc(const uint32 s)
     {
         if (!locked) {
-            mem = new uint8_t[s];
+            mem = new uint8[s];
             size = s;
         }
     }
@@ -97,7 +97,7 @@ public:
         locked = false;
     }
 
-    inline void write(const uint32_t i, const uint8_t data)
+    inline void write(const uint32 i, const uint8 data)
     {
         if (!locked)
             mem[i] = data;
@@ -108,27 +108,27 @@ public:
         locked = true;
     }
 
-    inline uint8_t operator[](const uint8_t addr) const
+    inline uint8 operator[](const uint8 addr) const
     { return mem[addr]; }
 
-    inline void copy_to(uint8_t *buf, const uint32_t start = 0, const uint32_t len = 0) const
+    inline void copy_to(uint8 *buf, const uint32 start = 0, const uint32 len = 0) const
     {
         std::memcpy(buf, mem+start, len);
     }
 };
 
 struct uint24 {
-    uint8_t high, mid, low;
+    uint8 high, mid, low;
 
     uint24() : high(0), mid(0), low(0)
     { }
-    uint24(const uint32_t val)
+    uint24(const uint32 val)
     { operator=(val); }
 
-    inline uint32_t value()
+    inline uint32 value()
     { return high << 16 | mid << 8 | low; }
 
-    inline void operator=(const uint32_t val)
+    inline void operator=(const uint32 val)
     {
         high = val & 0x00FF0000;
         mid  = val & 0x0000FF00;
