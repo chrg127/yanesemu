@@ -14,62 +14,66 @@ void PPU::Background::reset()
     show_leftmost   = 0;
 }
 
-void PPU::fetch_nt(bool dofetch)
+void PPU::Background::fetch_nt(bool dofetch)
 {
-    if (dofetch)
-        bg.latch.nt = vram.read(0x2000 | (vram.vaddr & 0x0FFF));
-    
+    if (!dofetch)
+        return;
+    latch.nt = ppu.vram.read(0x2000 | (ppu.vram.vaddr & 0x0FFF));
 }
 
-void PPU::fetch_attr(bool dofetch)
+void PPU::Background::fetch_attr(bool dofetch)
 {
-    if (dofetch) {
-        // 0x23C0 | NN | YYY | XXX
-        bg.latch.attr = vram.read(0x23C0 | (vram.vaddr      & 0x0C00)
-                                         | (vram.vaddr >> 4 & 0x0038)
-                                         | (vram.vaddr >> 2 & 0x0007));
-    }
+    // 0x23C0 | NN | YYY | XXX
+    if (!dofetch)
+        return;
+    latch.attr = ppu.vram.read(0x23C0
+                              | (ppu.vram.vaddr      & 0x0C00)
+                              | (ppu.vram.vaddr >> 4 & 0x0038)
+                              | (ppu.vram.vaddr >> 2 & 0x0007));
 }
 
-void PPU::fetch_lowbg(bool dofetch)
+void PPU::Background::fetch_lowbg(bool dofetch)
 {
-    if (dofetch)
-        bg.latch.lowbg = vram.read(0x1000*bg.patterntab_addr + bg.latch.nt);
+    if (!dofetch)
+        return;
+    latch.lowbg = ppu.vram.read(0x1000*patterntab_addr + latch.nt);
 }
 
-void PPU::fetch_highbg(bool dofetch)
+void PPU::Background::fetch_highbg(bool dofetch)
 {
-    if (dofetch)
-        bg.latch.hibg  = vram.read(0x1000*bg.patterntab_addr + bg.latch.nt+8);
+    if (!dofetch)
+        return;
+    latch.hibg  = ppu.vram.read(0x1000*patterntab_addr + latch.nt+8);
 }
 
 void PPU::Background::shift_run()
 {
-    shift.low   >>= 1;
-    shift.high  >>= 1;
-    shift.attr1 >>= 1;
-    shift.attr1 |= shift.attrhigh_latch << 7;
-    shift.attr2 >>= 1;
-    shift.attr2 |= shift.attrlow_latch  << 7;
+    shift.bglow   >>= 1;
+    shift.bghigh  >>= 1;
+    shift.athigh >>= 1;
+    shift.athigh |= shift.latchhigh << 7;
+    shift.atlow >>= 1;
+    shift.atlow |= shift.latchlow  << 7;
 }
 
 void PPU::Background::fill_shifts()
 {
-    shift.low  = latch.lowbg << 8 | (shift.low  & 0xFF);
-    shift.high = latch.hibg  << 8 | (shift.high & 0xFF);
-    uint16_t v = outer.vram.vaddr;
+    uint16_t v = ppu.vram.vaddr;
+    shift.bglow  = latch.lowbg << 8 | (shift.bglow  & 0xFF);
+    shift.bghigh = latch.hibg  << 8 | (shift.bghigh & 0xFF);
+    // TODO: this doesn't do what you think it does.
     uint8_t attr_mask = 0b11 << (~((v >> 1 & 1) | (v >> 6 & 1)))*2;
-    shift.attrhigh_latch = latch.attr & attr_mask;
-    shift.attrlow_latch  = latch.attr & attr_mask;
+    shift.latchhigh = latch.attr & attr_mask;
+    shift.latchlow  = latch.attr & attr_mask;
 }
 
-uint8_t PPU::output_bgpixel()
+uint8_t PPU::Background::output_bgpixel()
 {
-    uint8_t mask    = 1 << vram.fine_x;
-    bool lowbit     = bg.shift.low    & mask;
-    bool hibit      = bg.shift.high   & mask;
-    bool at1        = bg.shift.attr1  & mask;
-    bool at2        = bg.shift.attr2  & mask;
+    uint8_t mask    = 1 << ppu.vram.fine_x;
+    bool lowbit     = shift.bglow    & mask;
+    bool hibit      = shift.bghigh   & mask;
+    bool at1        = shift.athigh  & mask;
+    bool at2        = shift.atlow  & mask;
     uint8_t pal     = at1   << 1 | at2;
     uint8_t palind  = hibit << 1 | lowbit;
     return getcolor(0, pal, palind);

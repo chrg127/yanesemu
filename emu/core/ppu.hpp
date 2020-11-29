@@ -43,36 +43,35 @@ class PPU {
     } vram;
 
     struct Background {
-        PPU &outer;
+        PPU &ppu;
 
-        bool patterntab_addr;
-        uint8_t nt_base_addr;
-        bool show;
-        bool show_leftmost;
+        bool    patterntab_addr;
+        uint8_t   nt_base_addr;
+        bool    show;
+        bool    show_leftmost;
         struct {
-            // low - for the low bg byte
-            // high - for the high bg byte
-            // both hold data for two tiles and are shifted every cycle
-            uint16_t low, high;
-            // these two hold info for one tile, not two
-            // 1 - high, 2 - low
-            uint8_t attr1, attr2;
-            bool attrhigh_latch, attrlow_latch;
+            uint16_t bglow, bghigh;
+            uint8_t  atlow, athigh;
+            bool     latchlow, latchhigh;
         } shift;
         struct {
             uint8_t nt, attr, lowbg, hibg;
         } latch;
 
-        Background(PPU &p) : outer(p)
+        Background(PPU &p) : ppu(p)
         { }
         void power();
         void reset();
         void fill_shifts();
         void shift_run();
+        void fetch_nt(bool dofetch);
+        void fetch_attr(bool dofetch);
+        void fetch_lowbg(bool dofetch);
+        void fetch_highbg(bool dofetch);
     } bg;
 
     struct OAM {
-        PPU &outer;
+        PPU &ppu;
 
         uint8_t oam[PPUMap::OAM_SIZE];
 
@@ -125,10 +124,6 @@ class PPU {
     void vblank_begin();
     void vblank_end();
 
-    void fetch_nt(bool dofetch);
-    void fetch_attr(bool dofetch);
-    void fetch_lowbg(bool dofetch);
-    void fetch_highbg(bool dofetch);
     void output_pixel();
     uint8_t output_bgpixel();
     uint8_t output_sppixel();
