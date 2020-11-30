@@ -4,30 +4,37 @@
 
 void PPU::VRAM::power(const ROM &chrrom, int mirroring)
 {
-    std::memset(memory, 0, 0x4000);
+    std::function<uint8(uint16)> ntaddr;
     if (mirroring == 0) // v-mirror
-        ntaddr = [](uint16 x) { return x |= 0x0800; };
+        ntaddr = [](uint16 x) { return x &= ~0x0800; };
     else if (mirroring == 1)
-        ntaddr = [](uint16 x) { return x |= 0x0400; };
+        ntaddr = [](uint16 x) { return x &= ~0x0400; };
     // else, mapper defined
-    chrrom.copy_to(memory, 0, 0x2000);
-    increment = 1; // ctrl = 0
-    readbuf     = 0;
-    fine_x   = 0;
-    tmp     = 0;
+    chrrom.copy_to(bus.memory(), 0, 0x2000);
+    bus.map(0x2000, 0x3F00, ntaddr);
+    bus.map(0x3F00, 0x4000, [](uint16 addr) {
+                return addr &= ~0;
+            });
+    inc     = 1; // ctrl = 0
+    readbuf = 0;
+    fine_x  = 0;
+    t       = 0;
+    v       = 0;
+    toggle  = 0;
 }
 
 void PPU::VRAM::reset()
 {
-    increment = 1; // ctrl = 0
-    readbuf     = 0;
-    fine_x   = 0;
-    // tmp = unchanged
+    inc     = 1; // ctrl = 0
+    readbuf = 0;
+    fine_x  = 0;
+    toggle  = 0;
+    // t = unchanged
 }
 
 void PPU::VRAM::inc_horzpos()
 {
-    // if ((vaddr & 0x001F) == 31) {
+    // if ((v & 0x001F) == 31) {
     //     v &= ~0x001F;
     //     v ^= 0x0400;
     // } else
@@ -37,88 +44,67 @@ void PPU::VRAM::inc_horzpos()
      * ...     return ((x & 0x400) >> 5) | (x & 0x1F)
      * >>> def recompose(x): return (x & 0x20) << 5 | (x & 0x1F)
      * >>> def incv6(x):
-     * ...     tmp = getwhole(x)+1
-     * ...     return (x & ~0x41F) | recompose(tmp)
+     * ...     t = getwhole(x)+1
+     * ...     return (x & ~0x41F) | recompose(t)
      */
-    uint8 x = ((vaddr & 0x400) >> 5) | ((vaddr & 0x1F) + 1);
-    vaddr = (vaddr & ~0x41F) | ((x & 0x20) << 5) | (x & 0x1F);
+    uint8 x = ((v & 0x400) >> 5) | ((v & 0x1F) + 1);
+    v = (v & ~0x41F) | ((x & 0x20) << 5) | (x & 0x1F);
 }
 
 void PPU::VRAM::inc_vertpos()
 {
-    if ((vaddr & 0x7000) != 0x7000)
-        vaddr += 0x1000;
+    if ((v & 0x7000) != 0x7000)
+        v += 0x1000;
     else {
-        vaddr &= ~0x7000;
-        int y = (vaddr & 0x03E0) >> 5;
+        v &= ~0x7000;
+        int y = (v & 0x03E0) >> 5;
         if (y == 29) {
             y = 0;
-            vaddr ^= 0x0800;
+            v ^= 0x0800;
         } else if (y == 31)
             y = 0;
         else
             y += 1;
-        vaddr = (vaddr & ~0x03E0) | (y << 5);
+        v = (v & ~0x03E0) | (y << 5);
     }
 }
 
 void PPU::VRAM::copy_horzpos()
 {
-    // if rendering is enabled
-    vaddr = (tmp.reg & 0x41F) | (vaddr & ~0x41F);
+    v = (t & 0x041F) | (v & ~0x41F);
 }
 
 void PPU::VRAM::copy_vertpos()
 {
-    vaddr = (tmp.reg & 0x7BE0) | (vaddr & ~0x7EB0);
-}
-
-/* gets the actual address given any address. this accounts for mirroring. */
-uint16 PPU::VRAM::address(uint16 addr)
-{
-    if (addr >= 0x2000 && addr <= 0x3FFF)
-        return ntaddr(0x2000 + (addr & 0x0FFF));
-    else if (addr >= 0x3F00 && addr <= 0x3FFF)
-        return 0x3F00 + (addr & 0x00FF) % 0x20;
-    else
-        return addr;
-}
-
-uint8 PPU::VRAM::read(uint16 addr)
-{
-    return memory[address(addr)];
+    v = (t & 0x7BE0) | (v & ~0x7EB0);
 }
 
 uint8 PPU::VRAM::read()
 {
-    return memory[address(vaddr)];
+    return bus.read(v);
 }
 
 void PPU::VRAM::write(uint8 data)
 {
-    memory[address(vaddr)] = data;
-}
-
-void PPU::VRAM::write(uint16 addr, uint8 data)
-{
-    memory[address(addr)] = data;
+    bus.write(v, data);
 }
 
 uint8 PPU::VRAM::readdata()
 {
     uint8 toret;
-    if (vaddr <= 0x3EFF) {
+    if (v <= 0x3EFF) {
         toret = readbuf;
-        readbuf = memory[address(vaddr)];
+        readbuf = read();
     } else
-        toret = memory[address(vaddr)];
+        toret = read();
     inc_horzpos();
     return toret;
 }
 
 void PPU::VRAM::writedata(uint8 data)
 {
-    memory[address(vaddr++)] = data;
+    write(data);
+    v++;
 }
 
 #endif

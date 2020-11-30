@@ -30,14 +30,16 @@ public:
     Bus & operator=(const Bus &) = delete;
     Bus & operator=(Bus &&b);
 
-    void reset(const std::size_t s);
-    uint8 read(const uint16 addr) const;
-    void write(const uint16 addr, const uint8 data);
-    void map(uint16 start, uint16 end, Addresser addresser);
-    uint16 test(uint16 addr)
-    {
-        return ad_tab[lookup[addr]](addr);
-    }
+    void   reset(const std::size_t s);
+    uint8  read(const uint16 addr) const;
+    void   write(const uint16 addr, const uint8 data);
+    void   map(uint16 start, uint16 end, Addresser addresser);
+    uint8 *memory() const
+    { return mem; }
+    // uint16 test(uint16 addr)
+    // {
+    //     return ad_tab[lookup[addr]](addr);
+    // }
 };
 
 } // namespace Core

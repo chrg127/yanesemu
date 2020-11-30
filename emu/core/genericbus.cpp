@@ -1,6 +1,7 @@
 #include "genericbus.hpp"
 
 #include <cstring> // memcpy
+#include <algorithm> // std::copy
 #include <emu/util/stringops.hpp>
 #include <emu/util/debug.hpp>
 
@@ -26,8 +27,9 @@ Bus & Bus::operator=(Bus &&b)
     size   = b.size;
     mem    = b.mem;
     lookup = b.lookup;
-    std::memcpy(ad_tab, b.ad_tab, MAX_ADDRESSERS);
-    std::memcpy(ad_tab, b.ad_tab, MAX_ADDRESSERS);
+    for (int i = 0; i < MAX_ADDRESSERS; i++)
+        ad_tab[i] = b.ad_tab[i];
+    std::memcpy(counter, b.counter, MAX_ADDRESSERS);
     b.mem    = nullptr;
     b.lookup = nullptr;
     return *this;
@@ -39,8 +41,9 @@ void Bus::reset(const std::size_t s)
         delete[] mem;
     if (lookup)
         delete lookup;
-    mem     = new uint8[s];
-    lookup  = new unsigned int[s];
+    // init all memory to zero
+    mem     = new uint8[s]();
+    lookup  = new unsigned int[s]();
     size    = s;
     ad_tab[0] = [](uint16 addr) { return addr; };
     for (auto &x : counter)

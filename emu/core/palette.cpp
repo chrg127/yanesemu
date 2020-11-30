@@ -25,17 +25,6 @@
 //     paltab = paltab_2c02;
 // }
 
-// palette: 0-3, one of the 4 defined palettes for this frame
-// color_index: which color of the palette
-// bg_or_sp: select if it's a background palette or a sprite palette
-// first 2 values are 2 bits big, not 8
-uint8 PPU::getcolor(bool select, uint8 pal, uint8 palind)
-{
-    // this is a 5 bit number
-    uint8 i = select << 4 | pal << 2 | palind;
-    uint8 color = vram.read(0x3F00 + i);
-    return color;
-}
 
 #endif
 
