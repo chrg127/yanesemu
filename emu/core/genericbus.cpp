@@ -17,9 +17,7 @@ Bus::~Bus()
     if (mem)
         delete[] mem;
     if (lookup)
-        delete lookup;
-    mem  = nullptr;
-    size = 0;
+        delete[] lookup;
 }
 
 Bus & Bus::operator=(Bus &&b)
@@ -40,7 +38,7 @@ void Bus::reset(const std::size_t s)
     if (mem)
         delete[] mem;
     if (lookup)
-        delete lookup;
+        delete[] lookup;
     // init all memory to zero
     mem     = new uint8[s]();
     lookup  = new unsigned int[s]();
