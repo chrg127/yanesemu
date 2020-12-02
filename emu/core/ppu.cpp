@@ -4,6 +4,8 @@
 #include <cassert>
 #include <cstring> // memset
 #include <functional>
+#include <emu/core/cpu.hpp>
+#include <emu/core/cartridge.hpp>
 #define DEBUG
 #include <emu/util/debug.hpp>
 
@@ -16,9 +18,10 @@ namespace Core {
 #include "oam.cpp"
 #undef INSIDE_PPU_CPP
 
-void PPU::power(const ROM &chrrom, int mirroring)
+void PPU::power()
 {
-    vram.power(chrrom, mirroring);
+    mapbus();
+    vram.power();
     bg.power();
     oam.power();
     // ppu starts at the top of the picture
@@ -59,7 +62,7 @@ uint8 PPU::readreg(const uint16 which)
     switch (which) {
     case 0x2000: case 0x2001: case 0x2003:
     case 0x2005: case 0x2006: case 0x4014:
-        break;
+        return io_latch;
 
     case 0x2002:
         io_latch |= (vblank << 7 | spr0hit << 6 | spr_ov << 5);
@@ -72,7 +75,12 @@ uint8 PPU::readreg(const uint16 which)
         return io_latch;
 
     case 0x2007:
-        io_latch = vram.readdata();
+        if (vram.v <= 0x3EFF) {
+            io_latch = vram.readbuf;
+            vram.readbuf = bus.read(vram.v);
+        } else
+            io_latch = bus.read(vram.v);
+        vram.v += vram.inc;
         return io_latch;
 
 #ifdef DEBUG
@@ -145,7 +153,8 @@ void PPU::writereg(const uint16 which, const uint8 data)
         break;
 
     case 0x2007:
-        vram.writedata(data);
+        bus.write(vram.v, data);
+        vram.v += vram.inc;
         break;
 
 #ifdef DEBUG
@@ -171,7 +180,32 @@ uint8 PPU::getcolor(bool select, uint8 pal, uint8 palind)
 {
     // this is a 5 bit number
     uint8 n = select << 4 | pal << 2 | palind;
-    return vram.read(0x3F00 + n);
+    return bus.read(0x3F00 + n);
+}
+
+void PPU::mapbus()
+{
+    std::function<uint16(uint16)> address_nametab;
+    std::function<uint8(uint16)> reader;
+    std::function<void(uint16, uint8)> writer;
+
+    switch (cart->mirroring()) {
+    case 0: address_nametab = [](uint16 x) { return x &= ~0x800; }; break;
+    case 1: address_nametab = [](uint16 x) { return x &= ~0x400; }; break;
+    default: assert(false);
+    }
+
+    reader = [=](uint16 addr) { return cart->read_chrrom(addr); };
+    writer = [=](uint16 addr, uint8 data) { };
+    bus.map(0, 0x2000, reader, writer);
+
+    reader = [=](uint16 addr)             { return vram.mem[address_nametab(addr)]; };
+    writer = [=](uint16 addr, uint8 data) { vram.mem[address_nametab(addr)] = data; };
+    bus.map(0x2000, 0x3F00, reader, writer);
+
+    reader = [=](uint16 addr)             { return vram.mem[addr & ~0xE0]; };
+    writer = [=](uint16 addr, uint8 data) { vram.mem[addr & ~0xE0] = data; };
+    bus.map(0x3F00, 0x4000, reader, writer);
 }
 
 } // namespace Core

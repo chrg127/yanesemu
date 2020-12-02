@@ -141,10 +141,7 @@ void Cartridge::printinfo(Util::File &log) const
     if (chrnvram_size != 0)
         log.printf(", %d CHR NVRAM", chrnvram_size);
 
-    if (nametab_mirroring == NAMETAB_HORZ)
-        log.printf(", H-Mirror");
-    else
-        log.printf(", V-Mirror");
+    log.printf(nt_mirroring == NT_HORZ ? ", H-Mirror" : ", V-Mirror");
     if (has.battery)
         log.printf(", SRAM enabled");
     if (has.trainer)
@@ -157,7 +154,10 @@ void Cartridge::printinfo(Util::File &log) const
 std::string_view Cartridge::geterr() const
 {
     static std::string_view rom_errmsg[] = {
-        "no errors", "invalid NES format", "NES 2.0 not yet supported", "can't open rom file",
+        "no errors",
+        "invalid NES format",
+        "NES 2.0 not yet supported",
+        "can't open rom file",
     };
     return rom_errmsg[errid];
 }

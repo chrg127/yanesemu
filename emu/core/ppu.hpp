@@ -8,14 +8,18 @@
 
 namespace Core {
 
+class CPU;
+class Cartridge;
+
 class PPU {
-    friend class Background;
-    friend class OAM;
-    friend class PPUBus;
+    CPU *cpu;
+    Cartridge *cart;
+    Bus bus = Bus(0x4000);
 
     unsigned long cycles = 0;
     unsigned long lines  = 0;
     uint8   screen[256*224];
+
     uint8   io_latch;
     bool    nmi_enabled;
     bool    ext_bus_dir;
@@ -29,26 +33,18 @@ class PPU {
 
     struct VRAM {
         PPU     &ppu;
-        Bus     bus = Bus(0x4000);
+        uint8   mem[0x4000];
         uint16  v, t;   // vram address, temporary vram address
         uint8   fine_x, inc, readbuf;
         bool    toggle; // used by PPUSCROLL and PPUADDR
 
         VRAM(PPU &p) : ppu(p) { }
-        void power(const ROM &chrrom, int mirroring);
+        void power();
         void reset();
         void inc_horzpos();
         void inc_vertpos();
         void copy_horzpos();
         void copy_vertpos();
-        uint8 read(uint16 a)
-        { return bus.read(a); }
-        uint8 read();
-        uint8 readdata();
-        void write(uint16 a, uint8 d)
-        { bus.write(d, a); }
-        void write(uint8 data);
-        void writedata(uint8 data);
     } vram;
 
     struct Background {
@@ -99,6 +95,7 @@ class PPU {
         // void write(uint16 addr, uint8 data);
     } oam;
 
+    void mapbus();
     void begin_frame();
     void cycle_fetchnt(bool cycle);
     void cycle_fetchattr(bool cycle);
@@ -116,11 +113,16 @@ class PPU {
     void output();
     uint8 getcolor(bool select, uint8 pal, uint8 palind);
 
+    friend class Background;
+    friend class OAM;
+    friend class PPUBus;
+
 public:
-    PPU() : vram(*this), bg(*this), oam(*this)
+    PPU(CPU *cpup, Cartridge *cartp) :
+        cpu(cpup), cart(cartp), vram(*this), bg(*this), oam(*this)
     { }
 
-    void power(const ROM &chrrom, int mirroring);
+    void power();
     void reset();
     void main();
     uint8 readreg(const uint16 which);
@@ -136,7 +138,8 @@ public:
     void idlec();
 
     inline const uint8 *getmemory() const
-    { return vram.bus.memory(); }
+    { return vram.mem; }
+
     inline uint32 getmemsize() const
     { return 0x4000; }
 };

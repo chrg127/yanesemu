@@ -7,9 +7,9 @@
 
 namespace Core {
 
-enum NametabMirror : int {
-    NAMETAB_HORZ = 0,
-    NAMETAB_VERT,
+enum {
+    NT_HORZ = 0,
+    NT_VERT,
 };
 
 enum Region : int {
@@ -82,16 +82,16 @@ class Cartridge {
     uint16 mapper   = 0;
     uint8 submapper = 0;
 
-    uint32 prgram_size    = 0;
-    uint32 chrram_size    = 0;
-    uint32 eeprom_size    = 0;
-    uint32 chrnvram_size  = 0;
-    int nametab_mirroring   = NAMETAB_HORZ;
-    int region              = REGION_NTSC;
-    int console_type        = CONSOLE_TYPE_NES;
-    int cpu_ppu_timing      = CPUTIMING_RP2C02;
-    int vs_ppu_type         = VSPPU_RP2C03B;
-    int vs_hw_type          = VSHW_UNISYS_NORMAL;
+    uint32 prgram_size   = 0;
+    uint32 chrram_size   = 0;
+    uint32 eeprom_size   = 0;
+    uint32 chrnvram_size = 0;
+    int nt_mirroring     = NT_HORZ;
+    int region           = REGION_NTSC;
+    int console_type     = CONSOLE_TYPE_NES;
+    int cpu_ppu_timing   = CPUTIMING_RP2C02;
+    int vs_ppu_type      = VSPPU_RP2C03B;
+    int vs_hw_type       = VSHW_UNISYS_NORMAL;
     uint8 misc_roms_num       = 0;
     uint8 def_expansion_dev   = 0;
 
@@ -116,18 +116,36 @@ public:
     void printinfo(Util::File &f) const;
     std::string_view geterr() const;
 
+    inline const ROM &get_prgrom()
+    { return prgrom; }
+
+    inline const ROM &get_chrrom()
+    { return chrrom; }
+
+    inline uint8 read_prgrom(uint16 addr)
+    {
+        return prgrom.read(addr);
+    }
+
+    inline uint8 read_chrrom(uint16 addr)
+    {
+        return chrrom.read(addr);
+    }
+
     Format file_format() const
     { return fformat; }
-    const ROM &get_prgrom()
-    { return prgrom; }
-    const ROM &get_chrrom()
-    { return chrrom; }
+
     uint16 mappertype() const
     { return mapper; }
+
     bool hasprgram() const
     { return has.prgram; }
+
     bool haschrram() const
     { return has.chrram; }
+
+    int mirroring() const
+    { return nt_mirroring; }
 };
 
 } // namespace Core

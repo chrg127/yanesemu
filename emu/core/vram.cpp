@@ -2,19 +2,8 @@
 #error "This file must only be #include'd by ppu.cpp."
 #else
 
-void PPU::VRAM::power(const ROM &chrrom, int mirroring)
+void PPU::VRAM::power()
 {
-    std::function<uint8(uint16)> ntaddr;
-    if (mirroring == 0) // v-mirror
-        ntaddr = [](uint16 x) { return x &= ~0x0800; };
-    else if (mirroring == 1)
-        ntaddr = [](uint16 x) { return x &= ~0x0400; };
-    // else, mapper defined
-    chrrom.copy_to(bus.memory(), 0, 0x2000);
-    bus.map(0x2000, 0x3F00, ntaddr);
-    bus.map(0x3F00, 0x4000, [](uint16 addr) {
-                return addr &= ~0;
-            });
     inc     = 1; // ctrl = 0
     readbuf = 0;
     fine_x  = 0;
@@ -77,34 +66,6 @@ void PPU::VRAM::copy_horzpos()
 void PPU::VRAM::copy_vertpos()
 {
     v = (t & 0x7BE0) | (v & ~0x7EB0);
-}
-
-uint8 PPU::VRAM::read()
-{
-    return bus.read(v);
-}
-
-void PPU::VRAM::write(uint8 data)
-{
-    bus.write(v, data);
-}
-
-uint8 PPU::VRAM::readdata()
-{
-    uint8 toret;
-    if (v <= 0x3EFF) {
-        toret = readbuf;
-        readbuf = read();
-    } else
-        toret = read();
-    inc_horzpos();
-    return toret;
-}
-
-void PPU::VRAM::writedata(uint8 data)
-{
-    write(data);
-    v++;
 }
 
 #endif
