@@ -97,10 +97,15 @@ public:
         locked = false;
     }
 
-    inline void write(const uint32 i, const uint8 data)
+    inline void write(const uint32 addr, const uint8 data)
     {
         if (!locked)
-            mem[i] = data;
+            mem[addr] = data;
+    }
+
+    inline uint8 read(const uint16 addr)
+    {
+        return mem[addr];
     }
 
     inline void lock()
@@ -108,8 +113,8 @@ public:
         locked = true;
     }
 
-    inline uint8 operator[](const uint8 addr) const
-    { return mem[addr]; }
+    // inline uint8 operator[](const uint8 addr) const
+    // { return mem[addr]; }
 
     inline void copy_to(uint8 *buf, const uint32 start = 0, const uint32 len = 0) const
     {

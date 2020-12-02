@@ -16,17 +16,17 @@ void PPU::OAM::reset()
     // addr = unchanged
 }
 
-uint8 PPU::OAM::read(uint16 addr)
-{
-    return 0;
-}
+// uint8 PPU::OAM::read(uint16 addr)
+// {
+//     return 0;
+// }
 
-void PPU::OAM::write(uint16 addr, uint8 data)
-{
+// void PPU::OAM::write(uint16 addr, uint8 data)
+// {
 
-}
+// }
 
-uint8 PPU::output_sppixel()
-{
-    return 0;
-}
+// uint8 PPU::output_sppixel()
+// {
+//     return 0;
+// }

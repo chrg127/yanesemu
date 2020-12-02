@@ -19,50 +19,50 @@ void PPU::begin_frame()
 
 void PPU::cycle_fetchnt(bool cycle)
 {
-    fetch_nt(cycle);
+    bg.fetch_nt(cycle);
     DBGPUTC('n');
 }
 
 void PPU::cycle_fetchattr(bool cycle)
 {
-    fetch_attr(cycle);
+    bg.fetch_attr(cycle);
     DBGPUTC('a');
 }
 
 void PPU::cycle_fetchlowbg(bool cycle)
 {
-    fetch_lowbg(cycle);
+    bg.fetch_lowbg(cycle);
     DBGPUTC('l');
 }
 
 void PPU::cycle_fetchhighbg(bool cycle)
 {
-    fetch_highbg(cycle);
+    bg.fetch_highbg(cycle);
     DBGPUTC('h');
 }
 
 void PPU::cycle_incvhorz()
 {
     vram.inc_horzpos();
-    // DBGPUTC('+');
+    DBGPUTC('+');
 }
 
 void PPU::cycle_incvvert()
 {
     vram.inc_vertpos();
-    // DBGPUTC('^');
+    DBGPUTC('^');
 }
 
 void PPU::cycle_copyhorz()
 {
     vram.copy_horzpos();
-    // DBGPUTC('c');
+    DBGPUTC('c');
 }
 
 void PPU::cycle_copyvert()
 {
     vram.copy_vertpos();
-    // DBGPUTC('c');
+    DBGPUTC('c');
 }
 
 void PPU::cycle_shift()
@@ -72,7 +72,7 @@ void PPU::cycle_shift()
 
 void PPU::cycle_fillshifts()
 {
-    bg.fill_shifts();
+    bg.shift_fill();
 }
 
 void PPU::vblank_begin()
@@ -92,7 +92,7 @@ void PPU::vblank_end()
 
 void PPU::cycle_outputpixel()
 {
-    output_pixel();
+    output();
 }
 
 template <unsigned Cycle>

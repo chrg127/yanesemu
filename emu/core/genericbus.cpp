@@ -9,9 +9,7 @@ namespace Core {
 Bus::~Bus()
 {
     if (lookup)
-        delete lookup;
-    mem  = nullptr;
-    size = 0;
+        delete[] lookup;
 }
 
 Bus & Bus::operator=(Bus &&b)
