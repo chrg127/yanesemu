@@ -13,7 +13,7 @@ class Bus {
     static const int TABSIZ = 8;
     using Reader = std::function<uint8(uint16)>;
     using Writer = std::function<void(uint16, uint8)>;
-    
+
     // uint32 is used to permit a size of 0x10000
     // you can't, however, address more than 0xFFFF
     uint32      size = 0;

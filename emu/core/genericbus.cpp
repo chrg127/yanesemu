@@ -1,6 +1,8 @@
 #include "genericbus.hpp"
 
-#include <cstring> // memcpy
+#include <cassert>
+#include <algorithm>
+// #include <cstring> // memcpy
 #include <emu/util/stringops.hpp>
 #include <emu/util/debug.hpp>
 
@@ -55,10 +57,19 @@ void Bus::map(uint16 start, uint32 end, Reader reader, Writer writer)
             return;
         }
     }
+    assigned[id] = true;
     rtab[id] = reader;
     wtab[id] = writer;
-    for (uint16 i = start; i != end; i++)
-        lookup[i] = id;
+    std::fill(lookup+start, lookup+end, id);
+    // NOTE to self: memset acts on bytes, fill acts on "objects"
+    // what this means is that, in an array of T where sizeof(T) > 1,
+    // filling the array with memset(arr, 1, size) will write something
+    // like 01010101 for each element of the array.
+    // fill does not do such a thing, and is preferable everywhere
+    // but byte array.
+    // uint8 *offset = lookup+start;
+    // size_t offsize = (lookup+end) - (lookup+start);
+    // std::memset(offset, id, offsize);
 }
 
 } // namespace Core
