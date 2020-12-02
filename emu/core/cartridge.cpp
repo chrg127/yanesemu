@@ -24,7 +24,7 @@ bool Cartridge::parseheader()
         return false;
     }
 
-    nametab_mirroring   = header[6] & 1;
+    nt_mirroring        = header[6] & 1;
     has.battery         = header[6] & 2;
     has.trainer         = header[6] & 4;
     has.fourscreenmode  = header[6] & 8;

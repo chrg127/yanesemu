@@ -1,16 +1,32 @@
 #include <emu/emulator.hpp>
 
+#include <string_view>
 #include <emu/core/memorymap.hpp>
 #include <emu/util/unsigned.hpp>
+#include <emu/util/debug.hpp>
+#include <emu/util/file.hpp>
 
 using Util::File;
 using namespace Core;
 
-void Emulator::init(Cartridge &cart)
+bool Emulator::init(std::string_view s, Util::File &log)
 {
-    cpu.power(cart.get_prgrom());
+    if (!cartridge.open(s)) {
+        error("%s\n", cartridge.geterr().data());
+        return false;
+    }
+    cartridge.printinfo(log);
+    cpu.load_cartridge(&cartridge);
     cpu.attach_ppu(&ppu);
-    ppu.power(cart.get_chrrom(), 0);
+    ppu.load_cartridge(&cartridge);
+    ppu.attach_cpu(&cpu);
+    return true;
+}
+
+void Emulator::power()
+{
+    cpu.power();
+    ppu.power();
 }
 
 void Emulator::run()
