@@ -4,23 +4,24 @@
 #include <cctype>
 #include <cstring>
 #include <emu/core/cartridge.hpp>
+#include <emu/core/ppu.hpp>
 #include <emu/util/file.hpp>
 #include <emu/util/stringops.hpp>
 #define DEBUG
 #include <emu/util/debug.hpp>
 
-#define INSIDE_CPU_CPP
-
 namespace Core {
 
+#define INSIDE_CPU_CPP
 #include <emu/core/bus.cpp>
 #include <emu/core/opcodes.cpp>
 #include <emu/core/disassemble.cpp>
+#undef INSIDE_CPU_CPP
 
 /* Fetch next opcode from memory */
 uint8 CPU::fetch()
 {
-    return readmem(pc.reg++);
+    return bus.read(pc.reg++);
 }
 
 /* Executes a single instruction. */
@@ -225,14 +226,14 @@ void CPU::interrupt(bool reset)
         vec = CPUMap::IRQBRKVEC;
     } else
         vec = CPUMap::IRQBRKVEC;
-    pc.low = readmem(vec);
-    pc.high = readmem(vec+1);
+    pc.low = bus.read(vec);
+    pc.high = bus.read(vec+1);
 }
 
 /* Pushes a value to the hardware stack */
 void CPU::push(uint8 val)
 {
-    writemem(0x0100+sp, val);
+    bus.write(0x0100+sp, val);
     sp--;
 }
 
@@ -240,7 +241,7 @@ void CPU::push(uint8 val)
 uint8 CPU::pull()
 {
     ++sp;
-    return readmem(0x0100+sp);
+    return bus.read(0x0100+sp);
 }
 
 /* Adds n cycles to the cycle counter */
@@ -294,13 +295,26 @@ void CPU::main()
 }
 
 /* Emulates the start/reset function of the 6502. */
-void CPU::power(const ROM &prgrom)
+void CPU::power()
 {
-    bus.init(prgrom);
+    bus.map(0, 0x2000,
+        [=](uint16 addr)             { cycle(); return mem[addr]; },
+        [=](uint16 addr, uint8 data) { cycle(); mem[addr] = data; } );
+    bus.map(0x2000, 0x2008,
+        [=](uint16 addr)             { cycle(); return ppu->readreg(addr); },
+        [=](uint16 addr, uint8 data) { cycle(); ppu->writereg(addr, data); });
+    bus.map(0x2008, 0x8000,
+        [=](uint16 addr)             { cycle(); return mem[addr]; },
+        [=](uint16 addr, uint8 data) { cycle(); mem[addr] = data; } );
+    bus.map(0x8000, 0xFFFF+1,
+        [=](uint16 addr)             { cycle(); return cart->read_prgrom(addr); },
+        [=](uint16 addr, uint8 data) { cycle(); return 0; });
+    // prgrom.copy_to(memory+CPUMap::PRGROM_START,
+    //  prgrom.getsize() - (CPUMap::PRGROM_SIZE+1), CPUMap::PRGROM_SIZE);
+    // bus.write_enable = true;
     sp = 0;
     pc = 0;
     interrupt(true);
-    bus.write_enable = true;
 }
 
 /* Sends an IRQ signal. Used by other devices. */
