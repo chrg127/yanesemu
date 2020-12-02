@@ -18,18 +18,7 @@ class CPU {
     PPU *ppu;
 
     Bus bus = Bus(0xFFFF+1);
-    // struct Bus {
-    //     uint8 memory[CPUMap::MEMSIZE];
-    //     bool write_enable = false;
-
-    //     void init(const ROM &prgrom);
-    //     uint8 read(uint16 addr);
-    //     void write(uint16 addr, uint8 val);
-    //     void reset()
-    //     { }
-    //     const uint8 *getmemory() const
-    //     { return memory; }
-    // } bus;
+    uint8 mem[0xFFFF+1];
 
     uint8 curropcode;
     Reg16 op;       // operand
@@ -188,12 +177,6 @@ class CPU {
     void instr_nop();
 
 public:
-    CPU()
-    {
-        bus.write_enable = false;
-        procstatus.reset();
-    }
-
     void main();
     void power();
     void fire_irq();
@@ -206,7 +189,7 @@ public:
     { return cycles; }
 
     inline const uint8 *getmemory() const
-    { return bus.getmemory(); }
+    { return mem; }
 
     inline uint8 peek_opcode() const
     { return curropcode; }

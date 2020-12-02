@@ -13,7 +13,6 @@
 namespace Core {
 
 #define INSIDE_CPU_CPP
-#include <emu/core/bus.cpp>
 #include <emu/core/opcodes.cpp>
 #include <emu/core/disassemble.cpp>
 #undef INSIDE_CPU_CPP
@@ -334,7 +333,6 @@ void CPU::reset()
 {
     pc = sp = accum = xreg = yreg = 0;
     procstatus.reset();
-    bus.reset();
 }
 
 /* Prints info about the instruction which has just been executed and

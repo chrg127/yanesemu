@@ -44,7 +44,7 @@ void Bus::write(const uint16 addr, const uint8 data)
     wtab[lookup[addr]](addr, data);
 }
 
-void Bus::map(uint16 start, uint16 end, Reader reader, Writer writer)
+void Bus::map(uint16 start, uint32 end, Reader reader, Writer writer)
 {
     int id = 0;
 

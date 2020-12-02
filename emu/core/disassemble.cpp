@@ -71,9 +71,9 @@ inline static std::string disass_branch(const char name[4], int8_t disp,
 
 std::string CPU::disassemble() const
 {
-    uint8 instruction = bus.memory[pc.reg];
-    uint8 op1 = bus.memory[pc.reg+1];
-    uint8 op2 = bus.memory[pc.reg+2];
+    uint8 instruction = mem[pc.reg];
+    uint8 op1 = mem[pc.reg+1];
+    uint8 op2 = mem[pc.reg+2];
 #define INSTR_IMPLD(id, name) \
     case id: return disass_implied(#name);
 #define INSTR_AMODE(id, name, mode, ...) \
