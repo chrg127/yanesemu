@@ -454,34 +454,70 @@ uint8 CPU::instr_ror(uint8 val)
 }
 
 
+void CPU::instr_inx()
+{
+    cycle();
+    xreg++;
+    procstatus.zero = (xreg == 0);
+    procstatus.neg  = (xreg & 0x80);
+    last_cycle();
+}
+
+void CPU::instr_iny()
+{
+    cycle();
+    yreg++;
+    procstatus.zero = (yreg == 0);
+    procstatus.neg  = (yreg & 0x80);
+    last_cycle();
+}
 
 // cycles for all increase/decrease func: 2
-#define func_increase(reg, regname) \
-void CPU::instr_in##reg() \
-{ \
-    cycle(); \
-    regname++; \
-    procstatus.zero = xreg == 0; \
-    procstatus.neg  = xreg & 0x80; \
-    last_cycle(); \
-}
-func_increase(x, xreg)
-func_increase(y, yreg)
+// #define func_increase(reg, regname) \
+// void CPU::instr_in##reg() \
+// { \
+//     cycle(); \
+//     regname++; \
+//     procstatus.zero = xreg == 0; \
+//     procstatus.neg  = xreg & 0x80; \
+//     last_cycle(); \
+// }
+// func_increase(x, xreg)
+// func_increase(y, yreg)
 
-#define func_decrease(reg, regname) \
-void CPU::instr_de##reg() \
-{ \
-    cycle(); \
-    regname--; \
-    procstatus.zero = xreg == 0; \
-    procstatus.neg  = xreg & 0x80; \
-    last_cycle(); \
+void CPU::instr_dex()
+{
+    cycle();
+    xreg--;
+    procstatus.zero = (xreg == 0);
+    procstatus.neg  = (xreg & 0x80);
+    last_cycle();
 }
-func_decrease(x, xreg)
-func_decrease(y, yreg)
 
-#undef func_increase
-#undef func_decrease
+void CPU::instr_dey()
+{
+    cycle();
+    yreg--;
+    procstatus.zero = (yreg == 0);
+    procstatus.neg  = (yreg & 0x80);
+    last_cycle();
+}
+
+
+// #define func_decrease(reg, regname) \
+// void CPU::instr_de##reg() \
+// { \
+//     cycle(); \
+//     regname--; \
+//     procstatus.zero = xreg == 0; \
+//     procstatus.neg  = xreg & 0x80; \
+//     last_cycle(); \
+// }
+// func_decrease(x, xreg)
+// func_decrease(y, yreg)
+
+// #undef func_increase
+// #undef func_decrease
 
 void CPU::instr_php()
 {
