@@ -68,14 +68,13 @@ int main(int argc, char *argv[])
         error("ROM file not specified\n");
         return 1;
     } else if (!emu.init(flags.get_item(), logfile)) {
-        error("can't open rom file\n");
         return 1;
     }
     // else if (!v.create()) {
     //     error("can't initialize video subsytem\n");
     //     return 1;
     // }
-    
+
     emu.power();
     // while (!v.closed()) {
         // v.poll();

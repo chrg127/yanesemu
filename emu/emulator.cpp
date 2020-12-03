@@ -12,7 +12,7 @@ using namespace Core;
 bool Emulator::init(std::string_view s, Util::File &log)
 {
     if (!cartridge.open(s)) {
-        error("%s\n", cartridge.geterr().data());
+        error("%s: %s\n", s.data(), cartridge.geterr().data());
         return false;
     }
     cartridge.printinfo(log);

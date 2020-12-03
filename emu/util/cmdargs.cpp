@@ -107,7 +107,7 @@ ArgFlags ArgParser::parse_args(int argc, char *argv[])
             }
         } else {
             if (f.item != "")
-                warning("%s: item already specified", *argv);
+                warning("item already specified: %s\n", *argv);
             f.item = std::string_view(*argv);
         }
     }
