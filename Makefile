@@ -27,7 +27,7 @@ RELPRGNAME = emu-release
 all: debug
 
 # these are special - they #include other .cpp files
-$(DEBDIR)/cpu.o: emu/core/cpu.cpp emu/core/bus.cpp emu/core/opcodes.cpp emu/core/disassemble.cpp $(HEADERS)
+$(DEBDIR)/cpu.o: emu/core/cpu.cpp emu/core/opcodes.cpp emu/core/disassemble.cpp $(HEADERS)
 	$(CXX) $(CFLAGS) -c $< -o $@
 
 $(DEBDIR)/ppu.o: emu/core/ppu.cpp emu/core/ppumain.cpp emu/core/vram.cpp emu/core/background.cpp emu/core/oam.cpp $(HEADERS)

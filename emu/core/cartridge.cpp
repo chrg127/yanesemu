@@ -11,9 +11,62 @@ enum {
 
 bool Cartridge::parseheader()
 {
-    // parse format
+    auto parse_ines = [=]() {
+        if (header[5] == 0)
+            has.chrram = true;
+        prgram_size = header[8];
+        // the specification says this bit exists,
+        // but no emus make use of it
+        //region = header[9] & 1;
+        region = (header[10] & 3);
+        has.prgram = header[10] & 0x10;
+        has.bus_conflicts = header[10] & 0x20;
+    };
+    auto parse_nes2_0 = [=]() {
+        // int shift;
+
+        // prgrom_size |= (header[9] & 0xF) << 8;
+        // chrrom_size |= (header[9] & 0xF0) << 8;
+        // mapper      |= (header[8] & 0xF) << 8;
+        // submapper   = header[8] & 0xF0;
+
+        // shift = header[10] & 0xF;
+        // if (shift == 0)
+        //     has.prgram = false;
+        // else {
+        //     has.prgram = true;
+        //     prgram_size = 64 << shift;
+        // }
+
+        // shift = header[10] & 0xF0;
+        // eeprom_size = (shift == 0) ? 0 : 64 << shift;
+
+        // shift = header[11] & 0xF;
+        // if (shift == 0)
+        //     has.chrram = false;
+        // else {
+        //     has.chrram = true;
+        //     chrram_size = 64 << shift;
+        // }
+        // shift = header[11] & 0xF0;
+        // chrnvram_size = (shift == 0) ? 0 : 64 << shift;
+
+        // cpu_ppu_timing =  header[12] & 3;
+
+        // vs_ppu_type = vs_hw_type = 0;
+        // if (console_type == CONSOLE_TYPE_VSSYSTEM) {
+        //     vs_ppu_type = header[13] & 0xF;
+        //     vs_hw_type = header[13] & 0xF0;
+        // } else if (console_type == 3)
+        //     console_type = header[13] & 0xF;
+
+        // misc_roms_num = header[14] & 3;
+
+        //     def_expansion_dev = header[15] & 0x3F;
+    };
     fformat = Format::INVALID;
-    if (header[0] == 'N' && header[1] == 'E' && header[2] == 'S' && header[3] == 0x1A)
+    if (header[0] == 'N' && header[1] == 'E' && header[2] == 'S'
+            && header[3] == 0x1A)
         fformat = Format::INES;
     if (fformat == Format::INES && (header[7] & 0xC) == 0x8) {
         errid = ERRID_NES20;
@@ -24,7 +77,7 @@ bool Cartridge::parseheader()
         return false;
     }
 
-    nametab_mirroring   = header[6] & 1;
+    nt_mirroring        = header[6] & 1;
     has.battery         = header[6] & 2;
     has.trainer         = header[6] & 4;
     has.fourscreenmode  = header[6] & 8;
@@ -39,62 +92,6 @@ bool Cartridge::parseheader()
     // else if (fformat == Format::NES20)
     //     parse_nes20();
     return true;
-}
-
-void Cartridge::parse_ines()
-{
-    if (header[5] == 0)
-        has.chrram = true;
-    prgram_size = header[8];
-    // the specification says this bit exists, but no emus make use of it
-    //region = header[9] & 1;
-    region = (header[10] & 3);
-    has.prgram = header[10] & 0x10;
-    has.bus_conflicts = header[10] & 0x20;
-}
-
-void Cartridge::parse_nes20()
-{
-    // int shift;
-
-    // prgrom_size |= (header[9] & 0xF) << 8;
-    // chrrom_size |= (header[9] & 0xF0) << 8;
-    // mapper      |= (header[8] & 0xF) << 8;
-    // submapper   = header[8] & 0xF0;
-
-    // shift = header[10] & 0xF;
-    // if (shift == 0)
-    //     has.prgram = false;
-    // else {
-    //     has.prgram = true;
-    //     prgram_size = 64 << shift;
-    // }
-
-    // shift = header[10] & 0xF0;
-    // eeprom_size = (shift == 0) ? 0 : 64 << shift;
-
-    // shift = header[11] & 0xF;
-    // if (shift == 0)
-    //     has.chrram = false;
-    // else {
-    //     has.chrram = true;
-    //     chrram_size = 64 << shift;
-    // }
-    // shift = header[11] & 0xF0;
-    // chrnvram_size = (shift == 0) ? 0 : 64 << shift;
-
-    // cpu_ppu_timing =  header[12] & 3;
-
-    // vs_ppu_type = vs_hw_type = 0;
-    // if (console_type == CONSOLE_TYPE_VSSYSTEM) {
-    //     vs_ppu_type = header[13] & 0xF;
-    //     vs_hw_type = header[13] & 0xF0;
-    // } else if (console_type == 3)
-    //     console_type = header[13] & 0xF;
-
-    // misc_roms_num = header[14] & 3;
-
-    //     def_expansion_dev = header[15] & 0x3F;
 }
 
 bool Cartridge::open(std::string_view s)
@@ -119,6 +116,20 @@ bool Cartridge::open(std::string_view s)
         chrrom.lock();
     }
     return true;
+}
+
+uint8 Cartridge::read_prgrom(uint16 addr)
+{
+    /* mapper defined function to convert addresses goes here */
+    uint16 offset = addr - 0x8000;
+    uint16 start = prgrom.getsize() - 0x8000;
+    uint16 eff_addr = start + offset;
+    return prgrom.read(eff_addr);
+}
+
+uint8 Cartridge::read_chrrom(uint16 addr)
+{
+    return chrrom.read(addr);
 }
 
 void Cartridge::printinfo(Util::File &log) const

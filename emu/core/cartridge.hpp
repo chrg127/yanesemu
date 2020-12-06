@@ -105,32 +105,22 @@ class Cartridge {
     } has;
 
     bool parseheader();
-    void parse_ines();
-    void parse_nes20();
 
 public:
     ~Cartridge()
     { }
 
     bool open(std::string_view s);
+    uint8 read_prgrom(uint16 addr);
+    uint8 read_chrrom(uint16 addr);
     void printinfo(Util::File &f) const;
     std::string_view geterr() const;
 
-    inline const ROM &get_prgrom()
-    { return prgrom; }
+    // inline const ROM &get_prgrom()
+    // { return prgrom; }
 
-    inline const ROM &get_chrrom()
-    { return chrrom; }
-
-    inline uint8 read_prgrom(uint16 addr)
-    {
-        return prgrom.read(addr);
-    }
-
-    inline uint8 read_chrrom(uint16 addr)
-    {
-        return chrrom.read(addr);
-    }
+    // inline const ROM &get_chrrom()
+    // { return chrrom; }
 
     Format file_format() const
     { return fformat; }

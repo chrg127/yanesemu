@@ -4,28 +4,21 @@
 #include <string>
 #include <emu/core/types.hpp>
 #include <emu/core/memorymap.hpp>
+#include <emu/core/genericbus.hpp>
 
 namespace Util { class File; }
 
 namespace Core {
 
+class Cartridge;
 class PPU;
 
 class CPU {
+    Cartridge *cart;
+    PPU *ppu;
 
-    struct Bus {
-        uint8 memory[CPUMap::MEMSIZE];
-        bool write_enable = false;
-        PPU *ppu;
-
-        void init(const ROM &prgrom);
-        uint8 read(uint16 addr);
-        void write(uint16 addr, uint8 val);
-        void reset()
-        { }
-        const uint8 *getmemory() const
-        { return memory; }
-    } bus;
+    Bus bus = Bus(0xFFFF+1);
+    uint8 mem[0xFFFF+1];
 
     uint8 curropcode;
     Reg16 op;       // operand
@@ -87,17 +80,17 @@ class CPU {
     void irqpoll();
     void nmipoll();
 
-    inline uint8 readmem(uint16 addr)
-    {
-        cycle();
-        return bus.read(addr);
-    }
+    // inline uint8 readmem(uint16 addr)
+    // {
+    //     cycle();
+    //     return bus.read(addr);
+    // }
 
-    inline void writemem(uint16 addr, uint8 val)
-    {
-        cycle();
-        bus.write(addr, val);
-    }
+    // inline void writemem(uint16 addr, uint8 val)
+    // {
+    //     cycle();
+    //     bus.write(addr, val);
+    // }
 
     using InstrFuncRead = void (CPU::*)(const uint8);
     using InstrFuncMod = uint8 (CPU::*)(uint8);
@@ -133,7 +126,7 @@ class CPU {
     void addrmode_indx_write(uint8 val);
     void addrmode_indy_write(uint8 val);
 
-    /* 
+    /*
      * opcode functions missing (as they are not needed):
      * - STA, STX, STY (use addrmode_write functions directly)
      * - BEQ, BNE, BMI, BPL, BVC, BVS, BCC, BCS (use instr_branch)
@@ -184,14 +177,8 @@ class CPU {
     void instr_nop();
 
 public:
-    CPU()
-    {
-        bus.write_enable = false;
-        procstatus.reset();
-    }
-
     void main();
-    void power(const ROM &prgrom);
+    void power();
     void fire_irq();
     void fire_nmi();
     void reset();
@@ -200,12 +187,18 @@ public:
 
     inline int get_cycles()
     { return cycles; }
+
     inline const uint8 *getmemory() const
-    { return bus.getmemory(); }
+    { return mem; }
+
     inline uint8 peek_opcode() const
     { return curropcode; }
-    inline void attach_ppu(PPU *ppu)
-    { bus.ppu = ppu; }
+
+    inline void attach_ppu(PPU *p)
+    { ppu = p; }
+
+    inline void load_cartridge(Cartridge *c)
+    { cart = c; }
 };
 
 } // namespace Core

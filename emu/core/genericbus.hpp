@@ -14,7 +14,9 @@ class Bus {
     using Reader = std::function<uint8(uint16)>;
     using Writer = std::function<void(uint16, uint8)>;
 
-    std::size_t size = 0;
+    // uint32 is used to permit a size of 0x10000
+    // you can't, however, address more than 0xFFFF
+    uint32      size = 0;
     unsigned   *lookup = nullptr;
     Reader      rtab[TABSIZ];
     Writer      wtab[TABSIZ];
@@ -22,7 +24,7 @@ class Bus {
 
 public:
     Bus() = default;
-    Bus(const std::size_t s)
+    Bus(const uint32 s)
     { reset(s); }
     Bus(const Bus &) = delete;
     Bus(Bus &&b)
@@ -34,7 +36,7 @@ public:
     void   reset(const std::size_t s);
     uint8  read(const uint16 addr) const;
     void   write(const uint16 addr, const uint8 data);
-    void   map(uint16 start, uint16 end, Reader reader, Writer writer);
+    void   map(uint16 start, uint32 end, Reader reader, Writer writer);
 };
 
 } // namespace Core

@@ -120,8 +120,7 @@ class PPU {
     friend class PPUBus;
 
 public:
-    PPU(CPU *cpup, Cartridge *cartp) :
-        cpu(cpup), cart(cartp), vram(*this), bg(*this), oam(*this)
+    PPU() : vram(*this), bg(*this), oam(*this)
     { }
 
     void power();
@@ -145,6 +144,12 @@ public:
 
     inline uint32 getmemsize() const
     { return 0x4000; }
+
+    inline void attach_cpu(CPU *c)
+    { cpu = c; }
+
+    inline void load_cartridge(Cartridge *c)
+    { cart = c; }
 };
 
 } // namespace Core

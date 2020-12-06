@@ -168,9 +168,9 @@ void PPU::writereg(const uint16 which, const uint8 data)
 
 void PPU::output()
 {
-    uint8 bgpixel = bg.output();
-    assert(lines <= 256 && cycles <= 239);
-    screen[lines*239+cycles] = bgpixel;
+    // uint8 bgpixel = bg.output();
+    // assert(lines <= 256 && cycles <= 239);
+    // screen[lines*239+cycles] = bgpixel;
 }
 
 // palette: 0-3, one of the 4 defined palettes for this frame

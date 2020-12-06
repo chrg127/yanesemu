@@ -6,13 +6,17 @@
 #include <emu/core/cartridge.hpp>
 #include <emu/util/file.hpp>
 
+namespace Util { class File; }
+
 class Emulator {
+    Core::Cartridge cartridge;
     Core::CPU cpu;
     Core::PPU ppu;
     int cycle = 0;
 
 public:
-    void init(Core::Cartridge &cart);
+    bool init(std::string_view s, Util::File &f);
+    void power();
     void run();
     void log(Util::File &logfile);
     void dump(Util::File &dumpfile);

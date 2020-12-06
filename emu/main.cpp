@@ -34,7 +34,6 @@ static Emulator emu;
 int main(int argc, char *argv[])
 {
     File logfile, dumpfile;
-    Core::Cartridge cart;
     Video::Video v;
 
     if (argc < 2) {
@@ -68,20 +67,19 @@ int main(int argc, char *argv[])
     } else if (flags.get_item() == "") {
         error("ROM file not specified\n");
         return 1;
-    } else if (!cart.open(flags.get_item())) {
-        error("can't open rom file\n");
+    } else if (!emu.init(flags.get_item(), logfile)) {
         return 1;
     }
-    else if (!v.create()) {
-        error("can't initialize video subsytem\n");
-        return 1;
-    }
+    // else if (!v.create()) {
+    //     error("can't initialize video subsytem\n");
+    //     return 1;
+    // }
 
-    emu.init(cart);
-    cart.printinfo(logfile);
-    while (!v.closed()) {
-        v.poll();
-        v.render();
+    emu.power();
+    // while (!v.closed()) {
+        // v.poll();
+        // v.render();
+    for (;;) {
         emu.log(logfile);
         emu.run();
     }
