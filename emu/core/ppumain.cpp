@@ -43,25 +43,29 @@ void PPU::cycle_fetchhighbg(bool cycle)
 
 void PPU::cycle_incvhorz()
 {
-    vram.inc_horzpos();
+    if (bg.show)
+        vram.inc_horzpos();
     DBGPUTC('+');
 }
 
 void PPU::cycle_incvvert()
 {
-    vram.inc_vertpos();
+    if (bg.show)
+        vram.inc_vertpos();
     DBGPUTC('^');
 }
 
 void PPU::cycle_copyhorz()
 {
-    vram.copy_horzpos();
+    if (bg.show)
+        vram.copy_horzpos();
     DBGPUTC('c');
 }
 
 void PPU::cycle_copyvert()
 {
-    vram.copy_vertpos();
+    if (bg.show)
+        vram.copy_vertpos();
     DBGPUTC('c');
 }
 
@@ -197,7 +201,7 @@ void PPU::lcycle(unsigned int cycle)
         cycletab[cycle](this);
         if (cycle == 1)
             vblank_end();
-        if (cycle > 278 && cycle < 306)
+        if (cycle >= 280 && cycle <= 304)
             cycle_copyvert();
         if (cycle == 340)
             begin_frame();
