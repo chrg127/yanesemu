@@ -330,8 +330,7 @@ void CPU::printinfo(Util::File &lf) const
     if (!lf.isopen())
         return;
 
-    lf.printf("PC: %04X A: %02X X: %02X Y: %02X S: %02X ",
-                   pc.reg, accum, xreg, yreg, sp);
+    lf.printf("PC: %04X A: %02X X: %02X Y: %02X S: %02X ", pc.reg, accum, xreg, yreg, sp);
 
 #define WRITEFLAG(f, c) lf.printf("%c", (f == 1) ? std::toupper(c) : std::tolower(c) )
     WRITEFLAG(procstatus.neg,     'n');
@@ -344,8 +343,7 @@ void CPU::printinfo(Util::File &lf) const
     WRITEFLAG(procstatus.carry,   'c');
 #undef WRITEFLAG
 
-    lf.printf(" cycles: %d", cycles);
-    lf.putc('\n');
+    lf.printf(" cycles: %d ", cycles);
 }
 
 } // namespace Core

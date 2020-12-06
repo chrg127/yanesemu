@@ -8,6 +8,7 @@
 #include <emu/core/cartridge.hpp>
 #define DEBUG
 #include <emu/util/debug.hpp>
+#include <emu/util/file.hpp>
 
 namespace Core {
 
@@ -206,6 +207,11 @@ void PPU::mapbus()
     reader = [=](uint16 addr)             { return vram.mem[addr & ~0xE0]; };
     writer = [=](uint16 addr, uint8 data) { vram.mem[addr & ~0xE0] = data; };
     bus.map(0x3F00, 0x4000, reader, writer);
+}
+
+void printinfo(Util::File &log)
+{
+    log.printf("line = %lu; cycle = %lu; v = %u\n", lines%262, cycles%341, vram.v);
 }
 
 } // namespace Core

@@ -30,6 +30,7 @@ void Emulator::log(File &logfile)
     logfile.printf("Instruction [%02X] ", cpu.peek_opcode());
     logfile.putstr(cpu.disassemble().c_str());
     logfile.putc('\n');
+    ppu.printinfo(logfile);
 }
 
 void Emulator::dump(File &dumpfile)

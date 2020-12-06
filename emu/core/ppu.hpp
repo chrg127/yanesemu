@@ -6,6 +6,8 @@
 #include <emu/core/memorymap.hpp>
 #include <emu/core/genericbus.hpp>
 
+namespace Util { class File; }
+
 namespace Core {
 
 class CPU;
@@ -127,6 +129,7 @@ public:
     void main();
     uint8 readreg(const uint16 which);
     void writereg(const uint16 which, const uint8 data);
+    void printinfo(Util::File &log);
 
     // for ppumain.cpp
     template <unsigned int Cycle>
