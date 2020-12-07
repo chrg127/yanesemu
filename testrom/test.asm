@@ -120,8 +120,8 @@ loadpal_loop:   ; fill background palette
     lda #$00
     sta scroll_x
     sta scroll_y
-    jsr waitvblank
     jsr write_helloworld    ; and write a 'hello world'
+    jsr waitvblank
     lda #$20
     sta $2006
     lda #$00

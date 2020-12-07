@@ -43,10 +43,11 @@ void Emulator::run()
 void Emulator::log(File &logfile)
 {
     cpu.printinfo(logfile);
+    // logfile.putc('\n');
+    ppu.printinfo(logfile);
     logfile.printf("Instruction [%02X] ", cpu.peek_opcode());
     logfile.putstr(cpu.disassemble().c_str());
     logfile.putc('\n');
-    ppu.printinfo(logfile);
 }
 
 void Emulator::dump(File &dumpfile)

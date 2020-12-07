@@ -209,9 +209,9 @@ void PPU::mapbus()
     bus.map(0x3F00, 0x4000, reader, writer);
 }
 
-void printinfo(Util::File &log)
+void PPU::printinfo(Util::File &log)
 {
-    log.printf("line = %lu; cycle = %lu; v = %u\n", lines%262, cycles%341, vram.v);
+    log.printf("line = %03lu; cycle = %03lu; v = %04X ", lines%262, cycles%341, vram.v);
 }
 
 } // namespace Core
