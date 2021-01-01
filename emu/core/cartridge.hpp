@@ -3,6 +3,7 @@
 
 #include <string_view>
 #include <emu/core/types.hpp>
+#include <emu/core/genericbus.hpp>
 #include <emu/util/file.hpp>
 
 namespace Core {
@@ -72,7 +73,9 @@ class Cartridge {
         INES,
         NES20,
     } fformat = Format::INVALID;
-
+    
+    Bus *cpubus;
+    Bus *ppubus;
     ROM prgrom;
     ROM chrrom;
     static const int HEADER_LEN = 16;
@@ -111,16 +114,17 @@ public:
     { }
 
     bool open(std::string_view s);
+    void mapbus();
     uint8 read_prgrom(uint16 addr);
     uint8 read_chrrom(uint16 addr);
     void printinfo(Util::File &f) const;
     std::string_view geterr() const;
-
-    // inline const ROM &get_prgrom()
-    // { return prgrom; }
-
-    // inline const ROM &get_chrrom()
-    // { return chrrom; }
+    
+    inline void attach_bus(Bus *cb, Bus *pb)
+    {
+        cpubus = cb;
+        ppubus = pb;
+    }
 
     Format file_format() const
     { return fformat; }

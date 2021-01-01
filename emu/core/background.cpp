@@ -18,7 +18,7 @@ void PPU::Background::fetch_nt(bool dofetch)
 {
     if (!dofetch)
         return;
-    latch.nt = ppu.bus.read(0x2000 | (ppu.vram.v & 0x0FFF));
+    latch.nt = ppu.bus->read(0x2000 | (ppu.vram.v & 0x0FFF));
 }
 
 void PPU::Background::fetch_attr(bool dofetch)
@@ -26,7 +26,7 @@ void PPU::Background::fetch_attr(bool dofetch)
     // 0x23C0 | NN | YYY | XXX
     if (!dofetch)
         return;
-    latch.attr = ppu.bus.read(0x23C0
+    latch.attr = ppu.bus->read(0x23C0
                               | (ppu.vram.v      & 0x0C00)
                               | (ppu.vram.v >> 4 & 0x0038)
                               | (ppu.vram.v >> 2 & 0x0007));
@@ -36,14 +36,14 @@ void PPU::Background::fetch_lowbg(bool dofetch)
 {
     if (!dofetch)
         return;
-    latch.lowbg = ppu.bus.read(0x1000*patterntab_addr + latch.nt);
+    latch.lowbg = ppu.bus->read(0x1000*patterntab_addr + latch.nt);
 }
 
 void PPU::Background::fetch_highbg(bool dofetch)
 {
     if (!dofetch)
         return;
-    latch.hibg  = ppu.bus.read(0x1000*patterntab_addr + latch.nt+8);
+    latch.hibg  = ppu.bus->read(0x1000*patterntab_addr + latch.nt+8);
 }
 
 void PPU::Background::shift_run()

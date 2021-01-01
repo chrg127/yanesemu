@@ -118,6 +118,16 @@ bool Cartridge::open(std::string_view s)
     return true;
 }
 
+void Cartridge::mapbus()
+{
+    cpubus->map(0x8000, 0x10000,
+            [=] (uint16 addr) { return read_prgrom(addr); },
+            [=] (uint16 addr, uint8 data) { /***********/ });
+    ppubus->map(0, 0x2000,
+            [=] (uint16 addr) { return read_chrrom(addr); },
+            [=] (uint16 addr, uint8 data) { /***********/ });
+}
+
 uint8 Cartridge::read_prgrom(uint16 addr)
 {
     /* mapper defined function to convert addresses goes here */

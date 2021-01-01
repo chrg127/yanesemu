@@ -14,13 +14,15 @@ class CPU;
 class Cartridge;
 
 class PPU {
-    CPU *cpu;
-    Cartridge *cart;
-    Bus bus = Bus(0x4000);
+    // CPU *cpu;
+    // Cartridge *cart;
+    Bus *bus;
+    Bus *cpubus;
 
     unsigned long cycles = 0;
     unsigned long lines  = 0;
     uint8   screen[256*224];
+    int mirroring = 0;
 
     uint8   io_latch;
     bool    nmi_enabled;
@@ -144,12 +146,20 @@ public:
 
     inline uint32 getmemsize() const
     { return 0x4000; }
+    
+    inline void attach_bus(Bus *pb, Bus *cb)
+    {
+        bus = pb;
+        cpubus = cb;
+    }
+    
+    void set_mirroring(int m) { mirroring = m; }
 
-    inline void attach_cpu(CPU *c)
-    { cpu = c; }
+    // inline void attach_cpu(CPU *c)
+    // { cpu = c; }
 
-    inline void load_cartridge(Cartridge *c)
-    { cart = c; }
+    // inline void load_cartridge(Cartridge *c)
+    // { cart = c; }
 };
 
 } // namespace Core

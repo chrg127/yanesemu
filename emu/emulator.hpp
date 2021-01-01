@@ -12,6 +12,8 @@ class Emulator {
     Core::Cartridge cartridge;
     Core::CPU cpu;
     Core::PPU ppu;
+    Core::Bus cpu_bus = Core::Bus(0x10000);
+    Core::Bus ppu_bus = Core::Bus(0x4000);
     int cycle = 0;
 
 public:

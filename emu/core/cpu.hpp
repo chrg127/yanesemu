@@ -14,10 +14,10 @@ class Cartridge;
 class PPU;
 
 class CPU {
-    Cartridge *cart;
-    PPU *ppu;
+    //Cartridge *cart;
+    //PPU *ppu;
+    Bus *bus;
 
-    Bus bus = Bus(0xFFFF+1);
     uint8 mem[0xFFFF+1];
 
     uint8 curropcode;
@@ -83,13 +83,13 @@ class CPU {
     // inline uint8 readmem(uint16 addr)
     // {
     //     cycle();
-    //     return bus.read(addr);
+    //     return bus->read(addr);
     // }
 
     // inline void writemem(uint16 addr, uint8 val)
     // {
     //     cycle();
-    //     bus.write(addr, val);
+    //     bus->write(addr, val);
     // }
 
     using InstrFuncRead = void (CPU::*)(const uint8);
@@ -193,12 +193,16 @@ public:
 
     inline uint8 peek_opcode() const
     { return curropcode; }
+    
+    inline void attach_bus(Bus *b)
+    {
+        bus = b;
+    }
+    // inline void attach_ppu(PPU *p)
+    // { ppu = p; }
 
-    inline void attach_ppu(PPU *p)
-    { ppu = p; }
-
-    inline void load_cartridge(Cartridge *c)
-    { cart = c; }
+    // inline void load_cartridge(Cartridge *c)
+    // { cart = c; }
 };
 
 } // namespace Core

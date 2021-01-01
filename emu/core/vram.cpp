@@ -23,21 +23,21 @@ void PPU::VRAM::reset()
 
 void PPU::VRAM::inc_horzpos()
 {
-    // if ((v & 0x001F) == 31) {
-    //     v &= ~0x001F;
-    //     v ^= 0x0400;
-    // } else
-    //     v += 1;
-    /*
-     * >>> def getwhole(x):
-     * ...     return ((x & 0x400) >> 5) | (x & 0x1F)
-     * >>> def recompose(x): return (x & 0x20) << 5 | (x & 0x1F)
-     * >>> def incv6(x):
-     * ...     t = getwhole(x)+1
-     * ...     return (x & ~0x41F) | recompose(t)
-     */
-    uint8 x = ((v & 0x400) >> 5) | ((v & 0x1F) + 1);
-    v = (v & ~0x41F) | ((x & 0x20) << 5) | (x & 0x1F);
+    // this version uses an 'if', which usually leads to a branch, which can be
+    // costly.
+    if ((v & 0x001F) == 31) {
+        v &= ~0x001F;
+        v ^= 0x0400;
+    } else
+        v += 1;
+    // this versions uses bitwise operations instead.
+    // uint8 x = (((v & 0x400) >> 5) | (v & 0x1F)) + 1;
+    // v = (v & ~0x41F) | ((x & 0x20) << 5) | (x & 0x1F);
+    //
+    // although the second version seems better, some benchmarking proves that
+    // the first version is better instead. i am still investigating whether
+    // there can be a better third version (nesdev mentions this code is
+    // "unoptimized")
 }
 
 void PPU::VRAM::inc_vertpos()

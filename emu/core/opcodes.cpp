@@ -22,7 +22,7 @@ void CPU::addrmode_zero_read(InstrFuncRead f)
 {
     // cycles: 3
     op.low = fetch();
-    (this->*f)(bus.read(op.low));
+    (this->*f)(bus->read(op.low));
     last_cycle();
 }
 
@@ -30,7 +30,7 @@ void CPU::addrmode_zerox_read(InstrFuncRead f)
 {
     // cycles: 4
     op.low = fetch();
-    (this->*f)(bus.read(op.low + xreg));
+    (this->*f)(bus->read(op.low + xreg));
     // increment due to indexed addressing
     cycle();
     last_cycle();
@@ -40,7 +40,7 @@ void CPU::addrmode_zeroy_read(InstrFuncRead f)
 {
     // cycles: 4
     op.low = fetch();
-    (this->*f)(bus.read(op.low + yreg));
+    (this->*f)(bus->read(op.low + yreg));
     cycle();
     last_cycle();
 }
@@ -50,7 +50,7 @@ void CPU::addrmode_abs_read(InstrFuncRead f)
     // cycles: 4
     op.low = fetch();
     op.high = fetch();
-    (this->*f)(bus.read(op.reg));
+    (this->*f)(bus->read(op.reg));
     last_cycle();
 }
 
@@ -62,7 +62,7 @@ void CPU::addrmode_absx_read(InstrFuncRead f)
     op.low = fetch();
     // cycle 3 is second operand fetch + adding X to the full reg
     op.high = fetch();
-    res = bus.read(op.reg+xreg);
+    res = bus->read(op.reg+xreg);
     (this->*f)(res.reg);
     if (op.high != res.high)
         cycle();
@@ -76,7 +76,7 @@ void CPU::addrmode_absy_read(InstrFuncRead f)
 
     op.low = fetch();
     op.high = fetch();
-    res = bus.read(op.reg+yreg);
+    res = bus->read(op.reg+yreg);
     (this->*f)(res.reg);
     if (op.high != res.high)
         cycle();
@@ -90,9 +90,9 @@ void CPU::addrmode_indx_read(InstrFuncRead f)
 
     op.low = fetch();
     cycle();
-    res.low = bus.read(op.low+xreg);
-    res.high = bus.read(op.low+xreg+1);
-    (this->*f)(bus.read(res.reg));
+    res.low = bus->read(op.low+xreg);
+    res.high = bus->read(op.low+xreg+1);
+    (this->*f)(bus->read(res.reg));
     last_cycle();
 }
 
@@ -102,10 +102,10 @@ void CPU::addrmode_indy_read(InstrFuncRead f)
     Reg16 res;
 
     op.low = fetch();
-    res.low = bus.read(op.low);
-    res.high = bus.read(op.low+1);
+    res.low = bus->read(op.low);
+    res.high = bus->read(op.low+1);
     res.reg += yreg;
-    (this->*f)(bus.read(res.reg));
+    (this->*f)(bus->read(res.reg));
     if (op.high != res.high)
         cycle();
     last_cycle();
@@ -127,10 +127,10 @@ void CPU::addrmode_zero_modify(InstrFuncMod f)
     Reg16 res;
 
     op.low = fetch();
-    res = (this->*f)(bus.read(op.low));
+    res = (this->*f)(bus->read(op.low));
     // the cpu uses a cycle to write back an unmodified value
     cycle();
-    bus.write(op.low, res.reg);
+    bus->write(op.low, res.reg);
     last_cycle();
 }
 
@@ -141,9 +141,9 @@ void CPU::addrmode_zerox_modify(InstrFuncMod f)
 
     op.low = fetch();
     cycle();
-    res = (this->*f)(bus.read(op.low + xreg));
+    res = (this->*f)(bus->read(op.low + xreg));
     cycle();
-    bus.write(op.low + xreg, res.reg);
+    bus->write(op.low + xreg, res.reg);
     last_cycle();
 }
 
@@ -154,9 +154,9 @@ void CPU::addrmode_abs_modify(InstrFuncMod f)
 
     op.low = fetch();
     op.high = fetch();
-    res = (this->*f)(bus.read(op.reg));
+    res = (this->*f)(bus->read(op.reg));
     cycle();
-    bus.write(op.reg, res.reg);
+    bus->write(op.reg, res.reg);
     last_cycle();
 }
 
@@ -167,12 +167,12 @@ void CPU::addrmode_absx_modify(InstrFuncMod f)
 
     op.low = fetch();
     op.high = fetch();
-    res = (this->*f)(bus.read(op.reg + xreg));
+    res = (this->*f)(bus->read(op.reg + xreg));
     // reread from effective address
     cycle();
     // write the value back to effective address
     cycle();
-    bus.write(op.reg + xreg, res.reg);
+    bus->write(op.reg + xreg, res.reg);
     last_cycle();
 }
 
@@ -182,7 +182,7 @@ void CPU::addrmode_zero_write(uint8 val)
 {
     // cycles: 3
     op.low = fetch();
-    bus.write(op.low, val);
+    bus->write(op.low, val);
     last_cycle();
 }
 
@@ -191,7 +191,7 @@ void CPU::addrmode_zerox_write(uint8 val)
     // cycles: 4
     op.low = fetch();
     cycle();
-    bus.write(op.low + xreg, val);
+    bus->write(op.low + xreg, val);
     last_cycle();
 }
 
@@ -200,7 +200,7 @@ void CPU::addrmode_zeroy_write(uint8 val)
     // cycles: 4
     op.low = fetch();
     cycle();
-    bus.write(op.low + yreg, val);
+    bus->write(op.low + yreg, val);
     last_cycle();
 }
 
@@ -209,7 +209,7 @@ void CPU::addrmode_abs_write(uint8 val)
     // cycles: 4
     op.low = fetch();
     op.high = fetch();
-    bus.write(op.reg, val);
+    bus->write(op.reg, val);
     last_cycle();
 }
 
@@ -219,7 +219,7 @@ void CPU::addrmode_absx_write(uint8 val)
     op.low = fetch();
     op.high = fetch();
     cycle();
-    bus.write(op.reg + xreg, val);
+    bus->write(op.reg + xreg, val);
     last_cycle();
 }
 
@@ -229,7 +229,7 @@ void CPU::addrmode_absy_write(uint8 val)
     op.low = fetch();
     op.high = fetch();
     cycle();
-    bus.write(op.reg + yreg, val);
+    bus->write(op.reg + yreg, val);
     last_cycle();
 }
 
@@ -241,9 +241,9 @@ void CPU::addrmode_indx_write(uint8 val)
     op.low = fetch();
     // read from addres, add X to it
     cycle();
-    res.low = bus.read(op.low+xreg);
-    res.high = bus.read(op.low+xreg+1);
-    bus.write(res.reg, val);
+    res.low = bus->read(op.low+xreg);
+    res.high = bus->read(op.low+xreg+1);
+    bus->write(res.reg, val);
     last_cycle();
 }
 
@@ -253,11 +253,11 @@ void CPU::addrmode_indy_write(uint8 val)
     Reg16 res;
 
     op.low = fetch();
-    res.low = bus.read(op.low);
-    res.high = bus.read(op.low+1);
+    res.low = bus->read(op.low);
+    res.high = bus->read(op.low+1);
     res.reg += yreg;
     cycle();
-    bus.write(res.reg, val);
+    bus->write(res.reg, val);
     last_cycle();
 }
 
@@ -601,12 +601,12 @@ void CPU::instr_jmp_ind()
     op.high = fetch();
     // hardware bug
     if (op.low == 0xFF) {
-        pc.low = bus.read(op.reg);
+        pc.low = bus->read(op.reg);
         // reset the low byte, e.g. $02FF -> $0200
-        pc.high = bus.read(op.reg & 0xFF00);
+        pc.high = bus->read(op.reg & 0xFF00);
     } else {
-        pc.low = bus.read(op.reg);
-        pc.high = bus.read(op.reg+1);
+        pc.low = bus->read(op.reg);
+        pc.high = bus->read(op.reg+1);
     }
     last_cycle();
 }

@@ -78,9 +78,9 @@ uint8 PPU::readreg(const uint16 which)
     case 0x2007:
         if (vram.v <= 0x3EFF) {
             io_latch = vram.readbuf;
-            vram.readbuf = bus.read(vram.v);
+            vram.readbuf = bus->read(vram.v);
         } else
-            io_latch = bus.read(vram.v);
+            io_latch = bus->read(vram.v);
         vram.v += vram.inc;
         return io_latch;
 
@@ -154,7 +154,7 @@ void PPU::writereg(const uint16 which, const uint8 data)
         break;
 
     case 0x2007:
-        bus.write(vram.v, data);
+        bus->write(vram.v, data);
         vram.v += vram.inc;
         break;
 
@@ -181,7 +181,7 @@ uint8 PPU::getcolor(bool select, uint8 pal, uint8 palind)
 {
     // this is a 5 bit number
     uint8 n = select << 4 | pal << 2 | palind;
-    return bus.read(0x3F00 + n);
+    return bus->read(0x3F00 + n);
 }
 
 void PPU::mapbus()
@@ -190,23 +190,27 @@ void PPU::mapbus()
     std::function<uint8(uint16)> reader;
     std::function<void(uint16, uint8)> writer;
 
-    switch (cart->mirroring()) {
+    switch (mirroring) {
     case 0: address_nametab = [](uint16 x) { return x &= ~0x800; }; break;
     case 1: address_nametab = [](uint16 x) { return x &= ~0x400; }; break;
     default: assert(false);
     }
 
-    reader = [=](uint16 addr) { return cart->read_chrrom(addr); };
-    writer = [=](uint16 addr, uint8 data) { };
-    bus.map(0, 0x2000, reader, writer);
+    // reader = [=](uint16 addr) { return cart->read_chrrom(addr); };
+    // writer = [=](uint16 addr, uint8 data) { };
+    // bus.map(0, 0x2000, reader, writer);
+
+    reader = [=](uint16 addr)             { return readreg(addr); };
+    writer = [=](uint16 addr, uint8 data) { writereg(addr, data); };
+    cpubus->map(0x2000, 0x2008, reader, writer);
 
     reader = [=](uint16 addr)             { return vram.mem[address_nametab(addr)]; };
     writer = [=](uint16 addr, uint8 data) { vram.mem[address_nametab(addr)] = data; };
-    bus.map(0x2000, 0x3F00, reader, writer);
+    bus->map(0x2000, 0x3F00, reader, writer);
 
     reader = [=](uint16 addr)             { return vram.mem[addr & ~0xE0]; };
     writer = [=](uint16 addr, uint8 data) { vram.mem[addr & ~0xE0] = data; };
-    bus.map(0x3F00, 0x4000, reader, writer);
+    bus->map(0x3F00, 0x4000, reader, writer);
 }
 
 void PPU::printinfo(Util::File &log)

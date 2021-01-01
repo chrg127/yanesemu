@@ -20,7 +20,7 @@ namespace Core {
 /* Fetch next opcode from memory */
 uint8 CPU::fetch()
 {
-    return bus.read(pc.reg++);
+    return bus->read(pc.reg++);
 }
 
 /* Executes a single instruction. */
@@ -225,14 +225,14 @@ void CPU::interrupt(bool reset)
         vec = CPUMap::IRQBRKVEC;
     } else
         vec = CPUMap::IRQBRKVEC;
-    pc.low = bus.read(vec);
-    pc.high = bus.read(vec+1);
+    pc.low = bus->read(vec);
+    pc.high = bus->read(vec+1);
 }
 
 /* Pushes a value to the hardware stack */
 void CPU::push(uint8 val)
 {
-    bus.write(0x0100+sp, val);
+    bus->write(0x0100+sp, val);
     sp--;
 }
 
@@ -240,7 +240,7 @@ void CPU::push(uint8 val)
 uint8 CPU::pull()
 {
     ++sp;
-    return bus.read(0x0100+sp);
+    return bus->read(0x0100+sp);
 }
 
 /* Adds n cycles to the cycle counter */
@@ -296,21 +296,18 @@ void CPU::main()
 /* Emulates the start/reset function of the 6502. */
 void CPU::power()
 {
-    bus.map(0, 0x2000,
+    bus->map(0, 0x2000,
         [=](uint16 addr)             { cycle(); return mem[addr]; },
         [=](uint16 addr, uint8 data) { cycle(); mem[addr] = data; } );
-    bus.map(0x2000, 0x2008,
-        [=](uint16 addr)             { cycle(); return ppu->readreg(addr); },
-        [=](uint16 addr, uint8 data) { cycle(); ppu->writereg(addr, data); });
-    bus.map(0x2008, 0x8000,
+    // bus->map(0x2000, 0x2008,
+    //     [=](uint16 addr)             { cycle(); return ppu->readreg(addr); },
+    //     [=](uint16 addr, uint8 data) { cycle(); ppu->writereg(addr, data); });
+    bus->map(0x2008, 0x8000,
         [=](uint16 addr)             { cycle(); return mem[addr]; },
         [=](uint16 addr, uint8 data) { cycle(); mem[addr] = data; } );
-    bus.map(0x8000, 0xFFFF+1,
-        [=](uint16 addr)             { cycle(); return cart->read_prgrom(addr); },
-        [=](uint16 addr, uint8 data) { cycle(); return 0; });
-    // prgrom.copy_to(memory+CPUMap::PRGROM_START,
-    //  prgrom.getsize() - (CPUMap::PRGROM_SIZE+1), CPUMap::PRGROM_SIZE);
-    // bus.write_enable = true;
+    // bus->map(0x8000, 0xFFFF+1,
+    //     [=](uint16 addr)             { cycle(); return cart->read_prgrom(addr); },
+    //     [=](uint16 addr, uint8 data) { cycle(); return 0; });
     sp = 0;
     pc = 0;
     interrupt(true);

@@ -16,10 +16,13 @@ bool Emulator::init(std::string_view s, Util::File &log)
         return false;
     }
     cartridge.printinfo(log);
-    cpu.load_cartridge(&cartridge);
-    cpu.attach_ppu(&ppu);
-    ppu.load_cartridge(&cartridge);
-    ppu.attach_cpu(&cpu);
+    cpu.attach_bus(&cpu_bus);
+    ppu.attach_bus(&ppu_bus, &cpu_bus);
+    cartridge.attach_bus(&cpu_bus, &ppu_bus);
+    // cpu.load_cartridge(&cartridge);
+    // cpu.attach_ppu(&ppu);
+    // ppu.load_cartridge(&cartridge);
+    // ppu.attach_cpu(&cpu);
     return true;
 }
 
