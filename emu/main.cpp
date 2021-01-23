@@ -1,6 +1,6 @@
 #include <emu/emulator.hpp>
 #include <emu/core/cartridge.hpp>
-#include <emu/util/cmdargs.hpp>
+#include <emu/util/cmdline.hpp>
 #include <emu/util/file.hpp>
 #include <emu/video/video.hpp>
 #define DEBUG
@@ -8,27 +8,19 @@
 
 using Util::File;
 
-enum {
-    ARG_BREAK_ON_BRK = 0x01,
-    ARG_LOG_FILE     = 0x02,
-    ARG_DUMP_FILE    = 0x04,
-    ARG_HELP         = 0x20000000,
-    ARG_VERSION      = 0x40000000,
+static Util::ValidArgStruct cmdflags = {
+    { 'b', "break-on-brk", "Stops emulation when BRK is encountered." },
+    { 'l', "log-file",     "The file where to log instructions. "
+                           "Pass \"stdout\" to print to stdout, "
+                           "\"stderr\" to print to stderr.",          Util::ParamType::MUST_HAVE },
+    { 'd', "dump-file",    "The file where to dump memory."
+                           "Pass \"stdout\" to print to stdout, "
+                           "\"stderr\" to print to stderr.",          Util::ParamType::MUST_HAVE },
+    { 'h', "help",         "Print this help text and quit"            },
+    { 'v', "version",      "Shows the program's version"              },
 };
-
-static Util::ArgOption cmdflags[] = {
-    { 'b', ARG_BREAK_ON_BRK, "break-on-brk", "Stops emulation when BRK is encountered.", false, false, {} },
-    { 'l', ARG_LOG_FILE,     "log-file",     "The file where to log instructions. "
-                                             "Pass \"stdout\" to print to stdout, "
-                                             "\"stderr\" to print to stderr.",           true,  true,  {} },
-    { 'd', ARG_DUMP_FILE,    "dump-file",    "The file where to dump memory."
-                                             "Pass \"stdout\" to print to stdout, "
-                                             "\"stderr\" to print to stderr.",           true,  true,  {} },
-    { 'h', ARG_HELP,         "help",         "Print this help text and quit",            false, false, {} },
-    { 'v', ARG_VERSION,      "version",      "Shows the program's version",              false, false, {} },
-};
-
-static Util::ArgParser parser("yanesemu", "0.1", cmdflags, 5);
+static std::string_view progname = "yanesemu";
+static std::string_view version  = "0.1";
 static Emulator emu;
 
 int main(int argc, char *argv[])
@@ -37,53 +29,38 @@ int main(int argc, char *argv[])
     Video::Video v;
 
     if (argc < 2) {
-        parser.print_usage();
+        Util::print_usage(progname, cmdflags);
         return 1;
     }
 
-    auto logopen = [](File &f, Util::ArgFlags &flags, uint32_t arg) {
-        if ((flags.bits & arg) == 0)
+    auto logopen = [](File &f, char flag, Util::ArgResult &args) {
+        if (!args.found[flag] || args.params[flag] == "")
             return;
-        std::string_view s = flags.get_choice(arg);
+        std::string_view s = args.params[flag];
         if      (s == "stdout") f.assoc(stdout, File::Mode::WRITE);
         else if (s == "stderr") f.assoc(stderr, File::Mode::WRITE);
-        else if (s == "")       return;
         else {
             if (!f.open(s, File::Mode::WRITE))
                 error("can't open %s for writing\n", s.data());
         }
     };
 
-    Util::ArgFlags flags = parser.parse_args(argc, argv);
-    logopen(logfile, flags, ARG_LOG_FILE);
-    logopen(dumpfile, flags, ARG_DUMP_FILE);
+    Util::ArgResult flags = Util::parse(argc, argv, cmdflags);
+    logopen(logfile, 'l', flags);
+    logopen(dumpfile, 'd', flags);
 
-    if (flags.bits & ARG_HELP) {
-        parser.print_usage();
+    if (flags.found['h']) {
+        Util::print_usage(progname, cmdflags);
         return 0;
-    } else if (flags.bits & ARG_VERSION) {
-        parser.print_version();
+    } else if (flags.found['v']) {
+        Util::print_version(progname, version);
         return 0;
-    } else if (flags.get_item() == "") {
+    } else if (flags.items.size() == 0) {
         error("ROM file not specified\n");
         return 1;
-    } else if (!emu.init(flags.get_item(), logfile)) {
+    } else if (!emu.init(flags.items[0], logfile)) {
         return 1;
     }
-    // else if (!v.create()) {
-    //     error("can't initialize video subsytem\n");
-    //     return 1;
-    // }
 
-    emu.power();
-    // while (!v.closed()) {
-        // v.poll();
-        // v.render();
-    for (;;) {
-        emu.log(logfile);
-        emu.run();
-    }
-    emu.dump(dumpfile);
     return 0;
 }
-
