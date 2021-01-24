@@ -10,7 +10,7 @@ OBJS = main.o emulator.o \
 	   file.o cmdline.o stringops.o \
 	   video.o
 
-LIBS = -lm -lSDL2
+LIBS = -lm -lSDL2 -lfmt
 
 CXX = g++
 CFLAGS = -I. -std=c++17 -Wall -Wextra -pipe \

@@ -2,11 +2,10 @@
 #define CORE_PPU_HPP_INCLUDED
 
 #include <functional>
+#include <string>
 #include <emu/core/types.hpp>
 #include <emu/core/memorymap.hpp>
 #include <emu/core/genericbus.hpp>
-
-namespace Util { class File; }
 
 namespace Core {
 
@@ -130,36 +129,23 @@ public:
     void main();
     uint8 readreg(const uint16 which);
     void writereg(const uint16 which, const uint8 data);
-    void printinfo(Util::File &log);
+    std::string getinfo();
 
     // for ppumain.cpp
-    template <unsigned int Cycle>
-    void ccycle();
-    template <unsigned int Line>
-    void lcycle(unsigned int cycle);
-    template <unsigned Cycle>
-    void background_cycle();
+    template <unsigned int Cycle> void ccycle();
+    template <unsigned int Line> void lcycle(unsigned int cycle);
+    template <unsigned Cycle> void background_cycle();
     void idlec();
 
-    inline const uint8 *getmemory() const
-    { return vram.mem; }
+    inline const uint8 *getmemory() const { return vram.mem; }
+    inline uint32 getmemsize() const { return 0x4000; }
+    inline void set_mirroring(int m) { mirroring = m; }
 
-    inline uint32 getmemsize() const
-    { return 0x4000; }
-    
     inline void attach_bus(Bus *pb, Bus *cb)
     {
         bus = pb;
         cpubus = cb;
     }
-    
-    void set_mirroring(int m) { mirroring = m; }
-
-    // inline void attach_cpu(CPU *c)
-    // { cpu = c; }
-
-    // inline void load_cartridge(Cartridge *c)
-    // { cart = c; }
 };
 
 } // namespace Core

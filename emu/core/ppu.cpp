@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cstring> // memset
 #include <functional>
+#include <fmt/core.h>
 #include <emu/core/cpu.hpp>
 #include <emu/core/cartridge.hpp>
 #define DEBUG
@@ -213,9 +214,9 @@ void PPU::mapbus()
     bus->map(0x3F00, 0x4000, reader, writer);
 }
 
-void PPU::printinfo(Util::File &log)
+std::string PPU::getinfo()
 {
-    log.printf("line = %03lu; cycle = %03lu; v = %04X ", lines%262, cycles%341, vram.v);
+    return fmt::format("line = {}; cycle = {}; v = {}", lines%262, cycles%341, vram.v);
 }
 
 } // namespace Core

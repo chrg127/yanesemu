@@ -67,13 +67,12 @@ enum VsHardware : int {
 
 class Cartridge {
     Util::File romfile;
-    int errid = 0;
     enum class Format {
         INVALID,
         INES,
         NES20,
-    } fformat = Format::INVALID;
-    
+    } file_format = Format::INVALID;
+
     Bus *cpubus;
     Bus *ppubus;
     ROM prgrom;
@@ -107,39 +106,20 @@ class Cartridge {
         bool bus_conflicts  = false;
     } has;
 
-    bool parseheader();
+    int errid = 0;
 
 public:
-    ~Cartridge()
-    { }
-
-    bool open(std::string_view s);
-    void mapbus();
+    bool open(std::string_view rompath);
     uint8 read_prgrom(uint16 addr);
     uint8 read_chrrom(uint16 addr);
-    void printinfo(Util::File &f) const;
+    std::string getinfo() const;
     std::string_view geterr() const;
-    
-    inline void attach_bus(Bus *cb, Bus *pb)
-    {
-        cpubus = cb;
-        ppubus = pb;
-    }
+    void attach_bus(Bus *cpu, Bus *ppu);
 
-    Format file_format() const
-    { return fformat; }
-
-    uint16 mappertype() const
-    { return mapper; }
-
-    bool hasprgram() const
-    { return has.prgram; }
-
-    bool haschrram() const
-    { return has.chrram; }
-
-    int mirroring() const
-    { return nt_mirroring; }
+    uint16 mappertype() const   { return mapper; }
+    bool   hasprgram() const    { return has.prgram; }
+    bool   haschrram() const    { return has.chrram; }
+    int    mirroring() const    { return nt_mirroring; }
 };
 
 } // namespace Core

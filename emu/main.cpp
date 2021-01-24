@@ -1,3 +1,4 @@
+#include <fmt/core.h>
 #include <emu/emulator.hpp>
 #include <emu/core/cartridge.hpp>
 #include <emu/util/cmdline.hpp>
@@ -8,7 +9,7 @@
 
 using Util::File;
 
-static Util::ValidArgStruct cmdflags = {
+static const Util::ValidArgStruct cmdflags = {
     { 'b', "break-on-brk", "Stops emulation when BRK is encountered." },
     { 'l', "log-file",     "The file where to log instructions. "
                            "Pass \"stdout\" to print to stdout, "
@@ -19,8 +20,8 @@ static Util::ValidArgStruct cmdflags = {
     { 'h', "help",         "Print this help text and quit"            },
     { 'v', "version",      "Shows the program's version"              },
 };
-static std::string_view progname = "yanesemu";
-static std::string_view version  = "0.1";
+static constexpr std::string_view progname = "yanesemu";
+static constexpr std::string_view version  = "0.1";
 static Emulator emu;
 
 int main(int argc, char *argv[])
@@ -58,9 +59,10 @@ int main(int argc, char *argv[])
     } else if (flags.items.size() == 0) {
         error("ROM file not specified\n");
         return 1;
-    } else if (!emu.init(flags.items[0], logfile)) {
+    } else if (!emu.init(flags.items[0])) {
         return 1;
     }
+    logfile.putstr(emu.rominfo());
 
     return 0;
 }

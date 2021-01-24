@@ -6,8 +6,6 @@
 #include <emu/core/memorymap.hpp>
 #include <emu/core/genericbus.hpp>
 
-namespace Util { class File; }
-
 namespace Core {
 
 class Cartridge;
@@ -183,26 +181,12 @@ public:
     void fire_nmi();
     void reset();
     std::string disassemble() const;
-    void printinfo(Util::File &f) const;
+    std::string getinfo() const;
 
-    inline int get_cycles()
-    { return cycles; }
-
-    inline const uint8 *getmemory() const
-    { return mem; }
-
-    inline uint8 peek_opcode() const
-    { return curropcode; }
-    
-    inline void attach_bus(Bus *b)
-    {
-        bus = b;
-    }
-    // inline void attach_ppu(PPU *p)
-    // { ppu = p; }
-
-    // inline void load_cartridge(Cartridge *c)
-    // { cart = c; }
+    inline int get_cycles() { return cycles; }
+    inline const uint8 *getmemory() const { return mem; }
+    inline uint8 peek_opcode() const { return curropcode; }
+    inline void attach_bus(Bus *b) { bus = b; }
 };
 
 } // namespace Core

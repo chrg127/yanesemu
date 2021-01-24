@@ -152,20 +152,22 @@ public:
     /* write functions */
     inline std::size_t writeb(void *what, std::size_t nb)
     {
-        return (!fbuf || mode == Mode::READ) ? 0 :
-            std::fwrite(what, 1, nb, fbuf);
+        return (!fbuf || mode == Mode::READ) ? 0 : std::fwrite(what, 1, nb, fbuf);
     }
 
     inline int putc(char c)
     {
-        return (!fbuf || mode == Mode::READ) ?
-            EOF : std::fputc(c, fbuf);
+        return (!fbuf || mode == Mode::READ) ?  EOF : std::fputc(c, fbuf);
     }
 
     inline int putstr(std::string_view s)
     {
-        return (!fbuf || mode == Mode::READ) ?
-            EOF : std::fputs(s.data(), fbuf);
+        return (!fbuf || mode == Mode::READ) ?  EOF : std::fputs(s.data(), fbuf);
+    }
+
+    inline int putstr(std::string s)
+    {
+        return (!fbuf || mode == Mode::READ) ? EOF : std::fputs(s.c_str(), fbuf);
     }
 
 #if defined(__GNUC__) || defined(__MINGW32__) || defined (__MINGW64__)

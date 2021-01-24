@@ -1,108 +1,105 @@
 #include <emu/core/cartridge.hpp>
 
+#include <fmt/core.h>
+
 namespace Core {
 
 enum {
-    ERRID_SUCCESS = 0,
-    ERRID_INVFORMAT,
-    ERRID_NES20,
-    ERRID_INVNAME,
+    ERR_SUCCESS = 0,
+    ERR_INVALID_FORMAT,
+    ERR_NES20,
+    ERR_INVALID_NAME,
 };
 
+/*
 bool Cartridge::parseheader()
 {
-    auto parse_ines = [=]() {
+    auto parse_nes2_0 = [this]() {
+        int shift;
+        prgrom_size |= (header[9] & 0xF) << 8;
+        chrrom_size |= (header[9] & 0xF0) << 8;
+        mapper      |= (header[8] & 0xF) << 8;
+        submapper   = header[8] & 0xF0;
+        shift = header[10] & 0xF;
+        if (shift == 0)
+            has.prgram = false;
+        else {
+            has.prgram = true;
+            prgram_size = 64 << shift;
+        }
+        shift = header[10] & 0xF0;
+        eeprom_size = (shift == 0) ? 0 : 64 << shift;
+        shift = header[11] & 0xF;
+        if (shift == 0)
+            has.chrram = false;
+        else {
+            has.chrram = true;
+            chrram_size = 64 << shift;
+        }
+        shift = header[11] & 0xF0;
+        chrnvram_size = (shift == 0) ? 0 : 64 << shift;
+        cpu_ppu_timing =  header[12] & 3;
+        vs_ppu_type = vs_hw_type = 0;
+        if (console_type == CONSOLE_TYPE_VSSYSTEM) {
+            vs_ppu_type = header[13] & 0xF;
+            vs_hw_type = header[13] & 0xF0;
+        } else if (console_type == 3)
+            console_type = header[13] & 0xF;
+        misc_roms_num = header[14] & 3;
+            def_expansion_dev = header[15] & 0x3F;
+    };
+    return true;
+}
+*/
+
+bool Cartridge::open(std::string_view rompath)
+{
+    // open file
+    if (!romfile.open(rompath, Util::File::Mode::READ)) {
+        errid = ERR_INVALID_NAME;
+        return false;
+    }
+
+    // parse header
+    romfile.readb(header, HEADER_LEN);
+    auto parse_common = [this]() {
+        file_format = Format::INVALID;
+        if (header[0] == 'N' && header[1] == 'E' && header[2] == 'S' && header[3] == 0x1A)
+            file_format = Format::INES;
+        if (file_format == Format::INES && (header[7] & 0xC) == 0x8) {
+            errid = ERR_NES20;
+            return false;
+        }
+        if (file_format == Format::INVALID) {
+            errid = ERR_INVALID_FORMAT;
+            return false;
+        }
+        nt_mirroring        = header[6] & 1;
+        has.battery         = header[6] & 2;
+        has.trainer         = header[6] & 4;
+        has.fourscreenmode  = header[6] & 8;
+        console_type        = header[7] & 3;
+        mapper              = ((header[6] & 0xF0) >> 4) | (header[7] & 0xF0);
+        return true;
+    };
+    auto parse_ines = [this]() {
         if (header[5] == 0)
             has.chrram = true;
         prgram_size = header[8];
-        // the specification says this bit exists,
-        // but no emus make use of it
+        // the specification says this bit exists, but no emus make use of it
         //region = header[9] & 1;
         region = (header[10] & 3);
         has.prgram = header[10] & 0x10;
         has.bus_conflicts = header[10] & 0x20;
     };
-    auto parse_nes2_0 = [=]() {
-        // int shift;
-
-        // prgrom_size |= (header[9] & 0xF) << 8;
-        // chrrom_size |= (header[9] & 0xF0) << 8;
-        // mapper      |= (header[8] & 0xF) << 8;
-        // submapper   = header[8] & 0xF0;
-
-        // shift = header[10] & 0xF;
-        // if (shift == 0)
-        //     has.prgram = false;
-        // else {
-        //     has.prgram = true;
-        //     prgram_size = 64 << shift;
-        // }
-
-        // shift = header[10] & 0xF0;
-        // eeprom_size = (shift == 0) ? 0 : 64 << shift;
-
-        // shift = header[11] & 0xF;
-        // if (shift == 0)
-        //     has.chrram = false;
-        // else {
-        //     has.chrram = true;
-        //     chrram_size = 64 << shift;
-        // }
-        // shift = header[11] & 0xF0;
-        // chrnvram_size = (shift == 0) ? 0 : 64 << shift;
-
-        // cpu_ppu_timing =  header[12] & 3;
-
-        // vs_ppu_type = vs_hw_type = 0;
-        // if (console_type == CONSOLE_TYPE_VSSYSTEM) {
-        //     vs_ppu_type = header[13] & 0xF;
-        //     vs_hw_type = header[13] & 0xF0;
-        // } else if (console_type == 3)
-        //     console_type = header[13] & 0xF;
-
-        // misc_roms_num = header[14] & 3;
-
-        //     def_expansion_dev = header[15] & 0x3F;
+    auto parse_nes2_0 = [this]() {
+        // TODO
     };
-    fformat = Format::INVALID;
-    if (header[0] == 'N' && header[1] == 'E' && header[2] == 'S'
-            && header[3] == 0x1A)
-        fformat = Format::INES;
-    if (fformat == Format::INES && (header[7] & 0xC) == 0x8) {
-        errid = ERRID_NES20;
+    if (!parse_common())
         return false;
-    }
-    if (fformat == Format::INVALID) {
-        errid = ERRID_INVFORMAT;
-        return false;
-    }
+    file_format == Format::INES ? parse_ines() : parse_nes2_0();
 
-    nt_mirroring        = header[6] & 1;
-    has.battery         = header[6] & 2;
-    has.trainer         = header[6] & 4;
-    has.fourscreenmode  = header[6] & 8;
-
-    console_type = header[7] & 3;
-
-    mapper = (header[6] & 0xF0) >> 4;
-    mapper |= (header[7] & 0xF0);
-
-    // if (fformat == Format::INES)
-    parse_ines();
-    // else if (fformat == Format::NES20)
-    //     parse_nes20();
-    return true;
-}
-
-bool Cartridge::open(std::string_view s)
-{
-    if (!romfile.open(s, Util::File::Mode::READ)) {
-        errid = ERRID_INVNAME;
-        return false;
-    }
-    romfile.readb(header, HEADER_LEN);
-    if (!parseheader())
-        return false;
+    // copy trainer, prgrom, chrrom
     if (has.trainer)
         romfile.readb(trainer, TRAINER_LEN);
     if (!has.prgram) {
@@ -116,16 +113,6 @@ bool Cartridge::open(std::string_view s)
         chrrom.lock();
     }
     return true;
-}
-
-void Cartridge::mapbus()
-{
-    cpubus->map(0x8000, 0x10000,
-            [=] (uint16 addr) { return read_prgrom(addr); },
-            [=] (uint16 addr, uint8 data) { /***********/ });
-    ppubus->map(0, 0x2000,
-            [=] (uint16 addr) { return read_chrrom(addr); },
-            [=] (uint16 addr, uint8 data) { /***********/ });
 }
 
 uint8 Cartridge::read_prgrom(uint16 addr)
@@ -142,34 +129,25 @@ uint8 Cartridge::read_chrrom(uint16 addr)
     return chrrom.read(addr);
 }
 
-void Cartridge::printinfo(Util::File &log) const
+std::string Cartridge::getinfo() const
 {
-    if (!log.isopen())
-        return;
-    log.printf("%s: ", romfile.getfilename().c_str());
-    if (fformat == Format::INES)
-        log.printf("iNES");
-    else
-        log.printf("NES 2.0");
-    log.printf(", mapper %d, %dx16k PRG ROM, %dx8k CHR ROM",
-            mapper, prgrom.getsize(), chrrom.getsize());
-    if (has.prgram)
-        log.printf(", %d PRG RAM", prgram_size);
-    if (has.chrram)
-        log.printf(", %d CHR RAM", chrram_size);
-    if (eeprom_size != 0)
-        log.printf(", %d EEPROM", eeprom_size);
-    if (chrnvram_size != 0)
-        log.printf(", %d CHR NVRAM", chrnvram_size);
-
-    log.printf(nt_mirroring == NT_HORZ ? ", H-Mirror" : ", V-Mirror");
-    if (has.battery)
-        log.printf(", SRAM enabled");
-    if (has.trainer)
-        log.printf(", Trainer enabled");
-    if (has.fourscreenmode)
-        log.printf(", Four screen mode enabled");
-    log.putc('\n');
+    return fmt::format(
+        "{}: {}, mapper {}, {}x16k PRG ROM, {}x8k CHR ROM, {} PRG RAM, "
+        "{} CHR RAM, {} EEPROM, {} CHR NVRAM, {}-Mirror{}{}{}",
+        romfile.getfilename(),
+        file_format == Format::INES ? "iNES" : "NES 2.0",
+        mapper,
+        prgrom.getsize(),
+        chrrom.getsize(),
+        has.prgram ? prgram_size : 0,
+        has.chrram ? chrram_size : 0,
+        eeprom_size,
+        chrnvram_size,
+        nt_mirroring == NT_HORZ ? 'H' : 'V',
+        has.battery ? ", contains SRAM" : "",
+        has.trainer ? ", contains Trainer, " : "",
+        has.fourscreenmode ? ", has Four screen mode" : ""
+    );
 }
 
 std::string_view Cartridge::geterr() const
@@ -181,6 +159,18 @@ std::string_view Cartridge::geterr() const
         "can't open rom file",
     };
     return rom_errmsg[errid];
+}
+
+void Cartridge::attach_bus(Bus *cpu, Bus *ppu)
+{
+    cpubus = cpu;
+    ppubus = ppu;
+    cpubus->map(0x8000, 0x10000,
+            [=] (uint16 addr) { return read_prgrom(addr); },
+            [=] (uint16 addr, uint8 data) { /***********/ });
+    ppubus->map(0, 0x2000,
+            [=] (uint16 addr) { return read_chrrom(addr); },
+            [=] (uint16 addr, uint8 data) { /***********/ });
 }
 
 } // namespace Core

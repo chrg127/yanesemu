@@ -9,64 +9,57 @@ inline static std::string disass_implied(const char name[4])
 
 inline static std::string disass_imm(const char name[4], uint8 op)
 {
-    return Util::strprintf("%s #$%02X", name, op);
-}
-
-inline static std::string disass_accum(const char name[4])
-{
-    return Util::strprintf("%s A", name);
+    return fmt::format("{} #${}", name, op);
 }
 
 inline static std::string disass_zero(const char name[4], uint8 op)
 {
-    return Util::strprintf("%s $%02X", name, op);
+    return fmt::format("{} ${}", name, op);
 }
 
 inline static std::string disass_zerox(const char name[4], uint8 op)
 {
-    return Util::strprintf("%s $%02X,x", name, op);
+    return fmt::format("{} ${},x", name, op);
 }
 
 inline static std::string disass_zeroy(const char name[4], uint8 op)
 {
-    return Util::strprintf("%s $%02X,y", name, op);
+    return fmt::format("{} ${},y", name, op);
 }
 
 inline static std::string disass_abs(const char name[4], uint8 low, uint8 hi)
 {
-    return Util::strprintf("%s $%02X%02X", name, hi, low);
+    return fmt::format("{} ${}{}", name, hi, low);
 }
 
 inline static std::string disass_absx(const char name[4], uint8 low, uint8 hi)
 {
-    return Util::strprintf("%s $%02X%02X,x", name, hi, low);
+    return fmt::format("{} ${}{},x", name, hi, low);
 }
 
 inline static std::string disass_absy(const char name[4], uint8 low, uint8 hi)
 {
-    return Util::strprintf("%s $%02X%02X,y", name, hi, low);
+    return fmt::format("{} ${}{},y", name, hi, low);
 }
 
 inline static std::string disass_ind(const char name[4], uint8 low, uint8 hi)
 {
-    return Util::strprintf("%s ($%02X%02X)", name, hi, low);
+    return fmt::format("{} (${}{})", name, hi, low);
 }
 
 inline static std::string disass_indx(const char name[4], uint8 op)
 {
-    return Util::strprintf("%s ($%02X,x)", name, op);
+    return fmt::format("{} (${},x)", name, op);
 }
 
 inline static std::string disass_indy(const char name[4], uint8 op)
 {
-    return Util::strprintf("%s ($%02X),y", name, op);
+    return fmt::format("{} (${}),y", name, op);
 }
 
-inline static std::string disass_branch(const char name[4], int8_t disp,
-        uint16 addr, bool took)
+inline static std::string disass_branch(const char name[4], int8_t disp, uint16 addr, bool took)
 {
-    return Util::strprintf("%s %d [$%04X] %s", name, disp, addr,
-            (took) ? "[Branch taken]" : "[Branch not taken]");
+    return fmt::format("{} {} [${}] {}", name, disp, addr, (took) ? "[Branch taken]" : "[Branch not taken]");
 }
 
 std::string CPU::disassemble() const
@@ -75,13 +68,14 @@ std::string CPU::disassemble() const
     uint8 op1 = bus->read(pc.reg+1);
     uint8 op2 = bus->read(pc.reg+2);
 #define INSTR_IMPLD(id, name) \
-    case id: return disass_implied(#name);
+    case id: return std::string(#name);
+#define INSTR_ACCUM(id, name) \
+    case id: return fmt::format("{} A", #name);
 #define INSTR_AMODE(id, name, mode, ...) \
     case id: return disass_##mode(#name, __VA_ARGS__);
+    // i will leave the reason for that 2 to someone else.
 #define INSTR_BRNCH(id, name, expr) \
     case id: return disass_branch(#name, (int8_t) op1, pc.reg + 2 + (int8_t) op1, expr);
-#define INSTR_ACCUM(id, name) \
-    case id: return disass_accum(#name);
 
     switch(instruction) {
         INSTR_IMPLD(0x00, BRK)

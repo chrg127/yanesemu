@@ -3,9 +3,9 @@
 #include <cstdio>
 #include <cctype>
 #include <cstring>
+#include <fmt/core.h>
 #include <emu/core/cartridge.hpp>
 #include <emu/core/ppu.hpp>
-#include <emu/util/file.hpp>
 #include <emu/util/stringops.hpp>
 #define DEBUG
 #include <emu/util/debug.hpp>
@@ -332,27 +332,21 @@ void CPU::reset()
     procstatus.reset();
 }
 
-/* Prints info about the instruction which has just been executed and
- * the status of the registers. */
-void CPU::printinfo(Util::File &lf) const
+/* Prints info about the instruction which has just been executed and the status of the registers. */
+std::string CPU::getinfo() const
 {
-    if (!lf.isopen())
-        return;
-
-    lf.printf("PC: %04X A: %02X X: %02X Y: %02X S: %02X ", pc.reg, accum, xreg, yreg, sp);
-
-#define WRITEFLAG(f, c) lf.printf("%c", (f == 1) ? std::toupper(c) : std::tolower(c) )
-    WRITEFLAG(procstatus.neg,     'n');
-    WRITEFLAG(procstatus.ov,      'v');
-    WRITEFLAG(procstatus.unused,  'u');
-    WRITEFLAG(procstatus.breakf,  'b');
-    WRITEFLAG(procstatus.decimal, 'd');
-    WRITEFLAG(procstatus.intdis,  'i');
-    WRITEFLAG(procstatus.zero,    'z');
-    WRITEFLAG(procstatus.carry,   'c');
-#undef WRITEFLAG
-
-    lf.printf(" cycles: %d ", cycles);
+    return fmt::format("PC: {} A: {} X: {} Y: {} S: {} {}{}{}{}{}{}{}{} cycles: {}",
+        pc.reg, accum, xreg, yreg, sp,
+        (procstatus.neg     == 1) ? 'N' : 'n',
+        (procstatus.ov      == 1) ? 'V' : 'v',
+        (procstatus.unused  == 1) ? 'U' : 'u',
+        (procstatus.breakf  == 1) ? 'B' : 'b',
+        (procstatus.decimal == 1) ? 'D' : 'd',
+        (procstatus.intdis  == 1) ? 'I' : 'i',
+        (procstatus.zero    == 1) ? 'Z' : 'z',
+        (procstatus.carry   == 1) ? 'C' : 'c',
+        cycles
+    );
 }
 
 } // namespace Core

@@ -9,19 +9,22 @@
 namespace Util { class File; }
 
 class Emulator {
+    Core::Bus cpu_bus = Core::Bus(0x10000);
+    Core::Bus ppu_bus = Core::Bus(0x4000);
     Core::Cartridge cartridge;
     Core::CPU cpu;
     Core::PPU ppu;
-    Core::Bus cpu_bus = Core::Bus(0x10000);
-    Core::Bus ppu_bus = Core::Bus(0x4000);
     int cycle = 0;
+    int err = 0;
 
 public:
-    bool init(std::string_view s, Util::File &f);
+    bool init(const std::string_view rompath);
     void power();
     void run();
     void log(Util::File &logfile);
     void dump(Util::File &dumpfile);
+
+    inline std::string rominfo() { return cartridge.getinfo(); }
 };
 
 #endif

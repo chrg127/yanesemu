@@ -9,20 +9,15 @@
 using Util::File;
 using namespace Core;
 
-bool Emulator::init(std::string_view s, Util::File &log)
+bool Emulator::init(std::string_view rompath)
 {
-    if (!cartridge.open(s)) {
-        error("%s: %s\n", s.data(), cartridge.geterr().data());
+    if (!cartridge.open(rompath)) {
+        error("%s: %s\n", rompath.data(), cartridge.geterr().data());
         return false;
     }
-    cartridge.printinfo(log);
     cpu.attach_bus(&cpu_bus);
     ppu.attach_bus(&ppu_bus, &cpu_bus);
     cartridge.attach_bus(&cpu_bus, &ppu_bus);
-    // cpu.load_cartridge(&cartridge);
-    // cpu.attach_ppu(&ppu);
-    // ppu.load_cartridge(&cartridge);
-    // ppu.attach_cpu(&cpu);
     return true;
 }
 
@@ -45,11 +40,10 @@ void Emulator::run()
 
 void Emulator::log(File &logfile)
 {
-    cpu.printinfo(logfile);
-    // logfile.putc('\n');
-    ppu.printinfo(logfile);
+    logfile.putstr(cpu.getinfo());
+    logfile.putstr(ppu.getinfo());
     logfile.printf("Instruction [%02X] ", cpu.peek_opcode());
-    logfile.putstr(cpu.disassemble().c_str());
+    logfile.putstr(cpu.disassemble());
     logfile.putc('\n');
 }
 
@@ -69,3 +63,4 @@ void Emulator::dump(File &dumpfile)
     dumpmem(dumpfile, cpu.getmemory(), CPUMap::MEMSIZE);
     // dumpmem(dumpfile, ppu.getmemory(), PPUMap::MEMSIZE);
 }
+
