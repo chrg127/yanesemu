@@ -1,4 +1,4 @@
-/* Simple, safe and inheritable self-closing File class. No Windows support (yet). */
+/* Simple, safe self-closing File class. No Windows support (yet). */
 
 #ifndef UTILS_FILE_HPP_INCLUDED
 #define UTILS_FILE_HPP_INCLUDED
@@ -23,9 +23,7 @@ public:
 private:
     Mode mode = Mode::READ;
     std::string filename;
-
 public:
-
     enum class BufMode {
         UNBUF,
         LINEBUF,
@@ -33,58 +31,35 @@ public:
     };
 
     File() = default;
-    File(std::string_view s, Mode m)
-    { open(s, m); }
-    File(FILE *f, Mode m)
-    { assoc(f, m); }
+    File(std::string_view s, Mode m) { open(s, m); }
+    File(FILE *f, Mode m)            { assoc(f, m); }
 
-    ~File()
-    { close(); }
+    ~File() { close(); }
 
-    // File(const File &f) = delete;
-    File(File &&f)
-    { operator=(std::move(f)); }
+    File(const File &f) = delete;
+    File(File &&f) { operator=(std::move(f)); }
 
-    // File &operator=(const File &f) = delete;
-    File &operator=(File &&f);
+    File & operator=(const File &f) = delete;
+    File & operator=(File &&f);
 
     /* open/close functions */
     bool open(std::string_view s, Mode m);
     void close();
     bool assoc(FILE *f, Mode m);
 
-    inline bool isopen() const
-    { return fbuf ? true : false; }
+    bool isopen() const  { return fbuf ? true : false; }
+    long size() const    { return filesize; }
+    bool eof()           { return !fbuf ? true : std::feof(fbuf) != 0 ? true : false; }
+    bool error()         { return !fbuf ? true : ferror(fbuf)    != 0 ? true : false; }
+    int flush()          { return fflush(fbuf); }
+    int seek(long offset, int origin) { return fseek(fbuf, offset, origin); }
+    std::string getfilename() const { return filename; }
+    // strictly for compatibility with existing FILE APIs.
+    // if state invalidation might be a concern, use releasefbuf()
+    FILE *getfbuf() const { return fbuf; }
+    int getfd()           { return fileno(fbuf); }
 
-    inline long size() const
-    { return filesize; }
-
-    inline bool eof()
-    {
-        if (!fbuf)
-            return true;
-        return std::feof(fbuf) == 0 ? false : true;
-    }
-
-    inline bool error()
-    {
-        if (!fbuf)
-            return true;
-        return ferror(fbuf) == 0 ? false : true;
-    }
-
-    inline int flush()
-    {
-        return (!fbuf || mode == Mode::READ) ?
-            EOF : fflush(fbuf);
-    }
-
-    inline int seek(long offset, int origin)
-    {
-        return (!fbuf) ? 1 : fseek(fbuf, offset, origin);
-    }
-
-    inline void set_buffer_mode(BufMode m)
+    void set_buffer_mode(BufMode m)
     {
         switch (m) {
         case BufMode::UNBUF: setvbuf(fbuf, nullptr, _IONBF, 0);
@@ -93,20 +68,7 @@ public:
         }
     }
 
-    inline std::string getfilename() const
-    { return filename; }
-
-    /*
-     * strictly for compatibility with existing FILE APIs.
-     * if state invalidation might be a concern, use releasefbuf()
-     */
-    inline FILE *getfbuf() const
-    { return fbuf; }
-
-    inline int getfd()
-    { return fileno(fbuf); }
-
-    inline FILE *releasefbuf()
+    FILE *release_filebuf()
     {
         FILE *toret = fbuf;
         mode = Mode::READ;
@@ -116,30 +78,13 @@ public:
         return toret;
     }
 
-
-
-    /* Read functions */
-    inline std::size_t readb(void *where, std::size_t bn)
-    {
-        return (!fbuf || (mode != Mode::READ && mode != Mode::MODIFY)) ?
-            EOF : std::fread(where, 1, bn, fbuf);
-    }
-
-    inline int getc()
-    {
-        return (!fbuf || (mode != Mode::READ && mode != Mode::MODIFY)) ?
-            EOF : std::fgetc(fbuf);
-    }
-
-    inline int ungetc(int c)
-    {
-        return (!fbuf || (mode != Mode::READ && mode != Mode::MODIFY)) ?
-            EOF : std::ungetc(c, fbuf);
-    }
-
+    // read functions
+    std::size_t readb(void *where, std::size_t bn) { return std::fread(where, 1, bn, fbuf); }
+    int getc()                                     { return std::fgetc(fbuf); }
+    int ungetc(int c)                              { return std::ungetc(c, fbuf); }
     bool getline(std::string &s, int delim = '\n');
 
-    inline std::string getall()
+    std::string getall()
     {
         std::string s, tmp;
         while (getline(tmp))
@@ -147,28 +92,11 @@ public:
         return s;
     }
 
-
-
-    /* write functions */
-    inline std::size_t writeb(void *what, std::size_t nb)
-    {
-        return (!fbuf || mode == Mode::READ) ? 0 : std::fwrite(what, 1, nb, fbuf);
-    }
-
-    inline int putc(char c)
-    {
-        return (!fbuf || mode == Mode::READ) ?  EOF : std::fputc(c, fbuf);
-    }
-
-    inline int putstr(std::string_view s)
-    {
-        return (!fbuf || mode == Mode::READ) ?  EOF : std::fputs(s.data(), fbuf);
-    }
-
-    inline int putstr(std::string s)
-    {
-        return (!fbuf || mode == Mode::READ) ? EOF : std::fputs(s.c_str(), fbuf);
-    }
+    // write functions
+    inline std::size_t writeb(void *what, std::size_t nb) { return std::fwrite(what, 1, nb, fbuf); }
+    inline int putc(char c)                               { return std::fputc(c, fbuf); }
+    inline int putstr(std::string_view s)                 { return std::fputs(s.data(), fbuf); }
+    inline int putstr(std::string s)                      { return std::fputs(s.c_str(), fbuf); }
 
 #if defined(__GNUC__) || defined(__MINGW32__) || defined (__MINGW64__)
     __attribute__((format(printf, 2, 3)))

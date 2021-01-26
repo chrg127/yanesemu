@@ -6,7 +6,6 @@
 #include <emu/util/debug.hpp>
 #include <emu/util/file.hpp>
 
-using Util::File;
 using namespace Core;
 
 bool Emulator::init(std::string_view rompath)
@@ -38,7 +37,7 @@ void Emulator::run()
     cycle = curr_cycle;
 }
 
-void Emulator::log(File &logfile)
+void Emulator::log(Util::File &logfile)
 {
     logfile.putstr(cpu.getinfo());
     logfile.putstr(ppu.getinfo());
@@ -47,9 +46,9 @@ void Emulator::log(File &logfile)
     logfile.putc('\n');
 }
 
-void Emulator::dump(File &dumpfile)
+void Emulator::dump(Util::File &dumpfile)
 {
-    auto dumpmem = [](File &df, const uint8 *mem, const std::size_t size) {
+    auto dumpmem = [](Util::File &df, const uint8 *mem, const std::size_t size) {
         std::size_t i, j;
 
         for (i = 0; i < size; i++) {

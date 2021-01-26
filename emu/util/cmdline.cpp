@@ -4,6 +4,8 @@
 #include <iterator>
 #include <type_traits>
 #include <cstdio>
+#include <cstdlib> // exit()
+#include <fmt/core.h>
 #include <emu/util/debug.hpp>
 
 namespace Util {
@@ -76,22 +78,21 @@ bool default_validator(std::string_view)
 
 void print_usage(std::string_view progname, const ValidArgStruct &args)
 {
-    fprintf(stderr, "Usage: %s [args...]\n", progname.data());
-    fprintf(stderr, "Valid arguments:\n");
+    fmt::print("Usage: {} [args...]\nValid arguments:\n", progname);
     const auto max = std::max_element(args.begin(), args.end(),
             [](const Argument &arg, const Argument &arg2) { return arg.long_opt.size() < arg2.long_opt.size(); });
     const std::size_t padding = max->long_opt.size() + 4;
     for (const auto &arg : args) {
-        fprintf(stderr, "    -%c, --%s", arg.short_opt, arg.long_opt.data());
+        fmt::print("    -{}, --{}", arg.short_opt, arg.long_opt);
         for (std::size_t i = 0; i < padding - arg.long_opt.size(); i++)
-            fprintf(stderr, " ");
-        fprintf(stderr, "%s\n", arg.desc.data());
+            fmt::print(" ");
+        fmt::print("{}\n", arg.desc);
     }
 }
 
 void print_version(std::string_view progname, std::string_view version)
 {
-    printf("%s: version %s\n", progname.data(), version.data());
+    fmt::print("{}: version {}\n", progname, version);
 }
 
 } // namespace Util
