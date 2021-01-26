@@ -18,9 +18,10 @@
 template <typename T>
 class HeapArray {
     std::size_t len;
-    std::unique_ptr<T[]> arrptr;
+    T *arrptr;
 
 public:
+    HeapArray() : len(0), arrptr(nullptr) { }
     explicit HeapArray(std::size_t l)
         : len(l), arrptr(new T[len])
     { }
@@ -31,15 +32,15 @@ public:
         for (const auto &x : lst)
             arrptr[i++] = x;
     }
-    HeapArray(const HeapArray &oth) { operator=(oth); }
+    HeapArray(const HeapArray &a) { operator=(a); }
 
     inline T & operator[](std::size_t i) const { return arrptr[i]; }
-    inline HeapArray<T> & operator=(const HeapArray<T> &oth)
+    inline HeapArray<T> & operator=(const HeapArray<T> &arr)
     {
-        std::size_t size = oth.size();
+        std::size_t size = arr.size();
         reset(size);
         for (std::size_t i = 0; i != size; i++)
-            arrptr[i] = std::move(oth[i]);
+            arrptr[i] = std::move(arr[i]);
         return *this;
     }
     inline bool operator==(const HeapArray &arr)
@@ -51,30 +52,25 @@ public:
     }
 
     inline std::size_t size() const { return len; }
-
     inline bool empty() const { return len == 0; }
-
-    inline void clear() { std::memset(arrptr, 0, len); }
-
-    inline void fill(T elem)
+    inline void clear()
     {
         for (std::size_t i = 0; i < len; i++)
-            arrptr[i] = elem;
+            arrptr[i] = 0;
     }
-
     inline void reset(std::size_t newlen)
     {
         len = newlen;
-        arrptr.reset(new T[len]);
+        arrptr = new T[len];
     }
 
     // basic iterator support
-    using value_type = T;
-    using reference  = T &;
+    using value_type      = T;
+    using reference       = T &;
     using const_reference = const T &;
-    using pointer    = T *;
+    using pointer         = T *;
     using difference_type = std::ptrdiff_t;
-    using size_type  = std::size_t;
+    using size_type       = std::size_t;
 
     class iterator {
         HeapArray *arr;
