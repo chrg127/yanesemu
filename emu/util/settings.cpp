@@ -8,7 +8,7 @@ namespace Util {
 
 static bool is_int(const std::string &s)
 {
-    if (s.empty() || !isdigit(s[0]) && s[0] != '+' && s[0] != '-')
+    if (s.empty() || (!isdigit(s[0]) && s[0] != '+' && s[0] != '-'))
         return false;
     // use strtol to avoid exceptions for such a simple thing
     char *endptr;

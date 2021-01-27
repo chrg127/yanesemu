@@ -8,29 +8,8 @@
 #include <cstdio>
 #include <cstdarg>
 
-#if defined(__GNUC__) || defined(__MINGW32__) || defined (__MINGW64__)
-    __attribute__((format(printf, 1, 2)))
-#endif
-inline void error(const char *fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    fprintf(stderr, "error: ");
-    vfprintf(stderr, fmt, args);
-    va_end(args);
-}
-
-#if defined(__GNUC__) || defined(__MINGW32__) || defined (__MINGW64__)
-    __attribute__((format(printf, 1, 2)))
-#endif
-inline void warning(const char *fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    fprintf(stderr, "warning: ");
-    vfprintf(stderr, fmt, args);
-    va_end(args);
-}
+#define error(fmt, ...)   do { fprintf(stderr, "error: " fmt __VA_OPT__(, __VA_ARGS__)); } while (0)
+#define warning(fmt, ...) do { fprintf(stderr, "warning: " fmt __VA_OPT__(, __VA_ARGS__)); } while (0)
 
 #ifdef DEBUG
 #include <cassert>

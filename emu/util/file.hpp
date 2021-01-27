@@ -68,7 +68,7 @@ public:
         }
     }
 
-    FILE *release_filebuf()
+    FILE *release()
     {
         FILE *toret = fbuf;
         mode = Mode::READ;
@@ -86,17 +86,17 @@ public:
 
     std::string getall()
     {
-        std::string s, tmp;
-        while (getline(tmp))
+        std::string s;
+        for (std::string tmp; getline(tmp); )
             s += tmp + '\n';
         return s;
     }
 
     // write functions
-    inline std::size_t writeb(void *what, std::size_t nb) { return std::fwrite(what, 1, nb, fbuf); }
-    inline int putc(char c)                               { return std::fputc(c, fbuf); }
-    inline int putstr(std::string_view s)                 { return std::fputs(s.data(), fbuf); }
-    inline int putstr(std::string s)                      { return std::fputs(s.c_str(), fbuf); }
+    std::size_t writeb(void *what, std::size_t nb) { return std::fwrite(what, 1, nb, fbuf); }
+    int putc(char c)                               { return std::fputc(c, fbuf); }
+    int putstr(std::string_view s)                 { return std::fputs(s.data(), fbuf); }
+    int putstr(std::string s)                      { return std::fputs(s.c_str(), fbuf); }
 
 #if defined(__GNUC__) || defined(__MINGW32__) || defined (__MINGW64__)
     __attribute__((format(printf, 2, 3)))
