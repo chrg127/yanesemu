@@ -20,7 +20,7 @@ namespace Core {
 /* Fetch next opcode from memory */
 uint8 CPU::fetch()
 {
-    return bus->read(pc.reg++);
+    return readmem(pc.reg++);
 }
 
 /* Executes a single instruction. */
@@ -191,7 +191,6 @@ void CPU::execute(uint8 opcode)
             DBGPRINTF("error: unknown opcode: %02X\n", opcode);
             return;
     }
-
 #undef INSTR_IMPLD
 #undef INSTR_AMODE
 #undef INSTR_WRITE
@@ -215,24 +214,24 @@ void CPU::interrupt(bool reset)
     // Interrupt hijacking
     // there's a special handling for the reset interrupt. more research should
     // be done for a better solution.
-    if (reset) 
-        vec = CPUMap::RESETVEC;
+    if (reset)
+        vec = RESET_VEC;
     else if (nmipending) {
         nmipending = false;
-        vec = CPUMap::NMIVEC;
+        vec = NMI_VEC;
     } else if (irqpending) {
         irqpending = false;
-        vec = CPUMap::IRQBRKVEC;
+        vec = IRQ_BRK_VEC;
     } else
-        vec = CPUMap::IRQBRKVEC;
-    pc.low = bus->read(vec);
-    pc.high = bus->read(vec+1);
+        vec = IRQ_BRK_VEC;
+    pc.low = readmem(vec);
+    pc.high = readmem(vec+1);
 }
 
 /* Pushes a value to the hardware stack */
 void CPU::push(uint8 val)
 {
-    bus->write(0x0100+sp, val);
+    writemem(STACK_BASE+sp, val);
     sp--;
 }
 
@@ -240,7 +239,7 @@ void CPU::push(uint8 val)
 uint8 CPU::pull()
 {
     ++sp;
-    return bus->read(0x0100+sp);
+    return readmem(STACK_BASE+sp);
 }
 
 /* Adds n cycles to the cycle counter */
@@ -258,7 +257,6 @@ void CPU::last_cycle()
 
 /* Poll for the IRQ and NMI respectively. A poll is made on the penultimate
  * cycle of an instruction. */
-
 void CPU::irqpoll()
 {
     if (!execirq && !procstatus.intdis && irqpending)
@@ -275,7 +273,7 @@ void CPU::nmipoll()
 
 /* Executes one whole fetch-decode-execute cycle, giving priority
  * to interrupt signals first. */
-void CPU::main()
+void CPU::run()
 {
     if (execnmi) {
         cycle();
@@ -296,24 +294,18 @@ void CPU::main()
 /* Emulates the start/reset function of the 6502. */
 void CPU::power()
 {
-    bus->map(0, 0x2000,
-        [=](uint16 addr)             { cycle(); return mem[addr]; },
-        [=](uint16 addr, uint8 data) { cycle(); mem[addr] = data; } );
-    // bus->map(0x2000, 0x2008,
-    //     [=](uint16 addr)             { cycle(); return ppu->readreg(addr); },
-    //     [=](uint16 addr, uint8 data) { cycle(); ppu->writereg(addr, data); });
-    bus->map(0x2008, 0x8000,
-        [=](uint16 addr)             { cycle(); return mem[addr]; },
-        [=](uint16 addr, uint8 data) { cycle(); mem[addr] = data; } );
-    // bus->map(0x8000, 0xFFFF+1,
-    //     [=](uint16 addr)             { cycle(); return cart->read_prgrom(addr); },
-    //     [=](uint16 addr, uint8 data) { cycle(); return 0; });
+    bus->map(0, RAM_END+1,
+        [=](uint16 addr)             { return rammem[addr]; },
+        [=](uint16 addr, uint8 data) { rammem[addr] = data; } );
+    bus->map(APU_START, APU_END+1,
+        [=](uint16 addr)             { return rammem[addr]; },
+        [=](uint16 addr, uint8 data) { rammem[addr] = data; } );
     sp = 0;
     pc = 0;
     interrupt(true);
 }
 
-/* Sends an IRQ signal. Used by other devices. */
+/* Sends an IRQ signal. */
 void CPU::fire_irq()
 {
     irqpending = true;
@@ -333,7 +325,7 @@ void CPU::reset()
 }
 
 /* Prints info about the instruction which has just been executed and the status of the registers. */
-std::string CPU::getinfo() const
+std::string CPU::get_info() const
 {
     return fmt::format("PC: {} A: {} X: {} Y: {} S: {} {}{}{}{}{}{}{}{} cycles: {}",
         pc.reg, accum, xreg, yreg, sp,

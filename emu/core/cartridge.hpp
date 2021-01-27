@@ -3,7 +3,7 @@
 
 #include <string_view>
 #include <emu/core/types.hpp>
-#include <emu/core/genericbus.hpp>
+#include <emu/core/bus.hpp>
 #include <emu/util/file.hpp>
 
 namespace Core {

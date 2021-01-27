@@ -1,11 +1,11 @@
 #ifndef CORE_PPU_HPP_INCLUDED
 #define CORE_PPU_HPP_INCLUDED
 
+#include <array>
 #include <functional>
 #include <string>
 #include <emu/core/types.hpp>
-#include <emu/core/memorymap.hpp>
-#include <emu/core/genericbus.hpp>
+#include <emu/core/bus.hpp>
 
 namespace Core {
 
@@ -13,16 +13,29 @@ class CPU;
 class Cartridge;
 
 class PPU {
-    // CPU *cpu;
-    // Cartridge *cart;
+    enum {
+        HORZ = 256,
+        VERT = 224,
+        REAL_HORZ = 262,
+        REAL_VERT = 341,
+        VRAM_MAX_MEM = 0x4000,
+        PPUREG_START = 0x2000,
+        PPUREG_END   = 0x3FFF,
+        NT_START     = 0x2000,
+        PAL_START    = 0x3F00,
+        OAM_SIZE     = 0x0100,
+    };
+
     Bus *bus;
     Bus *cpubus;
 
+    // screen
     unsigned long cycles = 0;
     unsigned long lines  = 0;
-    uint8   screen[256*224];
+    uint8 screen[HORZ*VERT];
     int mirroring = 0;
 
+    // values inside registers
     uint8   io_latch;
     bool    nmi_enabled;
     bool    ext_bus_dir;
@@ -35,11 +48,11 @@ class PPU {
     } effects;
 
     struct VRAM {
-        PPU     &ppu;
-        uint8   mem[0x4000];
-        uint16  v, t;   // vram address, temporary vram address
-        uint8   fine_x, inc, readbuf;
-        bool    toggle; // used by PPUSCROLL and PPUADDR
+        PPU &ppu;
+        std::array<uint8, VRAM_MAX_MEM> mem;
+        uint16 v, t;   // vram address, temporary vram address
+        uint8 fine_x, inc, readbuf;
+        bool toggle; // used by PPUSCROLL and PPUADDR
 
         VRAM(PPU &p) : ppu(p) { }
         void power();
@@ -80,7 +93,7 @@ class PPU {
 
     struct OAM {
         PPU     &ppu;
-        uint8   oam[PPUMap::OAM_SIZE];
+        uint8   oam[OAM_SIZE];
         bool    sprsize;
         bool    patterntab_addr;
         bool    show;
@@ -121,15 +134,14 @@ class PPU {
     friend class PPUBus;
 
 public:
-    PPU() : vram(*this), bg(*this), oam(*this)
-    { }
+    PPU() : vram(*this), bg(*this), oam(*this) { }
 
     void power();
     void reset();
-    void main();
+    void run();
     uint8 readreg(const uint16 which);
     void writereg(const uint16 which, const uint8 data);
-    std::string getinfo();
+    std::string get_info();
 
     // for ppumain.cpp
     template <unsigned int Cycle> void ccycle();
@@ -137,15 +149,10 @@ public:
     template <unsigned Cycle> void background_cycle();
     void idlec();
 
-    inline const uint8 *getmemory() const { return vram.mem; }
-    inline uint32 getmemsize() const { return 0x4000; }
-    inline void set_mirroring(int m) { mirroring = m; }
+    const std::array<uint8, VRAM_MAX_MEM> & getmemory() const { return vram.mem; }
+    void set_mirroring(int m) { mirroring = m; }
 
-    inline void attach_bus(Bus *pb, Bus *cb)
-    {
-        bus = pb;
-        cpubus = cb;
-    }
+    void attach_bus(Bus *pb, Bus *cb);
 };
 
 } // namespace Core

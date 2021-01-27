@@ -1,10 +1,11 @@
 #ifndef CORE_CPU_HPP_INCLUDED
 #define CORE_CPU_HPP_INCLUDED
 
+#include <array>
 #include <string>
 #include <emu/core/types.hpp>
 #include <emu/core/memorymap.hpp>
-#include <emu/core/genericbus.hpp>
+#include <emu/core/bus.hpp>
 
 namespace Core {
 
@@ -12,29 +13,40 @@ class Cartridge;
 class PPU;
 
 class CPU {
-    //Cartridge *cart;
-    //PPU *ppu;
+    // constants
+    enum {
+        RAM_MEM_MAX  = 0x2000,
+        RAM_END      = 0x1FFF,
+        APU_START    = 0x4000,
+        APU_END      = 0x401F,
+        STACK_BASE   = 0x0100,
+        NMI_VEC      = 0xFFFA,
+        RESET_VEC    = 0xFFFC,
+        IRQ_BRK_VEC  = 0xFFFE,
+    };
+    using InstrFuncRead = void (CPU::*)(const uint8);
+    using InstrFuncMod = uint8 (CPU::*)(uint8);
+
     Bus *bus;
-
-    uint8 mem[0xFFFF+1];
-
+    std::array<uint8, RAM_MEM_MAX> rammem;
     uint8 curropcode;
-    Reg16 op;       // operand
+    Reg16 op;
 
+    // registers
     Reg16 pc;
-    uint8 accum   = 0;
-    uint8 xreg    = 0;
-    uint8 yreg    = 0;
-    uint8 sp      = 0;
+    uint8 accum = 0;
+    uint8 xreg  = 0;
+    uint8 yreg  = 0;
+    uint8 sp    = 0;
     struct {
-        bool carry      = 0;
-        bool zero       = 0;
-        bool intdis     = 0;
-        bool decimal    = 0;
-        bool breakf     = 0;
-        bool unused     = 1;
-        bool ov         = 0;
-        bool neg        = 0;
+        bool carry   = 0;
+        bool zero    = 0;
+        bool intdis  = 0;
+        bool decimal = 0;
+        bool breakf  = 0;
+        bool unused  = 1;
+        bool ov      = 0;
+        bool neg     = 0;
 
         uint8 reg()
         {
@@ -42,7 +54,7 @@ class CPU {
                    breakf << 4  | unused << 5  | ov     << 6 | neg     << 7;
         }
 
-        inline void operator=(const uint8 data)
+        void operator=(const uint8 data)
         {
             carry   = data & 0x01;
             zero    = data & 0x02;
@@ -78,21 +90,6 @@ class CPU {
     void irqpoll();
     void nmipoll();
 
-    // inline uint8 readmem(uint16 addr)
-    // {
-    //     cycle();
-    //     return bus->read(addr);
-    // }
-
-    // inline void writemem(uint16 addr, uint8 val)
-    // {
-    //     cycle();
-    //     bus->write(addr, val);
-    // }
-
-    using InstrFuncRead = void (CPU::*)(const uint8);
-    using InstrFuncMod = uint8 (CPU::*)(uint8);
-
     // opcodes.cpp
     void addrmode_imm_read(InstrFuncRead f);
     void addrmode_zero_read(InstrFuncRead f);
@@ -103,7 +100,6 @@ class CPU {
     void addrmode_absy_read(InstrFuncRead f);
     void addrmode_indx_read(InstrFuncRead f);
     void addrmode_indy_read(InstrFuncRead f);
-
     void addrmode_accum_modify(InstrFuncMod f);
     void addrmode_zero_modify(InstrFuncMod f);
     void addrmode_zerox_modify(InstrFuncMod f);
@@ -113,7 +109,6 @@ class CPU {
     void addrmode_absy_modify(InstrFuncMod f);
     void addrmode_indx_modify(InstrFuncMod f);
     void addrmode_indy_modify(InstrFuncMod f);
-
     // these are only used by STA, STX, and STY
     void addrmode_zero_write(uint8 val);
     void addrmode_zerox_write(uint8 val);
@@ -123,7 +118,6 @@ class CPU {
     void addrmode_absy_write(uint8 val);
     void addrmode_indx_write(uint8 val);
     void addrmode_indy_write(uint8 val);
-
     /*
      * opcode functions missing (as they are not needed):
      * - STA, STX, STY (use addrmode_write functions directly)
@@ -131,11 +125,9 @@ class CPU {
      * - TAX, TXA, TAY, TYA, TXS, TSX (use instr_transfer)
      * . SEC, CLC, SEI, CLI, CLV, CLD (use instr_flag)
      */
-
     void instr_branch(bool take);
     void instr_flag(bool &flag, bool v);
     void instr_transfer(uint8 from, uint8 &to);
-
     void instr_lda(const uint8 val);
     void instr_ldx(const uint8 val);
     void instr_ldy(const uint8 val);
@@ -148,20 +140,17 @@ class CPU {
     void instr_and(const uint8 val);
     void instr_eor(const uint8 val);
     void instr_bit(const uint8 val);
-
     uint8 instr_inc(uint8 val);
     uint8 instr_dec(uint8 val);
     uint8 instr_asl(uint8 val);
     uint8 instr_lsr(uint8 val);
     uint8 instr_rol(uint8 val);
     uint8 instr_ror(uint8 val);
-
     // these instruction are called directly
     void instr_inx();
     void instr_iny();
     void instr_dex();
     void instr_dey();
-
     void instr_php();
     void instr_pha();
     void instr_plp();
@@ -174,19 +163,22 @@ class CPU {
     void instr_rti();
     void instr_nop();
 
+    uint8 readmem(uint16 addr)             { cycle(); return bus->read(addr); }
+    void writemem(uint16 addr, uint8 data) { cycle(); bus->write(addr, data); }
+
 public:
-    void main();
+    void run();
     void power();
     void fire_irq();
     void fire_nmi();
     void reset();
     std::string disassemble() const;
-    std::string getinfo() const;
+    std::string get_info() const;
 
-    inline int get_cycles() { return cycles; }
-    inline const uint8 *getmemory() const { return mem; }
-    inline uint8 peek_opcode() const { return curropcode; }
-    inline void attach_bus(Bus *b) { bus = b; }
+    const std::array<uint8, RAM_MEM_MAX> & get_memory() const { return rammem; }
+    int get_cycles()          { return cycles; }
+    uint8 peek_opcode() const { return curropcode; }
+    void attach_bus(Bus *b)   { bus = b; }
 };
 
 } // namespace Core

@@ -2,6 +2,7 @@
 #define BUS_HPP_INCLUDED
 
 #include <functional>
+#include <emu/util/heaparray.hpp>
 #include "types.hpp"
 
 namespace Core {
@@ -16,27 +17,25 @@ class Bus {
 
     // uint32 is used to permit a size of 0x10000
     // you can't, however, address more than 0xFFFF
-    uint32      size = 0;
-    unsigned   *lookup = nullptr;
-    Reader      rtab[TABSIZ];
-    Writer      wtab[TABSIZ];
-    bool        assigned[TABSIZ];
+    HeapArray<unsigned> lookup;
+    Reader rtab[TABSIZ];
+    Writer wtab[TABSIZ];
+    bool assigned[TABSIZ];
 
 public:
     Bus() = default;
-    Bus(const uint32 s)
-    { reset(s); }
-    Bus(const Bus &) = delete;
-    Bus(Bus &&b)
-    { operator=(std::move(b)); }
-    ~Bus();
+    Bus(const uint32 size) { reset(size); }
+
+    Bus(const Bus &)             = delete;
     Bus & operator=(const Bus &) = delete;
+    Bus(Bus &&b) { operator=(std::move(b)); }
     Bus & operator=(Bus &&b);
 
-    void   reset(const std::size_t s);
-    uint8  read(const uint16 addr) const;
-    void   write(const uint16 addr, const uint8 data);
-    void   map(uint16 start, uint32 end, Reader reader, Writer writer);
+    void map(uint16 start, uint32 end, Reader reader, Writer writer);
+    void reset(const std::size_t newsize);
+
+    uint8 read(const uint16 addr) const             { return rtab[lookup[addr]](addr); }
+    void write(const uint16 addr, const uint8 data) { wtab[lookup[addr]](addr, data); }
 };
 
 } // namespace Core

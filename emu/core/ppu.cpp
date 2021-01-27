@@ -22,7 +22,6 @@ namespace Core {
 
 void PPU::power()
 {
-    mapbus();
     vram.power();
     bg.power();
     oam.power();
@@ -185,12 +184,19 @@ uint8 PPU::getcolor(bool select, uint8 pal, uint8 palind)
     return bus->read(0x3F00 + n);
 }
 
-void PPU::mapbus()
+std::string PPU::get_info()
+{
+    return fmt::format("line = {}; cycle = {}; v = {}", lines%262, cycles%341, vram.v);
+}
+
+void PPU::attach_bus(Bus *pb, Bus *cb)
 {
     std::function<uint16(uint16)> address_nametab;
     std::function<uint8(uint16)> reader;
     std::function<void(uint16, uint8)> writer;
 
+    bus = pb;
+    cpubus = cb;
     switch (mirroring) {
     case 0: address_nametab = [](uint16 x) { return x &= ~0x800; }; break;
     case 1: address_nametab = [](uint16 x) { return x &= ~0x400; }; break;
@@ -203,20 +209,15 @@ void PPU::mapbus()
 
     reader = [=](uint16 addr)             { return readreg(addr); };
     writer = [=](uint16 addr, uint8 data) { writereg(addr, data); };
-    cpubus->map(0x2000, 0x2008, reader, writer);
+    cpubus->map(PPUREG_START, PPUREG_END+1, reader, writer);
 
     reader = [=](uint16 addr)             { return vram.mem[address_nametab(addr)]; };
     writer = [=](uint16 addr, uint8 data) { vram.mem[address_nametab(addr)] = data; };
-    bus->map(0x2000, 0x3F00, reader, writer);
+    bus->map(NT_START, PAL_START, reader, writer);
 
     reader = [=](uint16 addr)             { return vram.mem[addr & ~0xE0]; };
     writer = [=](uint16 addr, uint8 data) { vram.mem[addr & ~0xE0] = data; };
-    bus->map(0x3F00, 0x4000, reader, writer);
-}
-
-std::string PPU::getinfo()
-{
-    return fmt::format("line = {}; cycle = {}; v = {}", lines%262, cycles%341, vram.v);
+    bus->map(PAL_START, VRAM_MAX_MEM, reader, writer);
 }
 
 } // namespace Core

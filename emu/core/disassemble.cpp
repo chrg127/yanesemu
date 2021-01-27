@@ -2,6 +2,18 @@
 #error "Only emu/core/cpu.cpp may #include this file."
 #else
 
+/*
+inline static std::string disass(std::string_view fmt, const char name[4], uint8 op)
+{
+    return fmt::format(fmt, name, op);
+}
+
+inline static std::string disass16(std::string_view fmt, const char name[4], uint8 low, uint8 hi)
+{
+    return fmt::format(fmt, name, hi, low);
+}
+*/
+
 inline static std::string disass_implied(const char name[4])
 {
     return std::string(name);

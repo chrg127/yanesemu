@@ -14,23 +14,16 @@ union Reg16 {
     };
     uint16 reg;
 
-    Reg16() : reg(0)
-    { }
-    Reg16(uint16 val)
-    { operator=(val); }
+    Reg16() : reg(0)  { }
+    Reg16(uint16 val) { operator=(val); }
 
-    inline void operator=(const uint16 val)
-    {
-        reg = val;
-    }
+    Reg16 & operator=(const uint16 val) { reg = val; return *this; }
 
     template <typename T> // T = numeric type
-    inline Reg16 & operator&=(const T val)
-    { reg &= val; return *this; }
+    Reg16 & operator&=(const T val) { reg &= val; return *this; }
 
     template <typename T> // T = numeric type
-    inline Reg16 & operator|=(const T val)
-    { reg |= val; return *this; }
+    Reg16 & operator|=(const T val) { reg |= val; return *this; }
 };
 
 template <typename T> // T = numeric type
