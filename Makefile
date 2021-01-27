@@ -1,14 +1,14 @@
 VPATH=emu:emu/core:emu/util:emu/io:emu/video
 
-HEADERS = cartridge.hpp cpu.hpp memorymap.hpp types.hpp ppu.hpp \
-		  genericbus.hpp \
-		  cmdline.hpp file.hpp debug.hpp stringops.hpp \
-		  video.hpp emulator.hpp
+HEADERS = bits.hpp bus.hpp cartridge.hpp cmdline.hpp cpu.hpp debug.hpp easyrandom.hpp \
+		emulator.hpp file.hpp heaparray.hpp memorymap.hpp ppu.hpp \
+		stringops.hpp types.hpp unsigned.hpp video.hpp
+# settings.hpp
 
-OBJS = main.o emulator.o \
-	   cpu.o cartridge.o ppu.o genericbus.o \
-	   file.o cmdline.o stringops.o \
-	   video.o
+OBJS = bus.o cartridge.o cmdline.o cpu.o easyrandom.o \
+	   emulator.o file.o main.o ppu.o \
+	   stringops.o video.o
+# settings.o
 
 LIBS = -lm -lSDL2 -lfmt
 

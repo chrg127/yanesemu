@@ -18,13 +18,14 @@ class Emulator {
     int err = 0;
 
 public:
-    bool init(const std::string_view rompath);
+    bool insert_rom(const std::string_view rompath);
     void power();
     void run();
+    bool reset(const std::string_view rompath);
     void log(Util::File &logfile);
     void dump(Util::File &dumpfile);
 
-    inline std::string rominfo() { return cartridge.getinfo(); }
+    std::string rominfo() { return cartridge.getinfo(); }
 };
 
 #endif

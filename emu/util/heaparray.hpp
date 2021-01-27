@@ -5,6 +5,8 @@
 #include <memory>
 #include <iterator>
 
+namespace Util {
+
 /* The C++ standard defines 2 array classes: std::array<T, N>, for arrays
  * created on the stack, and std::vector<T>, for dynamic array. If the size of
  * the array isn't known at compile-time, one must use std::vector<T>. However,
@@ -106,6 +108,8 @@ public:
     iterator begin() { return iterator(this, 0); }
     iterator end()   { return iterator(this, len); }
 };
+
+} // namespace Util
 
 #endif
 
