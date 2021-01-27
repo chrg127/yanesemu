@@ -52,35 +52,32 @@ bool Cartridge::parseheader()
 }
 */
 
-bool Cartridge::open(std::string_view rompath)
+void Cartridge::open(std::string_view rompath)
 {
     // open file
     if (!romfile.open(rompath, Util::File::Mode::READ)) {
-        errid = ERR_INVALID_NAME;
-        return false;
+        throw std::runtime_error("can't open ROM file");
+        // errid = ERR_INVALID_NAME;
+        // return false;
     }
 
     // parse header
     romfile.readb(header, HEADER_LEN);
     auto parse_common = [this]() {
         file_format = Format::INVALID;
-        if (header[0] == 'N' && header[1] == 'E' && header[2] == 'S' && header[3] == 0x1A)
+        if (header[0] == 'N' && header[1] == 'E' && header[2] == 'S' && header[3] == 0x1A) {
+            if ((header[7] & 0xC) == 0x8)
+                throw std::runtime_error("NES 2.0 format is not yet supported");
             file_format = Format::INES;
-        if (file_format == Format::INES && (header[7] & 0xC) == 0x8) {
-            errid = ERR_NES20;
-            return false;
         }
-        if (file_format == Format::INVALID) {
-            errid = ERR_INVALID_FORMAT;
-            return false;
-        }
+        if (file_format == Format::INVALID)
+            throw std::runtime_error("invalid format: the file is not a real ROM");
         nt_mirroring        = header[6] & 1;
         has.battery         = header[6] & 2;
         has.trainer         = header[6] & 4;
         has.fourscreenmode  = header[6] & 8;
         console_type        = header[7] & 3;
         mapper              = ((header[6] & 0xF0) >> 4) | (header[7] & 0xF0);
-        return true;
     };
     auto parse_ines = [this]() {
         if (header[5] == 0)
@@ -95,8 +92,7 @@ bool Cartridge::open(std::string_view rompath)
     auto parse_nes2_0 = [this]() {
         // TODO
     };
-    if (!parse_common())
-        return false;
+    parse_common();
     file_format == Format::INES ? parse_ines() : parse_nes2_0();
 
     // copy trainer, prgrom, chrrom
@@ -112,7 +108,7 @@ bool Cartridge::open(std::string_view rompath)
         romfile.readb(chrrom.getmem(), chrrom.getsize());
         chrrom.lock();
     }
-    return true;
+    // return true;
 }
 
 uint8 Cartridge::read_prgrom(uint16 addr)

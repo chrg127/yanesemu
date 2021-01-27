@@ -18,10 +18,10 @@ class Emulator {
     int err = 0;
 
 public:
-    bool insert_rom(const std::string_view rompath);
+    void insert_rom(const std::string_view rompath);
     void power();
     void run();
-    bool reset(const std::string_view rompath);
+    void reset(const std::string_view rompath);
     void log(Util::File &logfile);
     void dump(Util::File &dumpfile);
 

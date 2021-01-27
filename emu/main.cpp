@@ -41,11 +41,13 @@ int main(int argc, char *argv[])
     } else if (flags.items.size() > 1)
         warning("Multiple ROM files specified, only the first will be chosen\n");
 
-    if (!emu.insert_rom(flags.items[0]))
+    try {
+        emu.insert_rom(flags.items[0]);
+    } catch (std::exception &e) {
+        error("%s\n", e.what());
         return 1;
-    // seed the global number generator
+    }
     Util::seed();
-    // initialize emulator
     emu.power();
 
     // open log files -- these will be used to log emulator info and dump memory

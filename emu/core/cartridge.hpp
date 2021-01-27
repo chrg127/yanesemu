@@ -109,7 +109,7 @@ class Cartridge {
     int errid = 0;
 
 public:
-    bool open(std::string_view rompath);
+    void open(std::string_view rompath);
     uint8 read_prgrom(uint16 addr);
     uint8 read_chrrom(uint16 addr);
     std::string getinfo() const;

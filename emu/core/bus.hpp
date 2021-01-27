@@ -17,7 +17,7 @@ class Bus {
 
     // uint32 is used to permit a size of 0x10000
     // you can't, however, address more than 0xFFFF
-    HeapArray<unsigned> lookup;
+    Util::HeapArray<unsigned> lookup;
     Reader rtab[TABSIZ];
     Writer wtab[TABSIZ];
     bool assigned[TABSIZ];

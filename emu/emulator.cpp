@@ -8,13 +8,14 @@
 
 using namespace Core;
 
-bool Emulator::insert_rom(const std::string_view rompath)
+void Emulator::insert_rom(const std::string_view rompath)
 {
-    if (!cartridge.open(rompath)) {
-        error("%s: %s\n", rompath.data(), cartridge.geterr().data());
-        return false;
-    }
-    return true;
+    cartridge.open(rompath);
+    // if (!cartridge.open(rompath)) {
+    //     error("%s: %s\n", rompath.data(), cartridge.geterr().data());
+    //     return false;
+    // }
+    // return true;
 }
 
 void Emulator::power()
@@ -38,14 +39,15 @@ void Emulator::run()
 }
 
 // re-initialize the emulator with a new rom file
-bool Emulator::reset(const std::string_view rompath)
+void Emulator::reset(const std::string_view rompath)
 {
     cpu.reset();
     ppu.reset();
-    if (!insert_rom(rompath))
-        return false;
+    insert_rom(rompath);
+    // if (!insert_rom(rompath))
+    //     return false;
     power();
-    return true;
+    // return true;
 }
 
 void Emulator::log(Util::File &logfile)
