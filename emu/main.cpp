@@ -66,7 +66,10 @@ int main(int argc, char *argv[])
         logfile.putstr(emu.rominfo());
         logfile.putc('\n');
     }
-
+    while (true) {
+        emu.log(logfile);
+        emu.run();
+    }
     return 0;
 }
 

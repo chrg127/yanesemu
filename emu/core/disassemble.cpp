@@ -21,57 +21,57 @@ inline static std::string disass_implied(const char name[4])
 
 inline static std::string disass_imm(const char name[4], uint8 op)
 {
-    return fmt::format("{} #${}", name, op);
+    return fmt::format("{} #${:02X}", name, op);
 }
 
 inline static std::string disass_zero(const char name[4], uint8 op)
 {
-    return fmt::format("{} ${}", name, op);
+    return fmt::format("{} ${:02X}", name, op);
 }
 
 inline static std::string disass_zerox(const char name[4], uint8 op)
 {
-    return fmt::format("{} ${},x", name, op);
+    return fmt::format("{} ${:02X},x", name, op);
 }
 
 inline static std::string disass_zeroy(const char name[4], uint8 op)
 {
-    return fmt::format("{} ${},y", name, op);
+    return fmt::format("{} ${:02X},y", name, op);
 }
 
 inline static std::string disass_abs(const char name[4], uint8 low, uint8 hi)
 {
-    return fmt::format("{} ${}{}", name, hi, low);
+    return fmt::format("{} ${:02X}{:02X}", name, hi, low);
 }
 
 inline static std::string disass_absx(const char name[4], uint8 low, uint8 hi)
 {
-    return fmt::format("{} ${}{},x", name, hi, low);
+    return fmt::format("{} ${:02X}{:02X},x", name, hi, low);
 }
 
 inline static std::string disass_absy(const char name[4], uint8 low, uint8 hi)
 {
-    return fmt::format("{} ${}{},y", name, hi, low);
+    return fmt::format("{} ${:02X}{:02X},y", name, hi, low);
 }
 
 inline static std::string disass_ind(const char name[4], uint8 low, uint8 hi)
 {
-    return fmt::format("{} (${}{})", name, hi, low);
+    return fmt::format("{} (${:02X}{:02X})", name, hi, low);
 }
 
 inline static std::string disass_indx(const char name[4], uint8 op)
 {
-    return fmt::format("{} (${},x)", name, op);
+    return fmt::format("{} (${:02X},x)", name, op);
 }
 
 inline static std::string disass_indy(const char name[4], uint8 op)
 {
-    return fmt::format("{} (${}),y", name, op);
+    return fmt::format("{} (${:02X}),y", name, op);
 }
 
 inline static std::string disass_branch(const char name[4], int8_t disp, uint16 addr, bool took)
 {
-    return fmt::format("{} {} [${}] {}", name, disp, addr, (took) ? "[Branch taken]" : "[Branch not taken]");
+    return fmt::format("{} {} [${:02X}] {}", name, disp, addr, (took) ? "[Branch taken]" : "[Branch not taken]");
 }
 
 std::string CPU::disassemble() const

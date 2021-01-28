@@ -341,7 +341,7 @@ void CPU::fire_nmi()
 /* Prints info about the instruction which has just been executed and the status of the registers. */
 std::string CPU::get_info() const
 {
-    return fmt::format("PC: {} A: {} X: {} Y: {} S: {} {}{}{}{}{}{}{}{} cycles: {}",
+    return fmt::format("PC: {:02X} A: {:02X} X: {:02X} Y: {:02X} S: {:02X} {}{}{}{}{}{}{}{} cycles: {}",
         pc.reg, accum, xreg, yreg, sp,
         (procstatus.neg     == 1) ? 'N' : 'n',
         (procstatus.ov      == 1) ? 'V' : 'v',

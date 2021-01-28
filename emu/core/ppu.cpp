@@ -218,7 +218,7 @@ uint8 PPU::getcolor(bool select, uint8 pal, uint8 palind)
 
 std::string PPU::get_info()
 {
-    return fmt::format("line = {}; cycle = {}; v = {}", lines%262, cycles%341, vram.v);
+    return fmt::format("line = {:03}; cycle = {:03}; v = {:02X}", lines%262, cycles%341, vram.v);
 }
 
 void PPU::attach_bus(Bus *pb, Bus *cb)

@@ -51,8 +51,8 @@ void Emulator::reset(const std::string_view rompath)
 
 void Emulator::log(Util::File &logfile)
 {
-    logfile.putstr(cpu.get_info());
-    logfile.putstr(ppu.get_info());
+    logfile.putstr(cpu.get_info() + ' ');
+    logfile.putstr(ppu.get_info() + ' ');
     logfile.printf("Instruction [%02X] ", cpu.peek_opcode());
     logfile.putstr(cpu.disassemble());
     logfile.putc('\n');
