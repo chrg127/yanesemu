@@ -30,11 +30,12 @@ class PPU {
     unsigned long lines  = 0;
     int mirroring = 0;
 
-    // values inside registers
     uint8   io_latch;
+    // whether the ppu can go into vblank (leftmost bit of PPUCTRL)
     bool    nmi_enabled;
-    bool    ext_bus_dir;
+    // whether vblank has started, or the leftmost bit of PPUSTATUS
     bool    vblank;
+    bool    ext_bus_dir;
     bool    spr0hit;
     bool    spr_ov;
     bool    odd_frame;
@@ -50,8 +51,6 @@ class PPU {
         bool toggle; // used by PPUSCROLL and PPUADDR
 
         VRAM(PPU &p) : ppu(p) { }
-        void power();
-        void reset();
         void inc_horzpos();
         void inc_vertpos();
         void copy_horzpos();
@@ -60,9 +59,8 @@ class PPU {
 
     struct Background {
         PPU &ppu;
-
-        bool    patterntab_addr;
-        uint8   nt_base_addr;
+        bool    pt_addr;
+        uint8   nt_addr; // 2 bits wide
         bool    show;
         bool    show_leftmost;
         struct {
@@ -75,8 +73,6 @@ class PPU {
         } latch;
 
         Background(PPU &p) : ppu(p) { }
-        void power();
-        void reset();
         void shift_fill();
         void shift_run();
         void fetch_nt(bool dofetch);
@@ -87,21 +83,15 @@ class PPU {
     } bg;
 
     struct OAM {
-        PPU &ppu;
         std::array<uint8, OAM_SIZE> oammem;
         bool sprsize;
-        bool patterntab_addr;
+        bool pt_addr;
         bool show;
         bool show_leftmost;
-        uint8 addr, data;
+        uint8 addr;
         uint8 shifts[8], latches[8], counters[8];
-
-        OAM(PPU &p) : ppu(p) { }
-        void power();
-        void reset();
     } oam;
 
-    void mapbus();
     void begin_frame();
     void cycle_fetchnt(bool cycle);
     void cycle_fetchattr(bool cycle);
@@ -124,7 +114,8 @@ class PPU {
     friend class PPUBus;
 
 public:
-    PPU() : vram(*this), bg(*this), oam(*this) { }
+    PPU() : vram(*this), bg(*this)
+    { }
 
     void power();
     void reset();

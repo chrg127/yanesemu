@@ -30,7 +30,7 @@ all: debug
 $(DEBDIR)/cpu.o: emu/core/cpu.cpp emu/core/opcodes.cpp emu/core/disassemble.cpp $(HEADERS)
 	$(CXX) $(CFLAGS) -c $< -o $@
 
-$(DEBDIR)/ppu.o: emu/core/ppu.cpp emu/core/ppumain.cpp emu/core/vram.cpp emu/core/background.cpp emu/core/oam.cpp $(HEADERS)
+$(DEBDIR)/ppu.o: emu/core/ppu.cpp emu/core/ppumain.cpp $(HEADERS)
 	$(CXX) $(CFLAGS) -c $< -o $@
 
 $(DEBDIR)/video.o: emu/video/video.cpp emu/video/videosdl.cpp $(HEADERS)

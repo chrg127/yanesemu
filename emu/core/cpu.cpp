@@ -7,6 +7,7 @@
 #include <emu/core/cartridge.hpp>
 #include <emu/core/ppu.hpp>
 #include <emu/util/stringops.hpp>
+#include <emu/util/easyrandom.hpp>
 #define DEBUG
 #include <emu/util/debug.hpp>
 
@@ -291,18 +292,38 @@ void CPU::run()
     execute(curropcode);
 }
 
-/* Emulates the start/reset function of the 6502. */
 void CPU::power()
 {
-    bus->map(0, RAM_END+1,
-        [=](uint16 addr)             { return rammem[addr]; },
-        [=](uint16 addr, uint8 data) { rammem[addr] = data; } );
-    bus->map(APU_START, APU_END+1,
-        [=](uint16 addr)             { return rammem[addr]; },
-        [=](uint16 addr, uint8 data) { rammem[addr] = data; } );
+    accum = xreg = yreg = 0;
+    for (uint16 i = 0; i < 0x0800; i++)
+        bus->write(i, Util::random8());
+    procstatus.reset();
+    // these are probably APU regs. i'll add them later. for now this is enough.
+    bus->write(0x4017, 0);
+    bus->write(0x4015, 0);
+    for (uint16 i = 0x4000; i < 0x4013; i++)
+        bus->write(i, 0);
     sp = 0;
-    pc = 0;
+    // an interrupt is performed during 6502 start up. this is why SP = $FD.
     interrupt(true);
+}
+
+void CPU::reset()
+{
+    procstatus.intdis = 1;
+    sp = 0;
+    interrupt(true);
+}
+
+void CPU::attach_bus(Bus *b)
+{
+    bus = b;
+    bus->map(RAM_START, PPUREG_START,
+        [=](uint16 addr)             { return rammem[addr]; },
+        [=](uint16 addr, uint8 data) { rammem[addr] = data; } );
+    bus->map(APU_START, CARTRIDGE_START,
+        [=](uint16 addr)             { return rammem[addr]; },
+        [=](uint16 addr, uint8 data) { rammem[addr] = data; } );
 }
 
 /* Sends an IRQ signal. */
@@ -315,13 +336,6 @@ void CPU::fire_irq()
 void CPU::fire_nmi()
 {
     nmipending = true;
-}
-
-/* Simply resets registers and memory. */
-void CPU::reset()
-{
-    pc = sp = accum = xreg = yreg = 0;
-    procstatus.reset();
 }
 
 /* Prints info about the instruction which has just been executed and the status of the registers. */
