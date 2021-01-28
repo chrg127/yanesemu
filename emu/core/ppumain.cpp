@@ -129,12 +129,12 @@ void PPU::ccycle()
     if constexpr(Cycle == 257) cycle_copyhorz();
 }
 
-using CycleFunc = void (*)(PPU *);
-using LineFunc  = void (*)(PPU *, unsigned);
+using CycleFunc = void (PPU::*)();
+using LineFunc  = void (PPU::*)(unsigned);
 
 #define CCYCLE &PPU::ccycle
 #define IDLE &PPU::idlec
-static std::function<void(PPU *)> cycletab[] = {
+static constexpr std::array<CycleFunc, 341> cycletab = {
     IDLE,        CCYCLE<1>,   CCYCLE<2>,   CCYCLE<3>,   CCYCLE<4>,   CCYCLE<5>,   CCYCLE<6>,   CCYCLE<7>,
     CCYCLE<8>,   CCYCLE<9>,   CCYCLE<10>,  CCYCLE<11>,  CCYCLE<12>,  CCYCLE<13>,  CCYCLE<14>,  CCYCLE<15>,
     CCYCLE<16>,  CCYCLE<17>,  CCYCLE<18>,  CCYCLE<19>,  CCYCLE<20>,  CCYCLE<21>,  CCYCLE<22>,  CCYCLE<23>,
@@ -190,12 +190,15 @@ void PPU::lcycle(unsigned int cycle)
     if (cycle == 0) {
         DBGPUTC('\n');
     }
-    if constexpr(Line < 240)
-        cycletab[cycle](this);
+    if constexpr(Line < 240) {
+        const auto f = cycletab[cycle];
+        (this->*f)();
+    }
     if constexpr(Line == 241)
         cycle == 1 ? vblank_begin() : idlec();
     if constexpr(Line == 261) {
-        cycletab[cycle](this);
+        const auto f = cycletab[cycle];
+        (this->*f)();
         if (cycle == 1)
             vblank_end();
         if (cycle >= 280 && cycle <= 304)
@@ -208,7 +211,7 @@ void PPU::lcycle(unsigned int cycle)
 }
 
 #define LCYCLE &PPU::lcycle
-static std::function<void(PPU *, unsigned int)> linetab[] = {
+static constexpr std::array<LineFunc, 262> linetab = {
     LCYCLE<0>,   LCYCLE<1>,   LCYCLE<2>,   LCYCLE<3>,   LCYCLE<4>,   LCYCLE<5>,   LCYCLE<6>,   LCYCLE<7>,
     LCYCLE<8>,   LCYCLE<9>,   LCYCLE<10>,  LCYCLE<11>,  LCYCLE<12>,  LCYCLE<13>,  LCYCLE<14>,  LCYCLE<15>,
     LCYCLE<16>,  LCYCLE<17>,  LCYCLE<18>,  LCYCLE<19>,  LCYCLE<20>,  LCYCLE<21>,  LCYCLE<22>,  LCYCLE<23>,
@@ -247,7 +250,8 @@ static std::function<void(PPU *, unsigned int)> linetab[] = {
 
 void PPU::run()
 {
-    linetab[lines % 262](this, cycles % 341);
+    const auto linefunc = linetab[lines % 262];
+    (this->*linefunc)(cycles % 341);
     cycles++;
     lines += (cycles % 341 == 0);
 }

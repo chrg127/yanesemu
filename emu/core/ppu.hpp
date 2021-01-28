@@ -14,13 +14,6 @@ class CPU;
 class Cartridge;
 
 class PPU {
-    enum {
-        HORZ = 256,
-        VERT = 224,
-        REAL_HORZ = 262,
-        REAL_VERT = 341,
-    };
-
     Bus *bus;
     Bus *cpubus;
 
