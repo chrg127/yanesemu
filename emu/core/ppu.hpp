@@ -5,6 +5,7 @@
 #include <functional>
 #include <string>
 #include <emu/core/types.hpp>
+#include <emu/core/memmap.hpp>
 #include <emu/core/bus.hpp>
 
 namespace Core {
@@ -18,21 +19,15 @@ class PPU {
         VERT = 224,
         REAL_HORZ = 262,
         REAL_VERT = 341,
-        VRAM_MAX_MEM = 0x4000,
-        PPUREG_START = 0x2000,
-        PPUREG_END   = 0x3FFF,
-        NT_START     = 0x2000,
-        PAL_START    = 0x3F00,
-        OAM_SIZE     = 0x0100,
     };
 
     Bus *bus;
     Bus *cpubus;
 
     // screen
+    uint8 screen[SCREEN_WIDTH*SCREEN_HEIGHT];
     unsigned long cycles = 0;
     unsigned long lines  = 0;
-    uint8 screen[HORZ*VERT];
     int mirroring = 0;
 
     // values inside registers
@@ -49,8 +44,8 @@ class PPU {
 
     struct VRAM {
         PPU &ppu;
-        std::array<uint8, VRAM_MAX_MEM> mem;
-        uint16 v, t;   // vram address, temporary vram address
+        std::array<uint8, VRAM_SIZE> mem;
+        uint16 v, t; // vram address, temporary vram address
         uint8 fine_x, inc, readbuf;
         bool toggle; // used by PPUSCROLL and PPUADDR
 
@@ -92,23 +87,18 @@ class PPU {
     } bg;
 
     struct OAM {
-        PPU     &ppu;
-        uint8   oam[OAM_SIZE];
-        bool    sprsize;
-        bool    patterntab_addr;
-        bool    show;
-        bool    show_leftmost;
-        uint8   addr;
-        uint8   data;
-        uint8   shifts[8];
-        uint8   latches[8];
-        uint8   counters[8];
+        PPU &ppu;
+        std::array<uint8, OAM_SIZE> oammem;
+        bool sprsize;
+        bool patterntab_addr;
+        bool show;
+        bool show_leftmost;
+        uint8 addr, data;
+        uint8 shifts[8], latches[8], counters[8];
 
         OAM(PPU &p) : ppu(p) { }
         void power();
         void reset();
-        // uint8 read(uint16 addr);
-        // void write(uint16 addr, uint8 data);
     } oam;
 
     void mapbus();
@@ -149,7 +139,7 @@ public:
     template <unsigned Cycle> void background_cycle();
     void idlec();
 
-    const std::array<uint8, VRAM_MAX_MEM> & getmemory() const { return vram.mem; }
+    const std::array<uint8, VRAM_SIZE> & getmemory() const { return vram.mem; }
     void set_mirroring(int m) { mirroring = m; }
 
     void attach_bus(Bus *pb, Bus *cb);

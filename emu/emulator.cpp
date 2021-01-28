@@ -1,7 +1,6 @@
 #include <emu/emulator.hpp>
 
 #include <string_view>
-#include <emu/core/memorymap.hpp>
 #include <emu/util/unsigned.hpp>
 #include <emu/util/debug.hpp>
 #include <emu/util/file.hpp>

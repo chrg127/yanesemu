@@ -4,36 +4,22 @@
 #include <array>
 #include <string>
 #include <emu/core/types.hpp>
-#include <emu/core/memorymap.hpp>
+#include <emu/core/memmap.hpp>
 #include <emu/core/bus.hpp>
 
 namespace Core {
 
-class Cartridge;
-class PPU;
-
 class CPU {
-    // constants
-    enum {
-        RAM_MEM_MAX  = 0x2000,
-        RAM_END      = 0x1FFF,
-        APU_START    = 0x4000,
-        APU_END      = 0x401F,
-        STACK_BASE   = 0x0100,
-        NMI_VEC      = 0xFFFA,
-        RESET_VEC    = 0xFFFC,
-        IRQ_BRK_VEC  = 0xFFFE,
-    };
     using InstrFuncRead = void (CPU::*)(const uint8);
     using InstrFuncMod = uint8 (CPU::*)(uint8);
 
-    Bus *bus;
-    std::array<uint8, RAM_MEM_MAX> rammem;
-    uint8 curropcode;
-    Reg16 op;
+    std::array<uint8, RAM_SIZE> rammem;
+    Bus *bus = nullptr;
+    uint8 curropcode = 0;
+    Reg16 op = 0;
 
     // registers
-    Reg16 pc;
+    Reg16 pc    = 0;
     uint8 accum = 0;
     uint8 xreg  = 0;
     uint8 yreg  = 0;
@@ -169,16 +155,16 @@ class CPU {
 public:
     void run();
     void power();
+    void reset();
+    void attach_bus(Bus *b);
     void fire_irq();
     void fire_nmi();
-    void reset();
     std::string disassemble() const;
     std::string get_info() const;
 
-    const std::array<uint8, RAM_MEM_MAX> & get_memory() const { return rammem; }
+    const std::array<uint8, RAM_SIZE> & get_memory() const { return rammem; }
     int get_cycles()          { return cycles; }
     uint8 peek_opcode() const { return curropcode; }
-    void attach_bus(Bus *b)   { bus = b; }
 };
 
 } // namespace Core

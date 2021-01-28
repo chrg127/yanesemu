@@ -1,6 +1,7 @@
 #include <emu/core/cartridge.hpp>
 
 #include <fmt/core.h>
+#include <emu/core/memmap.hpp>
 
 namespace Core {
 
@@ -146,6 +147,7 @@ std::string Cartridge::getinfo() const
     );
 }
 
+/*
 std::string_view Cartridge::geterr() const
 {
     static std::string_view rom_errmsg[] = {
@@ -156,18 +158,19 @@ std::string_view Cartridge::geterr() const
     };
     return rom_errmsg[errid];
 }
+*/
 
 void Cartridge::attach_bus(Bus *cpu, Bus *ppu)
 {
     cpubus = cpu;
     ppubus = ppu;
-    cpubus->map(0x4020, 0x8000,
+    cpubus->map(CARTRIDGE_START, 0x8000,
             [=] (uint16 addr) { return 0; },
             [=] (uint16 addr, uint8 data) { });
-    cpubus->map(0x8000, 0x10000,
+    cpubus->map(0x8000, CPUBUS_SIZE,
             [=] (uint16 addr) { return read_prgrom(addr); },
             [=] (uint16 addr, uint8 data) { /***********/ });
-    ppubus->map(0, 0x2000,
+    ppubus->map(PT_START, NT_START,
             [=] (uint16 addr) { return read_chrrom(addr); },
             [=] (uint16 addr, uint8 data) { /***********/ });
 }

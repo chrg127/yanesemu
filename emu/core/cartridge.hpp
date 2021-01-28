@@ -113,7 +113,6 @@ public:
     uint8 read_prgrom(uint16 addr);
     uint8 read_chrrom(uint16 addr);
     std::string getinfo() const;
-    std::string_view geterr() const;
     void attach_bus(Bus *cpu, Bus *ppu);
 
     uint16 mappertype() const   { return mapper; }

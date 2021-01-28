@@ -1,7 +1,7 @@
 VPATH=emu:emu/core:emu/util:emu/io:emu/video
 
 HEADERS = bits.hpp bus.hpp cartridge.hpp cmdline.hpp cpu.hpp debug.hpp easyrandom.hpp \
-		emulator.hpp file.hpp heaparray.hpp memorymap.hpp ppu.hpp \
+		emulator.hpp file.hpp heaparray.hpp memmap.hpp ppu.hpp \
 		stringops.hpp types.hpp unsigned.hpp video.hpp
 # settings.hpp
 
