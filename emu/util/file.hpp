@@ -48,6 +48,8 @@ public:
     bool assoc(FILE *f, Mode m);
 
     bool isopen() const  { return fbuf ? true : false; }
+    explicit operator bool() { return isopen(); }
+
     long size() const    { return filesize; }
     bool eof()           { return !fbuf ? true : std::feof(fbuf) != 0 ? true : false; }
     bool error()         { return !fbuf ? true : ferror(fbuf)    != 0 ? true : false; }

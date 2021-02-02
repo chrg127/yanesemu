@@ -1,4 +1,8 @@
+#include <thread>
+#include <mutex>
+#include <unistd.h>
 #include <fmt/core.h>
+#include <SDL2/SDL.h>
 #include <emu/emulator.hpp>
 #include <emu/util/cmdline.hpp>
 #include <emu/util/file.hpp>
@@ -21,10 +25,63 @@ static const Util::ValidArgStruct cmdflags = {
 static constexpr std::string_view progname = "yanesemu";
 static constexpr std::string_view version  = "0.1";
 static Emulator emu;
+static bool global_done = false;
+static std::mutex done_mutex;
+
+bool check_done()
+{
+    std::lock_guard<std::mutex> lock(done_mutex);
+    return global_done;
+}
+
+void set_done()
+{
+    std::lock_guard<std::mutex> lock(done_mutex);
+    global_done = true;
+}
+
+void event_thread()
+{
+    SDL_Init(SDL_INIT_VIDEO);
+    SDL_Window *window = SDL_CreateWindow("yanesemu", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                                          640, 480, SDL_WINDOW_SHOWN);
+    // if (!window) {
+    //     error("can't create window\n");
+    //     return 1; // ???????
+    // }
+
+    SDL_Renderer *rnd = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    static SDL_Event ev;
+
+    while (!check_done()) {
+        if (SDL_WaitEvent(&ev)) {
+            switch (ev.type) {
+            case SDL_QUIT:
+                fmt::print("quitting");
+                set_done();
+            }
+        }
+        SDL_SetRenderDrawColor(rnd, 0xFF, 0xFF, 0xFF, 0xFF);
+        SDL_RenderClear(rnd);
+        SDL_RenderPresent(rnd);
+    }
+    SDL_DestroyRenderer(rnd);
+    SDL_DestroyWindow(window);
+}
+
+static Util::File logfile, dumpfile;
+
+void emulator_thread()
+{
+    while (!check_done()) {
+        emu.log(logfile);
+        emu.run();
+        // usleep(1);
+    }
+}
 
 int main(int argc, char *argv[])
 {
-    Util::File logfile, dumpfile;
     Video::Video v;
 
     // parse command line arguments
@@ -66,10 +123,12 @@ int main(int argc, char *argv[])
         logfile.putstr(emu.rominfo());
         logfile.putc('\n');
     }
-    while (true) {
-        emu.log(logfile);
-        emu.run();
-    }
+
+    // initialize two threads and join
+    std::thread event_th(event_thread);
+    std::thread emu_th(emulator_thread);
+    event_th.join();
+    emu_th.join();
     return 0;
 }
 

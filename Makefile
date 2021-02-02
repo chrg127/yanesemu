@@ -10,7 +10,7 @@ OBJS = bus.o cartridge.o cmdline.o cpu.o easyrandom.o \
 	   stringops.o video.o
 # settings.o
 
-LIBS = -lm -lSDL2 -lfmt
+LIBS = -lm -lSDL2 -lfmt -lpthread
 
 CXX = g++
 CFLAGS = -I. -std=c++17 -Wall -Wextra -pipe \
