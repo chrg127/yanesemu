@@ -15,40 +15,51 @@ LIBS = -lm -lSDL2 -lfmt -lpthread
 CXX = g++
 CFLAGS = -I. -std=c++17 -Wall -Wextra -pipe \
 		 -Wcast-align -Wcast-qual -Wpointer-arith \
-		 -Wformat=2 -Wmissing-include-dirs -Wno-unused-parameter
+		 -Wformat=2 -Wmissing-include-dirs -Wno-unused-parameter \
+		 -fno-rtti
 
-DEBDIR = debug
-DEBPRGNAME = emu
-DEBCFLAGS = -g
-DEBOBJS = $(patsubst %,$(DEBDIR)/%,$(OBJS))
-RELDIR = release
-RELPRGNAME = emu-release
+
+PRGNAME = emu
 
 all: debug
 
-# these are special - they #include other .cpp files
+DEBDIR = debug
+DEBOBJS = $(patsubst %,$(DEBDIR)/%,$(OBJS))
 $(DEBDIR)/cpu.o: emu/core/cpu.cpp emu/core/opcodes.cpp emu/core/disassemble.cpp $(HEADERS)
 	$(CXX) $(CFLAGS) -c $< -o $@
-
 $(DEBDIR)/ppu.o: emu/core/ppu.cpp emu/core/ppumain.cpp $(HEADERS)
 	$(CXX) $(CFLAGS) -c $< -o $@
-
 $(DEBDIR)/video.o: emu/video/video.cpp emu/video/videosdl.cpp $(HEADERS)
 	$(CXX) $(CFLAGS) -c $< -o $@
-
 $(DEBDIR)/%.o: %.cpp $(HEADERS)
 	$(CXX) $(CFLAGS) -c $< -o $@
+$(DEBDIR)/$(PRGNAME): $(DEBOBJS)
+	$(CXX) $(DEBOBJS) -o $(DEBDIR)/$(PRGNAME) $(LIBS)
+
+# this duplication is unfortunately necessary.
+RELDIR = release
+RELOBJS = $(patsubst %,$(RELDIR)/%,$(OBJS))
+$(RELDIR)/cpu.o: emu/core/cpu.cpp emu/core/opcodes.cpp emu/core/disassemble.cpp $(HEADERS)
+	$(CXX) $(CFLAGS) -c $< -o $@
+$(RELDIR)/ppu.o: emu/core/ppu.cpp emu/core/ppumain.cpp $(HEADERS)
+	$(CXX) $(CFLAGS) -c $< -o $@
+$(RELDIR)/video.o: emu/video/video.cpp emu/video/videosdl.cpp $(HEADERS)
+	$(CXX) $(CFLAGS) -c $< -o $@
+$(RELDIR)/%.o: %.cpp $(HEADERS)
+	$(CXX) $(CFLAGS) -c $< -o $@
+$(RELDIR)/$(PRGNAME): $(RELOBJS)
+	$(CXX) $(RELOBJS) -o $(RELDIR)/$(PRGNAME) $(LIBS)
+
+.PHONY: clean directories debug release
 
 directories:
 	mkdir -p $(DEBDIR) $(RELDIR)
 
-debug: CFLAGS += $(DEBCFLAGS)
-debug: directories $(DEBPRGNAME)
-
-$(DEBPRGNAME): $(DEBOBJS)
-	$(CXX) $(DEBOBJS) -o $(DEBDIR)/$(DEBPRGNAME) $(LIBS)
-
-.PHONY: clean
 clean:
 	rm -rf $(DEBDIR)/*.o $(DEBDIR)/$(DEBPRGNAME) $(RELDIR)/*.o $(RELDIR)/$(RELPRGNAME)
 
+debug: CFLAGS += -g
+debug: directories $(DEBDIR)/$(PRGNAME)
+
+release: CFLAGS += -O3
+release: directories $(RELDIR)/$(PRGNAME)
