@@ -1,15 +1,15 @@
 === yanesemu ===
 
-Yet Another NES Emulator. An attempt at a NES emulator. Probably won't be finished, sorry.
+Yet Another NES Emulator: an attempt at a NES emulator. Probably won't be
+finished.
 
 === Compiling ===
 
     cd /path/to/project
     make
 
-I don't care about visual studio.
+You must compile on linux with g++. No other setup is supported.
+This project depends on:
+    - libSDL2
+    - libfmt
 
-=== Contributing ===
-
-Why would you?
-But anyway, if you seriously want to, then just send me some patches, who cares.
