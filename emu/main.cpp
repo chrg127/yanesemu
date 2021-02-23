@@ -82,7 +82,7 @@ void emulator_thread()
 
 int main(int argc, char *argv[])
 {
-    Video::Video v;
+    // Video::Video v;
 
     // parse command line arguments
     if (argc < 2) {
