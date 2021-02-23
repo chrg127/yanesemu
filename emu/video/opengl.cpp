@@ -165,24 +165,6 @@ bool OpenGL::init()
     return true;
 }
 
-Canvas OpenGL::create_canvas()
-{
-    unsigned id;
-    glActiveTexture(GL_TEXTURE0);
-    glGenTextures(1, &id);
-    glBindTexture(GL_TEXTURE_2D, id);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    Canvas res;
-    res.tex_ids[0] = id;
-    res.currid = 0;
-    res.frame = new unsigned char[width*height*4]();
-    return res;
-}
-
 void OpenGL::resize(int width, int height)
 {
 
@@ -190,6 +172,7 @@ void OpenGL::resize(int width, int height)
 
 void OpenGL::update_screen(Canvas &canvas)
 {
+    /*
     static int pos = 0;
     for (int i = 0; i < 10; i++) {
         canvas.frame[pos] = 0xFF;
@@ -198,6 +181,7 @@ void OpenGL::update_screen(Canvas &canvas)
         canvas.frame[pos+3] = 0xFF;
         pos += 4;
     }
+    */
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, canvas.tex_ids[canvas.currid]);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, canvas.frame);
@@ -211,6 +195,20 @@ void OpenGL::draw()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     SDL_GL_SwapWindow(window);
+}
+
+void OpenGL::create_textures(unsigned ids[2])
+{
+    unsigned id;
+    glActiveTexture(GL_TEXTURE0);
+    glGenTextures(1, &id);
+    glBindTexture(GL_TEXTURE_2D, id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    ids[0] = id;
 }
 
 void OpenGL::create_shader()

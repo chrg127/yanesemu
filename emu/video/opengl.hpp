@@ -21,10 +21,11 @@ class OpenGL : public Context::Impl {
 public:
     ~OpenGL();
     bool init();
-    Canvas create_canvas();
     void resize(int width, int height);
     void update_screen(Canvas &canvas);
     void draw();
+    void create_textures(unsigned ids[2]);
+    std::pair<unsigned, unsigned> dimensions() const { return std::make_pair(width, height); }
 };
 
 } // namespace Video
