@@ -1,7 +1,6 @@
 #include "settings.hpp"
 
 #include "stringops.hpp"
-#define DEBUG
 #include "debug.hpp"
 
 namespace Util {

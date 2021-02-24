@@ -9,7 +9,6 @@
 #include <emu/core/cartridge.hpp>
 #include <emu/util/file.hpp>
 #include <emu/util/easyrandom.hpp>
-#define DEBUG
 #include <emu/util/debug.hpp>
 
 namespace Core {
