@@ -8,7 +8,6 @@
 #include <emu/core/ppu.hpp>
 #include <emu/util/stringops.hpp>
 #include <emu/util/easyrandom.hpp>
-#define DEBUG
 #include <emu/util/debug.hpp>
 
 namespace Core {

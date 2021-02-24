@@ -1,19 +1,17 @@
-VPATH=emu:emu/core:emu/util:emu/io:emu/video:tests
+VPATH := emu:emu/core:emu/util:emu/io:emu/video:tests
 
-HEADERS = bus.hpp cartridge.hpp cpu.hpp memmap.hpp ppu.hpp types.hpp \
-		  bits.hpp cmdline.hpp debug.hpp easyrandom.hpp file.hpp heaparray.hpp settings.hpp stringops.hpp unsigned.hpp \
+headers := bus.hpp cartridge.hpp cpu.hpp memmap.hpp ppu.hpp types.hpp \
+		  bits.hpp cmdline.hpp debug.hpp easyrandom.hpp file.hpp heaparray.hpp settings.hpp stringops.hpp unsigned.hpp settings.hpp \
 		  video.hpp opengl.hpp \
 		  external/glad/glad.h external/glad/khrplatform.h
-		  # settings.hpp
 
-OBJS = emulator.o \
+_objs := emulator.o \
 	   bus.o cartridge.o cpu.o ppu.o \
-	   cmdline.o easyrandom.o file.o stringops.o \
+	   cmdline.o easyrandom.o file.o stringops.o settings.o \
 	   video.o opengl.o \
 	   glad.o
-	   # settings.o
 
-LIBS = -lm -lSDL2 -lfmt -lpthread -ldl -lGL
+libs := -lm -lSDL2 -lfmt -lpthread -ldl -lGL
 
 CC = gcc
 CXX = g++
@@ -23,55 +21,52 @@ CXXFLAGS = -I. -std=c++17 -Wall -Wextra -pipe \
 		 -Wformat=2 -Wmissing-include-dirs -Wno-unused-parameter \
 		 -fno-rtti
 
-PRGNAME = emu
+programname := emu
+profile := debug
+platform := linux
 
-all: debug
+ifeq ($(profile),debug)
+    outdir := debug
+    CFLAGS += -g -DDEBUG
+    CXXFLAGS += -g -DDEBUG
+else
+    outdir := release
+    CFLAGS += -O3
+    CXXFLAGS += -O3
+endif
 
-DEBDIR = debug
-DEBOBJS = $(patsubst %,$(DEBDIR)/%,$(OBJS))
-$(DEBDIR)/glad.o: external/glad/glad.c $(HEADERS)
-	$(CC) $(CFLAGS) -c $< -o $@
-$(DEBDIR)/cpu.o: emu/core/cpu.cpp emu/core/opcodes.cpp emu/core/disassemble.cpp $(HEADERS)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-$(DEBDIR)/ppu.o: emu/core/ppu.cpp emu/core/ppumain.cpp $(HEADERS)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-$(DEBDIR)/%.o: %.cpp $(HEADERS)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-#main
-$(DEBDIR)/$(PRGNAME): $(DEBDIR)/main.o $(DEBOBJS)
-	$(CXX) $(DEBDIR)/main.o $(DEBOBJS) -o $(DEBDIR)/$(PRGNAME) $(LIBS)
+objs.main := $(outdir)/main.o
+objs.test1 := $(outdir)/test1.o
+objs := $(patsubst %,$(outdir)/%,$(_objs))
+
+all: $(outdir)/$(programname)
+
+$(outdir)/cpu.o: emu/core/cpu.cpp emu/core/opcodes.cpp emu/core/disassemble.cpp $(HEADERS)
+$(outdir)/ppu.o: emu/core/ppu.cpp emu/core/ppumain.cpp $(HEADERS)
+$(outdir)/glad.o: external/glad/glad.c $(HEADERS)
+	$(info Compiling $< ...)
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+$(outdir)/%.o: %.cpp $(HEADERS)
+	$(info Compiling $< ...)
+	@$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# main
+$(outdir)/$(programname): $(objs.main) $(objs)
+	$(info Linking $@ ...)
+	@$(CXX) $(objs.main) $(objs) -o $@ $(libs)
 # tests
-$(DEBDIR)/test1: $(DEBDIR)/test1.o $(DEBOBJS)
-	$(CXX) $(DEBDIR)/test1.o $(DEBOBJS) -o $(DEBDIR)/test1 $(LIBS)
-
-# this duplication is unfortunately necessary.
-RELDIR = release
-RELOBJS = $(patsubst %,$(RELDIR)/%,$(OBJS))
-$(RELDIR)/cpu.o: emu/core/cpu.cpp emu/core/opcodes.cpp emu/core/disassemble.cpp $(HEADERS)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-$(RELDIR)/ppu.o: emu/core/ppu.cpp emu/core/ppumain.cpp $(HEADERS)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-$(RELDIR)/%.o: %.cpp $(HEADERS)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-$(RELDIR)/$(PRGNAME): $(RELOBJS)
-	$(CXX) $(RELOBJS) -o $(RELDIR)/$(PRGNAME) $(LIBS)
+$(outdir)/test1: $(objs.test1) $(objs)
+	$(info Linking $@ ...)
+	@$(CXX) $(objs.test1) $(objs) -o $@ $(libs)
 
 .PHONY: clean directories debug release
 
 directories:
-	mkdir -p $(DEBDIR) $(RELDIR)
+	mkdir -p $(outdir)
+
+tests: $(outdir)/test1
 
 clean:
-	rm -rf $(DEBDIR)/*.o $(DEBDIR)/$(DEBPRGNAME) $(RELDIR)/*.o $(RELDIR)/$(RELPRGNAME)
+	rm -rf $(outdir)/*.o $(outdir)/$(programname)
 
-debug: CXXFLAGS += -g
-debug: CFLAGS += -g
-debug: directories $(DEBDIR)/$(PRGNAME)
-
-release: CXXFLAGS += -O3
-release: CFLAGS += -g
-release: directories $(RELDIR)/$(PRGNAME)
-
-tests: CXXFLAGS += -g
-tests: CFLAGS += -g
-tests: directories $(DEBDIR)/test1

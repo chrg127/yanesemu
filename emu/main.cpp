@@ -8,7 +8,6 @@
 #include <emu/util/file.hpp>
 #include <emu/util/easyrandom.hpp>
 #include <emu/video/video.hpp>
-#define DEBUG
 #include <emu/util/debug.hpp>
 
 static const Util::ValidArgStruct cmdflags = {
