@@ -172,7 +172,6 @@ void OpenGL::resize(int width, int height)
 
 void OpenGL::update_screen(Canvas &canvas)
 {
-    /*
     static int pos = 0;
     for (int i = 0; i < 10; i++) {
         canvas.frame[pos] = 0xFF;
@@ -181,7 +180,6 @@ void OpenGL::update_screen(Canvas &canvas)
         canvas.frame[pos+3] = 0xFF;
         pos += 4;
     }
-    */
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, canvas.tex_ids[canvas.currid]);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, canvas.frame);

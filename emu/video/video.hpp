@@ -21,24 +21,32 @@ public:
         virtual std::pair<unsigned, unsigned> dimensions() const = 0;
         virtual void create_textures(unsigned ids[2]) = 0;
     };
-    enum class Type {
-        OPENGL,
-    };
 
 private:
     std::unique_ptr<Impl> ptr;
 
 public:
-    Context(Type type);
+    template <typename T> // T = derived from Context::Impl
+    static Context create()
+    {
+        Context c;
+        c.ptr = std::make_unique<T>();
+        return c;
+    }
+
+    Context() = default;
     Context(const Context &) = delete;
-    Context(Context &&)      = delete;
+    Context(Context &&)      = default;
     Context & operator=(const Context &) = delete;
-    Context & operator=(Context &&)      = delete;
+    Context & operator=(Context &&)      = default;
 
     void init()                        { ptr->init(); }
     void resize(int width, int height) { ptr->resize(width, height); }
     void update_screen(Canvas &canvas) { ptr->update_screen(canvas); }
     void draw()                        { ptr->draw(); }
+    template <typename T>
+    void reset()                       { ptr.reset(new T()); }
+
     friend class Canvas;
 };
 
@@ -49,7 +57,13 @@ struct Canvas {
     unsigned char *frame = nullptr;
 
 public:
-    Canvas() = default;
+    Canvas(Context &ctx)
+    {
+        auto dim = ctx.ptr->dimensions();
+        ctx.ptr->create_textures(tex_ids);
+        frame = new unsigned char[dim.first * dim.second * 4]();
+    }
+
     ~Canvas()
     {
         if (frame)
@@ -57,19 +71,22 @@ public:
     }
 
     Canvas(const Canvas &) = delete;
-    Canvas(Canvas &&c) { operator=(std::move(c)); }
+    Canvas(Canvas &&c)     = default;
     Canvas & operator=(const Canvas &) = delete;
-    Canvas & operator=(Canvas &&c)
-    {
-        std::swap(*this, c);
-        return *this;
-    }
+    Canvas & operator=(Canvas &&c)     = default;
 
     void drawpixel(unsigned x, unsigned y);
-
-    static Canvas create(Context &ctx);
 };
 
 } // namespace Video
+
+
+#define USE_OPENGL
+
+#ifdef USE_OPENGL
+#include "opengl.hpp"
+#endif
+
+#undef USE_OPENGL
 
 #endif

@@ -1,4 +1,4 @@
-VPATH=emu:emu/core:emu/util:emu/io:emu/video
+VPATH=emu:emu/core:emu/util:emu/io:emu/video:tests
 
 HEADERS = bus.hpp cartridge.hpp cpu.hpp memmap.hpp ppu.hpp types.hpp \
 		  bits.hpp cmdline.hpp debug.hpp easyrandom.hpp file.hpp heaparray.hpp settings.hpp stringops.hpp unsigned.hpp \
@@ -6,7 +6,7 @@ HEADERS = bus.hpp cartridge.hpp cpu.hpp memmap.hpp ppu.hpp types.hpp \
 		  external/glad/glad.h external/glad/khrplatform.h
 		  # settings.hpp
 
-OBJS = main.o emulator.o \
+OBJS = emulator.o \
 	   bus.o cartridge.o cpu.o ppu.o \
 	   cmdline.o easyrandom.o file.o stringops.o \
 	   video.o opengl.o \
@@ -37,8 +37,12 @@ $(DEBDIR)/ppu.o: emu/core/ppu.cpp emu/core/ppumain.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 $(DEBDIR)/%.o: %.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-$(DEBDIR)/$(PRGNAME): $(DEBOBJS)
-	$(CXX) $(DEBOBJS) -o $(DEBDIR)/$(PRGNAME) $(LIBS)
+#main
+$(DEBDIR)/$(PRGNAME): $(DEBDIR)/main.o $(DEBOBJS)
+	$(CXX) $(DEBDIR)/main.o $(DEBOBJS) -o $(DEBDIR)/$(PRGNAME) $(LIBS)
+# tests
+$(DEBDIR)/test1: $(DEBDIR)/test1.o $(DEBOBJS)
+	$(CXX) $(DEBDIR)/test1.o $(DEBOBJS) -o $(DEBDIR)/test1 $(LIBS)
 
 # this duplication is unfortunately necessary.
 RELDIR = release
@@ -61,7 +65,13 @@ clean:
 	rm -rf $(DEBDIR)/*.o $(DEBDIR)/$(DEBPRGNAME) $(RELDIR)/*.o $(RELDIR)/$(RELPRGNAME)
 
 debug: CXXFLAGS += -g
+debug: CFLAGS += -g
 debug: directories $(DEBDIR)/$(PRGNAME)
 
 release: CXXFLAGS += -O3
+release: CFLAGS += -g
 release: directories $(RELDIR)/$(PRGNAME)
+
+tests: CXXFLAGS += -g
+tests: CFLAGS += -g
+tests: directories $(DEBDIR)/test1
