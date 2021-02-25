@@ -60,7 +60,6 @@ static GLenum glCheckError(const char *file, int line)
 #ifdef DEBUG
     GLenum err;
     while (err = glGetError(), err != GL_NO_ERROR) {
-        const char *errstr;
         switch (err) {
         case GL_INVALID_ENUM:      error("opengl: invalid enum\n");      break;
         case GL_INVALID_VALUE:     error("opengl: invalid value\n");     break;
@@ -76,48 +75,6 @@ static GLenum glCheckError(const char *file, int line)
     return GL_NO_ERROR;
 #endif
 }
-
-static void check_compile_error(unsigned id, GLenum type, const std::string &name)
-{
-#ifdef DEBUG
-    int success;
-    char infolog[512];
-    auto printerr = [&](void (*getiv)(unsigned, GLenum, int *), void getinfo(unsigned, GLsizei, GLsizei *, char *))
-    {
-        getiv(id, type, &success);
-        if (!success) {
-            getinfo(id, 512, nullptr, infolog);
-            throw std::runtime_error(fmt::format("error: {} compilation failed\nlog: {}\n", name, infolog));
-        }
-    };
-    if (type == GL_COMPILE_STATUS) printerr(glGetShaderiv, glGetShaderInfoLog);
-    else                           printerr(glGetProgramiv, glGetProgramInfoLog);
-#endif
-}
-
-/*
-static unsigned int load_texture_image(const char *pathname, GLenum index, GLenum colorformat, GLenum param, float border_color[3] = nullptr)
-{
-    unsigned int id;
-    int width, height, channels;
-    glActiveTexture(index);
-    glGenTextures(1, &id);
-    glBindTexture(GL_TEXTURE_2D, id);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, param);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, param);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    if (param == GL_CLAMP_TO_BORDER) {
-        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border_color);
-    }
-    unsigned char *data = stbi_load(pathname, &width, &height, &channels, 0);
-    assert(data);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, colorformat, GL_UNSIGNED_BYTE, data);
-    // glGenerateMipmap(GL_TEXTURE_2D);
-    stbi_image_free(data);
-    return id;
-}
-*/
 
 namespace Video {
 
@@ -144,7 +101,7 @@ bool OpenGL::init()
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     window = SDL_CreateWindow("Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                              width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+                              width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     context = SDL_GL_CreateContext(window);
     if (!gladLoadGLLoader((GLADloadproc) SDL_GL_GetProcAddress)) {
         error("can't initialize video: GLAD error\n");
@@ -155,34 +112,35 @@ bool OpenGL::init()
     }
     SDL_GL_SetSwapInterval(1);
 
-    create_shader();
+    create_program();
     create_objects();
     glClearColor(0.0f, 0.0f, 0.4f, 1.0f);
     glUseProgram(progid);
     glUniform1i(glGetUniformLocation(progid, "tex"), 0);
+    // glViewport(0, 0, Context::DEF_WIDTH, Context::DEF_HEIGTH);
 
     initialized = true;
     return true;
 }
 
-void OpenGL::resize(int width, int height)
+void OpenGL::resize(int newwidth, int newheight)
 {
-
+    width = newwidth;
+    height = newheight;
+    glViewport(0, 0, newwidth, newheight);
 }
 
-void OpenGL::update_screen(Canvas &canvas)
+void OpenGL::update_canvas(Canvas &canvas)
 {
-    static int pos = 0;
-    for (int i = 0; i < 10; i++) {
-        canvas.frame[pos] = 0xFF;
-        canvas.frame[pos+1] = 0xFF;
-        canvas.frame[pos+2] = 0xFF;
-        canvas.frame[pos+3] = 0xFF;
-        pos += 4;
-    }
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, canvas.tex_ids[canvas.currid]);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, canvas.frame);
+    glBindTexture(GL_TEXTURE_2D, canvas.texid());
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, canvas.width(), canvas.height(), GL_RGBA, GL_UNSIGNED_BYTE, canvas.get_frame());
+}
+
+void OpenGL::use_image(ImageTexture &imtex)
+{
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, imtex.texid());
 }
 
 void OpenGL::draw()
@@ -195,7 +153,7 @@ void OpenGL::draw()
     SDL_GL_SwapWindow(window);
 }
 
-void OpenGL::create_textures(unsigned ids[2])
+unsigned OpenGL::create_texture(int texw, int texh, unsigned char *data)
 {
     unsigned id;
     glActiveTexture(GL_TEXTURE0);
@@ -205,31 +163,46 @@ void OpenGL::create_textures(unsigned ids[2])
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    ids[0] = id;
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texw, texh, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    return id;
 }
 
-void OpenGL::create_shader()
+static GLuint create_shader(GLuint progid, GLuint type, const char *code, const char *name)
 {
-    unsigned vs, fs;
+    GLuint sid = glCreateShader(type);
+    glShaderSource(sid, 1, &code, nullptr);
+    glCompileShader(sid);
+    GLint result = GL_FALSE;
+    glGetShaderiv(sid, GL_COMPILE_STATUS, &result);
+    if (result == GL_FALSE) {
+        GLint len = 0;
+        glGetShaderiv(sid, GL_INFO_LOG_LENGTH, &len);
+        char infolog[len + 1];
+        glGetShaderInfoLog(sid, len, &len, infolog);
+        infolog[len] = '\0';
+        error("OpenGL: %s compile error: %s\n", name, infolog);
+        return 0;
+    }
+    glAttachShader(progid, sid);
+    return sid;
+}
 
-    auto compile = [](const char *code, unsigned &sid, GLenum type, const char *name)
-    {
-        sid = glCreateShader(type);
-        glShaderSource(sid, 1, &code, nullptr);
-        glCompileShader(sid);
-        check_compile_error(sid, GL_COMPILE_STATUS, name);
-    };
-
-    vs = glCreateShader(GL_VERTEX_SHADER);
-    compile(vertcode, vs, GL_VERTEX_SHADER, "vertex shader");
-    fs = glCreateShader(GL_FRAGMENT_SHADER);
-    compile(fragcode, fs, GL_FRAGMENT_SHADER, "fragment shader");
+void OpenGL::create_program()
+{
     progid = glCreateProgram();
-    glAttachShader(progid, vs);
-    glAttachShader(progid, fs);
+    auto vs = create_shader(progid, GL_VERTEX_SHADER, vertcode, "vertex shader");
+    auto fs = create_shader(progid, GL_FRAGMENT_SHADER, fragcode, "fragment shader");
     glLinkProgram(progid);
-    check_compile_error(progid, GL_LINK_STATUS, "program");
+    GLint result;
+    glGetProgramiv(progid, GL_LINK_STATUS, &result);
+    if (result == GL_FALSE) {
+        GLint len = 0;
+        glGetProgramiv(progid, GL_INFO_LOG_LENGTH, &len);
+        char infolog[len + 1];
+        glGetProgramInfoLog(progid, len, &len, infolog);
+        infolog[len] = '\0';
+        error("OpenGL: program link error: %s\n", infolog);
+    }
     glDeleteShader(vs);
     glDeleteShader(fs);
 }

@@ -9,23 +9,29 @@ namespace Video {
 class OpenGL : public Context::Impl {
     bool initialized = false;
     SDL_Window *window = nullptr;
-    unsigned width = 400;
-    unsigned height = 300;
+    unsigned width = Context::DEF_WIDTH;
+    unsigned height = Context::DEF_HEIGTH;
     SDL_GLContext context;
     unsigned progid;
     unsigned vbo, vao, ebo;
 
-    void create_shader();
+    void create_program();
     void create_objects();
 
 public:
     ~OpenGL();
+
     bool init();
     void resize(int width, int height);
-    void update_screen(Canvas &canvas);
+    void update_canvas(Canvas &canvas);
+    void use_image(ImageTexture &imtex);
     void draw();
-    void create_textures(unsigned ids[2]);
-    std::pair<unsigned, unsigned> dimensions() const { return std::make_pair(width, height); }
+    unsigned create_texture(int width, int height, unsigned char *data);
+    void dimensions(unsigned &w, unsigned &h) const
+    {
+        w = width;
+        h = height;
+    }
 };
 
 } // namespace Video
