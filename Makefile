@@ -41,13 +41,13 @@ objs := $(patsubst %,$(outdir)/%,$(_objs))
 
 all: $(outdir)/$(programname)
 
-$(outdir)/cpu.o: emu/core/cpu.cpp emu/core/opcodes.cpp emu/core/disassemble.cpp $(HEADERS)
-$(outdir)/ppu.o: emu/core/ppu.cpp emu/core/ppumain.cpp $(HEADERS)
-$(outdir)/glad.o: external/glad/glad.c $(HEADERS)
+$(outdir)/cpu.o: emu/core/cpu.cpp emu/core/opcodes.cpp emu/core/disassemble.cpp $(headers)
+$(outdir)/ppu.o: emu/core/ppu.cpp emu/core/ppumain.cpp $(headers)
+$(outdir)/glad.o: external/glad/glad.c $(headers)
 	$(info Compiling $< ...)
 	@$(CC) $(CFLAGS) -c $< -o $@
 
-$(outdir)/%.o: %.cpp $(HEADERS)
+$(outdir)/%.o: %.cpp $(headers)
 	$(info Compiling $< ...)
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
@@ -58,7 +58,7 @@ $(outdir)/$(programname): $(objs.main) $(objs)
 # tests
 $(outdir)/test1: $(objs.test1) $(objs)
 	$(info Linking $@ ...)
-	@$(CXX) $(objs.test1) $(objs) -o $@ $(libs)
+	$(CXX) $(objs.test1) $(objs) -o $@ $(libs)
 
 .PHONY: clean directories tests
 
