@@ -1,6 +1,7 @@
 #ifndef VIDEO_HPP_INCLUDED
 #define VIDEO_HPP_INCLUDED
 
+#include <cstddef>
 #include <memory>
 #include <utility>
 #include <string_view>
@@ -11,63 +12,89 @@ namespace Video {
 class Canvas;
 class ImageTexture;
 
-class Context {
-public:
+struct Context {
     struct Impl {
         virtual ~Impl() { }
         virtual bool init() = 0;
         virtual void resize(int newwidth, int newheight) = 0;
-        virtual void update_canvas(Canvas &canvas) = 0;
-        virtual void use_image(ImageTexture &imtex) = 0;
+        // these 3 methods should only be called by Texture
+        virtual unsigned create_texture(std::size_t texw, std::size_t texh, unsigned char *data = nullptr) = 0;
+        virtual void update_texture(unsigned id, std::size_t texw, std::size_t texh, unsigned char *data) = 0;
+        virtual void use_texture(unsigned id) = 0;
         virtual void draw() = 0;
-        virtual void dimensions(unsigned &w, unsigned &h) const = 0;
-        virtual unsigned create_texture(int texw, int texh, unsigned char *data = nullptr) = 0;
     };
 
     enum class Type {
         OPENGL,
     };
 
-private:
-    std::unique_ptr<Impl> ptr = nullptr;
-    unsigned w = 0, h = 0;
-
-public:
     static const unsigned DEF_WIDTH  = 400;
     static const unsigned DEF_HEIGTH = 300;
 
+private:
+    std::unique_ptr<Impl> ptr = nullptr;
+    unsigned wnd_width = DEF_WIDTH, wnd_height = DEF_HEIGTH;
+
+public:
     Context() = default;
     Context(const Context &) = delete;
-    Context(Context &&)      = default;
+    Context(Context &&) = default;
     Context & operator=(const Context &) = delete;
-    Context & operator=(Context &&)      = default;
+    Context & operator=(Context &&) = default;
 
     void reset(Type type);
 
     void init(Type type)               { reset(type); }
-    void resize(int width, int height) { w = width; h = height; ptr->resize(width, height); }
-    void update_canvas(Canvas &canvas) { ptr->update_canvas(canvas); }
-    void use_image(ImageTexture &im)   { ptr->use_image(im); }
+    void resize(int newwidth, int newheight)
+    {
+        wnd_width = newwidth;
+        wnd_height = newheight;
+        ptr->resize(newwidth, newheight);
+    }
     void draw()                        { ptr->draw(); }
-    unsigned width() const             { return w; }
-    unsigned height() const            { return h; }
+    unsigned window_width() const      { return wnd_width; }
+    unsigned window_height() const     { return wnd_height; }
 
-    friend class Canvas;
-    friend class ImageTexture;
+    friend class Texture;
+};
+
+class Texture {
+    Context *ctx = nullptr;
+    unsigned id = 0;
+    std::size_t tw = 0, th = 0;
+public:
+    Texture() = default;
+    Texture(Context &c, std::size_t width, std::size_t height, unsigned char *data = nullptr)
+        : ctx(&c), tw(width), th(height)
+    {
+        id = ctx->ptr->create_texture(tw, th, data);
+    }
+
+    void reset(Context &c, unsigned char *data = nullptr)
+    {
+        ctx = &c;
+        id = ctx->ptr->create_texture(tw, th, data);
+    }
+    unsigned tid() const             { return id; }
+    unsigned width() const           { return tw; }
+    unsigned height() const          { return th; }
+    void update(unsigned char *data) { ctx->ptr->update_texture(id, tw, th, data); }
+    void update(std::size_t width, std::size_t height, unsigned char *data)
+    {
+        tw = width;
+        th = height;
+        ctx->ptr->update_texture(id, tw, th, data);
+    }
+    void use()                       { ctx->ptr->use_texture(id); }
 };
 
 class Canvas {
-    unsigned tex_ids[2];
-    unsigned currid = 0;
-    unsigned w = 0, h = 0;
-    unsigned char *frame = nullptr;
-
+    Texture tex;
+    unsigned char *frame;
 public:
-    Canvas(Context &ctx, unsigned width, unsigned height)
-        : w(width), h(height), frame(new unsigned char[w * h * 4]())
-    {
-        tex_ids[0] = ctx.ptr->create_texture(w, h);
-    }
+    Canvas(Context &ctx, std::size_t width, std::size_t height)
+        : tex(ctx, width, height), frame(new unsigned char[width*height*4])
+    { }
 
     ~Canvas()
     {
@@ -76,26 +103,35 @@ public:
     }
 
     Canvas(const Canvas &) = delete;
-    Canvas(Canvas &&c)     = default;
+    Canvas(Canvas &&) = default;
     Canvas & operator=(const Canvas &) = delete;
-    Canvas & operator=(Canvas &&c)     = default;
+    Canvas & operator=(Canvas &&) = default;
 
-    void drawpixel(unsigned x, unsigned y, uint32 color);
+    void drawpixel(std::size_t x, std::size_t y, uint32 color);
 
-    unsigned texid() const      { return tex_ids[currid]; }
-    unsigned char *get_frame() const { return frame; }
-    unsigned width() const          { return w; }
-    unsigned height() const         { return h; }
+    unsigned width() const  { return tex.width(); }
+    unsigned height() const { return tex.height(); }
+    void update()           { tex.update(frame); }
+    void reset(Context &c)  { tex.reset(c); }
 };
 
 class ImageTexture {
-    int width, height;
-    unsigned id;
-
+    Texture tex;
+    unsigned char *data;
 public:
     ImageTexture(const char *pathname, Context &ctx);
+    ~ImageTexture();
+    ImageTexture(const ImageTexture &) = delete;
+    ImageTexture(ImageTexture &&) = default;
+    ImageTexture & operator=(const ImageTexture &) = delete;
+    ImageTexture & operator=(ImageTexture &&) = default;
 
-    unsigned texid() const { return id; }
+    void reload(const char *pathname);
+    void reset(Context &c);
+
+    unsigned width() const  { return tex.width(); }
+    unsigned height() const { return tex.height(); }
+    void use()              { tex.use(); }
 };
 
 } // namespace Video

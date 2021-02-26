@@ -22,13 +22,12 @@ void Context::reset(Type type)
     default:           error("unknown type\n");     break;
     }
     ptr->init();
-    ptr->dimensions(w, h);
 }
 
-void Canvas::drawpixel(unsigned x, unsigned y, uint32 color)
+void Canvas::drawpixel(std::size_t x, std::size_t y, uint32 color)
 {
-    auto real_y = h - y;
-    auto pos = (real_y * w + x) * 4;
+    auto real_y = tex.height() - y;
+    auto pos = (real_y * tex.width() + x) * 4;
     // this code is probably affected by endianness.
     frame[pos  ] = color >> 24 & 0xFF;
     frame[pos+1] = color >> 16 & 0xFF;
@@ -38,11 +37,29 @@ void Canvas::drawpixel(unsigned x, unsigned y, uint32 color)
 
 ImageTexture::ImageTexture(const char *pathname, Context &ctx)
 {
-    int channels;
-    unsigned char *data = stbi_load(pathname, &width, &height, &channels, 0);
+    int width, height, channels;
+    data = stbi_load(pathname, &width, &height, &channels, 0);
     assert(data != nullptr && channels == 4);
-    id = ctx.ptr->create_texture(width, height, data);
+    tex = Texture(ctx, width, height, data);
+}
+
+ImageTexture::~ImageTexture()
+{
     stbi_image_free(data);
+}
+
+void ImageTexture::reload(const char *pathname)
+{
+    int width, height, channels;
+    data = stbi_load(pathname, &width, &height, &channels, 0);
+    assert(data != nullptr && channels == 4);
+    tex.update(width, height, data);
+    // tex.reset(
+}
+
+void ImageTexture::reset(Context &c)
+{
+    tex.reset(c, data);
 }
 
 } // namespace Video

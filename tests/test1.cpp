@@ -10,13 +10,14 @@ int main()
 {
     Video::Context ctx;
     ctx.init(Video::Context::Type::OPENGL);
-    // ctx.resize(256, 224);
 
-    Video::ImageTexture imtex { "awesomeface.png", ctx };
-    // Video::Canvas canv { ctx, ctx.width(), ctx.height() };
+    Video::Canvas canv { ctx, ctx.window_width(), ctx.window_height() };
+    // Video::ImageTexture imtex { "someimage.png", ctx };
+    // Video::ImageTexture im2 { "funnyimage.png", ctx };
     bool running = true;
     SDL_Event event;
     unsigned x = 0, y = 0;
+    // bool whichtex = 0;
 
     while (running) {
         while (SDL_PollEvent(&event) != 0) {
@@ -25,7 +26,9 @@ int main()
                 running = false;
                 break;
             case SDL_MOUSEBUTTONDOWN:
-                // canv.drawpixel(event.button.x, event.button.y, 0x00FFFFFF);
+                canv.drawpixel(event.button.x, event.button.y, 0x00FFFFFF);
+                // imtex.reload("dick.png");
+                // whichtex ^= 1;
                 break;
             case SDL_WINDOWEVENT:
                 switch (event.window.event) {
@@ -37,17 +40,11 @@ int main()
             if (event.type == SDL_QUIT)
                 running = false;
         }
-        /*
-        for (unsigned i = 0; i < 10; i++) {
-            canv.drawpixel(x, y, 0x00FFFFFF);
-            if (++x > canv.width()) {
-                x = 0;
-                if (++y > canv.height())
-                    running = false;
-            }
-        }*/
-        // ctx.update_canvas(canv);
-        ctx.use_image(imtex);
+        canv.update();
+        // if (whichtex)
+        //     imtex.use();
+        // else
+        //     im2.use();
         ctx.draw();
     }
 }

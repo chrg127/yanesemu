@@ -101,7 +101,8 @@ bool OpenGL::init()
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     window = SDL_CreateWindow("Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                              width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+                              Context::DEF_WIDTH, Context::DEF_HEIGTH,
+                              SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     context = SDL_GL_CreateContext(window);
     if (!gladLoadGLLoader((GLADloadproc) SDL_GL_GetProcAddress)) {
         error("can't initialize video: GLAD error\n");
@@ -117,7 +118,6 @@ bool OpenGL::init()
     glClearColor(0.0f, 0.0f, 0.4f, 1.0f);
     glUseProgram(progid);
     glUniform1i(glGetUniformLocation(progid, "tex"), 0);
-    // glViewport(0, 0, Context::DEF_WIDTH, Context::DEF_HEIGTH);
 
     initialized = true;
     return true;
@@ -125,35 +125,10 @@ bool OpenGL::init()
 
 void OpenGL::resize(int newwidth, int newheight)
 {
-    width = newwidth;
-    height = newheight;
     glViewport(0, 0, newwidth, newheight);
 }
 
-void OpenGL::update_canvas(Canvas &canvas)
-{
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, canvas.texid());
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, canvas.width(), canvas.height(), GL_RGBA, GL_UNSIGNED_BYTE, canvas.get_frame());
-}
-
-void OpenGL::use_image(ImageTexture &imtex)
-{
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, imtex.texid());
-}
-
-void OpenGL::draw()
-{
-    glClear(GL_COLOR_BUFFER_BIT);
-    glUseProgram(progid);
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    SDL_GL_SwapWindow(window);
-}
-
-unsigned OpenGL::create_texture(int texw, int texh, unsigned char *data)
+unsigned OpenGL::create_texture(std::size_t texw, std::size_t texh, unsigned char *data)
 {
     unsigned id;
     glActiveTexture(GL_TEXTURE0);
@@ -165,6 +140,28 @@ unsigned OpenGL::create_texture(int texw, int texh, unsigned char *data)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texw, texh, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     return id;
+}
+
+void OpenGL::update_texture(unsigned id, std::size_t texw, std::size_t texh, unsigned char *data)
+{
+    use_texture(id);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texw, texh, GL_RGBA, GL_UNSIGNED_BYTE, data);
+}
+
+void OpenGL::use_texture(unsigned id)
+{
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, id);
+}
+
+void OpenGL::draw()
+{
+    glClear(GL_COLOR_BUFFER_BIT);
+    glUseProgram(progid);
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    SDL_GL_SwapWindow(window);
 }
 
 static GLuint create_shader(GLuint progid, GLuint type, const char *code, const char *name)
