@@ -8,6 +8,8 @@
 #include <emu/core/memmap.hpp>
 #include <emu/core/bus.hpp>
 
+namespace Video { class Canvas; }
+
 namespace Core {
 
 class CPU;
@@ -17,8 +19,8 @@ class PPU {
     Bus *bus;
     Bus *cpubus;
 
-    // screen
-    uint8 screen[SCREEN_WIDTH*SCREEN_HEIGHT];
+    Video::Canvas *screen;
+    // uint8 screen[SCREEN_WIDTH*SCREEN_HEIGHT];
     unsigned long cycles = 0;
     unsigned long lines  = 0;
     int mirroring = 0;
@@ -102,10 +104,6 @@ class PPU {
     void output();
     uint8 getcolor(bool select, uint8 pal, uint8 palind);
 
-    friend class Background;
-    friend class OAM;
-    friend class PPUBus;
-
 public:
     PPU() : vram(*this), bg(*this)
     { }
@@ -116,6 +114,7 @@ public:
     uint8 readreg(const uint16 which);
     void writereg(const uint16 which, const uint8 data);
     std::string get_info();
+    void attach_bus(Bus *pb, Bus *cb);
 
     // for ppumain.cpp
     template <unsigned int Cycle> void ccycle();
@@ -125,8 +124,7 @@ public:
 
     const std::array<uint8, VRAM_SIZE> & getmemory() const { return vram.mem; }
     void set_mirroring(int m) { mirroring = m; }
-
-    void attach_bus(Bus *pb, Bus *cb);
+    void set_screen(Video::Canvas *canvas) { screen = canvas; }
 };
 
 } // namespace Core

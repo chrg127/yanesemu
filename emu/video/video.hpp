@@ -34,6 +34,7 @@ struct Context {
 private:
     std::unique_ptr<Impl> ptr = nullptr;
     unsigned wnd_width = DEF_WIDTH, wnd_height = DEF_HEIGTH;
+    // bool initialized = false;
 
 public:
     Context() = default;
@@ -42,9 +43,11 @@ public:
     Context & operator=(const Context &) = delete;
     Context & operator=(Context &&) = default;
 
-    void reset(Type type);
+    // explicit operator bool() const { return initialized; }
 
-    void init(Type type)               { reset(type); }
+    bool init(Type type);
+
+    void reset();
     void resize(int newwidth, int newheight)
     {
         wnd_width = newwidth;
@@ -83,7 +86,7 @@ public:
     {
         tw = width;
         th = height;
-        ctx->ptr->update_texture(id, tw, th, data);
+        update(data);
     }
     void use()                       { ctx->ptr->use_texture(id); }
 };

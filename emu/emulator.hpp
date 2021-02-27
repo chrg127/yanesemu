@@ -24,8 +24,10 @@ public:
     void reset(const std::string_view rompath);
     void log(Util::File &logfile);
     void dump(Util::File &dumpfile);
+    void wait_nmi();
 
-    std::string rominfo() { return cartridge.getinfo(); }
+    void set_screen(Video::Canvas *canvas) { ppu.set_screen(canvas); }
+    std::string rominfo()                  { return cartridge.getinfo(); }
 };
 
 #endif

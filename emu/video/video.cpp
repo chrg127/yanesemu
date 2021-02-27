@@ -15,14 +15,17 @@
 
 namespace Video {
 
-void Context::reset(Type type)
+bool Context::init(Type type)
 {
     switch (type) {
     case Type::OPENGL: ptr = std::make_unique<Video::OpenGL>(); break;
     default:           error("unknown type\n");     break;
     }
-    ptr->init();
+    return ptr->init();
+        // initialized = true;
 }
+
+void Context::reset() { }
 
 void Canvas::drawpixel(std::size_t x, std::size_t y, uint32 color)
 {

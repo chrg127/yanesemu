@@ -1,6 +1,3 @@
-#include <thread>
-#include <mutex>
-#include <unistd.h>
 #include <fmt/core.h>
 #include <SDL2/SDL.h>
 #include <emu/emulator.hpp>
@@ -9,6 +6,7 @@
 #include <emu/util/easyrandom.hpp>
 #include <emu/video/video.hpp>
 #include <emu/util/debug.hpp>
+#include <emu/version.hpp>
 
 static const Util::ValidArgStruct cmdflags = {
     { 'b', "break-on-brk", "Stops emulation when BRK is encountered." },
@@ -21,73 +19,17 @@ static const Util::ValidArgStruct cmdflags = {
     { 'h', "help",         "Print this help text and quit"            },
     { 'v', "version",      "Shows the program's version"              },
 };
-static constexpr std::string_view progname = "yanesemu";
-static constexpr std::string_view version  = "0.1";
 static Emulator emu;
-static bool global_done = false;
-static std::mutex done_mutex;
-
-bool check_done()
-{
-    std::lock_guard<std::mutex> lock(done_mutex);
-    return global_done;
-}
-
-void set_done()
-{
-    std::lock_guard<std::mutex> lock(done_mutex);
-    global_done = true;
-}
-
-void event_thread()
-{
-    SDL_Init(SDL_INIT_VIDEO);
-    SDL_Window *window = SDL_CreateWindow("yanesemu", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                          640, 480, SDL_WINDOW_SHOWN);
-    // if (!window) {
-    //     error("can't create window\n");
-    //     return 1; // ???????
-    // }
-
-    SDL_Renderer *rnd = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    static SDL_Event ev;
-
-    while (!check_done()) {
-        if (SDL_WaitEvent(&ev)) {
-            switch (ev.type) {
-            case SDL_QUIT:
-                fmt::print("quitting");
-                set_done();
-            }
-        }
-        SDL_SetRenderDrawColor(rnd, 0xFF, 0xFF, 0xFF, 0xFF);
-        SDL_RenderClear(rnd);
-        SDL_RenderPresent(rnd);
-    }
-    SDL_DestroyRenderer(rnd);
-    SDL_DestroyWindow(window);
-}
-
 static Util::File logfile, dumpfile;
-
-void emulator_thread()
-{
-    while (!check_done()) {
-        emu.log(logfile);
-        emu.run();
-        // usleep(1);
-    }
-}
 
 int main(int argc, char *argv[])
 {
-    // Video::Video v;
-
     // parse command line arguments
     if (argc < 2) {
         Util::print_usage(progname, cmdflags);
         return 1;
     }
+
     Util::ArgResult flags = Util::parse(argc, argv, cmdflags);
     if (flags.found['h']) { Util::print_usage(progname, cmdflags); return 0; }
     if (flags.found['v']) { Util::print_version(progname, version); return 0; }
@@ -101,6 +43,11 @@ int main(int argc, char *argv[])
         emu.insert_rom(flags.items[0]);
     } catch (std::exception &e) {
         error("%s\n", e.what());
+        return 1;
+    }
+    Video::Context context;
+    if (!context.init(Video::Context::Type::OPENGL)) {
+        error("can't initialize video\n");
         return 1;
     }
     Util::seed();
@@ -123,11 +70,26 @@ int main(int argc, char *argv[])
         logfile.putc('\n');
     }
 
-    // initialize two threads and join
-    std::thread event_th(event_thread);
-    std::thread emu_th(emulator_thread);
-    event_th.join();
-    emu_th.join();
+    bool running = true;
+    SDL_Event ev;
+    Video::Canvas screen { context, 256, 224 };
+    emu.set_screen(&screen);
+    while (running) {
+        while (SDL_PollEvent(&ev)) {
+            switch (ev.type) {
+            case SDL_QUIT:
+                running = false;
+                break;
+            case SDL_WINDOWEVENT:
+                if (ev.window.event == SDL_WINDOWEVENT_RESIZED)
+                    context.resize(ev.window.data1, ev.window.data2);
+            }
+        }
+        emu.log(logfile);
+        emu.wait_nmi();
+        screen.update();
+        context.draw();
+    }
     return 0;
 }
 

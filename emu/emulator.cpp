@@ -77,3 +77,8 @@ void Emulator::dump(Util::File &dumpfile)
     // dump_to(dumpfile, ppu.getmemory(), PPUMap::MEMSIZE);
 }
 
+void Emulator::wait_nmi()
+{
+    run();
+}
+
