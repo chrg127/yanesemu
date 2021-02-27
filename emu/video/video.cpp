@@ -29,7 +29,7 @@ void Context::reset() { }
 
 void Canvas::drawpixel(std::size_t x, std::size_t y, uint32 color)
 {
-    auto real_y = tex.height() - y;
+    auto real_y = tex.height()-1 - y;
     auto pos = (real_y * tex.width() + x) * 4;
     // this code is probably affected by endianness.
     frame[pos  ] = color >> 24 & 0xFF;

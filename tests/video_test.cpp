@@ -43,6 +43,7 @@ void test_canvas()
     Video::Canvas canv { ctx, ctx.window_width(), ctx.window_height() };
     bool running = true;
     SDL_Event event;
+    unsigned int x = 0, y = 0;
 
     while (running) {
         while (SDL_PollEvent(&event) != 0) {
@@ -53,11 +54,23 @@ void test_canvas()
             case SDL_MOUSEBUTTONDOWN:
                 // drawing this way will totally break once you resize the
                 // window. this is intended.
-                canv.drawpixel(event.button.x, event.button.y, 0x00FFFFFF);
+                // canv.drawpixel(event.button.x, event.button.y, 0x00FFFFFF);
                 break;
             case SDL_WINDOWEVENT:
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED)
                     ctx.resize(event.window.data1, event.window.data2);
+                break;
+            }
+        }
+        for (int i = 0; i < 3; i++) {
+            canv.drawpixel(x, y, 0xFFFFFFFF);
+            x++;
+            if (x == canv.width()) {
+                x = 0;
+                y++;
+            }
+            if (y == canv.height()) {
+                running = false;
                 break;
             }
         }
@@ -68,5 +81,5 @@ void test_canvas()
 
 int main()
 {
-    test_images();
+    test_canvas();
 }
