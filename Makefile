@@ -36,7 +36,7 @@ else
 endif
 
 objs.main := $(outdir)/main.o
-objs.test1 := $(outdir)/test1.o
+objs.video_test := $(outdir)/video_test.o $(outdir)/video.o $(outdir)/opengl.o $(outdir)/glad.o
 objs := $(patsubst %,$(outdir)/%,$(_objs))
 
 all: $(outdir)/$(programname)
@@ -56,17 +56,17 @@ $(outdir)/$(programname): $(objs.main) $(objs)
 	$(info Linking $@ ...)
 	@$(CXX) $(objs.main) $(objs) -o $@ $(libs)
 # tests
-$(outdir)/test1: $(objs.test1) $(objs)
+$(outdir)/video_test: $(objs.video_test) emu/video/video.hpp emu/video/opengl.hpp 
 	$(info Linking $@ ...)
-	$(CXX) $(objs.test1) $(objs) -o $@ $(libs)
+	$(CXX) $(objs.video_test) -o $@ $(libs)
 
 .PHONY: clean directories tests
 
 directories:
 	mkdir -p $(outdir)
 
-tests: directories $(outdir)/test1
+tests: directories $(outdir)/video_test
 
 clean:
-	rm -rf $(outdir)/*.o $(outdir)/$(programname)
+	rm -rf $(outdir)/*
 
