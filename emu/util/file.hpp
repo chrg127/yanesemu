@@ -98,8 +98,8 @@ public:
     // write functions
     std::size_t writeb(void *what, std::size_t nb) { return std::fwrite(what, 1, nb, fbuf); }
     int putc(char c)                               { return std::fputc(c, fbuf); }
-    int putstr(std::string_view s)                 { return std::fputs(s.data(), fbuf); }
-    int putstr(std::string s)                      { return std::fputs(s.c_str(), fbuf); }
+    void putstr(std::string_view &&s)                 { return fmt::print(fbuf, "{}", s); }
+    void putstr(std::string &&s)                      { return fmt::print(fbuf, "{}", s); }
 
     template <typename... T>
     void print(std::string &&fmt, T... args)

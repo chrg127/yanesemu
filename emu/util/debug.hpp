@@ -22,20 +22,14 @@ inline void warning(std::string &&fmt, T... args)
 }
 
 #ifdef DEBUG
-
 template <typename... T>
 inline void dbgprint(std::string &&fmt, T... args)
 {
     fmt::print(stderr, "{}:{}\n", __FILE__, __LINE__);
     fmt::print(stderr, fmt, args...);
 }
-#define dbgputc(c) do { std::fputc(c, stderr); } while (0)
-
 #else
-
 #define dbgprint(...) ;
-#define dbgputc(c) ;
-
 #endif
 
 #endif

@@ -10,12 +10,8 @@
 
 static const Util::ValidArgStruct cmdflags = {
     { 'b', "break-on-brk", "Stops emulation when BRK is encountered." },
-    { 'l', "log-file",     "The file where to log instructions. "
-                           "Pass \"stdout\" to print to stdout, "
-                           "\"stderr\" to print to stderr.",          Util::ParamType::MUST_HAVE },
-    { 'd', "dump-file",    "The file where to dump memory."
-                           "Pass \"stdout\" to print to stdout, "
-                           "\"stderr\" to print to stderr.",          Util::ParamType::MUST_HAVE },
+    { 'l', "log-file",     "Log to this file. Pass stdout/stderr to print to stdout/stderr.",          Util::ParamType::MUST_HAVE },
+    { 'd', "dump-file",    "Dump memory to this file. Pass stdout/stderr to print to stdout/stderr. ", Util::ParamType::MUST_HAVE },
     { 'h', "help",         "Print this help text and quit"            },
     { 'v', "version",      "Shows the program's version"              },
 };
@@ -24,12 +20,12 @@ static Util::File logfile, dumpfile;
 
 int main(int argc, char *argv[])
 {
-    // parse command line arguments
     if (argc < 2) {
         Util::print_usage(progname, cmdflags);
         return 1;
     }
 
+    // parse command line arguments
     Util::ArgResult flags = Util::parse(argc, argv, cmdflags);
     if (flags.found['h']) { Util::print_usage(progname, cmdflags); return 0; }
     if (flags.found['v']) { Util::print_version(progname, version); return 0; }
@@ -39,19 +35,21 @@ int main(int argc, char *argv[])
     } else if (flags.items.size() > 1)
         warning("Multiple ROM files specified, only the first will be chosen\n");
 
+    // open rom file
     try {
         emu.insert_rom(flags.items[0]);
     } catch (std::exception &e) {
         error("{}\n", e.what());
         return 1;
     }
+
+    // initialize video subsystem
     Video::Context context;
     if (!context.init(Video::Context::Type::OPENGL)) {
         error("can't initialize video\n");
         return 1;
     }
-    Util::seed();
-    emu.power();
+    Video::Canvas screen { context, 256, 224 };
 
     // open log files -- these will be used to log emulator info and dump memory
     auto logopen = [&flags](Util::File &f, char flag) {
@@ -70,10 +68,12 @@ int main(int argc, char *argv[])
         logfile.putc('\n');
     }
 
+    Util::seed();
+    emu.power();
+    emu.set_screen(&screen);
+
     bool running = true;
     SDL_Event ev;
-    Video::Canvas screen { context, 256, 224 };
-    emu.set_screen(&screen);
     while (running) {
         while (SDL_PollEvent(&ev)) {
             switch (ev.type) {

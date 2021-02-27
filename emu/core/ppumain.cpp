@@ -1,3 +1,9 @@
+#ifdef PRINT_FRAME
+#define dbgputc(c) do { std::fputc(c, stderr); } while (0)
+#else
+#define dbgputc(c) ;
+#endif
+
 void PPU::idlec()
 {
     dbgputc('.');
