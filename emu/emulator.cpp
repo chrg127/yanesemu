@@ -10,11 +10,6 @@ using namespace Core;
 void Emulator::insert_rom(const std::string_view rompath)
 {
     cartridge.open(rompath);
-    // if (!cartridge.open(rompath)) {
-    //     error("%s: %s\n", rompath.data(), cartridge.geterr().data());
-    //     return false;
-    // }
-    // return true;
 }
 
 void Emulator::power()

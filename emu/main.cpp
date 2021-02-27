@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
     try {
         emu.insert_rom(flags.items[0]);
     } catch (std::exception &e) {
-        error("%s\n", e.what());
+        error("{}\n", e.what());
         return 1;
     }
     Video::Context context;
@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
         if      (s == "stdout") f.assoc(stdout, Util::File::Mode::WRITE);
         else if (s == "stderr") f.assoc(stderr, Util::File::Mode::WRITE);
         else if (!f.open(s, Util::File::Mode::WRITE))
-            error("can't open %s for writing\n", s.data());
+            error("can't open {} for writing\n", s.data());
     };
     logopen(logfile, 'l');
     logopen(dumpfile, 'd');

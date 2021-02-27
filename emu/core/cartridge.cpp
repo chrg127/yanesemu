@@ -147,19 +147,6 @@ std::string Cartridge::getinfo() const
     );
 }
 
-/*
-std::string_view Cartridge::geterr() const
-{
-    static std::string_view rom_errmsg[] = {
-        "no errors",
-        "invalid NES format",
-        "NES 2.0 not yet supported",
-        "can't open rom file",
-    };
-    return rom_errmsg[errid];
-}
-*/
-
 void Cartridge::attach_bus(Bus *cpu, Bus *ppu)
 {
     cpubus = cpu;

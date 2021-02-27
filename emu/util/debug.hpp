@@ -5,26 +5,37 @@
 #ifndef UTILS_DEBUG_HPP_INCLUDED
 #define UTILS_DEBUG_HPP_INCLUDED
 
-#include <cstdio>
-#include <cstdarg>
+#include <fmt/core.h>
 
-#define error(fmt, ...)   do { fprintf(stderr, "error: " fmt __VA_OPT__(, __VA_ARGS__)); } while (0)
-#define warning(fmt, ...) do { fprintf(stderr, "warning: " fmt __VA_OPT__(, __VA_ARGS__)); } while (0)
+template <typename... T>
+inline void error(std::string &&fmt, T... args)
+{
+    fmt::print(stderr, "error: ");
+    fmt::print(stderr, fmt, args...);
+}
+
+template <typename... T>
+inline void warning(std::string &&fmt, T... args)
+{
+    fmt::print(stderr, "warning: ");
+    fmt::print(stderr, fmt, args...);
+}
 
 #ifdef DEBUG
-#include <cassert>
-#define DBGPRINT(str)       do { std::fprintf(stderr, str); } while (0)
-#define DBGPRINTF(fmt, ...) do { std::fprintf(stderr, fmt, __VA_ARGS__); } while (0)
-#define GPRINTHEX8(val)     do { std::printf("%02X", val); } while (0)
-#define DBGPRINTHEX16(val)  do { std::printf("%04X", val); } while (0)
-#define DBGPUTC(c)          ;
-//do { std::putchar(c); } while (0)
+
+template <typename... T>
+inline void dbgprint(std::string &&fmt, T... args)
+{
+    fmt::print(stderr, "{}:{}\n", __FILE__, __LINE__);
+    fmt::print(stderr, fmt, args...);
+}
+#define dbgputc(c) do { std::fputc(c, stderr); } while (0)
+
 #else
-#define DBGPRINT(str)       ;
-#define DBGPRINTF(fmt, ...) ;
-#define DBGPRINTHEX8(val)   ;
-#define DBGPRINTHEX16(val)  ;
-#define DBGPUTC(c)          ;
+
+#define dbgprint(...) ;
+#define dbgputc(c) ;
+
 #endif
 
 #endif

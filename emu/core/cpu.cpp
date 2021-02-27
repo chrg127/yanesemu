@@ -188,7 +188,7 @@ void CPU::execute(uint8 opcode)
         INSTR_AMODE(0xFD, sbc, absx, read)
         INSTR_AMODE(0xFE, inc, absx, modify)
         default:
-            DBGPRINTF("error: unknown opcode: %02X\n", opcode);
+            dbgprint("error: unknown opcode: {:02X}\n", opcode);
             return;
     }
 #undef INSTR_IMPLD

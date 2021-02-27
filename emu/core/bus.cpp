@@ -32,7 +32,7 @@ void Bus::map(uint16 start, uint32 end, Reader reader, Writer writer)
     // search for a new id
     while (assigned[id]) {
         if (++id > TABSIZ) {
-            error("mapping exausted");
+            error("mapping exausted\n");
             return;
         }
     }

@@ -93,7 +93,7 @@ OpenGL::~OpenGL()
 bool OpenGL::init()
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        error("can't initialize video, SDL2 error: %s\n", SDL_GetError());
+        error("can't initialize video, SDL2 error: {}\n", SDL_GetError());
         return false;
     }
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -177,7 +177,7 @@ static GLuint create_shader(GLuint progid, GLuint type, const char *code, const 
         char infolog[len + 1];
         glGetShaderInfoLog(sid, len, &len, infolog);
         infolog[len] = '\0';
-        error("OpenGL: %s compile error: %s\n", name, infolog);
+        error("OpenGL: {} compile error: {}\n", name, infolog);
         return 0;
     }
     glAttachShader(progid, sid);
@@ -198,7 +198,7 @@ void OpenGL::create_program()
         char infolog[len + 1];
         glGetProgramInfoLog(progid, len, &len, infolog);
         infolog[len] = '\0';
-        error("OpenGL: program link error: %s\n", infolog);
+        error("OpenGL: program link error: {}\n", infolog);
     }
     glDeleteShader(vs);
     glDeleteShader(fs);

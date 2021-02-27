@@ -1,6 +1,6 @@
 void PPU::idlec()
 {
-    DBGPUTC('.');
+    dbgputc('.');
 }
 
 // called at (340, 261)
@@ -10,9 +10,9 @@ void PPU::begin_frame()
     if (odd_frame) {
         lines = 0;
         cycles = 0;
-        DBGPUTC('\n');
+        dbgputc('\n');
     } else {
-        DBGPUTC('0');
+        dbgputc('0');
     }
     odd_frame^=1;
 }
@@ -20,53 +20,53 @@ void PPU::begin_frame()
 void PPU::cycle_fetchnt(bool cycle)
 {
     bg.fetch_nt(cycle);
-    DBGPUTC('n');
+    dbgputc('n');
 }
 
 void PPU::cycle_fetchattr(bool cycle)
 {
     bg.fetch_attr(cycle);
-    DBGPUTC('a');
+    dbgputc('a');
 }
 
 void PPU::cycle_fetchlowbg(bool cycle)
 {
     bg.fetch_lowbg(cycle);
-    DBGPUTC('l');
+    dbgputc('l');
 }
 
 void PPU::cycle_fetchhighbg(bool cycle)
 {
     bg.fetch_highbg(cycle);
-    DBGPUTC('h');
+    dbgputc('h');
 }
 
 void PPU::cycle_incvhorz()
 {
     if (bg.show)
         vram.inc_horzpos();
-    DBGPUTC('+');
+    dbgputc('+');
 }
 
 void PPU::cycle_incvvert()
 {
     if (bg.show)
         vram.inc_vertpos();
-    DBGPUTC('^');
+    dbgputc('^');
 }
 
 void PPU::cycle_copyhorz()
 {
     if (bg.show)
         vram.copy_horzpos();
-    DBGPUTC('c');
+    dbgputc('c');
 }
 
 void PPU::cycle_copyvert()
 {
     if (bg.show)
         vram.copy_vertpos();
-    DBGPUTC('c');
+    dbgputc('c');
 }
 
 void PPU::cycle_shift()
@@ -83,7 +83,7 @@ void PPU::vblank_begin()
 {
     vblank = 1;
     // call NMI interrupt here
-    DBGPUTC('v');
+    dbgputc('v');
 }
 
 void PPU::vblank_end()
@@ -91,7 +91,7 @@ void PPU::vblank_end()
     vblank  = 0;
     spr0hit = 0;
     spr_ov  = 0;
-    DBGPUTC('e');
+    dbgputc('e');
 }
 
 void PPU::cycle_outputpixel()
@@ -188,7 +188,7 @@ void PPU::lcycle(unsigned int cycle)
     static_assert(Line <= 261);
     assert(cycle <= 340);
     if (cycle == 0) {
-        DBGPUTC('\n');
+        dbgputc('\n');
     }
     if constexpr(Line < 240) {
         const auto f = cycletab[cycle];
@@ -199,12 +199,9 @@ void PPU::lcycle(unsigned int cycle)
     if constexpr(Line == 261) {
         const auto f = cycletab[cycle];
         (this->*f)();
-        if (cycle == 1)
-            vblank_end();
-        if (cycle >= 280 && cycle <= 304)
-            cycle_copyvert();
-        if (cycle == 340)
-            begin_frame();
+        if (cycle == 1)                   vblank_end();
+        if (cycle >= 280 && cycle <= 304) cycle_copyvert();
+        if (cycle == 340)                 begin_frame();
     }
     if constexpr(Line == 240 || (Line >= 242 && Line != 261))
         idlec();

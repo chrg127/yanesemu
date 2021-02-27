@@ -7,6 +7,7 @@
 #include <cstdarg>
 #include <string>
 #include <string_view>
+#include <fmt/core.h>
 
 namespace Util {
 
@@ -100,18 +101,10 @@ public:
     int putstr(std::string_view s)                 { return std::fputs(s.data(), fbuf); }
     int putstr(std::string s)                      { return std::fputs(s.c_str(), fbuf); }
 
-#if defined(__GNUC__) || defined(__MINGW32__) || defined (__MINGW64__)
-    __attribute__((format(printf, 2, 3)))
-#endif
-    inline int printf(const char *fmt, ...)
+    template <typename... T>
+    void print(std::string &&fmt, T... args)
     {
-        if (!fbuf || mode == Mode::READ)
-            return 0;
-        va_list ap;
-        va_start(ap, fmt);
-        int toret = vfprintf(fbuf, fmt, ap);
-        va_end(ap);
-        return toret;
+        fmt::print(fbuf, fmt, args...);
     }
 };
 
