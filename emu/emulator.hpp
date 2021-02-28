@@ -15,16 +15,22 @@ class Emulator {
     Core::PPU ppu;
     int cycle = 0;
     int err = 0;
+    // this is internal to the emulator only and doesn't affect the cpu and ppu
+    bool nmi = false;
 
 public:
     Emulator()
     {
         cpu.attach_bus(&cpu_bus);
         ppu.attach_bus(&ppu_bus, &cpu_bus);
+        ppu.set_nmi_callback([this]() {
+            nmi = true;
+            cpu.fire_nmi();
+        });
     }
 
     void run();
-    void wait_nmi();
+    void run_frame(Util::File &logfile);
     void log(Util::File &logfile);
     void dump(Util::File &dumpfile);
 

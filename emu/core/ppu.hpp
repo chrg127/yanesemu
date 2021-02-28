@@ -24,7 +24,9 @@ class PPU {
     unsigned long cycles = 0;
     unsigned long lines  = 0;
     int mirroring = 0;
+    std::function<void(void)> nmi_callback;
 
+    // registers
     uint8   io_latch;
     // whether the ppu can go into vblank (leftmost bit of PPUCTRL)
     bool    nmi_enabled;
@@ -125,6 +127,7 @@ public:
     const std::array<uint8, VRAM_SIZE> & getmemory() const { return vram.mem; }
     void set_mirroring(int m) { mirroring = m; }
     void set_screen(Video::Canvas *canvas) { screen = canvas; }
+    void set_nmi_callback(std::function<void(void)> &&callback) { nmi_callback = callback; }
 };
 
 } // namespace Core

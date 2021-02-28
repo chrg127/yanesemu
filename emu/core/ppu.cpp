@@ -2,7 +2,6 @@
 
 #include <cstdio>
 #include <cassert>
-// #include <cstring> // memset
 #include <functional>
 #include <fmt/core.h>
 #include <emu/core/cpu.hpp>
@@ -201,8 +200,8 @@ void PPU::writereg(const uint16 which, const uint8 data)
 void PPU::output()
 {
     uint8 bgpixel = bg.output();
-    assert(lines <= 256 && cycles <= 239);
-    screen->drawpixel(lines, cycles, bgpixel);
+    assert((lines % 262 <= 239 || lines % 262 == 261) && cycles % 341 <= 256);
+    screen->drawpixel(lines % 262, cycles % 341, 0xFFFFFFFF);
 }
 
 // palette: 0-3, one of the 4 defined palettes for this frame

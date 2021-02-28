@@ -88,7 +88,7 @@ void PPU::cycle_fillshifts()
 void PPU::vblank_begin()
 {
     vblank = 1;
-    // call NMI interrupt here
+    nmi_callback();
     dbgputc('v');
 }
 
@@ -125,7 +125,9 @@ void PPU::ccycle()
     static_assert(Cycle <= 340);
     // NOTE: between cycle 257 - 320 there are garbage fetches
     if constexpr((Cycle >= 1 && Cycle <= 256) || (Cycle >= 321 && Cycle <= 340)) {
-        cycle_outputpixel();
+        if constexpr(Cycle >= 4 && Cycle <= 256) {
+            cycle_outputpixel();
+        }
         background_cycle<Cycle % 8>();
         if constexpr(Cycle % 8 == 1 && Cycle != 1)   cycle_fillshifts();
         if constexpr(Cycle % 8 != 1)                 cycle_shift();

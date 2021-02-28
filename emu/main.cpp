@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
         error("can't initialize video\n");
         return 1;
     }
-    Video::Canvas screen { context, 256, 224 };
+    Video::Canvas screen { context, 256, 240 };
 
     // open log files -- these will be used to log emulator info and dump memory
     auto logopen = [&flags](Util::File &f, char flag) {
@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
             }
         }
         emu.log(logfile);
-        emu.wait_nmi();
+        emu.run_frame(logfile);
         screen.update();
         context.draw();
     }

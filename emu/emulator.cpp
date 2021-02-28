@@ -44,8 +44,12 @@ void Emulator::dump(Util::File &dumpfile)
     // dump_to(dumpfile, ppu.getmemory(), PPUMap::MEMSIZE);
 }
 
-void Emulator::wait_nmi()
+void Emulator::run_frame(Util::File &logfile)
 {
-    run();
+    while (!nmi) {
+        log(logfile);
+        run();
+    }
+    nmi = false;
 }
 
