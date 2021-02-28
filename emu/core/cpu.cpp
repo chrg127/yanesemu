@@ -197,9 +197,8 @@ void CPU::execute(uint8 opcode)
 #undef INSTR_OTHER
 }
 
-/* Emulates the interrupt behavior common to all four interrupt signals
- * (reset, irq, nmi and brk) */
-void CPU::interrupt(bool reset)
+// emulates the interrupt behavior common to all four interrupt signals (reset, irq, nmi and brk)
+void CPU::interrupt()
 {
     uint16 vec;
 
@@ -211,12 +210,13 @@ void CPU::interrupt(bool reset)
     // reset this here just in case
     procstatus.breakf = 0;
     procstatus.intdis = 1;
-    // Interrupt hijacking
-    // there's a special handling for the reset interrupt. more research should
-    // be done for a better solution.
-    if (reset)
+    // interrupt hijacking
+    // reset is put at the top so that it will always run. i'm not sure if
+    // this is the actual behavior - nesdev says nothing about it.
+    if (resetpending) {
+        resetpending = false;
         vec = RESET_VEC;
-    else if (nmipending) {
+    } else if (nmipending) {
         nmipending = false;
         vec = NMI_VEC;
     } else if (irqpending) {
@@ -287,8 +287,7 @@ void CPU::run()
         execirq = false;
         return;
     }
-    curropcode = fetch();
-    execute(curropcode);
+    execute(fetch());
 }
 
 void CPU::power()
@@ -304,14 +303,16 @@ void CPU::power()
         bus->write(i, 0);
     sp = 0;
     // an interrupt is performed during 6502 start up. this is why SP = $FD.
-    interrupt(true);
+    resetpending = true;
+    interrupt();
 }
 
 void CPU::reset()
 {
     procstatus.intdis = 1;
     sp = 0;
-    interrupt(true);
+    resetpending = true;
+    interrupt();
 }
 
 void CPU::attach_bus(Bus *b)

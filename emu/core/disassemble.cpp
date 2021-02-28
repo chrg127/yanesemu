@@ -7,27 +7,26 @@ inline static std::string disass_implied(const char name[4])
     return std::string(name);
 }
 
-enum class DisassTag { imm, zero, zerox, zeroy, indx, indy };
-enum class DisassTag16 { abs, absx, absy, ind };
+enum DisassTag { imm = 0, zero, zerox, zeroy, indx, indy };
+enum DisassTag16 { abs = 0, absx, absy, ind };
 
-template <DisassTag tag>
+template <DisassTag Tag>
 constexpr inline static std::string disass(const char name[4], uint8 op)
 {
-         if constexpr (tag == DisassTag::imm)   return fmt::format("{} #${:02X}",    name, op);
-    else if constexpr (tag == DisassTag::zero)  return fmt::format("{} ${:02X}",     name, op);
-    else if constexpr (tag == DisassTag::zerox) return fmt::format("{} ${:02X},x",   name, op);
-    else if constexpr (tag == DisassTag::zeroy) return fmt::format("{} ${:02X},y",   name, op);
-    else if constexpr (tag == DisassTag::indx)  return fmt::format("{} (${:02X},x)", name, op);
-    else if constexpr (tag == DisassTag::indy)  return fmt::format("{} (${:02X}),y", name, op);
+    constexpr const char *fmts[] = {
+        "{} #${:02X}",  "{} ${:02X}",     "{} ${:02X},x",
+        "{} ${:02X},y", "{} (${:02X},x)", "{} (${:02X}),y",
+    };
+    return fmt::format(fmts[Tag], name, op);
 }
 
 template <DisassTag16 Tag>
 constexpr inline static std::string disass16(const char name[4], uint8 low, uint8 hi)
 {
-         if constexpr (Tag == DisassTag16::abs)  return fmt::format("{} ${:02X}{:02X}",   name, hi, low);
-    else if constexpr (Tag == DisassTag16::absx) return fmt::format("{} ${:02X}{:02X},x", name, hi, low);
-    else if constexpr (Tag == DisassTag16::absy) return fmt::format("{} ${:02X}{:02X},y", name, hi, low, name, hi, low);
-    else if constexpr (Tag == DisassTag16::ind)  return fmt::format("{} (${:02X}{:02X})", name, hi, low);
+    constexpr const char *fmts[] = {
+        "{} ${:02X}{:02X}","{} ${:02X}{:02X},x","{} ${:02X}{:02X},y","{} (${:02X}{:02X})",
+    };
+    return fmt::format(fmts[Tag], name, hi, low);
 }
 
 inline static std::string disass_branch(const char name[4], int8_t disp, uint16 addr, bool took)

@@ -15,7 +15,6 @@ class CPU {
 
     std::array<uint8, RAM_SIZE> rammem;
     Bus *bus = nullptr;
-    uint8 curropcode = 0;
     Reg16 op = 0;
 
     // registers
@@ -62,13 +61,14 @@ class CPU {
     // interrupt signals
     int cycles      = 0;
     bool nmipending = false;
-    bool execnmi    = false;
     bool irqpending = false;
+    bool resetpending = false;
+    bool execnmi    = false;
     bool execirq    = false;
 
     uint8 fetch();
     void execute(uint8 opcode);
-    void interrupt(bool reset = false);
+    void interrupt();
     void push(uint8 val);
     uint8 pull();
     void cycle();
@@ -164,7 +164,7 @@ public:
 
     const std::array<uint8, RAM_SIZE> & get_memory() const { return rammem; }
     int get_cycles()          { return cycles; }
-    uint8 peek_opcode() const { return curropcode; }
+    uint8 peek_opcode() const { return bus->read(pc.reg); }
 };
 
 } // namespace Core
