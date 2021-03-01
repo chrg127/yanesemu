@@ -64,7 +64,7 @@ paltab:
 reset:
     sei             ; disable all interrupts
     cld
-    ldx #%01000000  ; set apu frame sequencer inerrupt
+    ldx #%01000000  ; set apu frame sequencer interrupt
     stx $4017
     ldx #$FF        ; reset stack position
     txs
@@ -116,7 +116,7 @@ loadpal_loop:   ; fill background palette
     sta $2006
     lda #$00
     sta $2006
-    
+
     lda #$00
     sta scroll_x
     sta scroll_y
@@ -225,7 +225,7 @@ nmi:
     sta $2003
     lda spritebuf
     sta $4014
-    
+
     ; should write to $2000 and $2005
     lda scroll_x
     sta $2005
