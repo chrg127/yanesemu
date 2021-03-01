@@ -1,13 +1,13 @@
 #include <emu/video/video.hpp>
 
 #include <cassert>
+#include <fmt/core.h>
 // I wish I didn't have to do this...
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-qual"
 #define STB_IMAGE_IMPLEMENTATION
 #include <external/stb/stb_image.h>
 #pragma GCC diagnostic pop
-#include <fmt/core.h>
 #include <emu/util/unsigned.hpp>
 #include <emu/util/debug.hpp>
 
@@ -31,6 +31,7 @@ void Canvas::drawpixel(std::size_t x, std::size_t y, uint32 color)
 {
     auto real_y = tex.height()-1 - y;
     auto pos = (real_y * tex.width() + x) * 4;
+    assert(pos > 0 && pos < tex.width() * tex.height() * 4);
     // this code is probably affected by endianness.
     frame[pos  ] = color >> 24 & 0xFF;
     frame[pos+1] = color >> 16 & 0xFF;
