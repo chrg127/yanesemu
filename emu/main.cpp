@@ -90,6 +90,7 @@ int main(int argc, char *argv[])
         screen.update();
         context.draw();
     }
+    emu.dump(dumpfile);
     return 0;
 }
 

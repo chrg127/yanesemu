@@ -151,6 +151,8 @@ class CPU {
 
     uint8 readmem(uint16 addr)             { cycle(); return bus->read(addr); }
     void writemem(uint16 addr, uint8 data) { cycle(); bus->write(addr, data); }
+    uint8 read_apu_reg(uint16 addr)        { return 0; }
+    void write_apu_reg(uint16 addr, uint8 data) { }
 
 public:
     void run();

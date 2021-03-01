@@ -22,7 +22,7 @@ public:
     Emulator()
     {
         cpu.attach_bus(&cpu_bus);
-        ppu.attach_bus(&ppu_bus, &cpu_bus);
+        ppu.attach_bus(&ppu_bus, &cpu_bus, Core::PPU::Mirroring::VERT);
         ppu.set_nmi_callback([this]() {
             nmi = true;
             cpu.fire_nmi();

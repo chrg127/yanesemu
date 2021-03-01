@@ -199,9 +199,24 @@ void PPU::writereg(const uint16 which, const uint8 data)
 
 void PPU::output()
 {
-    uint8 bgpixel = bg.output();
-    assert((lines % 262 <= 239 || lines % 262 == 261) && cycles % 341 <= 256);
-    screen->drawpixel(lines % 262, cycles % 341, 0xFFFFFFFF);
+    const uint8 bgpixel = bg.output();
+    uint32 color = 0;
+    if (bgpixel == 232)
+        color = 0xFF0000FF;
+    else if (bgpixel == 214)
+        color = 0x00FF00FF;
+    else
+        color = 0x0000FFFF;
+    const auto x = cycles % 341;
+    const auto y = lines % 262;
+    assert((y <= 239 || y == 261) && x <= 256);
+    // is there any fucking document that says when i have to output pixels
+    // and doesn't have a shitty explanation?
+    if (x == 256)
+        return;
+    if (y == 261)
+        return;
+    screen->drawpixel(x, y, color);
 }
 
 // palette: 0-3, one of the 4 defined palettes for this frame
@@ -220,26 +235,30 @@ std::string PPU::get_info()
     return fmt::format("line = {:03}; cycle = {:03}; v = {:02X}", lines%262, cycles%341, vram.v);
 }
 
-void PPU::attach_bus(Bus *pb, Bus *cb)
+void PPU::map_nt(Mirroring mirroring)
 {
-    std::function<uint16(uint16)> address_nametab;
-
-    bus = pb;
-    cpubus = cb;
+    unsigned mask = 0;
     switch (mirroring) {
-    case 0: address_nametab = [](uint16 x) { return x &= ~0x800; }; break;
-    case 1: address_nametab = [](uint16 x) { return x &= ~0x400; }; break;
+    case Mirroring::VERT: mask = 0x7FF; break;
+    case Mirroring::HORZ: mask = 0xBFF; break;
     default: assert(false);
     }
-    cpubus->map(PPUREG_START, APU_START,
-            [=](uint16 addr)             { return readreg(addr); },
-            [=](uint16 addr, uint8 data) { writereg(addr, data); });
     bus->map(NT_START, PAL_START,
-            [=](uint16 addr)             { return vram.mem[address_nametab(addr)]; },
-            [=](uint16 addr, uint8 data) { vram.mem[address_nametab(addr)] = data; });
+            [=](uint16 addr)             { return vram.mem[addr & mask]; },
+            [=](uint16 addr, uint8 data) { vram.mem[addr & mask] = data; });
+}
+
+void PPU::attach_bus(Bus *pb, Bus *cb, Mirroring mirroring)
+{
+    bus = pb;
+    cpubus = cb;
+    cpubus->map(PPUREG_START, APU_START,
+            [=](uint16 addr)             { return readreg(0x2000 + (addr & 0x7)); },
+            [=](uint16 addr, uint8 data) { writereg(0x2000 + (addr & 0x7), data); });
     bus->map(PAL_START, VRAM_SIZE,
             [=](uint16 addr)             { return vram.mem[addr & ~0xE0]; },
             [=](uint16 addr, uint8 data) { vram.mem[addr & ~0xE0] = data; });
+    map_nt(mirroring);
 }
 
 void PPU::VRAM::inc_horzpos()

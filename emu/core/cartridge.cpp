@@ -153,7 +153,7 @@ void Cartridge::attach_bus(Bus *cpu, Bus *ppu)
     ppubus = ppu;
     cpubus->map(CARTRIDGE_START, 0x8000,
             [=] (uint16 addr) { return 0; },
-            [=] (uint16 addr, uint8 data) { });
+            [=] (uint16 addr, uint8 data) { /***********/ });
     cpubus->map(0x8000, CPUBUS_SIZE,
             [=] (uint16 addr) { return read_prgrom(addr); },
             [=] (uint16 addr, uint8 data) { /***********/ });

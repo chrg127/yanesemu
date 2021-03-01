@@ -31,17 +31,21 @@ void Emulator::log(Util::File &logfile)
 
 void Emulator::dump(Util::File &dumpfile)
 {
-    auto dump_mem = [&](auto &mem) {
-        for (std::size_t i = 0; i < mem.size(); i++) {
+    if (!dumpfile)
+        return;
+    auto dump_mem = [&](Bus &bus) {
+        for (std::size_t i = 0; i < bus.size(); ) {
             dumpfile.print("{:04X}: ", i);
-            for (std::size_t j = 0; j < 16; j++)
-                dumpfile.print("{:02X} ", mem[i++]);
+            for (std::size_t j = 0; j < 16; j++) {
+                dumpfile.print("{:02X} ", bus.read(i));
+                i++;
+            }
             dumpfile.putc('\n');
         }
         dumpfile.putc('\n');
     };
-    dump_mem(cpu.get_memory());
-    // dump_to(dumpfile, ppu.getmemory(), PPUMap::MEMSIZE);
+    dump_mem(cpu_bus);
+    dump_mem(ppu_bus);
 }
 
 void Emulator::run_frame(Util::File &logfile)

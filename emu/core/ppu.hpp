@@ -23,7 +23,6 @@ class PPU {
     // uint8 screen[SCREEN_WIDTH*SCREEN_HEIGHT];
     unsigned long cycles = 0;
     unsigned long lines  = 0;
-    int mirroring = 0;
     std::function<void(void)> nmi_callback;
 
     // registers
@@ -105,6 +104,12 @@ class PPU {
     void vblank_end();
     void output();
     uint8 getcolor(bool select, uint8 pal, uint8 palind);
+public:
+    enum class Mirroring {
+        VERT, HORZ, OTHER
+    };
+private:
+    void map_nt(Mirroring mirroring);
 
 public:
     PPU() : vram(*this), bg(*this)
@@ -116,7 +121,7 @@ public:
     uint8 readreg(const uint16 which);
     void writereg(const uint16 which, const uint8 data);
     std::string get_info();
-    void attach_bus(Bus *pb, Bus *cb);
+    void attach_bus(Bus *pb, Bus *cb, Mirroring mirroring);
 
     // for ppumain.cpp
     template <unsigned int Cycle> void ccycle();
@@ -125,7 +130,7 @@ public:
     void idlec();
 
     const std::array<uint8, VRAM_SIZE> & getmemory() const { return vram.mem; }
-    void set_mirroring(int m) { mirroring = m; }
+    void set_mirroring(Mirroring m) { map_nt(m); }
     void set_screen(Video::Canvas *canvas) { screen = canvas; }
     void set_nmi_callback(std::function<void(void)> &&callback) { nmi_callback = callback; }
 };
