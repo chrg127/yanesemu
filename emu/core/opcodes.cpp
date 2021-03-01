@@ -472,6 +472,7 @@ void CPU::instr_iny()
     last_cycle();
 }
 
+/*
 // cycles for all increase/decrease func: 2
 // #define func_increase(reg, regname) \
 // void CPU::instr_in##reg() \
@@ -484,6 +485,7 @@ void CPU::instr_iny()
 // }
 // func_increase(x, xreg)
 // func_increase(y, yreg)
+*/
 
 void CPU::instr_dex()
 {
@@ -503,7 +505,7 @@ void CPU::instr_dey()
     last_cycle();
 }
 
-
+/*
 // #define func_decrease(reg, regname) \
 // void CPU::instr_de##reg() \
 // { \
@@ -515,6 +517,7 @@ void CPU::instr_dey()
 // }
 // func_decrease(x, xreg)
 // func_decrease(y, yreg)
+*/
 
 // #undef func_increase
 // #undef func_decrease
