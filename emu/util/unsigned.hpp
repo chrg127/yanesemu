@@ -26,22 +26,17 @@ struct UInt {
 private:
     inttype num = 0;
 
-    inline inttype cast(const inttype val)
-    { return val & (~0ull >> (64 - Bits)); }
+    inline inttype cast(const inttype val) { return val & (~0ull >> (64 - Bits)); }
 
 public:
     UInt() = default;
-    template <typename T>
-    UInt(const T val) { operator=(val); }
+    template <typename T> UInt(const T val) { operator=(val); }
 
     static constexpr inttype MAX = (~0ull & (~0ull >> (64 - Bits)));
 
     // permits conversions and casts from UInt<Bits> to inttype
-    inline operator inttype() const
-    { return num; }
-
-    inline inttype value() const
-    { return num; }
+    inline operator inttype() const { return num; }
+    inline inttype value() const    { return num; }
 
     template <typename T> inline UInt operator= (const T val) { num =  cast(val); return *this; }
     template <typename T> inline UInt operator+=(const T val) { num += cast(val); return *this; }
@@ -55,31 +50,10 @@ public:
     template <typename T> inline UInt operator>>=(const T val) { num >>= cast(val); return *this; }
     template <typename T> inline UInt operator<<=(const T val) { num <<= cast(val); return *this; }
 
-    inline UInt operator++(int)
-    {
-        auto val = *this;
-        num = cast(num + 1);
-        return val;
-    }
-
-    inline UInt operator++()
-    {
-        num = cast(num + 1);
-        return *this;
-    }
-
-    inline UInt operator--(int)
-    {
-        auto val = *this;
-        num = cast(num-1);
-        return val;
-    }
-
-    inline UInt operator--()
-    {
-        num = cast(num - 1);
-        return *this;
-    }
+    inline UInt operator++(int) { auto ret = *this; num = cast(num + 1); return ret;   }
+    inline UInt operator++()    {                   num = cast(num + 1); return *this; }
+    inline UInt operator--(int) { auto ret = *this; num = cast(num - 1); return ret;   }
+    inline UInt operator--()    {                   num = cast(num - 1); return *this; }
 };
 
 template <unsigned Bits, typename T>
@@ -94,7 +68,7 @@ using uint1 = UInt<1>; using uint2 = UInt<2>; using uint3 = UInt<3>;
 using uint4 = UInt<4>; using uint5 = UInt<5>; using uint6 = UInt<6>;
 using uint7 = UInt<7>;
 
-using uint9 = UInt<9>; using uint10 = UInt<10>; using uint11 = UInt<11>;
+using uint9 = UInt<9>;   using uint10 = UInt<10>; using uint11 = UInt<11>;
 using uint12 = UInt<12>; using uint13 = UInt<13>; using uint14 = UInt<14>;
 using uint15 = UInt<15>;
 
