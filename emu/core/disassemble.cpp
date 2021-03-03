@@ -24,7 +24,7 @@ template <DisassTag16 Tag>
 constexpr inline static std::string disass16(const char name[4], uint8 low, uint8 hi)
 {
     constexpr const char *fmts[] = {
-        "{} ${:02X}{:02X}","{} ${:02X}{:02X},x","{} ${:02X}{:02X},y","{} (${:02X}{:02X})",
+        "{} ${:02X}{:02X}", "{} ${:02X}{:02X},x", "{} ${:02X}{:02X},y", "{} (${:02X}{:02X})",
     };
     return fmt::format(fmts[Tag], name, hi, low);
 }
@@ -39,6 +39,12 @@ std::string CPU::disassemble() const
     uint8 instruction = bus->read(pc.reg);
     uint8 oplow       = bus->read(pc.reg+1);
     uint8 ophigh      = bus->read(pc.reg+2);
+    return fmt::format("Instruction [{:02X}] ", instruction) +
+           disassemble_internal(instruction, oplow, ophigh);
+}
+
+std::string CPU::disassemble_internal(uint8 instr, uint8 oplow, uint8 ophigh) const
+{
 #define INSTR_IMPLD(id, name) \
     case id: return std::string(#name);
 #define INSTR_ACCUM(id, name) \
@@ -51,7 +57,7 @@ std::string CPU::disassemble() const
 #define INSTR_BRNCH(id, name, expr) \
     case id: return disass_branch(#name, (int8_t) oplow, pc.reg + 2 + (int8_t) oplow, expr);
 
-    switch(instruction) {
+    switch(instr) {
         INSTR_IMPLD(0x00, BRK)
         INSTR_ADDRMODE8(0x01, ORA, indx, oplow)
         INSTR_ADDRMODE8(0x05, ORA, zero, oplow)

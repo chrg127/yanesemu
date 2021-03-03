@@ -13,7 +13,7 @@ class CPU {
     using InstrFuncRead = void (CPU::*)(const uint8);
     using InstrFuncMod = uint8 (CPU::*)(uint8);
 
-    std::array<uint8, RAM_SIZE> rammem;
+    uint8 rammem[RAM_SIZE];
     Bus *bus = nullptr;
     Reg16 op = 0;
 
@@ -66,15 +66,32 @@ class CPU {
     bool execnmi    = false;
     bool execirq    = false;
 
+public:
+    void run();
+    void power();
+    void reset();
+    void attach_bus(Bus *b);
+    void fire_irq();
+    void fire_nmi();
+    std::string disassemble() const;
+    std::string get_info() const;
+
+    int get_cycles()          { return cycles; }
+    uint8 peek_opcode() const { return bus->read(pc.reg); }
+
+private:
     uint8 fetch();
     void execute(uint8 opcode);
     void interrupt();
     void push(uint8 val);
     uint8 pull();
-    void cycle();
-    void last_cycle();
     void irqpoll();
     void nmipoll();
+    void cycle();
+    void last_cycle();
+
+    // disassemble.cpp
+    std::string disassemble_internal(uint8 instr, uint8 oplow, uint8 ophigh) const;
 
     // opcodes.cpp
     void addrmode_imm_read(InstrFuncRead f);
@@ -153,20 +170,6 @@ class CPU {
     void writemem(uint16 addr, uint8 data) { cycle(); bus->write(addr, data); }
     uint8 read_apu_reg(uint16 addr)        { return 0; }
     void write_apu_reg(uint16 addr, uint8 data) { }
-
-public:
-    void run();
-    void power();
-    void reset();
-    void attach_bus(Bus *b);
-    void fire_irq();
-    void fire_nmi();
-    std::string disassemble() const;
-    std::string get_info() const;
-
-    const std::array<uint8, RAM_SIZE> & get_memory() const { return rammem; }
-    int get_cycles()          { return cycles; }
-    uint8 peek_opcode() const { return bus->read(pc.reg); }
 };
 
 } // namespace Core
