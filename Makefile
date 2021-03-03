@@ -19,7 +19,7 @@ CFLAGS = -I. -std=c11
 CXXFLAGS = -I. -std=c++17 -Wall -Wextra -pipe \
 		 -Wcast-align -Wcast-qual -Wpointer-arith \
 		 -Wformat=2 -Wmissing-include-dirs -Wno-unused-parameter \
-		 -fno-rtti
+		 -fno-rtti -fconcepts
 
 programname := emu
 profile := debug
@@ -35,9 +35,12 @@ else
     CXXFLAGS += -O3
 endif
 
+objs := $(patsubst %,$(outdir)/%,$(_objs))
+
 objs.main := $(outdir)/main.o
 objs.video_test := $(outdir)/video_test.o $(outdir)/video.o $(outdir)/opengl.o $(outdir)/glad.o
-objs := $(patsubst %,$(outdir)/%,$(_objs))
+_objs.ppu_test := ppu_test.o ppu.o bus.o video.o opengl.o glad.o
+objs.ppu_test := $(patsubst %,$(outdir)/%,$(_objs.ppu_test))
 
 all: $(outdir)/$(programname)
 
@@ -60,12 +63,16 @@ $(outdir)/video_test: $(objs.video_test) emu/video/video.hpp emu/video/opengl.hp
 	$(info Linking $@ ...)
 	$(CXX) $(objs.video_test) -o $@ $(libs)
 
+$(outdir)/ppu_test: $(objs.ppu_test)
+	$(info Linking $@ ...)
+	$(CXX) $(objs.ppu_test) -o $@ $(libs)
+
 .PHONY: clean directories tests
 
 directories:
 	mkdir -p $(outdir)
 
-tests: directories $(outdir)/video_test
+tests: directories $(outdir)/video_test $(outdir)/ppu_test
 
 clean:
 	rm -rf $(outdir)/*
