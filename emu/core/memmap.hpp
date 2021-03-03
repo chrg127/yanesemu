@@ -23,7 +23,8 @@ enum : uint32 {
     LINE_MAX = 262,
     CYCLE_MAX = 341,
 
-    VRAM_SIZE = 0x4000,
+    VRAM_SIZE = 0x800,
+    PAL_SIZE = 0x20,
     PT_START  = 0,
     NT_START  = 0x2000,
     PAL_START = 0x3F00,

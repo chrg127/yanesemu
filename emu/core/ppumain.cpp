@@ -4,7 +4,7 @@
 #define dbgputc(c) ;
 #endif
 
-void PPU::idlec()
+void PPU::cycle_idle()
 {
     dbgputc('.');
 }
@@ -25,78 +25,74 @@ void PPU::begin_frame()
 
 void PPU::cycle_fetchnt(bool cycle)
 {
-    bg.fetch_nt(cycle);
+    fetch_nt(cycle);
     dbgputc('n');
 }
 
 void PPU::cycle_fetchattr(bool cycle)
 {
-    bg.fetch_attr(cycle);
+    fetch_attr(cycle);
     dbgputc('a');
 }
 
 void PPU::cycle_fetchlowbg(bool cycle)
 {
-    bg.fetch_lowbg(cycle);
+    fetch_lowbg(cycle);
     dbgputc('l');
 }
 
 void PPU::cycle_fetchhighbg(bool cycle)
 {
-    bg.fetch_highbg(cycle);
+    fetch_highbg(cycle);
     dbgputc('h');
 }
 
 void PPU::cycle_incvhorz()
 {
-    if (bg.show)
-        vram.inc_horzpos();
+    inc_v_horzpos();
     dbgputc('+');
 }
 
 void PPU::cycle_incvvert()
 {
-    if (bg.show)
-        vram.inc_vertpos();
+    inc_v_vertpos();
     dbgputc('^');
 }
 
 void PPU::cycle_copyhorz()
 {
-    if (bg.show)
-        vram.copy_horzpos();
+    copy_v_horzpos();
     dbgputc('c');
 }
 
 void PPU::cycle_copyvert()
 {
-    if (bg.show)
-        vram.copy_vertpos();
+    copy_v_vertpos();
     dbgputc('c');
 }
 
 void PPU::cycle_shift()
 {
-    bg.shift_run();
+    shift_run();
 }
 
 void PPU::cycle_fillshifts()
 {
-    bg.shift_fill();
+    shift_fill();
 }
 
 void PPU::vblank_begin()
 {
-    vblank = 1;
+    io.vblank = 1;
     nmi_callback();
     dbgputc('v');
 }
 
 void PPU::vblank_end()
 {
-    vblank  = 0;
-    spr0hit = 0;
-    spr_ov  = 0;
+    io.vblank  = 0;
+    io.sp_zero_hit = 0;
+    io.sp_overflow  = 0;
     dbgputc('e');
 }
 
@@ -105,6 +101,15 @@ void PPU::cycle_outputpixel()
     output();
 }
 
+/* this function models the cycles for visible lines
+ * the fetch pipeline goes like this:
+ *
+ *   nt byte -> attr byte -> low bg byte -> high bg byte
+ *
+ * every step requires two cycles. at the start of the pipeline
+ * (every 1, 9, 17, ... cycle) some shift registers are filled.
+ * at every other step, the shift registers... shift.
+ */
 template <unsigned Cycle>
 void PPU::background_cycle()
 {
@@ -118,7 +123,6 @@ void PPU::background_cycle()
     if constexpr(Cycle == 0) cycle_fetchhighbg(1);
 }
 
-/* this only models lines from 1 to 239 */
 template <unsigned int Cycle>
 void PPU::ccycle()
 {
@@ -141,7 +145,7 @@ using CycleFunc = void (PPU::*)();
 using LineFunc  = void (PPU::*)(unsigned);
 
 #define CCYCLE &PPU::ccycle
-#define IDLE &PPU::idlec
+#define IDLE &PPU::cycle_idle
 static constexpr std::array<CycleFunc, 341> cycletab = {
     IDLE,        CCYCLE<1>,   CCYCLE<2>,   CCYCLE<3>,   CCYCLE<4>,   CCYCLE<5>,   CCYCLE<6>,   CCYCLE<7>,
     CCYCLE<8>,   CCYCLE<9>,   CCYCLE<10>,  CCYCLE<11>,  CCYCLE<12>,  CCYCLE<13>,  CCYCLE<14>,  CCYCLE<15>,
@@ -203,7 +207,7 @@ void PPU::lcycle(unsigned int cycle)
         (this->*f)();
     }
     if constexpr(Line == 241)
-        cycle == 1 ? vblank_begin() : idlec();
+        cycle == 1 ? vblank_begin() : cycle_idle();
     if constexpr(Line == 261) {
         const auto f = cycletab[cycle];
         (this->*f)();
@@ -212,7 +216,7 @@ void PPU::lcycle(unsigned int cycle)
         if (cycle == 340)                 begin_frame();
     }
     if constexpr(Line == 240 || (Line >= 242 && Line != 261))
-        idlec();
+        cycle_idle();
 }
 
 #define LCYCLE &PPU::lcycle

@@ -19,100 +19,130 @@ namespace Core {
 
 void PPU::power()
 {
+    vram.addr = 0;
+    vram.tmp = 0;
     // PPUCTRL
-    bg.nt_addr = bg.pt_addr = oam.pt_addr = ext_bus_dir = nmi_enabled = 0;
-    vram.inc = 1; // if 0, inc = 1. if 1, inc = 32
+    io.vram_inc = 0;
+    io.sp_pt_addr = 0;
+    io.bg_pt_addr = 0;
+    io.sp_size = 0;
+    io.ext_bus_dir = 0;
+    io.nmi_enabled = 0;
     // PPUMASK
-    bg.show_leftmost  = bg.show  = 0;
-    oam.show_leftmost = oam.show = 0;
-    effects.grey  = 0;
-    effects.red   = 0;
-    effects.green = 0;
-    effects.red   = 0;
+    io.grey = 0;
+    io.bg_show_left = 0;
+    io.sp_show_left = 0;
+    io.bg_show = 0;
+    io.sp_show = 0;
+    io.red = 0;
+    io.green = 0;
+    io.blue = 0;
     // PPUSTATUS
-    spr_ov = spr0hit = vblank = 0;
+    io.sp_overflow = 1;
+    io.sp_zero_hit = 0;
+    io.vblank = 1;
     // OAMADDR
-    oam.addr = 0;
+    io.oam_addr = 0;
     // PPUSCROLL and PPUADDR
-    // vram.v = 0;
-    vram.toggle = 0;
-    vram.t      = 0;
+    vram.tmp = 0;
     vram.fine_x = 0;
+    io.scroll_latch = 0;
     // PPUDATA
-    vram.readbuf = 0;
-    // other stuff
+    io.data_buf = 0;
+    // other
     odd_frame = 0;
     lines = cycles = 0;
     // randomize memory
-    for (auto &cell : oam.oammem)
-        cell = Util::random8();
-    for (uint16 i = PAL_START; i < 0x3F20; i++)
-        bus->write(i, Util::random8());
-    for (uint16 i = NT_START; i < 0x3000; i++)
-        bus->write(i, Util::random8());
+    // for (auto &cell : oammem)
+    //     cell = Util::random8();
+    // for (uint16 i = PAL_START; i < 0x3F20; i++)
+    //     bus->write(i, Util::random8());
+    // for (uint16 i = NT_START; i < 0x3000; i++)
+    //     bus->write(i, Util::random8());
     // we should also randomize chr-ram
 }
 
 void PPU::reset()
 {
-    // PPUCTRL
-    bg.nt_addr = bg.pt_addr = oam.pt_addr = ext_bus_dir = nmi_enabled = 0;
-    vram.inc = 1; // if 0, inc = 1. if 1, inc = 32
-    // PPUMASK
-    bg.show_leftmost  = bg.show  = 0;
-    oam.show_leftmost = oam.show = 0;
-    effects.grey  = 0;
-    effects.red   = 0;
-    effects.green = 0;
-    effects.red   = 0;
-    // PPUSTATUS
-    spr_ov = Util::random_between(0, 1);
-    spr0hit = Util::random_between(0, 1);
-    // vblank = unchanged;
-    // OAMADDR
-    // oam.addr = unchanged;
-    // PPUSCROLL and PPUADDR
-    vram.toggle = 0;
-    // vram.v = 0;
-    // vram.t = unchanged;
-    vram.fine_x = 0;
-    // PPUDATA
-    vram.readbuf = 0;
+    // // PPUCTRL
+    // bg.pt_addr = oam.pt_addr = ext_bus_dir = nmi_enabled = 0;
+    // vram.inc = 1; // if 0, inc = 1. if 1, inc = 32
+    // // PPUMASK
+    // bg.show_leftmost  = bg.show  = 0;
+    // oam.show_leftmost = oam.show = 0;
+    // effects.grey  = 0;
+    // effects.red   = 0;
+    // effects.green = 0;
+    // effects.red   = 0;
+    // // PPUSTATUS
+    // spr_ov = Util::random_between(0, 1);
+    // spr0hit = Util::random_between(0, 1);
+    // // vblank = unchanged;
+    // // OAMADDR
+    // // oam.addr = unchanged;
+    // // PPUSCROLL and PPUADDR
+    // vram.toggle = 0;
+    // // vram.v = 0;
+    // // vram.t = unchanged;
+    // vram.fine_x = 0;
+    // // PPUDATA
+    // vram.readbuf = 0;
 
-    odd_frame = 0;
-    lines = 0;
-    cycles = 0;
-    for (auto &cell : oam.oammem)
-        cell = Util::random8();
-    // palette, nt ram and chr-ram is unchanged
+    // odd_frame = 0;
+    // lines = 0;
+    // cycles = 0;
+    // for (auto &cell : oammem)
+    //     cell = Util::random8();
+    // // palette, nt ram and chr-ram is unchanged
+}
+
+std::string PPU::get_info()
+{
+    return fmt::format("line = {:03}; cycle = {:03}; v = {:02X}", lines%262, cycles%341, vram.addr.value.value());
+}
+
+void PPU::attach_bus(Bus *pb, Bus *cb, Mirroring mirroring)
+{
+    bus = pb;
+    cpubus = cb;
+    cpubus->map(PPUREG_START, APU_START,
+            [=](uint16 addr)             { return readreg(0x2000 + (addr & 0x7)); },
+            [=](uint16 addr, uint8 data) { writereg(0x2000 + (addr & 0x7), data); });
+    bus->map(PAL_START, 0x4000,
+            [=](uint16 addr)             { return palmem[addr & 0x1F]; },
+            [=](uint16 addr, uint8 data) { palmem[addr & 0x1F] = data; });
+    map_nt(mirroring);
 }
 
 uint8 PPU::readreg(const uint16 which)
 {
     switch (which) {
+    // PPUCTRL, PPUMASK, OAMADDR, PPUSCROLL, PPUADDR
     case 0x2000: case 0x2001: case 0x2003:
-    case 0x2005: case 0x2006: case 0x4014:
-        return io_latch;
+    case 0x2005: case 0x2006:
+        break;
 
+    // PPUSTATUS
     case 0x2002:
-        io_latch |= (vblank << 7 | spr0hit << 6 | spr_ov << 5);
-        vblank = 0;
-        vram.toggle = 0;
-        return io_latch;
+        io.latch |= (io.vblank << 7 | io.sp_zero_hit << 6 | io.sp_overflow << 5);
+        io.vblank = 0;
+        io.scroll_latch = 0;
+        break;
 
+    // OAMDATA
     case 0x2004:
-        io_latch = 0;
-        // io_latch = oam.data;
-        return io_latch;
+        io.latch = 0;
+        break;
 
+    // PPUDATA
     case 0x2007:
-        if (vram.v < 0x3F00) {
-            io_latch = vram.readbuf;
-            vram.readbuf = bus->read(vram.v);
+        if (vram.addr < 0x3F00) {
+            io.latch = io.data_buf;
+            io.data_buf = bus->read(vram.addr);
         } else
-            io_latch = bus->read(vram.v);
-        vram.v += vram.inc;
-        return io_latch;
+            io.latch = bus->read(vram.addr);
+        vram.addr += (1UL << 5*io.vram_inc);
+        break;
 
 #ifdef DEBUG
     default:
@@ -120,73 +150,79 @@ uint8 PPU::readreg(const uint16 which)
         break;
 #endif
     }
-    // unreachable
-    return io_latch;
+    return io.latch;
 }
 
 void PPU::writereg(const uint16 which, const uint8 data)
 {
-    io_latch = data;
+    io.latch = data;
     switch (which) {
+
+    // PPUCTRL
     case 0x2000:
-        nmi_enabled = data & 0x80;
-        ext_bus_dir = data & 0x40;
-        vram.inc    = (data & 0x04) ? 32 : 1;
-        oam.sprsize = data & 0x20;
-        bg.pt_addr  = data & 0x10;
-        oam.pt_addr = data & 0x08;
-        bg.nt_addr  = data & 0x03;
-        vram.t      = (data & 0x03) | (vram.t & 0xF3FF);
+        vram.tmp.set_nt(data & 0x03);
+        io.vram_inc     = data & 0x04;
+        io.sp_pt_addr   = data & 0x08;
+        io.bg_pt_addr   = data & 0x10;
+        io.sp_size      = data & 0x20;
+        io.ext_bus_dir  = data & 0x40;
+        io.nmi_enabled  = data & 0x80;
         break;
 
+    // PPUMASK
     case 0x2001:
-        effects.grey      = data & 0x01;
-        bg.show_leftmost  = data & 0x02;
-        oam.show_leftmost = data & 0x04;
-        bg.show           = data & 0x08;
-        oam.show          = data & 0x10;
-        effects.red       = data & 0x20;
-        effects.green     = data & 0x40;
-        effects.blue      = data & 0x80;
+        io.grey          = data & 0x01;
+        io.bg_show_left  = data & 0x02;
+        io.sp_show_left  = data & 0x04;
+        io.bg_show       = data & 0x08;
+        io.sp_show       = data & 0x10;
+        io.red           = data & 0x20;
+        io.green         = data & 0x40;
+        io.blue          = data & 0x80;
         break;
 
+    // PPUSTATUS
     case 0x2002:
         break;
 
+    // OAMADDR
     case 0x2003:
-        oam.addr = data;
+        io.oam_addr = data;
         break;
 
+    // OAMDATA
     case 0x2004:
-        // this should probably write to oam, not to some register
-        // oam.data = data;
-        oam.addr++;
+        io.oam_addr++;
         break;
 
+    // PPUSCROLL
     case 0x2005:
-        if (vram.toggle == 0) {
-            vram.t = (data &  0xF8) >> 3  | (vram.t & ~(0xF8 >> 3));
+        if (!io.scroll_latch) {
+            vram.tmp.set_coarse_x(data & (0x1F << 3));
             vram.fine_x = data & 0x7;
         } else {
-            vram.t = (data &  0x07) << 12 | (vram.t & ~(0x07 << 12));
-            vram.t = (data & ~0xF8) << 2  | (vram.t & ~(0xF8 << 2 ));
+            vram.tmp.set_coarse_y(data & (0x1F << 3));
+            vram.tmp.set_fine_y(data & 0x7);
         }
-        vram.toggle ^= 1;
+        io.scroll_latch ^= 1;
         break;
 
+    // PPUADDR
     case 0x2006:
-        if (vram.toggle == 0) {
-            vram.t = (data & 0x3F) << 8 | (vram.t & 0xFF);
+        if (io.scroll_latch == 0) {
+            vram.tmp = Util::set_bits(vram.tmp, 8, 0x3F, data & 0x3F);
+            vram.tmp = Util::set_bit(vram.tmp, 14, 0);
         } else {
-            vram.t = data | (vram.t & 0xFF00) ;
-            vram.v = vram.t;
+            vram.tmp = Util::set_bits(vram.tmp, 0, 0xFF, data);
+            vram.addr = vram.tmp;
         }
-        vram.toggle ^= 1;
+        io.scroll_latch ^= 1;
         break;
 
+    // PPUDATA
     case 0x2007:
-        bus->write(vram.v, data);
-        vram.v += vram.inc;
+        bus->write(vram.addr, data);
+        vram.addr += (1UL << 5*io.vram_inc);
         break;
 
 #ifdef DEBUG
@@ -199,7 +235,7 @@ void PPU::writereg(const uint16 which, const uint8 data)
 
 void PPU::output()
 {
-    const uint8 bgpixel = bg.output();
+    const uint8 bgpixel = bg_output();
     uint32 color = 0;
     if (bgpixel == 232)
         color = 0xFF0000FF;
@@ -230,11 +266,6 @@ uint8 PPU::getcolor(bool select, uint8 pal, uint8 palind)
     return bus->read(0x3F00 + n);
 }
 
-std::string PPU::get_info()
-{
-    return fmt::format("line = {:03}; cycle = {:03}; v = {:02X}", lines%262, cycles%341, vram.v);
-}
-
 void PPU::map_nt(Mirroring mirroring)
 {
     unsigned mask = 0;
@@ -244,133 +275,123 @@ void PPU::map_nt(Mirroring mirroring)
     default: assert(false);
     }
     bus->map(NT_START, PAL_START,
-            [=](uint16 addr)             { return vram.mem[addr & mask]; },
-            [=](uint16 addr, uint8 data) { vram.mem[addr & mask] = data; });
+            [=](uint16 addr)             { return vrammem[(addr & mask)]; },
+            [=](uint16 addr, uint8 data) { vrammem[(addr & mask)] = data; });
 }
 
-void PPU::attach_bus(Bus *pb, Bus *cb, Mirroring mirroring)
+void PPU::inc_v_horzpos()
 {
-    bus = pb;
-    cpubus = cb;
-    cpubus->map(PPUREG_START, APU_START,
-            [=](uint16 addr)             { return readreg(0x2000 + (addr & 0x7)); },
-            [=](uint16 addr, uint8 data) { writereg(0x2000 + (addr & 0x7), data); });
-    bus->map(PAL_START, VRAM_SIZE,
-            [=](uint16 addr)             { return vram.mem[addr & ~0xE0]; },
-            [=](uint16 addr, uint8 data) { vram.mem[addr & ~0xE0] = data; });
-    map_nt(mirroring);
-}
-
-void PPU::VRAM::inc_horzpos()
-{
-    // this version uses an 'if', which usually leads to a branch, which can be
-    // costly.
-    if ((v & 0x001F) == 31) {
-        v &= ~0x001F;
-        v ^= 0x0400;
+    if (!io.bg_show)
+        return;
+    if (vram.addr.coarse_x() == 31) {
+        vram.addr.set_coarse_x(0);
+        vram.addr.switch_nt_horz();
     } else
-        v += 1;
-    // this versions uses bitwise operations instead.
-    // uint8 x = (((v & 0x400) >> 5) | (v & 0x1F)) + 1;
-    // v = (v & ~0x41F) | ((x & 0x20) << 5) | (x & 0x1F);
-    //
-    // although the second version seems better, some benchmarking proves that
-    // the first version is better instead. i am still investigating whether
-    // there can be a better third version (nesdev mentions this code is
-    // "unoptimized")
+        vram.addr += 1;
 }
 
-void PPU::VRAM::inc_vertpos()
+void PPU::inc_v_vertpos()
 {
-    if ((v & 0x7000) != 0x7000)
-        v += 0x1000;
+    if (!io.bg_show)
+        return;
+    if (vram.addr.fine_y() < 7)
+        vram.addr.set_fine_y(vram.addr.fine_y() + 1);
     else {
-        v &= ~0x7000;
-        int y = (v & 0x03E0) >> 5;
+        vram.addr.set_fine_y(0);
+        auto y = vram.addr.coarse_y();
         if (y == 29) {
             y = 0;
-            v ^= 0x0800;
+            vram.addr.switch_nt_vert();
         } else if (y == 31)
             y = 0;
         else
             y += 1;
-        v = (v & ~0x03E0) | (y << 5);
+        vram.addr.set_coarse_y(y);
     }
 }
 
-void PPU::VRAM::copy_horzpos()
+void PPU::copy_v_horzpos()
 {
-    v = (t & 0x041F) | (v & ~0x41F);
+    if (!io.bg_show)
+        return;
+    vram.addr.set_coarse_x(vram.tmp.coarse_x());
+    vram.addr = Util::set_bit(vram.addr, 10, vram.tmp.nt() & 1);
 }
 
-void PPU::VRAM::copy_vertpos()
+void PPU::copy_v_vertpos()
 {
-    v = (t & 0x7BE0) | (v & ~0x7EB0);
+    if (!io.bg_show)
+        return;
+    vram.addr.set_coarse_y(vram.tmp.coarse_y());
+    vram.addr = Util::set_bit(vram.addr, 11, (vram.tmp.nt() & 2) >> 1);
+    vram.addr.set_fine_y(vram.tmp.fine_y());
 }
 
-void PPU::Background::fetch_nt(bool dofetch)
+void PPU::fetch_nt(bool dofetch)
 {
     if (!dofetch)
         return;
-    latch.nt = ppu.bus->read(0x2000 | (ppu.vram.v & 0x0FFF));
+    tile.nt = bus->read(0x2000 | (vram.addr & 0x0FFF));
 }
 
-void PPU::Background::fetch_attr(bool dofetch)
+void PPU::fetch_attr(bool dofetch)
 {
-    // 0x23C0 | NN | YYY | XXX
+    // an attribute address can be composed this way:
+    // NN 1111 YYY XXX
+    // where YYY/XXX are the highest bits of coarse x/y.
     if (!dofetch)
         return;
-    latch.attr = ppu.bus->read(0x23C0
-                              | (ppu.vram.v      & 0x0C00)
-                              | (ppu.vram.v >> 4 & 0x0038)
-                              | (ppu.vram.v >> 2 & 0x0007));
+    tile.attr = bus->read(0x23C0
+                       |  uint16(vram.addr.nt()) << 10
+                       | (uint16(vram.addr.coarse_y()) & 0x1C << 1)
+                       | (uint16(vram.addr.coarse_x()) & 0x1C >> 2));
 }
 
-void PPU::Background::fetch_lowbg(bool dofetch)
-{
-    if (!dofetch)
-        return;
-    latch.lowbg = ppu.bus->read(0x1000*pt_addr + latch.nt);
-}
-
-void PPU::Background::fetch_highbg(bool dofetch)
+void PPU::fetch_lowbg(bool dofetch)
 {
     if (!dofetch)
         return;
-    latch.hibg  = ppu.bus->read(0x1000*pt_addr + latch.nt+8);
+    tile.low = bus->read(0x1000 * io.bg_pt_addr + tile.nt);
 }
 
-void PPU::Background::shift_run()
+void PPU::fetch_highbg(bool dofetch)
 {
-    shift.bglow   >>= 1;
-    shift.bghigh  >>= 1;
-    shift.athigh >>= 1;
-    shift.athigh |= shift.latchhigh << 7;
-    shift.atlow >>= 1;
-    shift.atlow |= shift.latchlow  << 7;
+    if (!dofetch)
+        return;
+    tile.high = bus->read(0x1000 * io.bg_pt_addr + tile.nt + 8);
 }
 
-void PPU::Background::shift_fill()
+void PPU::shift_run()
 {
-    uint16 v = ppu.vram.v;
-    shift.bglow  = latch.lowbg << 8 | (shift.bglow  & 0xFF);
-    shift.bghigh = latch.hibg  << 8 | (shift.bghigh & 0xFF);
-    // TODO: this doesn't do what you think it does.
+    shift.tlow    >>= 1;
+    shift.thigh   >>= 1;
+    shift.ahigh >>= 1;
+    shift.alow  >>= 1;
+    shift.ahigh = Util::set_bit(shift.ahigh, 7, shift.feed_high);
+    shift.ahigh = Util::set_bit(shift.alow,  7, shift.feed_low );
+}
+
+void PPU::shift_fill()
+{
+    shift.tlow  = Util::set_bits(shift.tlow,  8, 0xFF, tile.low);
+    shift.thigh = Util::set_bits(shift.thigh, 8, 0xFF, tile.high);
+    // TODO: this is definitely fucking wrong
+    uint16 v = vram.addr;
     uint8 attr_mask = 0b11 << (~((v >> 1 & 1) | (v >> 6 & 1)))*2;
-    shift.latchhigh = latch.attr & attr_mask;
-    shift.latchlow  = latch.attr & attr_mask;
+    shift.feed_high = tile.attr & attr_mask;
+    shift.feed_low  = tile.attr & attr_mask;
 }
 
-uint8 PPU::Background::output()
+uint8 PPU::bg_output()
 {
-    uint8 mask      = 1 << ppu.vram.fine_x;
-    bool lowbit     = shift.bglow  & mask;
-    bool hibit      = shift.bghigh & mask;
-    bool at1        = shift.athigh & mask;
-    bool at2        = shift.atlow  & mask;
+    uint8 mask      = 1UL << vram.fine_x;
+    bool lowbit     = shift.tlow  & mask;
+    bool hibit      = shift.thigh & mask;
+    bool at1        = shift.ahigh & mask;
+    bool at2        = shift.alow  & mask;
     uint8 pal       = at1   << 1 | at2;
     uint8 palind    = hibit << 1 | lowbit;
-    return ppu.getcolor(0, pal, palind);
+    return getcolor(0, pal, palind);
 }
 
 } // namespace Core
