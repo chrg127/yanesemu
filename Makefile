@@ -35,13 +35,6 @@ else
     CXXFLAGS += -O3
 endif
 
-objs := $(patsubst %,$(outdir)/%,$(_objs))
-
-objs.main := $(outdir)/main.o
-objs.video_test := $(outdir)/video_test.o $(outdir)/video.o $(outdir)/opengl.o $(outdir)/glad.o
-_objs.ppu_test := ppu_test.o ppu.o bus.o video.o opengl.o glad.o
-objs.ppu_test := $(patsubst %,$(outdir)/%,$(_objs.ppu_test))
-
 all: $(outdir)/$(programname)
 
 $(outdir)/cpu.o: emu/core/cpu.cpp emu/core/opcodes.cpp emu/core/disassemble.cpp $(headers)
@@ -55,14 +48,20 @@ $(outdir)/%.o: %.cpp $(headers)
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # main
+objs := $(patsubst %,$(outdir)/%,$(_objs))
+objs.main := $(outdir)/main.o
 $(outdir)/$(programname): $(objs.main) $(objs)
 	$(info Linking $@ ...)
 	@$(CXX) $(objs.main) $(objs) -o $@ $(libs)
+
 # tests
+objs.video_test := $(outdir)/video_test.o $(outdir)/video.o $(outdir)/opengl.o $(outdir)/glad.o
 $(outdir)/video_test: $(objs.video_test) emu/video/video.hpp emu/video/opengl.hpp 
 	$(info Linking $@ ...)
 	$(CXX) $(objs.video_test) -o $@ $(libs)
 
+_objs.ppu_test := ppu_test.o cpu.o ppu.o bus.o video.o opengl.o glad.o cartridge.o file.o
+objs.ppu_test := $(patsubst %,$(outdir)/%,$(_objs.ppu_test))
 $(outdir)/ppu_test: $(objs.ppu_test)
 	$(info Linking $@ ...)
 	$(CXX) $(objs.ppu_test) -o $@ $(libs)

@@ -294,7 +294,8 @@ void CPU::power()
 {
     accum = xreg = yreg = 0;
     for (uint16 i = 0; i < 0x0800; i++)
-        bus->write(i, Util::random8());
+        bus->write(i, 0);
+        //bus->write(i, Util::random8());
     procstatus.reset();
     // these are probably APU regs. i'll add them later. for now this is enough.
     bus->write(0x4017, 0);

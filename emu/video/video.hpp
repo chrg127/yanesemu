@@ -28,8 +28,8 @@ struct Context {
         OPENGL,
     };
 
-    static const unsigned DEF_WIDTH  = 400;
-    static const unsigned DEF_HEIGTH = 300;
+    static const unsigned DEF_WIDTH  = 512;
+    static const unsigned DEF_HEIGTH = 480;
 
 private:
     std::unique_ptr<Impl> ptr = nullptr;

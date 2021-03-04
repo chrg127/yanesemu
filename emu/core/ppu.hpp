@@ -39,7 +39,7 @@ public:
         uint5 coarse_x() const          { return  value &  0x1F; }
         uint5 coarse_y() const          { return (value & (0x1F <<  5)) >>  5; }
         uint2 nt() const                { return (value & (0x03 << 10)) >> 10; }
-        uint3 fine_y() const            { return (value & (0x07 << 12)) >> 12; }
+        uint16 fine_y() const            { return (value & (0x07 << 12)) >> 12; }
         void set_coarse_x(uint5 data)   { value = Util::set_bits(value,  0, 0x1F, data); }
         void set_coarse_y(uint5 data)   { value = Util::set_bits(value,  5, 0x1F, data); }
         void set_nt(uint2 data)         { value = Util::set_bits(value, 10, 0x03, data); }

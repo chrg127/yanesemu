@@ -52,6 +52,12 @@ void PPU::power()
     // other
     odd_frame = 0;
     lines = cycles = 0;
+    for (unsigned i = 0; i < VRAM_SIZE; i++)
+        vrammem[i] = 0;
+    for (unsigned i = 0; i < OAM_SIZE; i++)
+        oammem[i] = 0;
+    for (unsigned i = 0; i < PAL_SIZE; i++)
+        palmem[i] = 0;
     // randomize memory
     // for (auto &cell : oammem)
     //     cell = Util::random8();
@@ -237,12 +243,8 @@ void PPU::output()
 {
     const uint8 bgpixel = bg_output();
     uint32 color = 0;
-    if (bgpixel == 232)
-        color = 0xFF0000FF;
-    else if (bgpixel == 214)
-        color = 0x00FF00FF;
-    else
-        color = 0x0000FFFF;
+    if (bgpixel == 0x30)
+        color = 0xFFFFFFFF;
     const auto x = cycles % 341;
     const auto y = lines % 262;
     assert((y <= 239 || y == 261) && x <= 256);
@@ -331,6 +333,11 @@ void PPU::fetch_nt(bool dofetch)
 {
     if (!dofetch)
         return;
+    /* it's probably worth mentioning here that this mask
+     * takes all bits of the vram address except for the fine y.
+     * this is how the vram address can return to the same tile for 8 lines:
+     * in rendering, you can think of the fine y and the rest of the address
+     * as separate, where fine y of course indicates the row of the tile. */
     tile.nt = bus->read(0x2000 | (vram.addr & 0x0FFF));
 }
 
@@ -347,24 +354,38 @@ void PPU::fetch_attr(bool dofetch)
                        | (uint16(vram.addr.coarse_x()) & 0x1C >> 2));
 }
 
+/* 0HRRRRCCCCPTTT
+ * H - which table is used, left/right. controlled by io.bg_pt_addr.
+ * RRRR CCCC - row, column. controlled by the fetch nt byte.
+ * P - bit plane. 0 = get the low byte, 1 = get the high byte.
+ * TTT - fine y, or the current row. fine y is incremented at cycle 256 of each
+ * row.
+ */
 void PPU::fetch_lowbg(bool dofetch)
 {
     if (!dofetch)
         return;
-    tile.low = bus->read(0x1000 * io.bg_pt_addr + tile.nt);
+    uint16 lowbg_addr = (io.bg_pt_addr << 12)
+                      | (tile.nt       << 4)
+                      | (vram.addr.fine_y());
+    tile.low = bus->read(lowbg_addr);
 }
 
 void PPU::fetch_highbg(bool dofetch)
 {
     if (!dofetch)
         return;
-    tile.high = bus->read(0x1000 * io.bg_pt_addr + tile.nt + 8);
+    uint16 highbg_addr = (io.bg_pt_addr << 12)
+                      | (tile.nt       << 4)
+                      | (1UL           << 3) // or otherwise... add 8
+                      | (vram.addr.fine_y());
+    tile.high = bus->read(highbg_addr);
 }
 
 void PPU::shift_run()
 {
-    shift.tlow    >>= 1;
-    shift.thigh   >>= 1;
+    shift.tlow  >>= 1;
+    shift.thigh >>= 1;
     shift.ahigh >>= 1;
     shift.alow  >>= 1;
     shift.ahigh = Util::set_bit(shift.ahigh, 7, shift.feed_high);

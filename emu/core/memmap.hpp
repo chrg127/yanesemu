@@ -5,7 +5,7 @@
 
 namespace Core {
 
-enum : uint32 {
+enum {
     CPUBUS_SIZE     = 0x10000,
     RAM_SIZE        = 0x2000,
     RAM_START       = 0,
@@ -18,7 +18,7 @@ enum : uint32 {
     STACK_BASE      = 0x0100,
 
     SCREEN_WIDTH  = 256,
-    SCREEN_HEIGHT = 224,
+    SCREEN_HEIGHT = 240,
 
     LINE_MAX = 262,
     CYCLE_MAX = 341,
