@@ -19,20 +19,9 @@ union Reg16 {
 
     Reg16 & operator=(const uint16 val) { reg = val; return *this; }
 
-    template <typename T> // T = numeric type
-    Reg16 & operator&=(const T val) { reg &= val; return *this; }
-
-    template <typename T> // T = numeric type
-    Reg16 & operator|=(const T val) { reg |= val; return *this; }
+    template <typename T> Reg16 & operator&=(const T val) { reg &= val; return *this; }
+    template <typename T> Reg16 & operator|=(const T val) { reg |= val; return *this; }
 };
-
-template <typename T> // T = numeric type
-inline Reg16 operator&(Reg16 left, T right)
-{ return left & right; }
-
-template <typename T> // T = numeric type
-inline Reg16 operator|(Reg16 left, T right)
-{ return left & right; }
 
 /* a ROM represents readable memory. It has two states: at the start, it is
  * both readable and writable. After a function is done with writing, call

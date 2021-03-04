@@ -104,7 +104,7 @@ void PPU::reset()
 
 std::string PPU::get_info()
 {
-    return fmt::format("line = {:03}; cycle = {:03}; v = {:02X}", lines%262, cycles%341, vram.addr.value.value());
+    return fmt::format("line = {:03}; cycle = {:03}; v = {:X}", lines%262, cycles%341, vram.addr.value);
 }
 
 void PPU::attach_bus(Bus *pb, Bus *cb, Mirroring mirroring)
@@ -166,7 +166,7 @@ void PPU::writereg(const uint16 which, const uint8 data)
 
     // PPUCTRL
     case 0x2000:
-        vram.tmp.set_nt(data & 0x03);
+        vram.tmp.nt     = data & 0x03;
         io.vram_inc     = data & 0x04;
         io.sp_pt_addr   = data & 0x08;
         io.bg_pt_addr   = data & 0x10;
@@ -204,11 +204,11 @@ void PPU::writereg(const uint16 which, const uint8 data)
     // PPUSCROLL
     case 0x2005:
         if (!io.scroll_latch) {
-            vram.tmp.set_coarse_x(data & (0x1F << 3));
-            vram.fine_x = data & 0x7;
+            vram.tmp.coarse_x = data >> 3 & 0x1F;
+            vram.fine_x       = data & 0x7;
         } else {
-            vram.tmp.set_coarse_y(data & (0x1F << 3));
-            vram.tmp.set_fine_y(data & 0x7);
+            vram.tmp.coarse_y = data >> 3 & 0x1F;
+            vram.tmp.fine_y   = data & 0x7;
         }
         io.scroll_latch ^= 1;
         break;
@@ -216,9 +216,11 @@ void PPU::writereg(const uint16 which, const uint8 data)
     // PPUADDR
     case 0x2006:
         if (io.scroll_latch == 0) {
+            // high byte
             vram.tmp = Util::set_bits(vram.tmp, 8, 0x3F, data & 0x3F);
             vram.tmp = Util::set_bit(vram.tmp, 14, 0);
         } else {
+            // low byte
             vram.tmp = Util::set_bits(vram.tmp, 0, 0xFF, data);
             vram.addr = vram.tmp;
         }
@@ -285,30 +287,30 @@ void PPU::inc_v_horzpos()
 {
     if (!io.bg_show)
         return;
-    if (vram.addr.coarse_x() == 31) {
-        vram.addr.set_coarse_x(0);
-        vram.addr.switch_nt_horz();
+    if (vram.addr.coarse_x == 31) {
+        vram.addr.coarse_x = 0;
+        vram.addr.nt ^= 1;
     } else
-        vram.addr += 1;
+        ++vram.addr.coarse_x;
 }
 
 void PPU::inc_v_vertpos()
 {
     if (!io.bg_show)
         return;
-    if (vram.addr.fine_y() < 7)
-        vram.addr.set_fine_y(vram.addr.fine_y() + 1);
+    if (vram.addr.fine_y < 7)
+        ++vram.addr.fine_y;
     else {
-        vram.addr.set_fine_y(0);
-        auto y = vram.addr.coarse_y();
+        vram.addr.fine_y = 0;
+        uint16 y = vram.addr.coarse_y;
         if (y == 29) {
             y = 0;
-            vram.addr.switch_nt_vert();
+            vram.addr.nt ^= 2;
         } else if (y == 31)
             y = 0;
         else
             y += 1;
-        vram.addr.set_coarse_y(y);
+        vram.addr.coarse_y = y;
     }
 }
 
@@ -316,17 +318,17 @@ void PPU::copy_v_horzpos()
 {
     if (!io.bg_show)
         return;
-    vram.addr.set_coarse_x(vram.tmp.coarse_x());
-    vram.addr = Util::set_bit(vram.addr, 10, vram.tmp.nt() & 1);
+    vram.addr.coarse_x = vram.tmp.coarse_x;
+    vram.addr.nt = Util::set_bit(vram.addr.nt, 0, vram.tmp.nt & 1);
 }
 
 void PPU::copy_v_vertpos()
 {
     if (!io.bg_show)
         return;
-    vram.addr.set_coarse_y(vram.tmp.coarse_y());
-    vram.addr = Util::set_bit(vram.addr, 11, (vram.tmp.nt() & 2) >> 1);
-    vram.addr.set_fine_y(vram.tmp.fine_y());
+    vram.addr.coarse_y = vram.tmp.coarse_y;
+    vram.addr.fine_y = vram.tmp.fine_y;
+    vram.addr.nt = Util::set_bit(vram.addr.nt, 1, vram.tmp.nt >> 1 & 1);
 }
 
 void PPU::fetch_nt(bool dofetch)
@@ -349,9 +351,9 @@ void PPU::fetch_attr(bool dofetch)
     if (!dofetch)
         return;
     tile.attr = bus->read(0x23C0
-                       |  uint16(vram.addr.nt()) << 10
-                       | (uint16(vram.addr.coarse_y()) & 0x1C << 1)
-                       | (uint16(vram.addr.coarse_x()) & 0x1C >> 2));
+                       |  uint16(vram.addr.nt) << 10
+                       | (uint16(vram.addr.coarse_y) & 0x1C) << 1
+                       | (uint16(vram.addr.coarse_x) & 0x1C) >> 2);
 }
 
 /* 0HRRRRCCCCPTTT
@@ -367,7 +369,7 @@ void PPU::fetch_lowbg(bool dofetch)
         return;
     uint16 lowbg_addr = (io.bg_pt_addr << 12)
                       | (tile.nt       << 4)
-                      | (vram.addr.fine_y());
+                      | vram.addr.fine_y;
     tile.low = bus->read(lowbg_addr);
 }
 
@@ -376,9 +378,9 @@ void PPU::fetch_highbg(bool dofetch)
     if (!dofetch)
         return;
     uint16 highbg_addr = (io.bg_pt_addr << 12)
-                      | (tile.nt       << 4)
-                      | (1UL           << 3) // or otherwise... add 8
-                      | (vram.addr.fine_y());
+                       | (tile.nt       << 4)
+                       | (1UL           << 3) // or otherwise... add 8
+                       | vram.addr.fine_y;
     tile.high = bus->read(highbg_addr);
 }
 

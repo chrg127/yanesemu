@@ -70,13 +70,13 @@ int main()
     cpu_bus.write(0x2007, 0x09);
     cpu_bus.write(0x2007, 0x09);
     cpu_bus.write(0x2007, 0x0A);
-    fmt::print("{}\n", ppu.get_info());
+    // fmt::print("{}\n", ppu.get_info());
 
     cpu_bus.read(0x2002);
     cpu_bus.write(0x2006, 0x01);
     cpu_bus.write(0x2006, 0xEC);
     cpu_bus.write(0x2001, 0b00001010);
-
+/*
     dump(f, ppu_bus);
     ppu.inc_v_vertpos();
     for (int i = 0; i < 8; i++) {
@@ -93,11 +93,18 @@ int main()
             ppu.shift_run();
             uint8 color = ppu.bg_output();
             fmt::print("{}", color == 0xF ? '.' : '*');
-            fmt::print("color: {:X}\n", color);
+            // fmt::print("color: {:X}\n", color);
         }
         fmt::print("\n");
         ppu.inc_v_vertpos();
     }
-
+*/
+    cpu_bus.write(0x2006, 0x20);
+    cpu_bus.write(0x2006, 0x1F);
+    fmt::print("{}\n", ppu.get_info());
+    ppu.inc_v_vertpos();
+    fmt::print("{}\n", ppu.get_info());
+    ppu.copy_v_horzpos();
+    fmt::print("{}\n", ppu.get_info());
 }
 

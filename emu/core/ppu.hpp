@@ -1,7 +1,6 @@
 #ifndef CORE_PPU_HPP_INCLUDED
 #define CORE_PPU_HPP_INCLUDED
 
-#include <array>
 #include <functional>
 #include <string>
 #include <emu/core/types.hpp>
@@ -16,7 +15,7 @@ namespace Core {
 class CPU;
 class Cartridge;
 
-class PPU {
+struct PPU {
     Bus *bus;
     Bus *cpubus;
     Video::Canvas *screen;
@@ -27,25 +26,18 @@ class PPU {
     unsigned long lines  = 0;
     std::function<void(void)> nmi_callback;
 
-public:
-    struct VRAMAddress {
-        uint15 value = 0;
+    union VRAMAddress {
+        uint16 value = 0;
+        Util::BitField<uint16, 12, 3> fine_y;
+        Util::BitField<uint16, 10, 2> nt;
+        Util::BitField<uint16, 5,  5> coarse_y;
+        Util::BitField<uint16, 0,  5> coarse_x;
 
         VRAMAddress() = default;
-        VRAMAddress(uint64 x) : value(x) { }
-        inline operator uint16() const     { return value; }
-        VRAMAddress & operator+=(uint16 n) { value += n; return *this; }
-
-        uint5 coarse_x() const          { return  value &  0x1F; }
-        uint5 coarse_y() const          { return (value & (0x1F <<  5)) >>  5; }
-        uint2 nt() const                { return (value & (0x03 << 10)) >> 10; }
-        uint16 fine_y() const            { return (value & (0x07 << 12)) >> 12; }
-        void set_coarse_x(uint5 data)   { value = Util::set_bits(value,  0, 0x1F, data); }
-        void set_coarse_y(uint5 data)   { value = Util::set_bits(value,  5, 0x1F, data); }
-        void set_nt(uint2 data)         { value = Util::set_bits(value, 10, 0x03, data); }
-        void set_fine_y(uint3 data)     { value = Util::set_bits(value, 12, 0x07, data); }
-        void switch_nt_horz()           { value ^= 0x400; }
-        void switch_nt_vert()           { value ^= 0x800; }
+        VRAMAddress(uint16 data) : value(data) { }
+        VRAMAddress & operator=(const VRAMAddress &addr) { value = addr.value; return *this; }
+        inline operator uint16() const                   { return value; }
+        VRAMAddress & operator+=(uint16 n)               { value += n; return *this; }
     };
 
     struct {

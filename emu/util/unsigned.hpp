@@ -32,23 +32,23 @@ public:
     UInt() = default;
     template <typename T> UInt(const T val) { operator=(val); }
 
-    static constexpr inttype MAX = (~0ull & (~0ull >> (64 - Bits)));
+    static constexpr inttype MAX = (~0ull >> (64 - Bits));
 
     // permits conversions and casts from UInt<Bits> to inttype
     inline operator inttype() const { return num; }
     inline inttype value() const    { return num; }
 
-    template <typename T> inline UInt operator= (const T val) { num =  cast(val); return *this; }
-    template <typename T> inline UInt operator+=(const T val) { num += cast(val); return *this; }
-    template <typename T> inline UInt operator-=(const T val) { num -= cast(val); return *this; }
-    template <typename T> inline UInt operator*=(const T val) { num *= cast(val); return *this; }
-    template <typename T> inline UInt operator/=(const T val) { num /= cast(val); return *this; }
-    template <typename T> inline UInt operator&=(const T val) { num &= cast(val); return *this; }
-    template <typename T> inline UInt operator|=(const T val) { num |= cast(val); return *this; }
-    template <typename T> inline UInt operator%=(const T val) { num %= cast(val); return *this; }
-    template <typename T> inline UInt operator^=(const T val) { num ^= cast(val); return *this; }
-    template <typename T> inline UInt operator>>=(const T val) { num >>= cast(val); return *this; }
-    template <typename T> inline UInt operator<<=(const T val) { num <<= cast(val); return *this; }
+    template <typename T> UInt operator= (const T val) { num =  cast(val); return *this; }
+    template <typename T> UInt operator+=(const T val) { num += cast(val); return *this; }
+    template <typename T> UInt operator-=(const T val) { num -= cast(val); return *this; }
+    template <typename T> UInt operator*=(const T val) { num *= cast(val); return *this; }
+    template <typename T> UInt operator/=(const T val) { num /= cast(val); return *this; }
+    template <typename T> UInt operator&=(const T val) { num &= cast(val); return *this; }
+    template <typename T> UInt operator|=(const T val) { num |= cast(val); return *this; }
+    template <typename T> UInt operator%=(const T val) { num %= cast(val); return *this; }
+    template <typename T> UInt operator^=(const T val) { num ^= cast(val); return *this; }
+    template <typename T> UInt operator>>=(const T val) { num >>= cast(val); return *this; }
+    template <typename T> UInt operator<<=(const T val) { num <<= cast(val); return *this; }
 
     inline UInt operator++(int) { auto ret = *this; num = cast(num + 1); return ret;   }
     inline UInt operator++()    {                   num = cast(num + 1); return *this; }
