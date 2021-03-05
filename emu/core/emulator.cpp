@@ -60,6 +60,7 @@ void Emulator::insert_rom(const std::string_view rompath)
 {
     Util::File romfile(rompath, Util::File::Mode::READ);
     cartridge.parse(romfile);
+    ppu.set_mirroring(cartridge.mirroring());
     cartridge.attach_bus(&cpu_bus, &ppu_bus);
 }
 

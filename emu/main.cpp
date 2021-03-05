@@ -17,6 +17,39 @@ static const Util::ValidArgStruct cmdflags = {
 };
 static Emulator emu;
 static Util::File logfile, dumpfile;
+static Video::Context context;
+
+void mainloop()
+{
+    Video::Canvas screen { context, Core::SCREEN_WIDTH, Core::SCREEN_HEIGHT };
+    bool running = true;
+    SDL_Event ev;
+
+    Util::seed();
+    emu.power();
+    emu.set_screen(&screen);
+    if (logfile.isopen()) {
+        logfile.putstr(emu.rominfo());
+        logfile.putc('\n');
+    }
+    while (running) {
+        while (SDL_PollEvent(&ev)) {
+            switch (ev.type) {
+            case SDL_QUIT:
+                running = false;
+                break;
+            case SDL_WINDOWEVENT:
+                if (ev.window.event == SDL_WINDOWEVENT_RESIZED)
+                    context.resize(ev.window.data1, ev.window.data2);
+            }
+        }
+        emu.log(logfile);
+        emu.run_frame(logfile);
+        screen.update();
+        context.draw();
+    }
+    emu.dump(dumpfile);
+}
 
 int main(int argc, char *argv[])
 {
@@ -44,15 +77,13 @@ int main(int argc, char *argv[])
     }
 
     // initialize video subsystem
-    Video::Context context;
     if (!context.init(Video::Context::Type::OPENGL)) {
         error("can't initialize video\n");
         return 1;
     }
-    Video::Canvas screen { context, 256, 240 };
 
     // open log files -- these will be used to log emulator info and dump memory
-    auto logopen = [&flags](Util::File &f, char flag) {
+    auto open_logfile = [&flags](Util::File &f, char flag) {
         if (!flags.found[flag] || flags.params[flag] == "")
             return;
         std::string_view s = flags.params[flag];
@@ -61,36 +92,11 @@ int main(int argc, char *argv[])
         else if (!f.open(s, Util::File::Mode::WRITE))
             error("can't open {} for writing\n", s.data());
     };
-    logopen(logfile, 'l');
-    logopen(dumpfile, 'd');
-    if (logfile.isopen()) {
-        logfile.putstr(emu.rominfo());
-        logfile.putc('\n');
-    }
+    open_logfile(logfile, 'l');
+    open_logfile(dumpfile, 'd');
 
-    Util::seed();
-    emu.power();
-    emu.set_screen(&screen);
+    mainloop();
 
-    bool running = true;
-    SDL_Event ev;
-    while (running) {
-        while (SDL_PollEvent(&ev)) {
-            switch (ev.type) {
-            case SDL_QUIT:
-                running = false;
-                break;
-            case SDL_WINDOWEVENT:
-                if (ev.window.event == SDL_WINDOWEVENT_RESIZED)
-                    context.resize(ev.window.data1, ev.window.data2);
-            }
-        }
-        emu.log(logfile);
-        emu.run_frame(logfile);
-        screen.update();
-        context.draw();
-    }
-    emu.dump(dumpfile);
     return 0;
 }
 

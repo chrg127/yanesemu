@@ -10,7 +10,7 @@ void Cartridge::parse(Util::File &romfile) //std::string_view rompath)
 {
     if (!romfile)
         throw std::runtime_error("rom file should be already open");
-    name = romfile.getfilename();
+    name = romfile.filename();
 
     romfile.readb(header, HEADER_LEN);
     auto parse_common = [this]() {

@@ -106,7 +106,7 @@ std::string PPU::get_info()
     return fmt::format("line = {:03}; cycle = {:03}; v = {:X}", lines%262, cycles%341, vram.addr.value);
 }
 
-void PPU::attach_bus(Bus *pb, Bus *cb, Mirroring mirroring)
+void PPU::attach_bus(Bus *pb, Bus *cb)
 {
     bus = pb;
     cpubus = cb;
@@ -116,7 +116,9 @@ void PPU::attach_bus(Bus *pb, Bus *cb, Mirroring mirroring)
     bus->map(PAL_START, 0x4000,
             [=](uint16 addr)             { return palmem[addr & 0x1F]; },
             [=](uint16 addr, uint8 data) { palmem[addr & 0x1F] = data; });
-    map_nt(mirroring);
+    bus->map(NT_START, PAL_START,
+            [=](uint16 addr)             { return 0; },
+            [=](uint16 addr, uint8 data) { /*******/ });
 }
 
 uint8 PPU::readreg(const uint16 which)
@@ -269,7 +271,7 @@ uint8 PPU::getcolor(bool select, uint8 pal, uint8 palind)
     return bus->read(0x3F00 + n);
 }
 
-void PPU::map_nt(Mirroring mirroring)
+void PPU::set_mirroring(Mirroring mirroring)
 {
     unsigned mask = 0;
     switch (mirroring) {
@@ -277,7 +279,7 @@ void PPU::map_nt(Mirroring mirroring)
     case Mirroring::HORZ: mask = 0xBFF; break;
     default: assert(false);
     }
-    bus->map(NT_START, PAL_START,
+    bus->remap(NT_START, PAL_START,
             [=](uint16 addr)             { return vrammem[(addr & mask)]; },
             [=](uint16 addr, uint8 data) { vrammem[(addr & mask)] = data; });
 }

@@ -13,7 +13,7 @@ namespace Core {
 
 class Bus;
 
-struct PPU {
+class PPU {
     Bus *bus;
     Bus *cpubus;
     Video::Canvas *screen;
@@ -110,9 +110,9 @@ public:
     // ppumain.cpp
     void run();
     std::string get_info();
-    void attach_bus(Bus *pb, Bus *cb, Mirroring mirroring);
+    void attach_bus(Bus *pb, Bus *cb);
+    void set_mirroring(Mirroring m);
 
-    void set_mirroring(Mirroring m)        { map_nt(m); }
     void set_screen(Video::Canvas *canvas) { screen = canvas; }
     void set_nmi_callback(auto &&callback) { nmi_callback = callback; }
 
@@ -122,7 +122,7 @@ public:
     template <unsigned Cycle> void background_cycle();
     void cycle_idle();
 
-public:
+private:
     uint8 readreg(const uint16 which);
     void writereg(const uint16 which, const uint8 data);
 

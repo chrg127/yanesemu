@@ -17,19 +17,18 @@ enum {
     IRQ_BRK_VEC     = 0xFFFE,
     STACK_BASE      = 0x0100,
 
-    SCREEN_WIDTH  = 256,
-    SCREEN_HEIGHT = 240,
+    SCREEN_WIDTH    = 256,
+    SCREEN_HEIGHT   = 240,
 
-    LINE_MAX = 262,
-    CYCLE_MAX = 341,
+    LINE_MAX        = 262,
+    CYCLE_MAX       = 341,
 
-    VRAM_SIZE = 0x800,
-    PAL_SIZE = 0x20,
-    PT_START  = 0,
-    NT_START  = 0x2000,
-    PAL_START = 0x3F00,
-
-    OAM_SIZE = 0x0100,
+    VRAM_SIZE       = 0x800,
+    PAL_SIZE        = 0x20,
+    OAM_SIZE        = 0x0100,
+    PT_START        = 0,
+    NT_START        = 0x2000,
+    PAL_START       = 0x3F00,
 };
 
 enum class Mirroring {
