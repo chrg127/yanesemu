@@ -8,25 +8,11 @@
 
 namespace Core {
 
-union Reg16 {
-    struct {
-        uint8 low, high;
-    };
-    uint16 reg;
-
-    Reg16() : reg(0)  { }
-    Reg16(uint16 val) { operator=(val); }
-
-    Reg16 & operator=(const uint16 val) { reg = val; return *this; }
-
-    template <typename T> Reg16 & operator&=(const T val) { reg &= val; return *this; }
-    template <typename T> Reg16 & operator|=(const T val) { reg |= val; return *this; }
-};
-
 /* a ROM represents readable memory. It has two states: at the start, it is
  * both readable and writable. After a function is done with writing, call
  * lock() to lock the ROM and make it read-only. A ROM can be reset(), but
  * doing so will erase the contents. */
+/*
 class ROM {
     uint8 *mem = nullptr;
     uint32 size = 0;
@@ -103,26 +89,7 @@ public:
         std::memcpy(buf, mem+start, len);
     }
 };
-
-struct uint24 {
-    uint8 high, mid, low;
-
-    uint24() : high(0), mid(0), low(0)
-    { }
-    uint24(const uint32 val)
-    { operator=(val); }
-
-    inline uint32 value()
-    { return high << 16 | mid << 8 | low; }
-
-    inline void operator=(const uint32 val)
-    {
-        high = val & 0x00FF0000;
-        mid  = val & 0x0000FF00;
-        low  = val & 0x000000FF;
-    }
-};
-
+*/
 } // namespace Core
 
 #endif

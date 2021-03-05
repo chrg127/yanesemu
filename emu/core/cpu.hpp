@@ -9,6 +9,21 @@
 
 namespace Core {
 
+union Reg16 {
+    struct {
+        uint8 low, high;
+    };
+    uint16 reg;
+
+    Reg16() : reg(0)  { }
+    Reg16(uint16 val) { operator=(val); }
+
+    Reg16 & operator=(const uint16 val) { reg = val; return *this; }
+
+    template <typename T> Reg16 & operator&=(const T val) { reg &= val; return *this; }
+    template <typename T> Reg16 & operator|=(const T val) { reg |= val; return *this; }
+};
+
 class CPU {
     using InstrFuncRead = void (CPU::*)(const uint8);
     using InstrFuncMod = uint8 (CPU::*)(uint8);

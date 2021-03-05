@@ -14,7 +14,7 @@ class Emulator {
     Core::CPU cpu;
     Core::PPU ppu;
     int cycle = 0;
-    int err = 0;
+    // int err = 0;
     // this is internal to the emulator only and doesn't affect the cpu and ppu
     bool nmi = false;
 
@@ -22,7 +22,7 @@ public:
     Emulator()
     {
         cpu.attach_bus(&cpu_bus);
-        ppu.attach_bus(&ppu_bus, &cpu_bus, Core::PPU::Mirroring::VERT);
+        ppu.attach_bus(&ppu_bus, &cpu_bus, Core::Mirroring::VERT);
         ppu.set_nmi_callback([this]() {
             nmi = true;
             cpu.fire_nmi();
@@ -33,12 +33,7 @@ public:
     void run_frame(Util::File &logfile);
     void log(Util::File &logfile);
     void dump(Util::File &dumpfile);
-
-    void insert_rom(const std::string_view rompath)
-    {
-        cartridge.open(rompath);
-        cartridge.attach_bus(&cpu_bus, &ppu_bus);
-    }
+    void insert_rom(const std::string_view rompath);
 
     void power()
     {

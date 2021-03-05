@@ -32,6 +32,12 @@ enum {
     OAM_SIZE = 0x0100,
 };
 
+enum class Mirroring {
+    VERT,
+    HORZ,
+    OTHER,
+};
+
 } // namespace Core
 
 #endif

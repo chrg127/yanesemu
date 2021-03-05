@@ -3,16 +3,16 @@
 
 #include <string_view>
 #include <emu/core/types.hpp>
+#include <emu/core/memmap.hpp>
 #include <emu/core/bus.hpp>
-#include <emu/util/file.hpp>
+#include <emu/util/unsigned.hpp>
+#include <emu/util/heaparray.hpp>
+
+namespace Util { class File; }
 
 namespace Core {
 
-enum {
-    NT_HORZ = 0,
-    NT_VERT,
-};
-
+/*
 enum Region : int {
     REGION_NTSC = 0,
     REGION_PAL,
@@ -64,31 +64,39 @@ enum VsHardware : int {
     VSHW_DUALSYS_NORMAL,
     VSHW_DUALSYS_RAID,
 };
+*/
 
 class Cartridge {
-    Util::File romfile;
+    static const int HEADER_LEN = 16;
+    static const int TRAINER_LEN = 512;
+
     enum class Format {
         INVALID,
         INES,
         NES20,
     } file_format = Format::INVALID;
 
-    Bus *cpubus;
-    Bus *ppubus;
-    ROM prgrom;
-    ROM chrrom;
-    static const int HEADER_LEN = 16;
-    static const int TRAINER_LEN = 512;
+    std::string name;
+    Util::HeapArray<uint8> prgrom;
+    Util::HeapArray<uint8> chrrom;
     uint8 header[HEADER_LEN];
     uint8 trainer[TRAINER_LEN];
-    uint16 mapper   = 0;
+    uint16 mapper = 0;
     uint8 submapper = 0;
+    uint32 prgram_size = 0;
+    uint32 chrram_size = 0;
+    Mirroring nt_mirroring = Mirroring::VERT;
 
-    uint32 prgram_size   = 0;
-    uint32 chrram_size   = 0;
+    struct {
+        bool prgram  = false;
+        bool chrram  = false;
+        bool battery = false;
+        bool trainer = false;
+    } has;
+
+    /*
     uint32 eeprom_size   = 0;
     uint32 chrnvram_size = 0;
-    int nt_mirroring     = NT_HORZ;
     int region           = REGION_NTSC;
     int console_type     = CONSOLE_TYPE_NES;
     int cpu_ppu_timing   = CPUTIMING_RP2C02;
@@ -96,29 +104,21 @@ class Cartridge {
     int vs_hw_type       = VSHW_UNISYS_NORMAL;
     uint8 misc_roms_num       = 0;
     uint8 def_expansion_dev   = 0;
-
-    struct {
-        bool prgram         = false;
-        bool chrram         = false;
-        bool battery        = false;
-        bool trainer        = false;
-        bool fourscreenmode = false;
-        bool bus_conflicts  = false;
-    } has;
-
-    int errid = 0;
+    */
+    //bool fourscreenmode = false;
+    //bool bus_conflicts  = false;
 
 public:
-    void open(std::string_view rompath);
+    void parse(Util::File &romfile);
     uint8 read_prgrom(uint16 addr);
     uint8 read_chrrom(uint16 addr);
+    void attach_bus(Bus *cpubus, Bus *ppubus);
     std::string getinfo() const;
-    void attach_bus(Bus *cpu, Bus *ppu);
 
     uint16 mappertype() const   { return mapper; }
-    bool   hasprgram() const    { return has.prgram; }
-    bool   haschrram() const    { return has.chrram; }
-    int    mirroring() const    { return nt_mirroring; }
+    bool hasprgram() const      { return has.prgram; }
+    bool haschrram() const      { return has.chrram; }
+    Mirroring mirroring() const { return nt_mirroring; }
 };
 
 } // namespace Core

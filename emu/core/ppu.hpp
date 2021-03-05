@@ -106,7 +106,6 @@ struct PPU {
     } oam;
 
 public:
-    enum class Mirroring { VERT, HORZ, OTHER };
 
     void power();
     void reset();

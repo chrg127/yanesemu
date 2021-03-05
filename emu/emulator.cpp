@@ -56,3 +56,10 @@ void Emulator::run_frame(Util::File &logfile)
     nmi = false;
 }
 
+void Emulator::insert_rom(const std::string_view rompath)
+{
+    Util::File romfile(rompath, Util::File::Mode::READ);
+    cartridge.parse(romfile);
+    cartridge.attach_bus(&cpu_bus, &ppu_bus);
+}
+

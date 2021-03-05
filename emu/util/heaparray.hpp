@@ -65,6 +65,7 @@ public:
         len = newlen;
         arrptr = new T[len];
     }
+    inline T *data() const { return arrptr; }
 
     // basic iterator support
     using value_type      = T;
