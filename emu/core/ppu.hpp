@@ -3,9 +3,9 @@
 
 #include <functional>
 #include <string>
-#include <emu/core/types.hpp>
-#include <emu/core/memmap.hpp>
+#include <emu/core/const.hpp>
 #include <emu/core/bus.hpp>
+#include <emu/util/unsigned.hpp>
 #include <emu/util/bits.hpp>
 
 namespace Video { class Canvas; }

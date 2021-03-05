@@ -2,8 +2,8 @@
 #define BUS_HPP_INCLUDED
 
 #include <functional>
+#include <emu/util/unsigned.hpp>
 #include <emu/util/heaparray.hpp>
-#include "types.hpp"
 
 namespace Core {
 

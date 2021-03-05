@@ -1,7 +1,6 @@
 #include <emu/core/cartridge.hpp>
 
 #include <fmt/core.h>
-#include <emu/core/memmap.hpp>
 #include <emu/util/file.hpp>
 
 namespace Core {

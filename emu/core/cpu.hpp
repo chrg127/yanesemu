@@ -1,11 +1,10 @@
 #ifndef CORE_CPU_HPP_INCLUDED
 #define CORE_CPU_HPP_INCLUDED
 
-#include <array>
 #include <string>
-#include <emu/core/types.hpp>
-#include <emu/core/memmap.hpp>
+#include <emu/core/const.hpp>
 #include <emu/core/bus.hpp>
+#include <emu/util/unsigned.hpp>
 
 namespace Core {
 
