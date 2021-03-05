@@ -4,7 +4,6 @@
 #include <functional>
 #include <string>
 #include <emu/core/const.hpp>
-#include <emu/core/bus.hpp>
 #include <emu/util/unsigned.hpp>
 #include <emu/util/bits.hpp>
 
@@ -12,8 +11,7 @@ namespace Video { class Canvas; }
 
 namespace Core {
 
-class CPU;
-class Cartridge;
+class Bus;
 
 struct PPU {
     Bus *bus;

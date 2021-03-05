@@ -4,8 +4,7 @@
 #include <cassert>
 #include <functional>
 #include <fmt/core.h>
-#include <emu/core/cpu.hpp>
-#include <emu/core/cartridge.hpp>
+#include <emu/core/bus.hpp>
 #include <emu/util/file.hpp>
 #include <emu/util/easyrandom.hpp>
 #include <emu/util/debug.hpp>

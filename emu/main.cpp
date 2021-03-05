@@ -1,6 +1,6 @@
 #include <fmt/core.h>
 #include <SDL2/SDL.h>
-#include <emu/emulator.hpp>
+#include <emu/core/emulator.hpp>
 #include <emu/util/cmdline.hpp>
 #include <emu/util/file.hpp>
 #include <emu/util/easyrandom.hpp>

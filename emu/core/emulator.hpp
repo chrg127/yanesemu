@@ -1,6 +1,7 @@
-#ifndef EMULATOR_HPP_INCLUDED
-#define EMULATOR_HPP_INCLUDED
+#ifndef CORE_EMULATOR_HPP_INCLUDED
+#define CORE_EMULATOR_HPP_INCLUDED
 
+#include <emu/core/bus.hpp>
 #include <emu/core/cpu.hpp>
 #include <emu/core/ppu.hpp>
 #include <emu/core/cartridge.hpp>
