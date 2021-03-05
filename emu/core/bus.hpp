@@ -19,7 +19,7 @@ class Bus {
 
 public:
     Bus() = default;
-    Bus(const uint32 size) { reset(size); }
+    explicit Bus(const uint32 size) { reset(size); }
 
     Bus(const Bus &) = delete;
     Bus(Bus &&b) { operator=(std::move(b)); }

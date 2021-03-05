@@ -15,7 +15,7 @@ static const Util::ValidArgStruct cmdflags = {
     { 'h', "help",         "Print this help text and quit"            },
     { 'v', "version",      "Shows the program's version"              },
 };
-static Emulator emu;
+static Core::Emulator emu;
 static Util::File logfile, dumpfile;
 static Video::Context context;
 

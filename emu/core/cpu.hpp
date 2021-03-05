@@ -29,6 +29,9 @@ class CPU {
 
     uint8 rammem[RAM_SIZE];
     Bus *bus = nullptr;
+    unsigned long cycles = 0;
+
+    // used in opcodes.cpp
     Reg16 op = 0;
 
     // registers
@@ -73,7 +76,6 @@ class CPU {
     } procstatus;
 
     // interrupt signals
-    int cycles      = 0;
     bool nmipending = false;
     bool irqpending = false;
     bool resetpending = false;

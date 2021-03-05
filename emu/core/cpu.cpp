@@ -1,12 +1,6 @@
 #include <emu/core/cpu.hpp>
 
-#include <cstdio>
-#include <cctype>
-#include <cstring>
 #include <fmt/core.h>
-#include <emu/core/cartridge.hpp>
-#include <emu/core/ppu.hpp>
-#include <emu/util/stringops.hpp>
 #include <emu/util/easyrandom.hpp>
 #include <emu/util/debug.hpp>
 
@@ -17,13 +11,92 @@ namespace Core {
 #include <emu/core/disassemble.cpp>
 #undef INSIDE_CPU_CPP
 
-/* Fetch next opcode from memory */
+void CPU::run()
+{
+    if (execnmi) {
+        cycle();
+        interrupt();
+        execnmi = false;
+        return;
+    }
+    if (execirq) {
+        cycle();
+        interrupt();
+        execirq = false;
+        return;
+    }
+    execute(fetch());
+}
+
+void CPU::power()
+{
+    accum = xreg = yreg = 0;
+    for (uint16 i = 0; i < 0x800; i++)
+        bus->write(i, 0); //Util::random8());
+    procstatus.reset();
+    // these are probably APU regs. i'll add them later. for now this is enough.
+    bus->write(0x4017, 0);
+    bus->write(0x4015, 0);
+    for (uint16 i = 0x4000; i < 0x4013; i++)
+        bus->write(i, 0);
+    sp = 0;
+    // an interrupt is performed during 6502 start up. this is why SP = $FD.
+    resetpending = true;
+    interrupt();
+}
+
+void CPU::reset()
+{
+    bus->write(0x4015, 0);
+    resetpending = true;
+    interrupt();
+}
+
+void CPU::attach_bus(Bus *b)
+{
+    bus = b;
+    bus->map(RAM_START, PPUREG_START,
+        [=](uint16 addr)             { return rammem[addr & 0x7FF]; },
+        [=](uint16 addr, uint8 data) { rammem[addr & 0x7FF] = data; });
+    bus->map(APU_START, CARTRIDGE_START,
+        [=](uint16 addr)             { return read_apu_reg(addr); },
+        [=](uint16 addr, uint8 data) { write_apu_reg(addr, data); });
+}
+
+/* Sends an IRQ signal. */
+void CPU::fire_irq()
+{
+    irqpending = true;
+}
+
+/* Sends an NMI signal */
+void CPU::fire_nmi()
+{
+    nmipending = true;
+}
+
+/* Prints info about the instruction which has just been executed and the status of the registers. */
+std::string CPU::get_info() const
+{
+    return fmt::format("PC: {:02X} A: {:02X} X: {:02X} Y: {:02X} S: {:02X} {}{}{}{}{}{}{}{} cycles: {}",
+        pc.reg, accum, xreg, yreg, sp,
+        (procstatus.neg     == 1) ? 'N' : 'n',
+        (procstatus.ov      == 1) ? 'V' : 'v',
+        (procstatus.unused  == 1) ? 'U' : 'u',
+        (procstatus.breakf  == 1) ? 'B' : 'b',
+        (procstatus.decimal == 1) ? 'D' : 'd',
+        (procstatus.intdis  == 1) ? 'I' : 'i',
+        (procstatus.zero    == 1) ? 'Z' : 'z',
+        (procstatus.carry   == 1) ? 'C' : 'c',
+        cycles
+    );
+}
+
 uint8 CPU::fetch()
 {
     return readmem(pc.reg++);
 }
 
-/* Executes a single instruction. */
 void CPU::execute(uint8 opcode)
 {
 #define INSTR_IMPLD(id, func) \
@@ -197,11 +270,8 @@ void CPU::execute(uint8 opcode)
 #undef INSTR_OTHER
 }
 
-// emulates the interrupt behavior common to all four interrupt signals (reset, irq, nmi and brk)
 void CPU::interrupt()
 {
-    uint16 vec;
-
     // one cycle for reading next instruction byte and throw away
     cycle();
     push(pc.high);
@@ -213,6 +283,7 @@ void CPU::interrupt()
     // interrupt hijacking
     // reset is put at the top so that it will always run. i'm not sure if
     // this is the actual behavior - nesdev says nothing about it.
+    uint16 vec;
     if (resetpending) {
         resetpending = false;
         vec = RESET_VEC;
@@ -228,35 +299,30 @@ void CPU::interrupt()
     pc.high = readmem(vec+1);
 }
 
-/* Pushes a value to the hardware stack */
 void CPU::push(uint8 val)
 {
-    writemem(STACK_BASE+sp, val);
+    writemem(sp + STACK_BASE, val);
     sp--;
 }
 
-/* Pulls and returns a value from the hardware stack */
 uint8 CPU::pull()
 {
     ++sp;
-    return readmem(STACK_BASE+sp);
+    return readmem(sp + STACK_BASE);
 }
 
-/* Adds n cycles to the cycle counter */
 void CPU::cycle()
 {
     cycles++;
 }
 
-/* Executes last cyle polling, doesn't increment cycles */
+// NOTE: doesn't increment cycles!
 void CPU::last_cycle()
 {
     nmipoll();
     irqpoll();
 }
 
-/* Poll for the IRQ and NMI respectively. A poll is made on the penultimate
- * cycle of an instruction. */
 void CPU::irqpoll()
 {
     if (!execirq && !procstatus.intdis && irqpending)
@@ -267,93 +333,6 @@ void CPU::nmipoll()
 {
     if (!execnmi && nmipending)
         execnmi = true;
-}
-
-
-
-/* Executes one whole fetch-decode-execute cycle, giving priority
- * to interrupt signals first. */
-void CPU::run()
-{
-    if (execnmi) {
-        cycle();
-        interrupt();
-        execnmi = false;
-        return;
-    }
-    if (execirq) {
-        cycle();
-        interrupt();
-        execirq = false;
-        return;
-    }
-    execute(fetch());
-}
-
-void CPU::power()
-{
-    accum = xreg = yreg = 0;
-    for (uint16 i = 0; i < 0x0800; i++)
-        bus->write(i, 0);
-        //bus->write(i, Util::random8());
-    procstatus.reset();
-    // these are probably APU regs. i'll add them later. for now this is enough.
-    bus->write(0x4017, 0);
-    bus->write(0x4015, 0);
-    for (uint16 i = 0x4000; i < 0x4013; i++)
-        bus->write(i, 0);
-    sp = 0;
-    // an interrupt is performed during 6502 start up. this is why SP = $FD.
-    resetpending = true;
-    interrupt();
-}
-
-void CPU::reset()
-{
-    procstatus.intdis = 1;
-    sp = 0;
-    resetpending = true;
-    interrupt();
-}
-
-void CPU::attach_bus(Bus *b)
-{
-    bus = b;
-    bus->map(RAM_START, PPUREG_START,
-        [=](uint16 addr)             { return rammem[addr & 0x7FF]; },
-        [=](uint16 addr, uint8 data) { rammem[addr & 0x7FF] = data; });
-    bus->map(APU_START, CARTRIDGE_START,
-        [=](uint16 addr)             { return read_apu_reg(addr); },
-        [=](uint16 addr, uint8 data) { write_apu_reg(addr, data); });
-}
-
-/* Sends an IRQ signal. */
-void CPU::fire_irq()
-{
-    irqpending = true;
-}
-
-/* Sends an NMI signal */
-void CPU::fire_nmi()
-{
-    nmipending = true;
-}
-
-/* Prints info about the instruction which has just been executed and the status of the registers. */
-std::string CPU::get_info() const
-{
-    return fmt::format("PC: {:02X} A: {:02X} X: {:02X} Y: {:02X} S: {:02X} {}{}{}{}{}{}{}{} cycles: {}",
-        pc.reg, accum, xreg, yreg, sp,
-        (procstatus.neg     == 1) ? 'N' : 'n',
-        (procstatus.ov      == 1) ? 'V' : 'v',
-        (procstatus.unused  == 1) ? 'U' : 'u',
-        (procstatus.breakf  == 1) ? 'B' : 'b',
-        (procstatus.decimal == 1) ? 'D' : 'd',
-        (procstatus.intdis  == 1) ? 'I' : 'i',
-        (procstatus.zero    == 1) ? 'Z' : 'z',
-        (procstatus.carry   == 1) ? 'C' : 'c',
-        cycles
-    );
 }
 
 } // namespace Core

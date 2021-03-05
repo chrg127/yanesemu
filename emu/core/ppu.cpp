@@ -69,36 +69,35 @@ void PPU::power()
 
 void PPU::reset()
 {
-    // // PPUCTRL
-    // bg.pt_addr = oam.pt_addr = ext_bus_dir = nmi_enabled = 0;
-    // vram.inc = 1; // if 0, inc = 1. if 1, inc = 32
-    // // PPUMASK
-    // bg.show_leftmost  = bg.show  = 0;
-    // oam.show_leftmost = oam.show = 0;
-    // effects.grey  = 0;
-    // effects.red   = 0;
-    // effects.green = 0;
-    // effects.red   = 0;
-    // // PPUSTATUS
-    // spr_ov = Util::random_between(0, 1);
-    // spr0hit = Util::random_between(0, 1);
-    // // vblank = unchanged;
-    // // OAMADDR
-    // // oam.addr = unchanged;
-    // // PPUSCROLL and PPUADDR
-    // vram.toggle = 0;
-    // // vram.v = 0;
-    // // vram.t = unchanged;
-    // vram.fine_x = 0;
-    // // PPUDATA
-    // vram.readbuf = 0;
-
-    // odd_frame = 0;
-    // lines = 0;
-    // cycles = 0;
-    // for (auto &cell : oammem)
-    //     cell = Util::random8();
-    // // palette, nt ram and chr-ram is unchanged
+    // PPUCTRL
+    io.vram_inc = 0;
+    io.sp_pt_addr = 0;
+    io.bg_pt_addr = 0;
+    io.sp_size = 0;
+    io.ext_bus_dir = 0;
+    io.nmi_enabled = 0;
+    // PPUMASK
+    io.grey = 0;
+    io.bg_show_left = 0;
+    io.sp_show_left = 0;
+    io.bg_show = 0;
+    io.sp_show = 0;
+    io.red = 0;
+    io.green = 0;
+    io.blue = 0;
+    // PPUSTATUS
+    io.sp_overflow = Util::random_between(0, 1);
+    io.sp_zero_hit = Util::random_between(0, 1);
+    // PPUSCROLL and PPUADDR
+    io.scroll_latch = 0;
+    vram.fine_x = 0;
+    // PPUDATA
+    io.data_buf = 0;
+    // other
+    odd_frame = 0;
+    lines = cycles = 0;
+    for (unsigned i = 0; i < OAM_SIZE; i++)
+        oammem[i] = 0;
 }
 
 std::string PPU::get_info()
