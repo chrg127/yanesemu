@@ -11,7 +11,7 @@ _objs := emulator.o \
 	   video.o opengl.o \
 	   glad.o
 
-libs := -lm -lSDL2 -lfmt -lpthread -ldl -lGL
+libs := -lmingw32 -lm -lSDL2 -lfmt
 
 CC = gcc
 CXX = g++
@@ -23,6 +23,8 @@ CXXFLAGS = -I. -std=c++17 -Wall -Wextra -pipe \
 
 programname := emu
 profile := debug
+
+# can be: linux, mingw64
 platform := linux
 
 ifeq ($(profile),debug)
@@ -33,6 +35,14 @@ else
     outdir := release
     CFLAGS += -O3
     CXXFLAGS += -O3
+endif
+
+ifeq ($(platform),linux)
+    libs += -lpthread -ldl -lGL
+else ifeq ($(platform),mingw64)
+    libs += -lopengl32 -lmingw32 -lSDL2main -lSDL2
+else
+    $(error error: platform not supported)
 endif
 
 all: $(outdir)/$(programname)

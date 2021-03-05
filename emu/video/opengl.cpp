@@ -2,9 +2,6 @@
 
 #include <exception>
 #include <fmt/core.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include <external/glad/glad.h>
 #include <emu/util/debug.hpp>
 #include <cstdlib>

@@ -19,10 +19,10 @@ bool File::open(std::string_view s, Mode m)
     close();
 
     switch (m) {
-    case Mode::READ:   fbuf = std::fopen(s.data(), "r");  break;
-    case Mode::WRITE:  fbuf = std::fopen(s.data(), "w");  break;
-    case Mode::MODIFY: fbuf = std::fopen(s.data(), "r+"); break;
-    case Mode::APPEND: fbuf = std::fopen(s.data(), "a");  break;
+    case Mode::READ:   fbuf = std::fopen(s.data(), "rb");  break;
+    case Mode::WRITE:  fbuf = std::fopen(s.data(), "wb");  break;
+    case Mode::MODIFY: fbuf = std::fopen(s.data(), "rb+"); break;
+    case Mode::APPEND: fbuf = std::fopen(s.data(), "ab");  break;
     }
     if (!fbuf)
         return false;
