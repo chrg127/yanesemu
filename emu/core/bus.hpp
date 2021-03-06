@@ -2,8 +2,8 @@
 #define BUS_HPP_INCLUDED
 
 #include <functional>
+#include <emu/util/unsigned.hpp>
 #include <emu/util/heaparray.hpp>
-#include "types.hpp"
 
 namespace Core {
 
@@ -13,24 +13,25 @@ class Bus {
     using Writer = std::function<void(uint16, uint8)>;
 
     Util::HeapArray<unsigned> lookup;
-    Reader rtab[TABSIZ];
-    Writer wtab[TABSIZ];
+    Reader reader_tab[TABSIZ];
+    Writer writer_tab[TABSIZ];
     bool assigned[TABSIZ];
 
 public:
     Bus() = default;
-    Bus(const uint32 size) { reset(size); }
+    explicit Bus(const uint32 size) { reset(size); }
 
-    Bus(const Bus &)             = delete;
-    Bus & operator=(const Bus &) = delete;
+    Bus(const Bus &) = delete;
     Bus(Bus &&b) { operator=(std::move(b)); }
+    Bus & operator=(const Bus &) = delete;
     Bus & operator=(Bus &&b);
 
     void map(uint16 start, uint32 end, Reader reader, Writer writer);
+    void remap(uint16 start, uint32 end, Reader reader, Writer writer);
     void reset(const std::size_t newsize);
 
-    uint8 read(const uint16 addr) const             { return rtab[lookup[addr]](addr); }
-    void write(const uint16 addr, const uint8 data) { wtab[lookup[addr]](addr, data); }
+    uint8 read(const uint16 addr) const             { return reader_tab[lookup[addr]](addr); }
+    void write(const uint16 addr, const uint8 data) { writer_tab[lookup[addr]](addr, data); }
     std::size_t size() const                        { return lookup.size(); }
 };
 

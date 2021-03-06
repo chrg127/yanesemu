@@ -23,7 +23,7 @@ public:
     };
 private:
     Mode mode = Mode::READ;
-    std::string filename;
+    std::string file_name;
 public:
     enum class BufMode {
         UNBUF,
@@ -56,7 +56,7 @@ public:
     bool error()         { return !fbuf ? true : ferror(fbuf)    != 0 ? true : false; }
     int flush()          { return fflush(fbuf); }
     int seek(long offset, int origin) { return fseek(fbuf, offset, origin); }
-    std::string getfilename() const { return filename; }
+    std::string filename() const { return file_name; }
     // strictly for compatibility with existing FILE APIs.
     // if state invalidation might be a concern, use releasefbuf()
     FILE *getfbuf() const { return fbuf; }
@@ -76,7 +76,7 @@ public:
         FILE *toret = fbuf;
         mode = Mode::READ;
         filesize = 0;
-        filename = "";
+        file_name = "";
         fbuf = nullptr;
         return toret;
     }

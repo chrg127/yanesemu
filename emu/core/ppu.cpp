@@ -4,8 +4,7 @@
 #include <cassert>
 #include <functional>
 #include <fmt/core.h>
-#include <emu/core/cpu.hpp>
-#include <emu/core/cartridge.hpp>
+#include <emu/core/bus.hpp>
 #include <emu/util/file.hpp>
 #include <emu/util/easyrandom.hpp>
 #include <emu/util/debug.hpp>
@@ -70,36 +69,35 @@ void PPU::power()
 
 void PPU::reset()
 {
-    // // PPUCTRL
-    // bg.pt_addr = oam.pt_addr = ext_bus_dir = nmi_enabled = 0;
-    // vram.inc = 1; // if 0, inc = 1. if 1, inc = 32
-    // // PPUMASK
-    // bg.show_leftmost  = bg.show  = 0;
-    // oam.show_leftmost = oam.show = 0;
-    // effects.grey  = 0;
-    // effects.red   = 0;
-    // effects.green = 0;
-    // effects.red   = 0;
-    // // PPUSTATUS
-    // spr_ov = Util::random_between(0, 1);
-    // spr0hit = Util::random_between(0, 1);
-    // // vblank = unchanged;
-    // // OAMADDR
-    // // oam.addr = unchanged;
-    // // PPUSCROLL and PPUADDR
-    // vram.toggle = 0;
-    // // vram.v = 0;
-    // // vram.t = unchanged;
-    // vram.fine_x = 0;
-    // // PPUDATA
-    // vram.readbuf = 0;
-
-    // odd_frame = 0;
-    // lines = 0;
-    // cycles = 0;
-    // for (auto &cell : oammem)
-    //     cell = Util::random8();
-    // // palette, nt ram and chr-ram is unchanged
+    // PPUCTRL
+    io.vram_inc = 0;
+    io.sp_pt_addr = 0;
+    io.bg_pt_addr = 0;
+    io.sp_size = 0;
+    io.ext_bus_dir = 0;
+    io.nmi_enabled = 0;
+    // PPUMASK
+    io.grey = 0;
+    io.bg_show_left = 0;
+    io.sp_show_left = 0;
+    io.bg_show = 0;
+    io.sp_show = 0;
+    io.red = 0;
+    io.green = 0;
+    io.blue = 0;
+    // PPUSTATUS
+    io.sp_overflow = Util::random_between(0, 1);
+    io.sp_zero_hit = Util::random_between(0, 1);
+    // PPUSCROLL and PPUADDR
+    io.scroll_latch = 0;
+    vram.fine_x = 0;
+    // PPUDATA
+    io.data_buf = 0;
+    // other
+    odd_frame = 0;
+    lines = cycles = 0;
+    for (unsigned i = 0; i < OAM_SIZE; i++)
+        oammem[i] = 0;
 }
 
 std::string PPU::get_info()
@@ -107,7 +105,7 @@ std::string PPU::get_info()
     return fmt::format("line = {:03}; cycle = {:03}; v = {:X}", lines%262, cycles%341, vram.addr.value);
 }
 
-void PPU::attach_bus(Bus *pb, Bus *cb, Mirroring mirroring)
+void PPU::attach_bus(Bus *pb, Bus *cb)
 {
     bus = pb;
     cpubus = cb;
@@ -117,7 +115,9 @@ void PPU::attach_bus(Bus *pb, Bus *cb, Mirroring mirroring)
     bus->map(PAL_START, 0x4000,
             [=](uint16 addr)             { return palmem[addr & 0x1F]; },
             [=](uint16 addr, uint8 data) { palmem[addr & 0x1F] = data; });
-    map_nt(mirroring);
+    bus->map(NT_START, PAL_START,
+            [=](uint16 addr)             { return 0; },
+            [=](uint16 addr, uint8 data) { /*******/ });
 }
 
 uint8 PPU::readreg(const uint16 which)
@@ -270,7 +270,7 @@ uint8 PPU::getcolor(bool select, uint8 pal, uint8 palind)
     return bus->read(0x3F00 + n);
 }
 
-void PPU::map_nt(Mirroring mirroring)
+void PPU::set_mirroring(Mirroring mirroring)
 {
     unsigned mask = 0;
     switch (mirroring) {
@@ -278,7 +278,7 @@ void PPU::map_nt(Mirroring mirroring)
     case Mirroring::HORZ: mask = 0xBFF; break;
     default: assert(false);
     }
-    bus->map(NT_START, PAL_START,
+    bus->remap(NT_START, PAL_START,
             [=](uint16 addr)             { return vrammem[(addr & mask)]; },
             [=](uint16 addr, uint8 data) { vrammem[(addr & mask)] = data; });
 }

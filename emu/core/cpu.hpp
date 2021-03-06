@@ -1,13 +1,27 @@
 #ifndef CORE_CPU_HPP_INCLUDED
 #define CORE_CPU_HPP_INCLUDED
 
-#include <array>
 #include <string>
-#include <emu/core/types.hpp>
-#include <emu/core/memmap.hpp>
+#include <emu/core/const.hpp>
 #include <emu/core/bus.hpp>
+#include <emu/util/unsigned.hpp>
 
 namespace Core {
+
+union Reg16 {
+    struct {
+        uint8 low, high;
+    };
+    uint16 reg;
+
+    Reg16() : reg(0)  { }
+    Reg16(uint16 val) { operator=(val); }
+
+    Reg16 & operator=(const uint16 val) { reg = val; return *this; }
+
+    template <typename T> Reg16 & operator&=(const T val) { reg &= val; return *this; }
+    template <typename T> Reg16 & operator|=(const T val) { reg |= val; return *this; }
+};
 
 class CPU {
     using InstrFuncRead = void (CPU::*)(const uint8);
@@ -15,6 +29,9 @@ class CPU {
 
     uint8 rammem[RAM_SIZE];
     Bus *bus = nullptr;
+    unsigned long cycles = 0;
+
+    // used in opcodes.cpp
     Reg16 op = 0;
 
     // registers
@@ -59,7 +76,6 @@ class CPU {
     } procstatus;
 
     // interrupt signals
-    int cycles      = 0;
     bool nmipending = false;
     bool irqpending = false;
     bool resetpending = false;

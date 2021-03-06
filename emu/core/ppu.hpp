@@ -3,19 +3,17 @@
 
 #include <functional>
 #include <string>
-#include <emu/core/types.hpp>
-#include <emu/core/memmap.hpp>
-#include <emu/core/bus.hpp>
+#include <emu/core/const.hpp>
+#include <emu/util/unsigned.hpp>
 #include <emu/util/bits.hpp>
 
 namespace Video { class Canvas; }
 
 namespace Core {
 
-class CPU;
-class Cartridge;
+class Bus;
 
-struct PPU {
+class PPU {
     Bus *bus;
     Bus *cpubus;
     Video::Canvas *screen;
@@ -106,16 +104,15 @@ struct PPU {
     } oam;
 
 public:
-    enum class Mirroring { VERT, HORZ, OTHER };
 
     void power();
     void reset();
     // ppumain.cpp
     void run();
     std::string get_info();
-    void attach_bus(Bus *pb, Bus *cb, Mirroring mirroring);
+    void attach_bus(Bus *pb, Bus *cb);
+    void set_mirroring(Mirroring m);
 
-    void set_mirroring(Mirroring m)        { map_nt(m); }
     void set_screen(Video::Canvas *canvas) { screen = canvas; }
     void set_nmi_callback(auto &&callback) { nmi_callback = callback; }
 
@@ -125,7 +122,7 @@ public:
     template <unsigned Cycle> void background_cycle();
     void cycle_idle();
 
-public:
+private:
     uint8 readreg(const uint16 which);
     void writereg(const uint16 which, const uint8 data);
 

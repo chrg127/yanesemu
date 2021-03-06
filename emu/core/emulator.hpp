@@ -1,20 +1,23 @@
-#ifndef EMULATOR_HPP_INCLUDED
-#define EMULATOR_HPP_INCLUDED
+#ifndef CORE_EMULATOR_HPP_INCLUDED
+#define CORE_EMULATOR_HPP_INCLUDED
 
+#include <string_view>
+#include <emu/core/bus.hpp>
 #include <emu/core/cpu.hpp>
 #include <emu/core/ppu.hpp>
 #include <emu/core/cartridge.hpp>
 
 namespace Util { class File; }
 
+namespace Core {
+
 class Emulator {
-    Core::Bus cpu_bus = Core::Bus(0x10000);
-    Core::Bus ppu_bus = Core::Bus(0x4000);
-    Core::Cartridge cartridge;
-    Core::CPU cpu;
-    Core::PPU ppu;
+    Bus cpu_bus { CPUBUS_SIZE };
+    Bus ppu_bus { PPUBUS_SIZE };
+    Cartridge cartridge;
+    CPU cpu;
+    PPU ppu;
     int cycle = 0;
-    int err = 0;
     // this is internal to the emulator only and doesn't affect the cpu and ppu
     bool nmi = false;
 
@@ -22,7 +25,7 @@ public:
     Emulator()
     {
         cpu.attach_bus(&cpu_bus);
-        ppu.attach_bus(&ppu_bus, &cpu_bus, Core::PPU::Mirroring::VERT);
+        ppu.attach_bus(&ppu_bus, &cpu_bus);
         ppu.set_nmi_callback([this]() {
             nmi = true;
             cpu.fire_nmi();
@@ -33,12 +36,7 @@ public:
     void run_frame(Util::File &logfile);
     void log(Util::File &logfile);
     void dump(Util::File &dumpfile);
-
-    void insert_rom(const std::string_view rompath)
-    {
-        cartridge.open(rompath);
-        cartridge.attach_bus(&cpu_bus, &ppu_bus);
-    }
+    void insert_rom(const std::string_view rompath);
 
     void power()
     {
@@ -46,7 +44,7 @@ public:
         ppu.power();
     }
 
-    void reset(const std::string_view rompath)
+    void reset()
     {
         cpu.reset();
         ppu.reset();
@@ -55,5 +53,7 @@ public:
     void set_screen(Video::Canvas *canvas) { ppu.set_screen(canvas); }
     std::string rominfo()                  { return cartridge.getinfo(); }
 };
+
+} // namespace Core
 
 #endif

@@ -79,11 +79,12 @@ OpenGL::~OpenGL()
 {
     if (!initialized)
         return;
+    initialized = false;
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
     glDeleteBuffers(1, &ebo);
-    SDL_GL_DeleteContext(context);
     SDL_DestroyWindow(window);
+    SDL_GL_DeleteContext(context);
     SDL_Quit();
 }
 

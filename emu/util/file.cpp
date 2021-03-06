@@ -10,7 +10,7 @@ File &File::operator=(File &&f)
     f.fbuf = nullptr;
     std::swap(filesize, f.filesize);
     mode = f.mode;
-    std::swap(filename, f.filename);
+    std::swap(file_name, f.file_name);
     return *this;
 }
 
@@ -27,7 +27,7 @@ bool File::open(std::string_view s, Mode m)
     if (!fbuf)
         return false;
     mode = m;
-    filename = s;
+    file_name = s;
     std::fseek(fbuf, 0, SEEK_END);
     filesize = std::ftell(fbuf);
     std::fseek(fbuf, 0, SEEK_SET);
