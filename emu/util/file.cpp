@@ -1,78 +1,40 @@
 #include <emu/util/file.hpp>
 
-#include <utility>
+#include <cstring>
+#include <cerrno>
 
 namespace Util {
 
-File &File::operator=(File &&f)
+static std::string get_errstr()
 {
-    fbuf = f.fbuf;
-    f.fbuf = nullptr;
-    std::swap(filesize, f.filesize);
-    mode = f.mode;
-    std::swap(file_name, f.file_name);
-    return *this;
+#ifdef _GNU_SOURCE
+    char tmpbuf[1];
+    char *buf = strerror_r(errno, tmpbuf, sizeof(tmpbuf));
+#else
+    char buf[256];
+    strerror_r(errno, buf, sizeof(buf));
+#endif
+    return std::string(buf);
 }
 
-bool File::open(std::string_view s, Mode m)
+bool File::open(const std::string_view pathname, const Mode filemode)
 {
     close();
-
-    switch (m) {
-    case Mode::READ:   fbuf = std::fopen(s.data(), "rb");  break;
-    case Mode::WRITE:  fbuf = std::fopen(s.data(), "wb");  break;
-    case Mode::MODIFY: fbuf = std::fopen(s.data(), "rb+"); break;
-    case Mode::APPEND: fbuf = std::fopen(s.data(), "ab");  break;
+    switch (filemode) {
+    case Mode::READ:   filbuf = std::fopen(pathname.data(), "rb");  break;
+    case Mode::WRITE:  filbuf = std::fopen(pathname.data(), "wb");  break;
+    case Mode::MODIFY: filbuf = std::fopen(pathname.data(), "rb+"); break;
+    case Mode::APPEND: filbuf = std::fopen(pathname.data(), "ab");  break;
     }
-    if (!fbuf)
+    if (!filbuf) {
+        errstr = get_errstr();
         return false;
-    mode = m;
-    file_name = s;
-    std::fseek(fbuf, 0, SEEK_END);
-    filesize = std::ftell(fbuf);
-    std::fseek(fbuf, 0, SEEK_SET);
-    return true;
-}
-
-void File::close()
-{
-    if (!fbuf || fbuf == stdin || fbuf == stdout || fbuf == stderr)
-        return;
-    fclose(fbuf);
-    fbuf = nullptr;
-    filesize = 0;
-}
-
-bool File::assoc(FILE *f, Mode m)
-{
-    // sanitize checks
-    if (f == stdin && m != Mode::READ)
-        return false;
-    if ((f == stdout || f == stderr) && m != Mode::WRITE)
-        return false;
-    fbuf = f;
-    mode = m;
-    if (f == stdin || f == stdout || f == stderr)
-        filesize = 0;
-    else {
-        std::fseek(fbuf, 0, SEEK_END);
-        filesize = std::ftell(fbuf);
-        std::fseek(fbuf, 0, SEEK_SET);
     }
+    filname = std::string(pathname);
+    // std::fseek(filbuf, 0, SEEK_END);
+    // filesize = std::ftell(filbuf);
+    // std::fseek(filbuf, 0, SEEK_SET);
     return true;
-}
-
-bool File::getline(std::string &s, int delim)
-{
-    // could probably be optimized.
-    int c;
-
-    if (!fbuf || (mode != Mode::READ && mode != Mode::MODIFY))
-        return false;
-    s.erase();
-    while (c = getc(), c != delim && c != EOF)
-        s += c;
-    return (c == EOF) ? false : true;
 }
 
 } // namespace Util

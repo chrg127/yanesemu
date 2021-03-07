@@ -12,7 +12,7 @@ void Cartridge::parse(Util::File &romfile) //std::string_view rompath)
         throw std::runtime_error("rom file should be already open");
     name = romfile.filename();
 
-    romfile.readb(header, HEADER_LEN);
+    romfile.bread(header, HEADER_LEN);
     auto parse_common = [this]() {
         file_format = Format::INVALID;
         if (header[0] == 'N' && header[1] == 'E' && header[2] == 'S' && header[3] == 0x1A) {
@@ -45,14 +45,14 @@ void Cartridge::parse(Util::File &romfile) //std::string_view rompath)
     file_format == Format::INES ? parse_ines() : parse_nes20();
 
     if (has.trainer)
-        romfile.readb(trainer, TRAINER_LEN);
+        romfile.bread(trainer, TRAINER_LEN);
     if (!has.prgram) {
         prgrom.reset(header[4]*16384);
-        romfile.readb(prgrom.data(), prgrom.size());
+        romfile.bread(prgrom.data(), prgrom.size());
     }
     if (!has.chrram) {
         chrrom.reset(header[5]*8192);
-        romfile.readb(chrrom.data(), chrrom.size());
+        romfile.bread(chrrom.data(), chrrom.size());
     }
 }
 

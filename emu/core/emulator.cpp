@@ -22,9 +22,9 @@ void Emulator::log(Util::File &logfile)
 {
     if (!logfile)
         return;
-    logfile.putstr(cpu.get_info() + ' ');
-    logfile.putstr(ppu.get_info() + ' ');
-    logfile.putstr(cpu.disassemble());
+    logfile.print(cpu.get_info() + ' ');
+    logfile.print(ppu.get_info() + ' ');
+    logfile.print(cpu.disassemble());
     logfile.putc('\n');
 }
 
@@ -58,7 +58,7 @@ void Emulator::run_frame(Util::File &logfile)
 
 void Emulator::insert_rom(const std::string_view rompath)
 {
-    Util::File romfile(rompath, Util::File::Mode::READ);
+    Util::File romfile(rompath.data(), Util::File::Mode::READ);
     cartridge.parse(romfile);
     ppu.set_mirroring(cartridge.mirroring());
     cartridge.attach_bus(&cpu_bus, &ppu_bus);

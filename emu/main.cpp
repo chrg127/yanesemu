@@ -28,8 +28,8 @@ void mainloop()
     Util::seed();
     emu.power();
     emu.set_screen(&screen);
-    if (logfile.isopen()) {
-        logfile.putstr(emu.rominfo());
+    if (logfile) {
+        logfile.print(emu.rominfo());
         logfile.putc('\n');
     }
     while (running) {
@@ -87,9 +87,9 @@ int main(int argc, char *argv[])
         if (!flags.found[flag] || flags.params[flag] == "")
             return;
         std::string_view s = flags.params[flag];
-        if      (s == "stdout") f.assoc(stdout, Util::File::Mode::WRITE);
-        else if (s == "stderr") f.assoc(stderr, Util::File::Mode::WRITE);
-        else if (!f.open(s, Util::File::Mode::WRITE))
+        if      (s == "stdout") f.assoc(stdout);
+        else if (s == "stderr") f.assoc(stderr);
+        else if (!f.open(s.data(), Util::File::Mode::WRITE))
             error("can't open {} for writing\n", s.data());
     };
     open_logfile(logfile, 'l');
