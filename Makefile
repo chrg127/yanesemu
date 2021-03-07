@@ -11,7 +11,7 @@ _objs := emulator.o \
 	   video.o opengl.o \
 	   glad.o
 
-libs := -lmingw32 -lm -lSDL2 -lfmt
+libs := -lm -lSDL2 -lfmt
 
 CC = gcc
 CXX = g++
@@ -62,7 +62,7 @@ objs := $(patsubst %,$(outdir)/%,$(_objs))
 objs.main := $(outdir)/main.o
 $(outdir)/$(programname): $(objs.main) $(objs)
 	$(info Linking $@ ...)
-	@$(CXX) $(objs.main) $(objs) -o $@ $(libs)
+	$(CXX) $(objs.main) $(objs) -o $@ $(libs)
 
 # tests
 objs.video_test := $(outdir)/video_test.o $(outdir)/video.o $(outdir)/opengl.o $(outdir)/glad.o
