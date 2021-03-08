@@ -113,8 +113,11 @@ void PPU::attach_bus(Bus *pb, Bus *cb)
             [=](uint16 addr)             { return readreg(0x2000 + (addr & 0x7)); },
             [=](uint16 addr, uint8 data) { writereg(0x2000 + (addr & 0x7), data); });
     bus->map(PAL_START, 0x4000,
-            [=](uint16 addr)             { return palmem[addr & 0x1F]; },
-            [=](uint16 addr, uint8 data) { palmem[addr & 0x1F] = data; });
+            [=](uint16 addr)             {
+                assert((addr & 0x1F) < PAL_SIZE);
+                return palmem[addr & 0x1F];
+            },
+            [=](uint16 addr, uint8 data) { assert((addr & 0x1F) < PAL_SIZE); palmem[addr & 0x1F] = data; });
     bus->map(NT_START, PAL_START,
             [=](uint16 addr)             { return 0; },
             [=](uint16 addr, uint8 data) { /*******/ });
@@ -272,15 +275,22 @@ uint8 PPU::getcolor(bool select, uint8 pal, uint8 palind)
 
 void PPU::set_mirroring(Mirroring mirroring)
 {
-    unsigned mask = 0;
-    switch (mirroring) {
-    case Mirroring::VERT: mask = 0x7FF; break;
-    case Mirroring::HORZ: mask = 0xBFF; break;
-    default: assert(false);
-    }
+    const unsigned mask = mirroring == Mirroring::VERT ? 0x7FF : 0xBFF;
     bus->remap(NT_START, PAL_START,
-            [=](uint16 addr)             { return vrammem[(addr & mask)]; },
-            [=](uint16 addr, uint8 data) { vrammem[(addr & mask)] = data; });
+            [=](uint16 addr)             {
+                uint16 real_addr = addr & mask;
+                real_addr = Util::set_bit(real_addr, 10, real_addr & 0x800);
+                real_addr &= ~0x800;
+                assert(real_addr < VRAM_SIZE);
+                return vrammem[real_addr];
+            },
+            [=](uint16 addr, uint8 data) {
+                uint16 real_addr = addr & mask;
+                real_addr = Util::set_bit(real_addr, 10, real_addr & 0x800);
+                real_addr &= ~0x800;
+                assert(real_addr < VRAM_SIZE);
+                vrammem[real_addr] = data;
+            });
 }
 
 void PPU::inc_v_horzpos()

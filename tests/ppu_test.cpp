@@ -37,15 +37,17 @@ int main()
     Core::Bus ppu_bus = Core::Bus(0x4000);
     Core::Cartridge cart;
     File f;
+    File romfile("testrom/test.nes", File::Mode::READ);
 
-    f.assoc(stdout, File::Mode::WRITE);
+    f.assoc(stdout);
     cpu.attach_bus(&cpu_bus);
-    ppu.attach_bus(&ppu_bus, &cpu_bus, Core::PPU::Mirroring::VERT);
-    cart.open("testrom/test.nes");
+    ppu.attach_bus(&ppu_bus, &cpu_bus);
+    cart.parse(romfile);
     cart.attach_bus(&cpu_bus, &ppu_bus);
     cpu.power();
     ppu.power();
     ppu.set_nmi_callback([]() { fmt::print("got nmi\n"); });
+    ppu.set_mirroring(Core::Mirroring::HORZ);
 
     cpu_bus.write(0x2000, 0);
     cpu_bus.write(0x2001, 0);
@@ -99,12 +101,11 @@ int main()
         ppu.inc_v_vertpos();
     }
 */
-    cpu_bus.write(0x2006, 0x20);
-    cpu_bus.write(0x2006, 0x1F);
-    fmt::print("{}\n", ppu.get_info());
-    ppu.inc_v_vertpos();
-    fmt::print("{}\n", ppu.get_info());
-    ppu.copy_v_horzpos();
-    fmt::print("{}\n", ppu.get_info());
+    ppu_bus.read(0x2BE0);
+
+    // 2000 -> 0
+    // 2400 -> 0
+    // 2800 -> 400
+    // 2c00 -> 400
 }
 

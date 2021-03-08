@@ -28,10 +28,7 @@ void mainloop()
     Util::seed();
     emu.power();
     emu.set_screen(&screen);
-    if (logfile) {
-        logfile.print(emu.rominfo());
-        logfile.putc('\n');
-    }
+    fmt::print("{}\n", emu.rominfo());
     while (running) {
         while (SDL_PollEvent(&ev)) {
             switch (ev.type) {
