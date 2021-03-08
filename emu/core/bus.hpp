@@ -1,5 +1,5 @@
-#ifndef BUS_HPP_INCLUDED
-#define BUS_HPP_INCLUDED
+#ifndef CORE_BUS_HPP_INCLUDED
+#define CORE_BUS_HPP_INCLUDED
 
 #include <functional>
 #include <emu/util/unsigned.hpp>
@@ -8,13 +8,13 @@
 namespace Core {
 
 class Bus {
-    static const int TABSIZ = 8;
+    static const int TABSIZ = 16;
     using Reader = std::function<uint8(uint16)>;
     using Writer = std::function<void(uint16, uint8)>;
 
     Util::HeapArray<unsigned> lookup;
-    Reader reader_tab[TABSIZ];
-    Writer writer_tab[TABSIZ];
+    Reader readtab[TABSIZ];
+    Writer writetab[TABSIZ];
     bool assigned[TABSIZ];
 
 public:
@@ -30,8 +30,8 @@ public:
     void remap(uint16 start, uint32 end, Reader reader, Writer writer);
     void reset(const std::size_t newsize);
 
-    uint8 read(const uint16 addr) const             { return reader_tab[lookup[addr]](addr); }
-    void write(const uint16 addr, const uint8 data) { writer_tab[lookup[addr]](addr, data); }
+    uint8 read(const uint16 addr) const             { return readtab[lookup[addr]](addr); }
+    void write(const uint16 addr, const uint8 data) { writetab[lookup[addr]](addr, data); }
     std::size_t size() const                        { return lookup.size(); }
 };
 

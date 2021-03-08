@@ -1,18 +1,18 @@
-/*Bit operations library.
+/* Bit operations library.
  * Most routines here are OF THE UTMOST IMPORTANCE. Making an error while
  * changing one means an obscure bug in all the emulator. Proceed with caution.
  */
 
-#ifndef BITS_HPP_INCLUDED
-#define BITS_HPP_INCLUDED
+#ifndef UTIL_BITS_HPP_INCLUDED
+#define UTIL_BITS_HPP_INCLUDED
 
 #include <cstdint>
 
 namespace Util {
 
-/* Routines for getting/settings bits at once. More readble, and thus
+/* Routines for getting/settings bits at once. More readable, and thus
  * preferable, than using naked complicated bit operations. */
-constexpr inline uint64_t getbits(uint64_t num, uint8_t bitno, uint64_t nbits)
+constexpr inline uint64_t getbits(uint64_t num, uint8_t bitno, uint8_t nbits)
 {
     return num >> bitno & nbits;
 }
@@ -24,12 +24,12 @@ constexpr inline uint64_t getbit(uint64_t num, uint8_t bitno)
 
 /* Returns a mask usable to mask off a given number of bits.
  * For example: 3 -> 0b11; 6 -> 0b111111 */
-constexpr inline uint64_t get_mask_nbits(uint64_t nbits)
+constexpr inline uint64_t get_mask_nbits(uint8_t nbits)
 {
     return (1UL << nbits) - 1UL;
 }
 
-constexpr inline uint64_t setbits(uint64_t num, uint8_t bitno, uint64_t nbits, uint64_t data)
+constexpr inline uint64_t setbits(uint64_t num, uint8_t bitno, uint8_t nbits, uint64_t data)
 {
     const uint64_t mask = get_mask_nbits(nbits);
     return (num & ~(mask << bitno)) | (data & mask) << bitno;

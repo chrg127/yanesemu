@@ -28,7 +28,7 @@ ArgResult parse(int argc, char *argv[], const ValidArgStruct &valid_args)
     ArgResult res;
 
     for (const auto &arg : valid_args) {
-        res.found[arg.short_opt] = false;
+        res.has[arg.short_opt] = false;
         res.params[arg.short_opt] = "";
     }
     while (++argv, --argc > 0) {
@@ -51,11 +51,11 @@ ArgResult parse(int argc, char *argv[], const ValidArgStruct &valid_args)
         if (arg.paramt == ParamType::MUST_HAVE && (!nextarg || nextarg[0] == '-')) {
             warning("%s must have a parameter\n", currarg.data());
             continue;
-        } else if (res.found[arg.short_opt]) {
+        } else if (res.has[arg.short_opt]) {
             warning("%s specified multiple times\n", currarg.data());
             continue;
         }
-        res.found[arg.short_opt] = true;
+        res.has[arg.short_opt] = true;
         // check for a parameter and validate and collect it
         if (arg.paramt != ParamType::NONE && nextarg && nextarg[0] != '-') {
             if (!arg.validator(nextarg)) {

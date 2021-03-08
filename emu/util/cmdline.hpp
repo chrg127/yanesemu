@@ -31,8 +31,8 @@
  * something else.
  */
 
-#ifndef CMDLINE_HPP_INCLUDED
-#define CMDLINE_HPP_INCLUDED
+#ifndef UTIL_CMDLINE_HPP_INCLUDED
+#define UTIL_CMDLINE_HPP_INCLUDED
 
 #include <string>
 #include <string_view>
@@ -54,8 +54,9 @@ namespace Util {
  *
  * When the parsing is done, it returns an ArgResult. The ArgResult struct
  * holds Arguments, Parameters and Items. To search for specific properties
- * of Arguments, 
- */
+ * of Arguments, simply use its fields: has[] returns whether an Argument was
+ * found, params[] returns the parameter for the argument. Items are stored
+ * in the items field. */
 
 using ParamValidator = bool (*)(std::string_view);
 enum class ParamType { NONE, OPTIONAL, MUST_HAVE };
@@ -72,9 +73,9 @@ struct Argument {
 using ValidArgStruct = std::vector<Argument>;
 
 struct ArgResult {
-    std::unordered_map<char, bool>             found;
+    std::unordered_map<char, bool>             has;
     std::unordered_map<char, std::string_view> params;
-    std::vector<std::string_view>               items;
+    std::vector<std::string_view>              items;
 };
 
 ArgResult parse(int argc, char *argv[], const ValidArgStruct &valid_args);

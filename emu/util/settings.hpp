@@ -16,7 +16,7 @@
  +          { "bar", SETTINGTYPE_BOOL,   false     },
  *          { "baz", SETTINGTYPE_STRING, "default" },
  *      };
- * 
+ *
  * for each element, the first value is a key name, the second is the type of
  * the value, the third is a default value in case the key is missing or the
  * value is invalid.

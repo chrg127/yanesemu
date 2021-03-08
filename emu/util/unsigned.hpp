@@ -1,5 +1,5 @@
-#ifndef NUM_HPP_INCLUDED
-#define NUM_HPP_INCLUDED
+#ifndef UTIL_UNSIGNED_HPP_INCLUDED
+#define UTIL_UNSIGNED_HPP_INCLUDED
 
 #include <cstdint>
 #include <type_traits>

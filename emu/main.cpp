@@ -1,12 +1,12 @@
 #include <fmt/core.h>
 #include <SDL2/SDL.h>
+#include <emu/version.hpp>
 #include <emu/core/emulator.hpp>
 #include <emu/util/cmdline.hpp>
-#include <emu/util/file.hpp>
 #include <emu/util/easyrandom.hpp>
-#include <emu/video/video.hpp>
 #include <emu/util/debug.hpp>
-#include <emu/version.hpp>
+#include <emu/util/file.hpp>
+#include <emu/video/video.hpp>
 
 static const Util::ValidArgStruct cmdflags = {
     { 'b', "break-on-brk", "Stops emulation when BRK is encountered." },
@@ -57,21 +57,25 @@ int main(int argc, char *argv[])
 
     // parse command line arguments
     Util::ArgResult flags = Util::parse(argc, argv, cmdflags);
-    if (flags.found['h']) { Util::print_usage(progname, cmdflags); return 0; }
-    if (flags.found['v']) { Util::print_version(progname, version); return 0; }
+    if (flags.has['h']) { Util::print_usage(progname, cmdflags); return 0; }
+    if (flags.has['v']) { Util::print_version(progname, version); return 0; }
+
+    // open rom file
     if (flags.items.size() == 0) {
         error("ROM file not specified\n");
         return 1;
     } else if (flags.items.size() > 1)
         warning("Multiple ROM files specified, only the first will be chosen\n");
-
-    // open rom file
-    try {
-        emu.insert_rom(flags.items[0]);
-    } catch (std::exception &e) {
-        error("{}\n", e.what());
+    Util::File romfile(flags.items[0], Util::File::Mode::READ);
+    if (!romfile) {
+        error("{}\n", romfile.error_str());
         return 1;
     }
+    if (!emu.insert_rom(romfile)) {
+        error("invalid ROM format\n");
+        return 1;
+    }
+    romfile.close();
 
     // initialize video subsystem
     if (!context.init(Video::Context::Type::OPENGL)) {
@@ -79,9 +83,9 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // open log files -- these will be used to log emulator info and dump memory
+    // open log files -- these are used to log emulator info and dump memory
     auto open_logfile = [&flags](Util::File &f, char flag) {
-        if (!flags.found[flag] || flags.params[flag] == "")
+        if (!flags.has[flag] || flags.params[flag] == "")
             return;
         std::string_view s = flags.params[flag];
         if      (s == "stdout") f.assoc(stdout);

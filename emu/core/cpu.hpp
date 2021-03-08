@@ -8,20 +8,26 @@
 
 namespace Core {
 
+
 union Reg16 {
     struct {
         uint8 low, high;
     };
-    uint16 reg;
+    uint16 reg = 0;
 
-    Reg16() : reg(0)  { }
-    Reg16(uint16 val) { operator=(val); }
-
-    Reg16 & operator=(const uint16 val) { reg = val; return *this; }
-
+    Reg16() = default;
+    Reg16(uint16 val)                                     { operator=(val); }
+    Reg16 & operator=(const uint16 val)                   { reg = val;  return *this; }
     template <typename T> Reg16 & operator&=(const T val) { reg &= val; return *this; }
     template <typename T> Reg16 & operator|=(const T val) { reg |= val; return *this; }
 };
+/* Can be different:
+union Reg16 {
+    uint16 value = 0;
+    Util::BitField<uint16, 0, 8> low;
+    Util::BitField<uint16, 8, 8> high;
+};
+But I still don't feel like changing so much code. */
 
 class CPU {
     using InstrFuncRead = void (CPU::*)(const uint8);
@@ -86,7 +92,7 @@ public:
     void run();
     void power();
     void reset();
-    void attach_bus(Bus *b);
+    void attach_bus(Bus *rambus);
     void fire_irq();
     void fire_nmi();
     std::string disassemble() const;

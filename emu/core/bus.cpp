@@ -1,8 +1,7 @@
 #include "bus.hpp"
 
-#include <cassert>
 #include <algorithm>
-#include <emu/util/stringops.hpp>
+#include <cstring> // memcpy, memset
 #include <emu/util/debug.hpp>
 
 namespace Core {
@@ -11,8 +10,8 @@ Bus & Bus::operator=(Bus &&b)
 {
     lookup = std::move(b.lookup);
     for (int i = 0; i < TABSIZ; i++) {
-        reader_tab[i] = b.reader_tab[i];
-        writer_tab[i] = b.writer_tab[i];
+        readtab[i] = b.readtab[i];
+        writetab[i] = b.writetab[i];
     }
     std::memcpy(assigned, b.assigned, TABSIZ);
     return *this;
@@ -36,8 +35,8 @@ void Bus::map(uint16 start, uint32 end, Reader reader, Writer writer)
         }
     }
     assigned[id] = true;
-    reader_tab[id] = reader;
-    writer_tab[id] = writer;
+    readtab[id] = reader;
+    writetab[id] = writer;
     std::fill(lookup.begin() + start, lookup.begin() + end, id);
 }
 
@@ -52,8 +51,8 @@ void Bus::remap(uint16 start, uint32 end, Reader reader, Writer writer)
         warning("remap: {} isn't the real end of the area\n", end);
         return;
     }
-    reader_tab[id] = reader;
-    writer_tab[id] = writer;
+    readtab[id] = reader;
+    writetab[id] = writer;
 }
 
 } // namespace Core

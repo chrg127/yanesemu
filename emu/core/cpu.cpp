@@ -52,9 +52,9 @@ void CPU::reset()
     interrupt();
 }
 
-void CPU::attach_bus(Bus *b)
+void CPU::attach_bus(Bus *rambus)
 {
-    bus = b;
+    bus = rambus;
     bus->map(RAM_START, PPUREG_START,
         [=](uint16 addr)             { return rammem[addr & 0x7FF]; },
         [=](uint16 addr, uint8 data) { rammem[addr & 0x7FF] = data; });

@@ -1,11 +1,13 @@
+#ifndef UTIL_EASYRANDOM_HPP_INCLUDED
+#define UTIL_EASYRANDOM_HPP_INCLUDED
+
 #include <random>
 #include <mutex>
-#include "unsigned.hpp"
+#include <emu/util/unsigned.hpp>
 
-/* Basically a wrapper API around <random>
+/* Basically a wrapper API around <random>.
  * It's thread-safe, or at least it's supposed to be.
- * Call seed() in main().
- */
+ * Call seed() in main().  */
 namespace Util {
 
 using GenType = std::mt19937;
@@ -24,3 +26,5 @@ T random_between(T min, T max)
 }
 
 } // namespace Util
+
+#endif

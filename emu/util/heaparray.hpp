@@ -1,5 +1,5 @@
-#ifndef HEAPARRAY_HPP_INCLUDED
-#define HEAPARRAY_HPP_INCLUDED
+#ifndef UTIL_HEAPARRAY_HPP_INCLUDED
+#define UTIL_HEAPARRAY_HPP_INCLUDED
 
 #include <cstddef>
 #include <memory>
@@ -15,8 +15,7 @@ namespace Util {
  * array would be faster. This class is an attempt at that.
  * Note that this class looks and acts like an actual array. That means it's
  * still undefined behavior to read uninitialized elements of the array (one
- * can quickly initialize the elements by calling clear() or fill()).
- */
+ * can quickly initialize the elements by calling clear() or fill()). */
 template <typename T>
 class HeapArray {
     std::size_t len;
@@ -24,9 +23,11 @@ class HeapArray {
 
 public:
     HeapArray() : len(0), arrptr(nullptr) { }
+
     explicit HeapArray(std::size_t l)
         : len(l), arrptr(new T[len])
     { }
+
     HeapArray(std::initializer_list<T> lst)
         : HeapArray(lst.size())
     {
@@ -34,10 +35,12 @@ public:
         for (const auto &x : lst)
             arrptr[i++] = x;
     }
+
     HeapArray(const HeapArray &a) { operator=(a); }
 
-    inline T & operator[](std::size_t i) const { return arrptr[i]; }
-    inline HeapArray<T> & operator=(const HeapArray<T> &arr)
+    T & operator[](std::size_t i) const { return arrptr[i]; }
+
+    HeapArray<T> & operator=(const HeapArray<T> &arr)
     {
         std::size_t size = arr.size();
         reset(size);
@@ -45,7 +48,8 @@ public:
             arrptr[i] = std::move(arr[i]);
         return *this;
     }
-    inline bool operator==(const HeapArray &arr)
+
+    bool operator==(const HeapArray &arr)
     {
         for (std::size_t i = 0; i != arr.size(); i++)
             if (arrptr[i] != arr[i])
@@ -53,19 +57,21 @@ public:
         return true;
     }
 
-    inline std::size_t size() const { return len; }
-    inline bool empty() const { return len == 0; }
-    inline void clear()
+    std::size_t size() const { return len; }
+    bool empty() const       { return len == 0; }
+    inline T *data() const   { return arrptr; }
+
+    void clear()
     {
         for (std::size_t i = 0; i < len; i++)
             arrptr[i] = 0;
     }
+
     inline void reset(std::size_t newlen)
     {
         len = newlen;
         arrptr = new T[len];
     }
-    inline T *data() const { return arrptr; }
 
     // basic iterator support
     using value_type      = T;
