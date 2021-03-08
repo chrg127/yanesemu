@@ -23,6 +23,7 @@ class PPU {
     unsigned long cycles = 0;
     unsigned long lines  = 0;
     std::function<void(void)> nmi_callback;
+    bool odd_frame;
 
     union VRAMAddress {
         uint16 value = 0;
@@ -34,7 +35,7 @@ class PPU {
         VRAMAddress() = default;
         VRAMAddress(uint16 data) : value(data) { }
         VRAMAddress & operator=(const VRAMAddress &addr) { value = addr.value; return *this; }
-        inline operator uint16() const                   { return value; }
+        operator uint16() const                          { return value; }
         VRAMAddress & operator+=(uint16 n)               { value += n; return *this; }
     };
 
@@ -78,8 +79,6 @@ class PPU {
         uint8 data_buf;
     } io;
 
-    bool odd_frame;
-
     struct {
         VRAMAddress addr;
         VRAMAddress tmp;
@@ -110,7 +109,7 @@ public:
     // ppumain.cpp
     void run();
     std::string get_info();
-    void attach_bus(Bus *pb, Bus *cb);
+    void attach_bus(Bus *vrambus, Bus *rambus);
     void set_mirroring(Mirroring m);
 
     void set_screen(Video::Canvas *canvas) { screen = canvas; }

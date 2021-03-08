@@ -105,11 +105,10 @@ std::string PPU::get_info()
     return fmt::format("line = {:03}; cycle = {:03}; v = {:X}", lines%262, cycles%341, vram.addr.value);
 }
 
-void PPU::attach_bus(Bus *pb, Bus *cb)
+void PPU::attach_bus(Bus *vrambus, Bus *rambus)
 {
-    bus = pb;
-    cpubus = cb;
-    cpubus->map(PPUREG_START, APU_START,
+    bus = vrambus;
+    rambus->map(PPUREG_START, APU_START,
             [=](uint16 addr)             { return readreg(0x2000 + (addr & 0x7)); },
             [=](uint16 addr, uint8 data) { writereg(0x2000 + (addr & 0x7), data); });
     bus->map(PAL_START, 0x4000,
@@ -155,7 +154,7 @@ uint8 PPU::readreg(const uint16 which)
 
 #ifdef DEBUG
     default:
-        assert(false);
+        panic("invalid PPU register during read: {:02X}\n", which);
         break;
 #endif
     }
@@ -238,7 +237,7 @@ void PPU::writereg(const uint16 which, const uint8 data)
 
 #ifdef DEBUG
     default:
-        assert(false);
+        panic("invalid PPU register during write: {:02X}\n", which);
         break;
 #endif
     }
@@ -275,17 +274,17 @@ uint8 PPU::getcolor(bool select, uint8 pal, uint8 palind)
 
 void PPU::set_mirroring(Mirroring mirroring)
 {
-    const auto decode_vert = [](uint16 addr) { return addr & 0x7FF; };
-    const auto decode_horz = [](uint16 addr) {
-        auto tmp = addr & 0xFFF;
-        auto bits = Util::getbits(tmp, 10, 2) >> 1;
-        return Util::setbits(tmp, 10, 2, bits);
+    const auto decode = [mirroring](uint16 addr) -> uint16 {
+        switch (mirroring) {
+        case Mirroring::VERT: return addr & 0x7FF;
+        case Mirroring::HORZ: {
+                auto tmp = addr & 0xFFF;
+                auto bits = Util::getbits(tmp, 10, 2) >> 1;
+                return Util::setbits(tmp, 10, 2, bits);
+            }
+        default: assert(false);
+        }
     };
-    std::function<uint16(uint16)> decode;
-    if (mirroring == Mirroring::HORZ)
-        decode = decode_horz;
-    else
-        decode = decode_vert;
     bus->remap(NT_START, PAL_START,
             [=](uint16 addr)             {
                 addr = decode(addr);
@@ -299,6 +298,12 @@ void PPU::set_mirroring(Mirroring mirroring)
             });
 }
 
+/* The VRAM address has the following components:
+ * FFFNNYYYYYXXXXX
+ * then, depending on how you look at it, you can get the X component
+ * and the Y component.
+ * X : N XXXXX FFF (where N is the first bit of NN and FFF is fine_x)
+ * Y : N YYYYY FFF (where N is the second bit of NN and FFF is fine_y) */
 void PPU::inc_v_horzpos()
 {
     if (!io.bg_show)
@@ -372,13 +377,13 @@ void PPU::fetch_attr(bool dofetch)
                        | (uint16(vram.addr.coarse_x) & 0x1C) >> 2);
 }
 
-/* 0HRRRRCCCCPTTT
+/* A pattern table address is formed this way:
+ * 0HRRRRCCCCPTTT
  * H - which table is used, left/right. controlled by io.bg_pt_addr.
  * RRRR CCCC - row, column. controlled by the fetch nt byte.
  * P - bit plane. 0 = get the low byte, 1 = get the high byte.
  * TTT - fine y, or the current row. fine y is incremented at cycle 256 of each
- * row.
- */
+ * row. */
 void PPU::fetch_lowbg(bool dofetch)
 {
     if (!dofetch)
