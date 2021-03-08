@@ -43,8 +43,8 @@ void Emulator::dump(Util::File &dumpfile)
         }
         dumpfile.putc('\n');
     };
-    dump_mem(cpu_bus);
-    dump_mem(ppu_bus);
+    dump_mem(rambus);
+    dump_mem(vrambus);
 }
 
 void Emulator::run_frame(Util::File &logfile)
@@ -56,11 +56,12 @@ void Emulator::run_frame(Util::File &logfile)
     nmi = false;
 }
 
-void Emulator::insert_rom(const std::string_view rompath)
+bool Emulator::insert_rom(Util::File &romfile)
 {
-    Util::File romfile(rompath.data(), Util::File::Mode::READ);
-    cartridge.parse(romfile);
+    if (!cartridge.parse(romfile))
+        return false;
     ppu.set_mirroring(cartridge.mirroring());
-    cartridge.attach_bus(&cpu_bus, &ppu_bus);
+    cartridge.attach_bus(&rambus, &vrambus);
+    return true;
 }
 

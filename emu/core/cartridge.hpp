@@ -16,13 +16,7 @@ class Cartridge {
     static const int HEADER_LEN = 16;
     static const int TRAINER_LEN = 512;
 
-    enum class Format {
-        INVALID,
-        INES,
-        NES20,
-    } file_format = Format::INVALID;
-
-    std::string name;
+    std::string name, format;
     Util::HeapArray<uint8> prgrom;
     Util::HeapArray<uint8> chrrom;
     uint8 header[HEADER_LEN];
@@ -41,10 +35,10 @@ class Cartridge {
     } has;
 
 public:
-    void parse(Util::File &romfile);
+    bool parse(Util::File &romfile);
     uint8 read_prgrom(uint16 addr);
     uint8 read_chrrom(uint16 addr);
-    void attach_bus(Bus *cpubus, Bus *ppubus);
+    void attach_bus(Bus *rambus, Bus *vrambus);
     std::string getinfo() const;
 
     uint16 mappertype() const   { return mapper; }

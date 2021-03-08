@@ -2,8 +2,8 @@
  * be used for debugging and error messages.
  * #define DEBUG to use the macros. error message functions need not to define
  * it. */
-#ifndef UTILS_DEBUG_HPP_INCLUDED
-#define UTILS_DEBUG_HPP_INCLUDED
+#ifndef UTIL_DEBUG_HPP_INCLUDED
+#define UTIL_DEBUG_HPP_INCLUDED
 
 #include <fmt/core.h>
 
@@ -19,6 +19,14 @@ inline void warning(std::string &&fmt, T... args)
 {
     fmt::print(stderr, "warning: ");
     fmt::print(stderr, fmt, args...);
+}
+
+template <typename... T>
+inline void panic(std::string &&fmt, T... args)
+{
+    fmt::print(stderr, "panic: ");
+    fmt::print(stderr, fmt, args...);
+    std::exit(1);
 }
 
 #ifdef DEBUG

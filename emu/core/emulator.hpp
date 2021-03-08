@@ -1,7 +1,6 @@
 #ifndef CORE_EMULATOR_HPP_INCLUDED
 #define CORE_EMULATOR_HPP_INCLUDED
 
-#include <string_view>
 #include <emu/core/bus.hpp>
 #include <emu/core/cpu.hpp>
 #include <emu/core/ppu.hpp>
@@ -12,8 +11,8 @@ namespace Util { class File; }
 namespace Core {
 
 class Emulator {
-    Bus cpu_bus { CPUBUS_SIZE };
-    Bus ppu_bus { PPUBUS_SIZE };
+    Bus rambus { CPUBUS_SIZE };
+    Bus vrambus { PPUBUS_SIZE };
     Cartridge cartridge;
     CPU cpu;
     PPU ppu;
@@ -24,8 +23,8 @@ class Emulator {
 public:
     Emulator()
     {
-        cpu.attach_bus(&cpu_bus);
-        ppu.attach_bus(&ppu_bus, &cpu_bus);
+        cpu.attach_bus(&rambus);
+        ppu.attach_bus(&vrambus, &rambus);
         ppu.set_nmi_callback([this]() {
             nmi = true;
             cpu.fire_nmi();
@@ -36,7 +35,7 @@ public:
     void run_frame(Util::File &logfile);
     void log(Util::File &logfile);
     void dump(Util::File &dumpfile);
-    void insert_rom(const std::string_view rompath);
+    bool insert_rom(Util::File &romfile);
 
     void power()
     {
