@@ -70,7 +70,7 @@ $(outdir)/video_test: $(objs.video_test) emu/video/video.hpp emu/video/opengl.hp
 	$(info Linking $@ ...)
 	$(CXX) $(objs.video_test) -o $@ $(libs)
 
-_objs.ppu_test := ppu_test.o cpu.o ppu.o bus.o video.o opengl.o glad.o cartridge.o file.o
+_objs.ppu_test := ppu_test.o cpu.o ppu.o bus.o video.o opengl.o glad.o cartridge.o file.o easyrandom.o
 objs.ppu_test := $(patsubst %,$(outdir)/%,$(_objs.ppu_test))
 $(outdir)/ppu_test: $(objs.ppu_test)
 	$(info Linking $@ ...)

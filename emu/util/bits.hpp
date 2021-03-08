@@ -30,6 +30,21 @@ constexpr inline uint32_t rotr32(const uint32_t x, const int k)
     return (x >> k) | (x << (32 - k));
 }
 
+constexpr inline uint64_t get_bits(uint64_t num, uint8_t bitno, uint8_t nbits)
+{
+    return num >> bitno & nbits;
+}
+
+constexpr inline uint64_t get_bits(uint64_t num, uint8_t bitno)
+{
+    return num >> bitno & 1;
+}
+
+constexpr inline uint64_t get_mask_nbits(unsigned nbits)
+{
+    return (1UL << nbits) - 1UL;
+}
+
 constexpr inline uint64_t set_bits(uint64_t num, uint8_t shift, uint64_t mask, uint64_t data)
 {
     // if mask == 1, this could've been optimized with !!data instead of (data & mask)
@@ -42,10 +57,6 @@ constexpr inline uint64_t set_bit(uint64_t num, uint8_t bit, bool data)
     return (num & ~(1UL << bit)) | data << bit;
 }
 
-constexpr inline uint64_t get_mask_nbits(unsigned nbits)
-{
-    return (1UL << nbits) - 1UL;
-}
 
 /* A struct for portable bit-fields. Use it like so:
  * union {
