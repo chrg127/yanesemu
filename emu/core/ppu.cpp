@@ -220,11 +220,11 @@ void PPU::writereg(const uint16 which, const uint8 data)
     case 0x2006:
         if (io.scroll_latch == 0) {
             // high byte
-            vram.tmp = Util::set_bits(vram.tmp, 8, 0x3F, data & 0x3F);
-            vram.tmp = Util::set_bit(vram.tmp, 14, 0);
+            vram.tmp = Util::setbits(vram.tmp, 8, 6, data & 0x3F);
+            vram.tmp = Util::setbit(vram.tmp, 14, 0);
         } else {
             // low byte
-            vram.tmp = Util::set_bits(vram.tmp, 0, 0xFF, data);
+            vram.tmp = Util::setbits(vram.tmp, 0, 8, data);
             vram.addr = vram.tmp;
         }
         io.scroll_latch ^= 1;
@@ -278,9 +278,8 @@ void PPU::set_mirroring(Mirroring mirroring)
     const auto decode_vert = [](uint16 addr) { return addr & 0x7FF; };
     const auto decode_horz = [](uint16 addr) {
         auto tmp = addr & 0xFFF;
-        auto bits = Util::get_bits(tmp, 10, 2) >> 1;
-        return Util::set_bits(tmp, 10, 3, bits);
-        // return Util::set_bits(tmp, 10, 2, bits);
+        auto bits = Util::getbits(tmp, 10, 2) >> 1;
+        return Util::setbits(tmp, 10, 2, bits);
     };
     std::function<uint16(uint16)> decode;
     if (mirroring == Mirroring::HORZ)
@@ -336,7 +335,7 @@ void PPU::copy_v_horzpos()
     if (!io.bg_show)
         return;
     vram.addr.coarse_x = vram.tmp.coarse_x;
-    vram.addr.nt = Util::set_bit(vram.addr.nt, 0, vram.tmp.nt & 1);
+    vram.addr.nt = Util::setbit(vram.addr.nt, 0, vram.tmp.nt & 1);
 }
 
 void PPU::copy_v_vertpos()
@@ -345,7 +344,7 @@ void PPU::copy_v_vertpos()
         return;
     vram.addr.coarse_y = vram.tmp.coarse_y;
     vram.addr.fine_y = vram.tmp.fine_y;
-    vram.addr.nt = Util::set_bit(vram.addr.nt, 1, vram.tmp.nt >> 1 & 1);
+    vram.addr.nt = Util::setbit(vram.addr.nt, 1, vram.tmp.nt >> 1 & 1);
 }
 
 void PPU::fetch_nt(bool dofetch)
@@ -407,14 +406,14 @@ void PPU::shift_run()
     shift.thigh >>= 1;
     shift.ahigh >>= 1;
     shift.alow  >>= 1;
-    shift.ahigh = Util::set_bit(shift.ahigh, 7, shift.feed_high);
-    shift.ahigh = Util::set_bit(shift.alow,  7, shift.feed_low );
+    shift.ahigh = Util::setbit(shift.ahigh, 7, shift.feed_high);
+    shift.ahigh = Util::setbit(shift.alow,  7, shift.feed_low );
 }
 
 void PPU::shift_fill()
 {
-    shift.tlow  = Util::set_bits(shift.tlow,  8, 0xFF, tile.low);
-    shift.thigh = Util::set_bits(shift.thigh, 8, 0xFF, tile.high);
+    shift.tlow  = Util::setbits(shift.tlow,  8, 8, tile.low);
+    shift.thigh = Util::setbits(shift.thigh, 8, 8, tile.high);
     // TODO: this is definitely fucking wrong
     uint16 v = vram.addr;
     uint8 attr_mask = 0b11 << (~((v >> 1 & 1) | (v >> 6 & 1)))*2;
