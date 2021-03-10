@@ -102,7 +102,8 @@ void PPU::reset()
 
 std::string PPU::get_info()
 {
-    return fmt::format("line = {:03}; cycle = {:03}; v = {:X}", lines%262, cycles%341, vram.addr.value);
+    return fmt::format("line = {:03}; cycle = {:03}; v = {:X}, x = {}, y = {}",
+            lines%262, cycles%341, vram.addr.value, vram.vx(), vram.vy());
 }
 
 void PPU::attach_bus(Bus *vrambus, Bus *rambus)

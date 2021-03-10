@@ -83,6 +83,9 @@ class PPU {
         VRAMAddress addr;
         VRAMAddress tmp;
         uint8 fine_x;
+        // 10 bit numbers?
+        uint16 vx() const { return fine_x      | addr.coarse_x << 3 | (addr.nt & 1) << 8; }
+        uint8 vy() const  { return addr.fine_y | addr.coarse_y << 3 | (addr.nt & 2) << 8; }
     } vram;
 
     struct {
@@ -127,12 +130,12 @@ private:
 
     void output();
     uint8 getcolor(bool select, uint8 pal, uint8 palind);
-    void map_nt(Mirroring mirroring);
 
     void inc_v_horzpos();
     void inc_v_vertpos();
     void copy_v_horzpos();
     void copy_v_vertpos();
+
     void fetch_nt(bool dofetch);
     void fetch_attr(bool dofetch);
     void fetch_lowbg(bool dofetch);
