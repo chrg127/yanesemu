@@ -31,6 +31,8 @@ public:
         });
     }
 
+    Emulator(Emulator &&e) = default;
+
     void run();
     void run_frame(Util::File &logfile);
     void log(Util::File &logfile);
@@ -51,6 +53,8 @@ public:
 
     void set_screen(Video::Canvas *canvas) { ppu.set_screen(canvas); }
     std::string rominfo()                  { return cartridge.getinfo(); }
+
+    friend class Debugger;
 };
 
 } // namespace Core

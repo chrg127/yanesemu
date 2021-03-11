@@ -2,6 +2,7 @@
 #include <SDL2/SDL.h>
 #include <emu/version.hpp>
 #include <emu/core/emulator.hpp>
+#include <emu/core/debugger.hpp>
 #include <emu/util/cmdline.hpp>
 #include <emu/util/easyrandom.hpp>
 #include <emu/util/debug.hpp>
@@ -14,6 +15,7 @@ static const Util::ValidArgStruct cmdflags = {
     { 'd', "dump-file",    "Dump memory to this file. Pass stdout/stderr to print to stdout/stderr. ", Util::ParamType::MUST_HAVE },
     { 'h', "help",         "Print this help text and quit"            },
     { 'v', "version",      "Shows the program's version"              },
+    { 'a', "debugger",     "Use command-line debugger"                },
 };
 static Core::Emulator emu;
 static Util::File logfile, dumpfile;
@@ -48,6 +50,16 @@ void mainloop()
     emu.dump(dumpfile);
 }
 
+void mainloop_debug()
+{
+    Util::seed();
+    emu.power();
+    Core::Debugger debugger {std::move(emu)};
+    while (!debugger.got_quit()) {
+        debugger.run();
+    }
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 2) {
@@ -77,6 +89,11 @@ int main(int argc, char *argv[])
     }
     romfile.close();
 
+    if (flags.has['a']) {
+        mainloop_debug();
+        return 0;
+    }
+
     // initialize video subsystem
     if (!context.init(Video::Context::Type::OPENGL)) {
         error("can't initialize video\n");
@@ -95,6 +112,7 @@ int main(int argc, char *argv[])
     };
     open_logfile(logfile, 'l');
     open_logfile(dumpfile, 'd');
+
 
     mainloop();
 

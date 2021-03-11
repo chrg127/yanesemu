@@ -159,6 +159,8 @@ private:
     void cycle_outputpixel();
     void vblank_begin();
     void vblank_end();
+
+    friend class Debugger;
 };
 
 } // namespace Core
