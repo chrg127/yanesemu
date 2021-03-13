@@ -1,9 +1,11 @@
 #include "easyrandom.hpp"
 
-#include "unsigned.hpp"
+#include <random>
+#include <mutex>
 
 namespace Util {
 
+using GenType = std::mt19937;
 GenType generator;
 std::uniform_int_distribution<uint8> dist8;
 std::mutex rnd_mutex;
