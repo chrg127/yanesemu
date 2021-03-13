@@ -2,7 +2,6 @@
 #include <SDL2/SDL.h>
 #include <emu/version.hpp>
 #include <emu/core/emulator.hpp>
-#include <emu/core/debugger.hpp>
 #include <emu/util/cmdline.hpp>
 #include <emu/util/easyrandom.hpp>
 #include <emu/util/debug.hpp>
@@ -20,6 +19,7 @@ static const Util::ValidArgStruct cmdflags = {
 static Core::Emulator emu;
 static Util::File logfile, dumpfile;
 static Video::Context context;
+static Util::ArgResult flags;
 
 void mainloop()
 {
@@ -28,9 +28,12 @@ void mainloop()
     SDL_Event ev;
 
     Util::seed();
-    emu.power();
     emu.set_screen(&screen);
-    fmt::print("{}\n", emu.rominfo());
+    emu.power();
+    if (flags.has['a'])
+        emu.enable_debugger([](Core::Debugger &db, Core::Debugger::Event &ev) { Core::clirepl(db, ev); });
+    if (logfile)
+        logfile.print("{}\n", emu.rominfo());
     while (running) {
         while (SDL_PollEvent(&ev)) {
             switch (ev.type) {
@@ -42,22 +45,15 @@ void mainloop()
                     context.resize(ev.window.data1, ev.window.data2);
             }
         }
-        emu.log(logfile);
-        emu.run_frame(logfile);
+        if (emu.debugger_has_quit())
+            running = false;
+        if (logfile)
+            logfile.print(emu.status() + '\n');
+        emu.run();
         screen.update();
         context.draw();
     }
-    emu.dump(dumpfile);
-}
-
-void mainloop_debug()
-{
-    Util::seed();
-    emu.power();
-    Core::Debugger debugger {std::move(emu)};
-    while (!debugger.got_quit()) {
-        debugger.run();
-    }
+    // emu.dump(dumpfile);
 }
 
 int main(int argc, char *argv[])
@@ -68,7 +64,7 @@ int main(int argc, char *argv[])
     }
 
     // parse command line arguments
-    Util::ArgResult flags = Util::parse(argc, argv, cmdflags);
+    flags = Util::parse(argc, argv, cmdflags);
     if (flags.has['h']) { Util::print_usage(progname, cmdflags); return 0; }
     if (flags.has['v']) { Util::print_version(progname, version); return 0; }
 
@@ -80,7 +76,7 @@ int main(int argc, char *argv[])
         warning("Multiple ROM files specified, only the first will be chosen\n");
     Util::File romfile(flags.items[0], Util::File::Mode::READ);
     if (!romfile) {
-        error("{}\n", romfile.error_str());
+        error("{}: {}\n", flags.items[0], romfile.error_str());
         return 1;
     }
     if (!emu.insert_rom(romfile)) {
@@ -89,11 +85,6 @@ int main(int argc, char *argv[])
     }
     romfile.close();
 
-    if (flags.has['a']) {
-        mainloop_debug();
-        return 0;
-    }
-
     // initialize video subsystem
     if (!context.init(Video::Context::Type::OPENGL)) {
         error("can't initialize video\n");
@@ -101,7 +92,7 @@ int main(int argc, char *argv[])
     }
 
     // open log files -- these are used to log emulator info and dump memory
-    auto open_logfile = [&flags](Util::File &f, char flag) {
+    auto open_logfile = [](Util::File &f, char flag) {
         if (!flags.has[flag] || flags.params[flag] == "")
             return;
         std::string_view s = flags.params[flag];
@@ -112,7 +103,6 @@ int main(int argc, char *argv[])
     };
     open_logfile(logfile, 'l');
     open_logfile(dumpfile, 'd');
-
 
     mainloop();
 

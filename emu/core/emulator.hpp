@@ -5,6 +5,7 @@
 #include <emu/core/cpu.hpp>
 #include <emu/core/ppu.hpp>
 #include <emu/core/cartridge.hpp>
+#include <emu/core/debugger.hpp>
 
 namespace Util { class File; }
 
@@ -16,6 +17,7 @@ class Emulator {
     Cartridge cartridge;
     CPU cpu;
     PPU ppu;
+    Debugger debugger {this};
     int cycle = 0;
     // this is internal to the emulator only and doesn't affect the cpu and ppu
     bool nmi = false;
@@ -31,13 +33,9 @@ public:
         });
     }
 
-    Emulator(Emulator &&e) = default;
-
     void run();
-    void run_frame(Util::File &logfile);
-    void log(Util::File &logfile);
-    void dump(Util::File &dumpfile);
     bool insert_rom(Util::File &romfile);
+    std::string status() const;
 
     void power()
     {
@@ -51,8 +49,17 @@ public:
         ppu.reset();
     }
 
+    void enable_debugger(auto &&callb)
+    {
+        // the debugger will do nothing as long we don't tie its run() function
+        // to something
+        cpu.register_mem_callback([&](uint16 addr, uint3 mode) { debugger.run(addr, mode); });
+        debugger.register_callback(callb);
+    }
+
     void set_screen(Video::Canvas *canvas) { ppu.set_screen(canvas); }
     std::string rominfo()                  { return cartridge.getinfo(); }
+    bool debugger_has_quit() const         { return debugger.has_quit(); }
 
     friend class Debugger;
 };

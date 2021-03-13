@@ -18,16 +18,17 @@ void Emulator::run()
     cycle = curr_cycle;
 }
 
-void Emulator::log(Util::File &logfile)
-{
-    if (!logfile)
-        return;
-    logfile.print(cpu.get_info() + ' ');
-    logfile.print(ppu.get_info() + ' ');
-    logfile.print(cpu.disassemble());
-    logfile.putc('\n');
-}
+// void Emulator::log(Util::File &logfile)
+// {
+//     if (!logfile)
+//         return;
+//     logfile.print(cpu.get_info() + ' ');
+//     logfile.print(ppu.get_info() + ' ');
+//     logfile.print(cpu.disassemble());
+//     logfile.putc('\n');
+// }
 
+/*
 void Emulator::dump(Util::File &dumpfile)
 {
     if (!dumpfile)
@@ -46,15 +47,16 @@ void Emulator::dump(Util::File &dumpfile)
     dump_mem(rambus);
     dump_mem(vrambus);
 }
+*/
 
-void Emulator::run_frame(Util::File &logfile)
-{
-    while (!nmi) {
-        log(logfile);
-        run();
-    }
-    nmi = false;
-}
+// void Emulator::run_frame(Util::File &logfile)
+// {
+//     while (!nmi) {
+//         log(logfile);
+//         run();
+//     }
+//     nmi = false;
+// }
 
 bool Emulator::insert_rom(Util::File &romfile)
 {
@@ -63,5 +65,13 @@ bool Emulator::insert_rom(Util::File &romfile)
     ppu.set_mirroring(cartridge.mirroring());
     cartridge.attach_bus(&rambus, &vrambus);
     return true;
+}
+
+std::string Emulator::status() const
+{
+    const auto info = cpu.disassemble();
+    return cpu.get_info() + ' ' +
+           ppu.get_info() + ' ' +
+           fmt::format("Instruction [{:02X}] ", info.code) + info.to_str;
 }
 

@@ -86,8 +86,8 @@ void PPU::reset()
     io.green = 0;
     io.blue = 0;
     // PPUSTATUS
-    io.sp_overflow = Util::random_between(0, 1);
-    io.sp_zero_hit = Util::random_between(0, 1);
+    io.sp_overflow = 0; // Util::random_between(0, 1);
+    io.sp_zero_hit = 0; // Util::random_between(0, 1);
     // PPUSCROLL and PPUADDR
     io.scroll_latch = 0;
     vram.fine_x = 0;
