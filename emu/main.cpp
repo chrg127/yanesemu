@@ -30,8 +30,6 @@ void mainloop()
     Util::seed();
     emu.set_screen(&screen);
     emu.power();
-    if (flags.has['a'])
-        emu.enable_debugger([](Core::Debugger &db, Core::Debugger::Event &ev) { Core::clirepl(db, ev); });
     if (logfile)
         logfile.print("{}\n", emu.rominfo());
     while (running) {
@@ -103,6 +101,9 @@ int main(int argc, char *argv[])
     };
     open_logfile(logfile, 'l');
     open_logfile(dumpfile, 'd');
+
+    if (flags.has['a'])
+        emu.enable_debugger([](Core::Debugger &db, Core::Debugger::Event &ev) { Core::clirepl(db, ev); });
 
     mainloop();
 

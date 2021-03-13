@@ -16,10 +16,17 @@ public:
         CPU::InstrInfo info;
     };
 
+    struct Breakpoint {
+        uint16 start;
+        uint16 end;
+        uint3 mode; // rwx
+    };
+
 private:
     Emulator *emu;
     std::function<void (Debugger &, Event &)> callback;
-    std::vector<uint16> breakpoints;
+    std::vector<Breakpoint> breakpoints;
+    uint16 stop_addr = 0;
     bool quit = false;
 
 public:
@@ -28,6 +35,7 @@ public:
     { }
 
     void run(uint16 addr, uint3 mode);
+    void set_stop_addr(uint16 addr) { stop_addr = addr; };
     void step(Event &ev);
     // uint8 read_addr(uint16 addr);
     // void write_addr(uint16 addr, uint8 data);

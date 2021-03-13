@@ -6,6 +6,7 @@
 #include <emu/core/ppu.hpp>
 #include <emu/core/cartridge.hpp>
 #include <emu/core/debugger.hpp>
+#include <fmt/core.h>
 
 namespace Util { class File; }
 
@@ -55,6 +56,7 @@ public:
         // to something
         cpu.register_mem_callback([&](uint16 addr, uint3 mode) { debugger.run(addr, mode); });
         debugger.register_callback(callb);
+        debugger.set_stop_addr(rambus.read(RESET_VEC+1) << 8 | rambus.read(RESET_VEC));
     }
 
     void set_screen(Video::Canvas *canvas) { ppu.set_screen(canvas); }

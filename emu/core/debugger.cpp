@@ -15,16 +15,20 @@ void Debugger::run(uint16 addr, uint3 mode)
     Event ev;
     ev.info = emu->cpu.disassemble();
     ev.pc = emu->cpu.pc.reg;
-    if (auto it = std::find(breakpoints.begin(), breakpoints.end(), ev.pc);
-        it != breakpoints.end()) {
-        breakpoints.erase(it);
+    if (mode == 0b001 && stop_addr == addr) {
+        stop_addr = 0;
         callback(*this, ev);
     }
+    // if (auto it = std::find(breakpoints.begin(), breakpoints.end(), ev.pc);
+    //     it != breakpoints.end()) {
+    //     breakpoints.erase(it);
+    //     callback(*this, ev);
+    // }
 }
 
 void Debugger::step(Event &ev)
 {
-    breakpoints.push_back(ev.pc + ev.info.num_bytes);
+    stop_addr = ev.pc + ev.info.num_bytes;
 }
 
 /* The CLI debugger is actually just a free function.

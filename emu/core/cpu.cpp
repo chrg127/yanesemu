@@ -56,11 +56,11 @@ void CPU::attach_bus(Bus *rambus)
 {
     bus = rambus;
     bus->map(RAM_START, PPUREG_START,
-        [=](uint16 addr)             { return rammem[addr & 0x7FF]; },
-        [=](uint16 addr, uint8 data) { rammem[addr & 0x7FF] = data; });
+        [this](uint16 addr)             { return rammem[addr & 0x7FF]; },
+        [this](uint16 addr, uint8 data) { rammem[addr & 0x7FF] = data; });
     bus->map(APU_START, CARTRIDGE_START,
-        [=](uint16 addr)             { return read_apu_reg(addr); },
-        [=](uint16 addr, uint8 data) { write_apu_reg(addr, data); });
+        [this](uint16 addr)             { return read_apu_reg(addr); },
+        [this](uint16 addr, uint8 data) { write_apu_reg(addr, data); });
 }
 
 /* Sends an IRQ signal. */
@@ -97,7 +97,7 @@ uint8 CPU::fetch()
     if (mem_callback)
         mem_callback(pc.reg, 0b001);
     cycle();
-    bus->read(pc.reg++);
+    return bus->read(pc.reg++);
 }
 
 void CPU::execute(uint8 opcode)

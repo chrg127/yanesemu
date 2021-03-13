@@ -99,14 +99,14 @@ std::string Cartridge::getinfo() const
 void Cartridge::attach_bus(Bus *rambus, Bus *vrambus)
 {
     rambus->map(CARTRIDGE_START, 0x8000,
-            [=] (uint16 addr) { return 0; },
-            [=] (uint16 addr, uint8 data) { /***********/ });
+            [this] (uint16 addr) { return 0; },
+            [this] (uint16 addr, uint8 data) { /***********/ });
     rambus->map(0x8000, CPUBUS_SIZE,
-            [=] (uint16 addr) { return read_prgrom(addr); },
-            [=] (uint16 addr, uint8 data) { /***********/ });
+            [this] (uint16 addr) { return read_prgrom(addr); },
+            [this] (uint16 addr, uint8 data) { /***********/ });
     vrambus->map(PT_START, NT_START,
-            [=] (uint16 addr) { return read_chrrom(addr); },
-            [=] (uint16 addr, uint8 data) { /***********/ });
+            [this] (uint16 addr) { return read_chrrom(addr); },
+            [this] (uint16 addr, uint8 data) { /***********/ });
 }
 
 } // namespace Core

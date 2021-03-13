@@ -110,17 +110,17 @@ void PPU::attach_bus(Bus *vrambus, Bus *rambus)
 {
     bus = vrambus;
     rambus->map(PPUREG_START, APU_START,
-            [=](uint16 addr)             { return readreg(0x2000 + (addr & 0x7)); },
-            [=](uint16 addr, uint8 data) { writereg(0x2000 + (addr & 0x7), data); });
+            [this](uint16 addr)             { return readreg(0x2000 + (addr & 0x7)); },
+            [this](uint16 addr, uint8 data) { writereg(0x2000 + (addr & 0x7), data); });
     bus->map(PAL_START, 0x4000,
-            [=](uint16 addr)             {
+            [this](uint16 addr)             {
                 assert((addr & 0x1F) < PAL_SIZE);
                 return palmem[addr & 0x1F];
             },
-            [=](uint16 addr, uint8 data) { assert((addr & 0x1F) < PAL_SIZE); palmem[addr & 0x1F] = data; });
+            [this](uint16 addr, uint8 data) { assert((addr & 0x1F) < PAL_SIZE); palmem[addr & 0x1F] = data; });
     bus->map(NT_START, PAL_START,
-            [=](uint16 addr)             { return 0; },
-            [=](uint16 addr, uint8 data) { /*******/ });
+            [this](uint16 addr)             { return 0; },
+            [this](uint16 addr, uint8 data) { /*******/ });
 }
 
 uint8 PPU::readreg(const uint16 which)
@@ -289,12 +289,12 @@ void PPU::set_mirroring(Mirroring mirroring)
         }
     };
     bus->remap(NT_START, PAL_START,
-            [=](uint16 addr)             {
+            [&](uint16 addr)             {
                 addr = decode(addr);
                 assert(addr < VRAM_SIZE);
                 return vrammem[addr];
             },
-            [=](uint16 addr, uint8 data) {
+            [&](uint16 addr, uint8 data) {
                 addr = decode(addr);
                 assert(addr < VRAM_SIZE);
                 vrammem[addr] = data;
