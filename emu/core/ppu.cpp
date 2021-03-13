@@ -100,7 +100,7 @@ void PPU::reset()
         oammem[i] = 0;
 }
 
-std::string PPU::get_info()
+std::string PPU::get_info() const
 {
     return fmt::format("line = {:03}; cycle = {:03}; v = {:X}, x = {}, y = {}",
             lines%262, cycles%341, vram.addr.value, vram.vx(), vram.vy());
@@ -246,6 +246,8 @@ void PPU::writereg(const uint16 which, const uint8 data)
 
 void PPU::output()
 {
+    if (screen == nullptr)
+        return;
     const uint8 bgpixel = bg_output();
     uint32 color = 0;
     if (bgpixel == 0x30)

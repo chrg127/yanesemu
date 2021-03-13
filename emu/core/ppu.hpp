@@ -111,7 +111,7 @@ public:
     void reset();
     // ppumain.cpp
     void run();
-    std::string get_info();
+    std::string get_info() const;
     void attach_bus(Bus *vrambus, Bus *rambus);
     void set_mirroring(Mirroring m);
 
