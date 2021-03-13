@@ -34,28 +34,28 @@ inline static std::string disass_branch(const char name[4], int8_t disp, uint16 
     return fmt::format("{} {} [${:02X}] {}", name, disp, addr, (took) ? "[Branch taken]" : "[Branch not taken]");
 }
 
-std::string CPU::disassemble() const
+CPU::InstrInfo CPU::disassemble() const
 {
     uint8 instruction = bus->read(pc.reg);
     uint8 oplow       = bus->read(pc.reg+1);
     uint8 ophigh      = bus->read(pc.reg+2);
-    return fmt::format("Instruction [{:02X}] ", instruction) +
-           disassemble_internal(instruction, oplow, ophigh);
+    return disassemble_internal(instruction, oplow, ophigh);
 }
 
-std::string CPU::disassemble_internal(uint8 instr, uint8 oplow, uint8 ophigh) const
+CPU::InstrInfo CPU::disassemble_internal(uint8 instr, uint8 oplow, uint8 ophigh) const
 {
 #define INSTR_IMPLD(id, name) \
-    case id: return std::string(#name);
+    case id: return { .code = instr, .lowop = oplow, .highop = ophigh, .num_bytes = 1, .to_str = std::string(#name) };
 #define INSTR_ACCUM(id, name) \
-    case id: return fmt::format("{} A", #name);
+    case id: return { .code = instr, .lowop = oplow, .highop = ophigh, .num_bytes = 1, .to_str = fmt::format("{} A", #name) };
 #define INSTR_ADDRMODE8(id, name, mode, op) \
-    case id: return disass<DisassTag::mode>(#name, op);
+    case id: return { .code = instr, .lowop = oplow, .highop = ophigh, .num_bytes = 2, .to_str = disass<DisassTag::mode>(#name, op) };
 #define INSTR_ADDRMODE16(id, name, mode, oplow, ophigh) \
-    case id: return disass16<DisassTag16::mode>(#name, oplow, ophigh);
+    case id: return { .code = instr, .lowop = oplow, .highop = ophigh, .num_bytes = 3, .to_str = disass16<DisassTag16::mode>(#name, oplow, ophigh) };
     // i will leave the reason for that 2 to someone else.
 #define INSTR_BRNCH(id, name, expr) \
-    case id: return disass_branch(#name, (int8_t) oplow, pc.reg + 2 + (int8_t) oplow, expr);
+    case id: return { .code = instr, .lowop = oplow, .highop = ophigh, .num_bytes = 2, \
+                      .to_str = disass_branch(#name, (int8_t) oplow, pc.reg + 2 + (int8_t) oplow, expr) };
 
     switch(instr) {
         INSTR_IMPLD(0x00, BRK)
@@ -209,8 +209,9 @@ std::string CPU::disassemble_internal(uint8 instr, uint8 oplow, uint8 ophigh) co
         INSTR_ADDRMODE16(0xFD, SBC, absx, oplow, ophigh)
         INSTR_ADDRMODE16(0xFE, INC, absx, oplow, ophigh)
         default:
-            return "[Unknown]";
+            return { .code = instr, .lowop = oplow, .highop = ophigh, .num_bytes = 1, .to_str = "[Unknown]" };
     }
+    // unreachable
 
 #undef INSTR_IMPLD
 #undef INSTR_ADDRMODE8

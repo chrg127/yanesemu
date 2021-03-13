@@ -1,6 +1,7 @@
 #ifndef CORE_CPU_HPP_INCLUDED
 #define CORE_CPU_HPP_INCLUDED
 
+#include <functional>
 #include <string>
 #include <emu/core/const.hpp>
 #include <emu/core/bus.hpp>
@@ -36,6 +37,7 @@ class CPU {
     uint8 rammem[RAM_SIZE];
     Bus *bus = nullptr;
     unsigned long cycles = 0;
+    std::function<void (uint16, uint3)> mem_callback;
 
     // used in opcodes.cpp
     Reg16 op = 0;
@@ -89,17 +91,25 @@ class CPU {
     bool execirq    = false;
 
 public:
+    struct InstrInfo {
+        uint8 code;
+        uint8 lowop;
+        uint8 highop;
+        unsigned num_bytes;
+        std::string to_str;
+    };
+
     void run();
     void power();
     void reset();
     void attach_bus(Bus *rambus);
     void fire_irq();
     void fire_nmi();
-    std::string disassemble() const;
+    InstrInfo disassemble() const;
     std::string get_info() const;
 
     int get_cycles()          { return cycles; }
-    uint8 peek_opcode() const { return bus->read(pc.reg); }
+    void register_mem_callback(auto &&callback) { mem_callback = callback; }
 
 private:
     uint8 fetch();
@@ -113,7 +123,7 @@ private:
     void last_cycle();
 
     // disassemble.cpp
-    std::string disassemble_internal(uint8 instr, uint8 oplow, uint8 ophigh) const;
+    InstrInfo disassemble_internal(uint8 instr, uint8 oplow, uint8 ophigh) const;
 
     // opcodes.cpp
     void addrmode_imm_read(InstrFuncRead f);
@@ -188,9 +198,10 @@ private:
     void instr_rti();
     void instr_nop();
 
-    uint8 readmem(uint16 addr)             { cycle(); return bus->read(addr); }
-    void writemem(uint16 addr, uint8 data) { cycle(); bus->write(addr, data); }
-    uint8 read_apu_reg(uint16 addr)        { return 0; }
+    uint8 readmem(uint16 addr);
+    void writemem(uint16 addr, uint8 data);
+
+    uint8 read_apu_reg(uint16 addr) { return 0; }
     void write_apu_reg(uint16 addr, uint8 data) { }
 
     friend class Debugger;

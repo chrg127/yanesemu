@@ -94,7 +94,10 @@ std::string CPU::get_info() const
 
 uint8 CPU::fetch()
 {
-    return readmem(pc.reg++);
+    if (mem_callback)
+        mem_callback(pc.reg, 0b001);
+    cycle();
+    bus->read(pc.reg++);
 }
 
 void CPU::execute(uint8 opcode)
@@ -333,6 +336,22 @@ void CPU::nmipoll()
 {
     if (!execnmi && nmipending)
         execnmi = true;
+}
+
+uint8 CPU::readmem(uint16 addr)
+{
+    if (mem_callback)
+        mem_callback(addr, 0b100);
+    cycle();
+    return bus->read(addr);
+}
+
+void CPU::writemem(uint16 addr, uint8 data)
+{
+    if (mem_callback)
+        mem_callback(addr, 0b010);
+    cycle();
+    bus->write(addr, data);
 }
 
 } // namespace Core
