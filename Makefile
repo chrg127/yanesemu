@@ -15,7 +15,7 @@ libs := -lm -lSDL2 -lfmt
 CC = gcc
 CXX = g++
 CFLAGS = -I. -std=c11
-CXXFLAGS = -I. -std=c++17 -Wall -Wextra -pipe \
+CXXFLAGS = -I. -std=c++20 -Wall -Wextra -pipe \
 		 -Wcast-align -Wcast-qual -Wpointer-arith \
 		 -Wformat=2 -Wmissing-include-dirs -Wno-unused-parameter \
 		 -fno-rtti -fconcepts
