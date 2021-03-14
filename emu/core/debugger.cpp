@@ -19,20 +19,22 @@ void Debugger::run(uint16 addr, uint3 mode)
         stop_addr = 0;
         callback(*this, ev);
     }
-    // if (auto it = std::find(breakpoints.begin(), breakpoints.end(), ev.pc);
-    //     it != breakpoints.end()) {
-    //     breakpoints.erase(it);
-    //     callback(*this, ev);
-    // }
+}
+
+void Debugger::next(Event &ev)
+{
+
 }
 
 void Debugger::step(Event &ev)
 {
+    static int branch_instr[] = { 0x10, 0x30, 0x50, 0x70, 0x90, 0xB0, 0xD0 };
+    if (
     stop_addr = ev.pc + ev.info.num_bytes;
 }
 
-/* The CLI debugger is actually just a free function.
- * It just has a lot of private data here. */
+/* The CLI debugger is actually a free function.
+ * It has a lot of private data here. */
 enum Command {
     HELP,
     BREAK,
@@ -107,7 +109,7 @@ static Command parse()
 void clirepl(Debugger &dbg, Debugger::Event &ev)
 {
     fmt::print("{:04X}: {}\n", ev.pc, ev.info.to_str);
-    bool ret = false;
+    bool exit = false;
     do {
         fmt::print("> ");
         switch (parse()) {
@@ -118,25 +120,21 @@ void clirepl(Debugger &dbg, Debugger::Event &ev)
         case Command::BREAK:
             break;
         case Command::LIST_BREAK:
-            // auto size = dbg.breakpoints.size();
-            // for (std::size_t i = 0; i < size; i++) {
-            //     auto point = dbg.breakpoints[i];
-            //     fmt::print("#{}: start: {}, end: {}\n", i, point.start, point.end);
-            // }
             break;
         case Command::BACKTRACE:
             break;
         case Command::CONTINUE:
             fmt::print("continuing.\n");
-            ret = true;
+            exit = true;
             break;
         case Command::DISASSEMBLE:
             break;
         case Command::NEXT:
+            dbg.next(ev);
             break;
         case Command::STEP:
             dbg.step(ev);
-            ret = true;
+            exit = true;
             break;
         case Command::STEP_OUT:
             break;
@@ -155,13 +153,13 @@ void clirepl(Debugger &dbg, Debugger::Event &ev)
             break;
         case Command::QUIT:
             dbg.set_quit(true);
-            ret = true;
+            exit = true;
             break;
         case Command::INVALID:
             fmt::print("invalid command. see 'help' for a list of commands.\n");
             break;
         }
-    } while (!ret);
+    } while (!exit);
 }
 
 } // namespace Core

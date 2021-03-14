@@ -36,6 +36,7 @@ public:
 
     void run(uint16 addr, uint3 mode);
     void set_stop_addr(uint16 addr) { stop_addr = addr; };
+    void next(Event &ev);
     void step(Event &ev);
     // uint8 read_addr(uint16 addr);
     // void write_addr(uint16 addr, uint8 data);
