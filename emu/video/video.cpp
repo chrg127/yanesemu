@@ -27,7 +27,7 @@ bool Context::init(Type type)
 
 void Context::reset() { }
 
-void Canvas::drawpixel(std::size_t x, std::size_t y, uint32 color)
+void Canvas::drawpixel(std::size_t x, std::size_t y, uint32_t color)
 {
     auto real_y = tex.height()-1 - y;
     auto pos = (real_y * tex.width() + x) * 4;

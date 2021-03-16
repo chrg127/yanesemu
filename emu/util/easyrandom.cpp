@@ -7,7 +7,7 @@ namespace Util {
 
 using GenType = std::mt19937;
 GenType generator;
-std::uniform_int_distribution<uint8> dist8;
+std::uniform_int_distribution<uint8_t> dist8;
 std::mutex rnd_mutex;
 
 void seed()
@@ -16,7 +16,7 @@ void seed()
     generator.seed(rd());
 }
 
-uint8 random8()
+uint8_t random8()
 {
     std::lock_guard<std::mutex> lock(rnd_mutex);
     return dist8(generator);

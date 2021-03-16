@@ -1,8 +1,6 @@
 #ifndef UTIL_HEAPARRAY_HPP_INCLUDED
 #define UTIL_HEAPARRAY_HPP_INCLUDED
 
-#include <cstddef>
-#include <memory>
 #include <iterator>
 
 namespace Util {

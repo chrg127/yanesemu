@@ -1,11 +1,9 @@
 #ifndef VIDEO_HPP_INCLUDED
 #define VIDEO_HPP_INCLUDED
 
-#include <cstddef>
+#include <cstdint>
 #include <memory>
-#include <utility>
 #include <string_view>
-#include <emu/util/unsigned.hpp>
 
 namespace Video {
 
@@ -110,7 +108,7 @@ public:
     Canvas & operator=(const Canvas &) = delete;
     Canvas & operator=(Canvas &&) = default;
 
-    void drawpixel(std::size_t x, std::size_t y, uint32 color);
+    void drawpixel(std::size_t x, std::size_t y, uint32_t color);
 
     unsigned width() const  { return tex.width(); }
     unsigned height() const { return tex.height(); }

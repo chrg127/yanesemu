@@ -4,7 +4,6 @@
 #include <cstdio>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <fmt/core.h>
 
 namespace Util {

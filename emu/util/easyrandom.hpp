@@ -5,12 +5,12 @@
  * It's thread-safe, or at least it's supposed to be.
  * Call seed() in main().  */
 
-#include <emu/util/unsigned.hpp>
+#include <cstdint>
 
 namespace Util {
 
 void seed();
-uint8 random8();
+uint8_t random8();
 
 } // namespace Util
 

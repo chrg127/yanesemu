@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <type_traits>
-#include <utility>
 
 /* the most common typedef's */
 using uint8  = uint_least8_t;
