@@ -9,11 +9,12 @@
 
 namespace Core {
 
-// Debugger functions
 void Debugger::run(uint16 addr, uint3 mode)
 {
+    if (quit)
+        return;
     Event ev;
-    ev.info = emu->cpu.disassemble();
+    ev.opcode = emu->cpu.disassemble();
     ev.pc = emu->cpu.pc.reg;
     if (mode == 0b001 && stop_addr == addr) {
         stop_addr = 0;
@@ -21,16 +22,16 @@ void Debugger::run(uint16 addr, uint3 mode)
     }
 }
 
-void Debugger::next(Event &ev)
+void Debugger::step(Opcode &op)
 {
-
+    stop_addr = emu->cpu.nextaddr(op);
 }
 
-void Debugger::step(Event &ev)
+void Debugger::next(Opcode &op)
 {
-    static int branch_instr[] = { 0x10, 0x30, 0x50, 0x70, 0x90, 0xB0, 0xD0 };
-    if (
-    stop_addr = ev.pc + ev.info.num_bytes;
+    // check for jumps and skip them, otherwise use the usual function
+    stop_addr = is_jump(op.code) ? emu->cpu.pc.reg + op.info.numb
+                                 : emu->cpu.nextaddr(op);
 }
 
 /* The CLI debugger is actually a free function.
@@ -108,7 +109,7 @@ static Command parse()
 
 void clirepl(Debugger &dbg, Debugger::Event &ev)
 {
-    fmt::print("{:04X}: {}\n", ev.pc, ev.info.to_str);
+    fmt::print("{:04X}: {}\n", ev.pc, ev.opcode.info.str);
     bool exit = false;
     do {
         fmt::print("> ");
@@ -130,10 +131,11 @@ void clirepl(Debugger &dbg, Debugger::Event &ev)
         case Command::DISASSEMBLE:
             break;
         case Command::NEXT:
-            dbg.next(ev);
+            dbg.next(ev.opcode);
+            exit = true;
             break;
         case Command::STEP:
-            dbg.step(ev);
+            dbg.step(ev.opcode);
             exit = true;
             break;
         case Command::STEP_OUT:

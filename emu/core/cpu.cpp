@@ -8,7 +8,6 @@ namespace Core {
 
 #define INSIDE_CPU_CPP
 #include <emu/core/opcodes.cpp>
-#include <emu/core/disassemble.cpp>
 #undef INSIDE_CPU_CPP
 
 void CPU::run()
@@ -352,6 +351,49 @@ void CPU::writemem(uint16 addr, uint8 data)
         mem_callback(addr, 0b010);
     cycle();
     bus->write(addr, data);
+}
+
+Opcode CPU::peek_opcode() const
+{
+    Opcode res;
+    res.code      = bus->read(pc.reg);
+    res.args.low  = bus->read(pc.reg+1);
+    res.args.high = bus->read(pc.reg+2);
+    return res;
+}
+
+Opcode CPU::disassemble() const
+{
+    Opcode op = peek_opcode();
+    op.info = Core::disassemble(op.code, op.args.low, op.args.high);
+    return op;
+}
+
+/* This method assumes we have obtained the full Opcode struct in some way
+ * (usually with disassemble())
+ * I would have tried making something more general, but figuring out
+ * the next address requires the full state of the CPU, including memory
+ * (for the reason, see: indirect jmp) */
+uint16 CPU::nextaddr(const Opcode &op) const
+{
+    switch (op.code) {
+    case 0x00:
+        return resetpending ? RESET_VEC
+             : nmipending   ? NMI_VEC
+             :                IRQ_BRK_VEC;
+    case 0x20: case 0x4C:
+        return op.args.reg;
+    case 0x6C:
+        return op.args.low == 0xFF ? bus->read(op.args.reg) | bus->read(op.args.reg & 0xFF00) << 8
+                                   : bus->read(op.args.reg) | bus->read(op.args.reg + 1);
+    case 0x60:
+        return (bus->read(sp + 1 + STACK_BASE) | bus->read(sp + 2 + STACK_BASE) << 8) + 1;
+    case 0x40:
+        return bus->read(sp + 1 + STACK_BASE) | bus->read(sp + 2 + STACK_BASE);
+    default:
+        return is_branch(op.code) ? branch_next_addr(op, pc, procstatus)
+                                  : pc.reg + op.info.numb;
+    }
 }
 
 } // namespace Core

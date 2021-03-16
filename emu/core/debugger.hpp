@@ -1,8 +1,9 @@
 #ifndef CORE_DEBUGGER_HPP_INCLUDED
 #define CORE_DEBUGGER_HPP_INCLUDED
 
+#include <functional>
 #include <vector>
-#include <emu/core/cpu.hpp> // InstrInfo
+#include <emu/core/opcodeinfo.hpp>
 #include <emu/util/unsigned.hpp>
 
 namespace Core {
@@ -13,7 +14,7 @@ class Debugger {
 public:
     struct Event {
         uint16 pc;
-        CPU::InstrInfo info;
+        Opcode opcode;
     };
 
     struct Breakpoint {
@@ -36,8 +37,8 @@ public:
 
     void run(uint16 addr, uint3 mode);
     void set_stop_addr(uint16 addr) { stop_addr = addr; };
-    void next(Event &ev);
-    void step(Event &ev);
+    void next(Opcode &op);
+    void step(Opcode &op);
     // uint8 read_addr(uint16 addr);
     // void write_addr(uint16 addr, uint8 data);
 

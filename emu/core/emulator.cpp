@@ -1,6 +1,7 @@
 #include <emu/core/emulator.hpp>
 
 #include <string_view>
+#include <fmt/core.h>
 #include <emu/util/unsigned.hpp>
 #include <emu/util/debug.hpp>
 #include <emu/util/file.hpp>
@@ -69,9 +70,11 @@ bool Emulator::insert_rom(Util::File &romfile)
 
 std::string Emulator::status() const
 {
-    const auto info = cpu.disassemble();
-    return cpu.get_info() + ' ' +
-           ppu.get_info() + ' ' +
-           fmt::format("Instruction [{:02X}] ", info.code) + info.to_str;
+    const auto opcode = cpu.disassemble();
+    return fmt::format("cpu info: {}, opcode: {}, next addr: {:02X}", cpu.get_info(),cpu.get_info(),  opcode.info.str, cpu.nextaddr(opcode));
+    // const auto opcode = cpu.disassemble();
+    // return cpu.get_info() + ' ' +
+    //        ppu.get_info() + ' ' +
+    //        fmt::format("Instruction [{:02X}] ", opcode.code) + opcode.info.str;
 }
 

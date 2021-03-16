@@ -5,30 +5,10 @@
 #include <string>
 #include <emu/core/const.hpp>
 #include <emu/core/bus.hpp>
+#include <emu/core/opcodeinfo.hpp>
 #include <emu/util/unsigned.hpp>
 
 namespace Core {
-
-
-union Reg16 {
-    struct {
-        uint8 low, high;
-    };
-    uint16 reg = 0;
-
-    Reg16() = default;
-    Reg16(uint16 val)                                     { operator=(val); }
-    Reg16 & operator=(const uint16 val)                   { reg = val;  return *this; }
-    template <typename T> Reg16 & operator&=(const T val) { reg &= val; return *this; }
-    template <typename T> Reg16 & operator|=(const T val) { reg |= val; return *this; }
-};
-/* Can be different:
-union Reg16 {
-    uint16 value = 0;
-    Util::BitField<uint16, 0, 8> low;
-    Util::BitField<uint16, 8, 8> high;
-};
-But I still don't feel like changing so much code. */
 
 class CPU {
     using InstrFuncRead = void (CPU::*)(const uint8);
@@ -40,7 +20,7 @@ class CPU {
     std::function<void (uint16, uint3)> mem_callback;
 
     // used in opcodes.cpp
-    Reg16 op = 0;
+    Reg16 opargs = 0;
 
     // registers
     Reg16 pc    = 0;
@@ -48,40 +28,7 @@ class CPU {
     uint8 xreg  = 0;
     uint8 yreg  = 0;
     uint8 sp    = 0;
-    struct {
-        bool carry   = 0;
-        bool zero    = 0;
-        bool intdis  = 0;
-        bool decimal = 0;
-        bool breakf  = 0;
-        bool unused  = 1;
-        bool ov      = 0;
-        bool neg     = 0;
-
-        uint8 reg()
-        {
-            return carry  << 0  | zero   << 1  | intdis << 2 | decimal << 3 |
-                   breakf << 4  | unused << 5  | ov     << 6 | neg     << 7;
-        }
-
-        void operator=(const uint8 data)
-        {
-            carry   = data & 0x01;
-            zero    = data & 0x02;
-            intdis  = data & 0x04;
-            decimal = data & 0x08;
-            breakf  = data & 0x10;
-            unused  = data & 0x20;
-            ov      = data & 0x40;
-            neg     = data & 0x80;
-        }
-
-        void reset()
-        {
-            carry = zero = intdis = decimal = breakf = ov = neg = 0;
-            unused = 1;
-        }
-    } procstatus;
+    ProcStatus procstatus;
 
     // interrupt signals
     bool nmipending = false;
@@ -91,21 +38,15 @@ class CPU {
     bool execirq    = false;
 
 public:
-    struct InstrInfo {
-        uint8 code;
-        uint8 lowop;
-        uint8 highop;
-        unsigned num_bytes;
-        std::string to_str;
-    };
-
     void run();
     void power();
     void reset();
     void attach_bus(Bus *rambus);
     void fire_irq();
     void fire_nmi();
-    InstrInfo disassemble() const;
+    Opcode peek_opcode() const;
+    Opcode disassemble() const;
+    uint16 nextaddr(const Opcode &op) const;
     std::string get_info() const;
 
     int get_cycles()          { return cycles; }
@@ -121,9 +62,6 @@ private:
     void nmipoll();
     void cycle();
     void last_cycle();
-
-    // disassemble.cpp
-    InstrInfo disassemble_internal(uint8 instr, uint8 oplow, uint8 ophigh) const;
 
     // opcodes.cpp
     void addrmode_imm_read(InstrFuncRead f);
