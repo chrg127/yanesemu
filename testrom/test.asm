@@ -75,17 +75,7 @@ reset:
     jsr waitvblank  ; wait 2 frames
     jsr waitvblank
     txa
-resetram:
-    sta $00,x
-    sta $0100,x
-    sta $0200,x
-    sta $0300,x
-    sta $0400,x
-    sta $0500,x
-    sta $0600,x
-    sta $0700,x
-    inx
-    bne resetram
+    jsr resetram
 
     lda #0          ; disable all apu channels
     sta $4015
@@ -148,6 +138,19 @@ waitnmi_wait:
 waitvblank:
     lda $2002
     bpl waitvblank
+    rts
+
+resetram:
+    sta $00,x
+    sta $0100,x
+    sta $0200,x
+    sta $0300,x
+    sta $0400,x
+    sta $0500,x
+    sta $0600,x
+    sta $0700,x
+    inx
+    bne resetram
     rts
 
 clear_spbuf:
