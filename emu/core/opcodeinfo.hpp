@@ -74,16 +74,55 @@ struct Opcode {
     OpcodeInfo info;
 };
 
-OpcodeInfo disassemble(uint8 opcode, uint8 arglow, uint8 arghigh);
-bool took_branch(uint8 opcode, const ProcStatus &ps);
-uint16 branch_next_addr(const Opcode &opcode, const Reg16 pc, const ProcStatus &ps);
+OpcodeInfo disassemble(const uint8 opcode, const uint8 arglow, const uint8 arghigh);
 
-inline bool is_branch(uint8 opcode)
+
+/* It is interesting to note that branch opcodes follow a specific pattern in
+ * their corresponding code:
+ *    ffsmmmmm
+ * mmmmm = mask. must be exactly 0x1F (0b10000).
+ * s     = the corresponding processor flag must be equal to this bit.
+ * ff    = which flag it affects?
+ *
+ * Possible values for ff:
+ *   00 -> neg
+ *   01 -> ov
+ *   10 -> carry
+ *   11 -> zero
+ *
+ * For example: 0x70 -> 0b01110000
+ *   ff = 01 -> overflow flag
+ *   s  =  1 -> overflow flag == 1
+ *
+ * The ProcStatus struct doesn't really follow this layout so almost none
+ * of this info is useful.
+ */
+constexpr inline bool is_branch(const uint8 opcode)
 {
     return (opcode & 0x1F) == 0x10;
 }
 
-inline bool is_jump(uint8 opcode)
+constexpr inline bool took_branch(uint8 opcode, const ProcStatus &ps)
+{
+    switch (opcode) {
+    case 0x10: return ps.neg == 0;
+    case 0x30: return ps.neg == 1;
+    case 0x50: return ps.ov == 0;
+    case 0x70: return ps.ov == 1;
+    case 0x90: return ps.carry == 0;
+    case 0xB0: return ps.carry == 1;
+    case 0xD0: return ps.zero == 0;
+    case 0xF0: return ps.zero == 1;
+    default:   return false;
+    }
+}
+
+constexpr inline uint16 branch_pointer(const uint8 branch_arg, const uint16 pc)
+{
+    return pc + 2 + (int8_t) branch_arg;
+}
+
+constexpr inline bool is_jump(const uint8 opcode)
 {
     return opcode == 0x20 || opcode == 0x4C || opcode == 0x6C;
 }

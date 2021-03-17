@@ -68,13 +68,3 @@ bool Emulator::insert_rom(Util::File &romfile)
     return true;
 }
 
-std::string Emulator::status() const
-{
-    const auto opcode = cpu.disassemble();
-    return fmt::format("cpu info: {}, opcode: {}, next addr: {:02X}", cpu.get_info(),cpu.get_info(),  opcode.info.str, cpu.nextaddr(opcode));
-    // const auto opcode = cpu.disassemble();
-    // return cpu.get_info() + ' ' +
-    //        ppu.get_info() + ' ' +
-    //        fmt::format("Instruction [{:02X}] ", opcode.code) + opcode.info.str;
-}
-

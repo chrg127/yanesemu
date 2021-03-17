@@ -2,6 +2,7 @@
 #define CORE_DEBUGGER_HPP_INCLUDED
 
 #include <functional>
+#include <optional>
 #include <vector>
 #include <emu/core/opcodeinfo.hpp>
 #include <emu/util/unsigned.hpp>
@@ -13,6 +14,9 @@ class Emulator;
 class Debugger {
 public:
     struct Event {
+        enum class Type      { FETCH, INTERRUPT, BREAK, };
+        enum class Interrupt { RESET, IRQ, NMI, IGNORE, };
+        Type type;
         uint16 pc;
         Opcode opcode;
     };
@@ -27,7 +31,7 @@ private:
     Emulator *emu;
     std::function<void (Debugger &, Event &)> callback;
     std::vector<Breakpoint> breakpoints;
-    uint16 stop_addr = 0;
+    std::optional<uint16> nextstop = 0;
     bool quit = false;
 
 public:
@@ -35,8 +39,8 @@ public:
         : emu(e)
     { }
 
-    void run(uint16 addr, uint3 mode);
-    void set_stop_addr(uint16 addr) { stop_addr = addr; };
+    void fetch_callback(uint16 addr, uint3 mode);
+    void set_nextstop(uint16 addr) { nextstop = addr; };
     void next(Opcode &op);
     void step(Opcode &op);
     // uint8 read_addr(uint16 addr);

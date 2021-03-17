@@ -9,33 +9,41 @@
 
 namespace Core {
 
-void Debugger::run(uint16 addr, uint3 mode)
+void Debugger::fetch_callback(uint16 addr, uint3 mode)
 {
     if (quit)
         return;
     Event ev;
-    ev.opcode = emu->cpu.disassemble();
     ev.pc = emu->cpu.pc.reg;
-    if (mode == 0b001 && stop_addr == addr) {
-        stop_addr = 0;
-        callback(*this, ev);
+    if (nextstop) {
+        /* If the user has issued a next/step command, but an interrupt
+         * happened, modify the next stop address so that we get inside
+         * the interrupt handler.
+         * The interrupt vector is read 2 times, so make sure we ignore
+         * the second read (can be done by checking addr) */
+        if (mode == 0b100 && addr >= 0xFFFA && (addr & 1) == 0) {
+            nextstop = emu->rambus.read(addr+1) << 8 | emu->rambus.read(addr);
+        } else if (mode == 0b001 && addr == nextstop.value()) {
+            nextstop.reset();
+            ev.type   = Event::Type::FETCH;
+            ev.opcode = emu->cpu.disassemble();
+            callback(*this, ev);
+        }
     }
 }
 
 void Debugger::step(Opcode &op)
 {
-    stop_addr = emu->cpu.nextaddr(op);
+    nextstop = emu->cpu.nextaddr(op);
 }
 
 void Debugger::next(Opcode &op)
 {
     // check for jumps and skip them, otherwise use the usual function
-    stop_addr = is_jump(op.code) ? emu->cpu.pc.reg + op.info.numb
+    nextstop = is_jump(op.code) ? emu->cpu.pc.reg + op.info.numb
                                  : emu->cpu.nextaddr(op);
 }
 
-/* The CLI debugger is actually a free function.
- * It has a lot of private data here. */
 enum Command {
     HELP,
     BREAK,

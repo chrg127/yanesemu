@@ -74,8 +74,7 @@ void CPU::fire_nmi()
     nmipending = true;
 }
 
-/* Prints info about the instruction which has just been executed and the status of the registers. */
-std::string CPU::get_info() const
+std::string CPU::status() const
 {
     return fmt::format("PC: {:02X} A: {:02X} X: {:02X} Y: {:02X} S: {:02X} {}{}{}{}{}{}{}{} cycles: {}",
         pc.reg, accum, xreg, yreg, sp,
@@ -93,8 +92,8 @@ std::string CPU::get_info() const
 
 uint8 CPU::fetch()
 {
-    if (mem_callback)
-        mem_callback(pc.reg, 0b001);
+    if (fetch_callback)
+        fetch_callback(pc.reg, 0b001);
     cycle();
     return bus->read(pc.reg++);
 }
@@ -339,21 +338,21 @@ void CPU::nmipoll()
 
 uint8 CPU::readmem(uint16 addr)
 {
-    if (mem_callback)
-        mem_callback(addr, 0b100);
+    if (fetch_callback)
+        fetch_callback(addr, 0b100);
     cycle();
     return bus->read(addr);
 }
 
 void CPU::writemem(uint16 addr, uint8 data)
 {
-    if (mem_callback)
-        mem_callback(addr, 0b010);
+    if (fetch_callback)
+        fetch_callback(addr, 0b010);
     cycle();
     bus->write(addr, data);
 }
 
-Opcode CPU::peek_opcode() const
+Opcode CPU::nextopcode() const
 {
     Opcode res;
     res.code      = bus->read(pc.reg);
@@ -364,8 +363,13 @@ Opcode CPU::peek_opcode() const
 
 Opcode CPU::disassemble() const
 {
-    Opcode op = peek_opcode();
+    Opcode op = nextopcode();
     op.info = Core::disassemble(op.code, op.args.low, op.args.high);
+    if (is_branch(op.code)) {
+        op.info.str += fmt::format(" [{:02X}] [{}]",
+                branch_pointer(op.args.low, pc.reg),
+                took_branch(op.code, procstatus) ? "Branch taken" : "Branch not taken");
+    }
     return op;
 }
 
@@ -373,7 +377,10 @@ Opcode CPU::disassemble() const
  * (usually with disassemble())
  * I would have tried making something more general, but figuring out
  * the next address requires the full state of the CPU, including memory
- * (for the reason, see: indirect jmp) */
+ * The method used here is emulating some risky opcodes to find out the next
+ * address, and using the normal formula of "pc + opcode num bytes" for the
+ * rest. Another approach would be backing up all regs, then call run().
+ * I prefer this method since this means the function can be const. */
 uint16 CPU::nextaddr(const Opcode &op) const
 {
     switch (op.code) {
@@ -391,8 +398,8 @@ uint16 CPU::nextaddr(const Opcode &op) const
     case 0x40:
         return bus->read(sp + 1 + STACK_BASE) | bus->read(sp + 2 + STACK_BASE);
     default:
-        return is_branch(op.code) ? branch_next_addr(op, pc, procstatus)
-                                  : pc.reg + op.info.numb;
+        return took_branch(op.code, procstatus) ? branch_pointer(op.args.low, pc.reg)
+                                                : pc.reg + op.info.numb;
     }
 }
 

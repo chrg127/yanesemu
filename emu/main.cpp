@@ -8,18 +8,8 @@
 #include <emu/util/file.hpp>
 #include <emu/video/video.hpp>
 
-static const Util::ValidArgStruct cmdflags = {
-    { 'b', "break-on-brk", "Stops emulation when BRK is encountered." },
-    { 'l', "log-file",     "Log to this file. Pass stdout/stderr to print to stdout/stderr.",          Util::ParamType::MUST_HAVE },
-    { 'd', "dump-file",    "Dump memory to this file. Pass stdout/stderr to print to stdout/stderr. ", Util::ParamType::MUST_HAVE },
-    { 'h', "help",         "Print this help text and quit"            },
-    { 'v', "version",      "Shows the program's version"              },
-    { 'a', "debugger",     "Use command-line debugger"                },
-};
 static Core::Emulator emu;
-static Util::File logfile, dumpfile;
 static Video::Context context;
-static Util::ArgResult flags;
 
 void mainloop()
 {
@@ -30,8 +20,7 @@ void mainloop()
     Util::seed();
     emu.set_screen(&screen);
     emu.power();
-    if (logfile)
-        logfile.print("{}\n", emu.rominfo());
+    fmt::print(stderr, "{}\n", emu.rominfo());
     while (running) {
         while (SDL_PollEvent(&ev)) {
             switch (ev.type) {
@@ -45,14 +34,17 @@ void mainloop()
         }
         if (emu.debugger_has_quit())
             running = false;
-        if (logfile)
-            logfile.print(emu.status() + '\n');
         emu.run();
         screen.update();
         context.draw();
     }
-    // emu.dump(dumpfile);
 }
+
+static const Util::ValidArgStruct cmdflags = {
+    { 'h', "help",         "Print this help text and quit"            },
+    { 'v', "version",      "Shows the program's version"              },
+    { 'd', "debugger",     "Use command-line debugger"                },
+};
 
 int main(int argc, char *argv[])
 {
@@ -62,6 +54,7 @@ int main(int argc, char *argv[])
     }
 
     // parse command line arguments
+    Util::ArgResult flags;
     flags = Util::parse(argc, argv, cmdflags);
     if (flags.has['h']) { Util::print_usage(progname, cmdflags); return 0; }
     if (flags.has['v']) { Util::print_version(progname, version); return 0; }
@@ -89,6 +82,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    /*
     // open log files -- these are used to log emulator info and dump memory
     auto open_logfile = [](Util::File &f, char flag) {
         if (!flags.has[flag] || flags.params[flag] == "")
@@ -101,10 +95,9 @@ int main(int argc, char *argv[])
     };
     open_logfile(logfile, 'l');
     open_logfile(dumpfile, 'd');
-
-    if (flags.has['a'])
+    */
+    if (flags.has['d'])
         emu.enable_debugger([](Core::Debugger &db, Core::Debugger::Event &ev) { Core::clirepl(db, ev); });
-
     mainloop();
 
     return 0;

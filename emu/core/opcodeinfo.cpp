@@ -3,240 +3,240 @@
 
 namespace Core {
 
-/* It is interesting to note that branch opcodes follow a specific pattern in
- * their corresponding code:
- *    ffsmmmmm
- * mmmmm = mask. must be exactly 0x1F (0b10000).
- * s     = the corresponding processor flag must be equal to this bit.
- * ff    = which flag it affects?
- *
- * Possible values for ff:
- *   00 -> neg
- *   01 -> ov
- *   10 -> carry
- *   11 -> zero
- *
- * For example: 0x70 -> 0b01110000
- *   ff = 01 -> overflow flag
- *   s  =  1 -> overflow flag == 1
- *
- * The ProcStatus struct doesn't really follow this layout so almost none
- * of this info is useful.
- */
-bool took_branch(const uint8 opcode, const ProcStatus &ps)
+#define op(X) \
+    X(0x00, brk, impld) \
+    X(0x01, ora, indx) \
+    X(0x05, ora, zero) \
+    X(0x06, asl, zero) \
+    X(0x08, php, impld) \
+    X(0x09, ora, imm) \
+    X(0x0A, asl, accum) \
+    X(0x0D, ora, abs) \
+    X(0x0E, asl, abs) \
+    X(0x10, bpl, branch) \
+    X(0x11, ora, indy) \
+    X(0x15, ora, zerox) \
+    X(0x16, asl, zerox) \
+    X(0x18, clc, impld) \
+    X(0x19, ora, absy) \
+    X(0x1D, ora, absx) \
+    X(0x1E, asl, absx) \
+    X(0x20, jsr, abs) \
+    X(0x21, and, indx) \
+    X(0x24, bit, zero) \
+    X(0x25, and, zero) \
+    X(0x26, rol, zero) \
+    X(0x28, plp, impld) \
+    X(0x29, and, imm) \
+    X(0x2A, rol, accum) \
+    X(0x2C, bit, abs) \
+    X(0x2D, and, abs) \
+    X(0x2E, rol, abs) \
+    X(0x30, bmi, branch) \
+    X(0x31, and, indy) \
+    X(0x35, and, zerox) \
+    X(0x36, rol, zerox) \
+    X(0x38, sec, impld) \
+    X(0x39, and, absy) \
+    X(0x3D, and, absx) \
+    X(0x3E, rol, absx) \
+    X(0x40, rti, impld) \
+    X(0x41, eor, indx) \
+    X(0x45, eor, zero) \
+    X(0x46, lsr, zero) \
+    X(0x48, pha, impld) \
+    X(0x49, eor, imm) \
+    X(0x4A, lsr, accum) \
+    X(0x4C, jmp, abs) \
+    X(0x4D, eor, abs) \
+    X(0x4E, lsr, abs) \
+    X(0x50, bvc, branch) \
+    X(0x51, eor, indy) \
+    X(0x55, eor, zerox) \
+    X(0x56, lsr, zerox) \
+    X(0x58, cli, impld) \
+    X(0x59, eor, absy) \
+    X(0x5D, eor, absx) \
+    X(0x5E, lsr, absx) \
+    X(0x60, rts, impld) \
+    X(0x61, adc, indx) \
+    X(0x65, adc, zero) \
+    X(0x66, ror, zero) \
+    X(0x68, pla, impld) \
+    X(0x69, adc, imm) \
+    X(0x6A, ror, accum) \
+    X(0x6C, jmp, ind) \
+    X(0x6D, adc, abs) \
+    X(0x6E, ror, abs) \
+    X(0x70, bvs, branch) \
+    X(0x71, adc, indy) \
+    X(0x75, adc, zerox) \
+    X(0x76, ror, zerox) \
+    X(0x78, sei, impld) \
+    X(0x79, adc, absy) \
+    X(0x7D, adc, absx) \
+    X(0x7E, ror, absx) \
+    X(0x81, sta, indx) \
+    X(0x84, sty, zero) \
+    X(0x85, sta, zero) \
+    X(0x86, stx, zero) \
+    X(0x88, dey, impld) \
+    X(0x8A, txa, impld) \
+    X(0x8C, sty, abs) \
+    X(0x8D, sta, abs) \
+    X(0x8E, stx, abs) \
+    X(0x90, bcc, branch) \
+    X(0x91, sta, indy) \
+    X(0x94, sta, zerox) \
+    X(0x95, sta, zerox) \
+    X(0x96, stx, zeroy) \
+    X(0x98, tya, impld) \
+    X(0x99, sta, absy) \
+    X(0x9A, txs, impld) \
+    X(0x9D, sta, absx) \
+    X(0xA0, ldy, imm) \
+    X(0xA1, lda, indx) \
+    X(0xA2, ldx, imm) \
+    X(0xA4, ldy, zero) \
+    X(0xA5, lda, zero) \
+    X(0xA6, ldx, zero) \
+    X(0xA8, tay, impld) \
+    X(0xA9, lda, imm) \
+    X(0xAA, tax, impld) \
+    X(0xAC, ldy, abs) \
+    X(0xAD, lda, abs) \
+    X(0xAE, ldx, abs) \
+    X(0xB0, bcs, branch) \
+    X(0xB1, lda, indy) \
+    X(0xB4, ldy, zerox) \
+    X(0xB5, lda, zerox) \
+    X(0xB6, ldx, zeroy) \
+    X(0xB8, clv, impld) \
+    X(0xB9, lda, absy) \
+    X(0xBA, tsx, impld) \
+    X(0xBC, ldy, absx) \
+    X(0xBD, lda, absx) \
+    X(0xBE, ldx, absy) \
+    X(0xC0, cpy, imm) \
+    X(0xC1, cmp, indx) \
+    X(0xC4, cpy, zero) \
+    X(0xC5, cmp, zero) \
+    X(0xC6, dec, zero) \
+    X(0xC8, iny, impld) \
+    X(0xC9, cmp, imm) \
+    X(0xCA, dex, impld) \
+    X(0xCC, cpy, abs) \
+    X(0xCD, cmp, abs) \
+    X(0xCE, dec, abs) \
+    X(0xD0, bne, branch) \
+    X(0xD1, cmp, indy) \
+    X(0xD5, cmp, zerox) \
+    X(0xD6, dec, zerox) \
+    X(0xD8, cld, impld) \
+    X(0xD9, cmp, absy) \
+    X(0xDD, cmp, absx) \
+    X(0xDE, dec, absx) \
+    X(0xE0, cpx, imm) \
+    X(0xE1, sbc, indx) \
+    X(0xE4, cpx, zero) \
+    X(0xE5, sbc, zero) \
+    X(0xE6, inc, zero) \
+    X(0xE8, inx, impld) \
+    X(0xE9, sbc, imm) \
+    X(0xEA, nop, impld) \
+    X(0xEC, cpx, abs) \
+    X(0xED, sbc, abs) \
+    X(0xEE, inc, abs) \
+    X(0xF0, beq, branch) \
+    X(0xF1, sbc, indy) \
+    X(0xF5, sbc, zerox) \
+    X(0xF6, inc, zerox) \
+    X(0xF9, sbc, absy) \
+    X(0xFD, sbc, absx) \
+    X(0xFE, inc, absx) \
+
+#define opdesc(X) \
+    X(adc, "", "") \
+    X(and, "", "") \
+    X(asl, "", "") \
+    X(bcc, "", "") \
+    X(bcs, "", "") \
+    X(beq, "", "") \
+    X(beq, "", "") \
+    X(bit, "", "") \
+    X(bmi, "", "") \
+    X(bne, "", "") \
+    X(bpl, "", "") \
+    X(brk, "", "") \
+    X(bvc, "", "") \
+    X(bvs, "", "") \
+    X(clc, "", "") \
+    X(cld, "", "") \
+    X(cli, "", "") \
+    X(clv, "", "") \
+    X(cmp, "", "") \
+    X(cpx, "", "") \
+    X(cpy, "", "") \
+    X(dec, "", "") \
+    X(dex, "", "") \
+    X(dey, "", "") \
+    X(eor, "", "") \
+    X(inc, "", "") \
+    X(inx, "", "") \
+    X(iny, "", "") \
+    X(jmp, "", "") \
+    X(jsr, "", "") \
+    X(lda, "", "") \
+    X(ldx, "", "") \
+    X(ldy, "", "") \
+    X(lsr, "", "") \
+    X(nop, "", "") \
+    X(ora, "", "") \
+    X(pha, "", "") \
+    X(php, "", "") \
+    X(pla, "", "") \
+    X(plp, "", "") \
+    X(rol, "", "") \
+    X(ror, "", "") \
+    X(rti, "", "") \
+    X(rts, "", "") \
+    X(sbc, "", "") \
+    X(sec, "", "") \
+    X(sed, "", "") \
+    X(sei, "", "") \
+    X(sta, "", "") \
+    X(stx, "", "") \
+    X(sty, "", "") \
+    X(tax, "", "") \
+    X(tay, "", "") \
+    X(tsx, "", "") \
+    X(txa, "", "") \
+    X(txs, "", "") \
+    X(tya, "", "") \
+
+OpcodeInfo disassemble(const uint8 opcode, const uint8 arglow, const uint8 arghigh)
 {
-    switch (opcode) {
-    case 0x10: return ps.neg == 0;
-    case 0x30: return ps.neg == 1;
-    case 0x50: return ps.ov == 0;
-    case 0x70: return ps.ov == 1;
-    case 0x90: return ps.carry == 0;
-    case 0xB0: return ps.carry == 1;
-    case 0xD0: return ps.zero == 0;
-    case 0xF0: return ps.zero == 1;
-    default:   return false;
-    }
-}
+    const auto disass_impld = [&](const char name[4]) -> OpcodeInfo { return { std::string(name),                                        1 }; };
+    const auto disass_accum = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} A", name),                                1 }; };
+    const auto disass_branch= [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} {}", name, (int8_t) arglow),              2 }; };
+    const auto disass_imm   = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} #${:02X}",        name, arglow),          2 }; };
+    const auto disass_zero  = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} ${:02X}",         name, arglow),          2 }; };
+    const auto disass_zerox = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} ${:02X},x",       name, arglow),          2 }; };
+    const auto disass_zeroy = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} ${:02X},y",       name, arglow),          2 }; };
+    const auto disass_indx  = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} (${:02X},x)",     name, arglow),          2 }; };
+    const auto disass_indy  = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} (${:02X}),y",     name, arglow),          2 }; };
+    const auto disass_abs   = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} ${:02X}{:02X}",   name, arghigh, arglow), 3 }; };
+    const auto disass_absx  = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} ${:02X}{:02X},x", name, arghigh, arglow), 3 }; };
+    const auto disass_absy  = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} ${:02X}{:02X},y", name, arghigh, arglow), 3 }; };
+    const auto disass_ind   = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} (${:02X}{:02X})", name, arghigh, arglow), 3 }; };
 
-uint16 branch_next_addr(const Opcode &opcode, const Reg16 pc, const ProcStatus &ps)
-{
-    return took_branch(opcode.code, ps) ? pc.reg + 2 + (int8_t) opcode.args.low
-                                        : pc.reg + opcode.info.numb;
-}
-
-// disassemble() stuff
-enum DisassTag { IMM = 0, ZERO, ZEROX, ZEROY, INDX, INDY };
-enum DisassTag16 { ABS = 0, ABSX, ABSY, IND };
-
-template <DisassTag Tag>
-constexpr inline static std::string disass(const char name[4], uint8 op)
-{
-    constexpr const char *fmts[] = {
-        "{} #${:02X}",  "{} ${:02X}",     "{} ${:02X},x",
-        "{} ${:02X},y", "{} (${:02X},x)", "{} (${:02X}),y",
-    };
-    return fmt::format(fmts[Tag], name, op);
-}
-
-template <DisassTag16 Tag>
-constexpr inline static std::string disass16(const char name[4], uint8 low, uint8 hi)
-{
-    constexpr const char *fmts[] = {
-        "{} ${:02X}{:02X}", "{} ${:02X}{:02X},x", "{} ${:02X}{:02X},y", "{} (${:02X}{:02X})",
-    };
-    return fmt::format(fmts[Tag], name, hi, low);
-}
-
-OpcodeInfo disassemble(uint8 opcode, uint8 arglow, uint8 arghigh)
-{
-    uint8 oplow = arglow;
-    uint8 ophigh = arghigh;
-#define INSTR_IMPLD(id, name) case id: return { .str = std::string(#name), .numb = 1 };
-#define INSTR_ACCUM(id, name) case id: return { .str = fmt::format("{} A", #name), .numb = 1 };
-#define INSTR_ADDRMODE8(id, name, mode, op) case id: return { .str = disass<DisassTag::mode>(#name, op), .numb = 2 };
-#define INSTR_ADDRMODE16(id, name, mode, oplow, ophigh) case id: return { .str = disass16<DisassTag16::mode>(#name, oplow, ophigh), .numb = 3 };
-#define INSTR_BRNCH(id, name) case id: return { .str = fmt::format("{} {}", #name, (int8_t) oplow), .numb = 2 };
-
+#define X(id, name, mode) case id: return disass_##mode(#name);
     switch(opcode) {
-        INSTR_IMPLD(0x00, BRK)
-        INSTR_ADDRMODE8(0x01, ORA, INDX, oplow)
-        INSTR_ADDRMODE8(0x05, ORA, ZERO, oplow)
-        INSTR_ADDRMODE8(0x06, ASL, ZERO, oplow)
-        INSTR_IMPLD(0x08, PHP)
-        INSTR_ADDRMODE8(0x09, ORA, IMM, oplow)
-        INSTR_ACCUM(0x0A, ASL)
-        INSTR_ADDRMODE16(0x0D, ORA, ABS, oplow, ophigh)
-        INSTR_ADDRMODE16(0x0E, ASL, ABS, oplow, ophigh)
-        INSTR_BRNCH(0x10, BPL)//, ps.neg == 0)
-        INSTR_ADDRMODE8(0x11, ORA, INDY, oplow)
-        INSTR_ADDRMODE8(0x15, ORA, ZEROX, oplow)
-        INSTR_ADDRMODE8(0x16, ASL, ZEROX, oplow)
-        INSTR_IMPLD(0x18, CLC)
-        INSTR_ADDRMODE16(0x19, ORA, ABSY, oplow, ophigh)
-        INSTR_ADDRMODE16(0x1D, ORA, ABSX, oplow, ophigh)
-        INSTR_ADDRMODE16(0x1E, ASL, ABSX, oplow, ophigh)
-        INSTR_ADDRMODE16(0x20, JSR, ABS, oplow, ophigh)
-        INSTR_ADDRMODE8(0x21, AND, INDX, oplow)
-        INSTR_ADDRMODE8(0x24, BIT, ZERO, oplow)
-        INSTR_ADDRMODE8(0x25, AND, ZERO, oplow)
-        INSTR_ADDRMODE8(0x26, ROL, ZERO, oplow)
-        INSTR_IMPLD(0x28, PLP)
-        INSTR_ADDRMODE8(0x29, AND, IMM, oplow)
-        INSTR_ACCUM(0x2A, ROL)
-        INSTR_ADDRMODE16(0x2C, BIT, ABS, oplow, ophigh)
-        INSTR_ADDRMODE16(0x2D, AND, ABS, oplow, ophigh)
-        INSTR_ADDRMODE16(0x2E, ROL, ABS, oplow, ophigh)
-        INSTR_BRNCH(0x30, BMI)//, ps.neg == 1)
-        INSTR_ADDRMODE8(0x31, AND, INDY, oplow)
-        INSTR_ADDRMODE8(0x35, AND, ZEROX, oplow)
-        INSTR_ADDRMODE8(0x36, ROL, ZEROX, oplow)
-        INSTR_IMPLD(0x38, SEC)
-        INSTR_ADDRMODE16(0x39, AND, ABSY, oplow, ophigh)
-        INSTR_ADDRMODE16(0x3D, AND, ABSX, oplow, ophigh)
-        INSTR_ADDRMODE16(0x3E, ROL, ABSX, oplow, ophigh)
-        INSTR_IMPLD(0x40, RTI)
-        INSTR_ADDRMODE8(0x41, EOR, INDX, oplow)
-        INSTR_ADDRMODE8(0x45, EOR, ZERO, oplow)
-        INSTR_ADDRMODE8(0x46, LSR, ZERO, oplow)
-        INSTR_IMPLD(0x48, PHA)
-        INSTR_ADDRMODE8(0x49, EOR, IMM, oplow)
-        INSTR_ACCUM(0x4A, LSR)
-        INSTR_ADDRMODE16(0x4C, JMP, ABS, oplow, ophigh)
-        INSTR_ADDRMODE16(0x4D, EOR, ABS, oplow, ophigh)
-        INSTR_ADDRMODE16(0x4E, LSR, ABS, oplow, ophigh)
-        INSTR_BRNCH(0x50, BVC)//, ps.ov == 0)
-        INSTR_ADDRMODE8(0x51, EOR, INDY, oplow)
-        INSTR_ADDRMODE8(0x55, EOR, ZEROX, oplow)
-        INSTR_ADDRMODE8(0x56, LSR, ZEROX, oplow)
-        INSTR_IMPLD(0x58, CLI)
-        INSTR_ADDRMODE16(0x59, EOR, ABSY, oplow, ophigh)
-        INSTR_ADDRMODE16(0x5D, EOR, ABSX, oplow, ophigh)
-        INSTR_ADDRMODE16(0x5E, LSR, ABSX, oplow, ophigh)
-        INSTR_IMPLD(0x60, RTS)
-        INSTR_ADDRMODE8(0x61, ADC, INDX, oplow)
-        INSTR_ADDRMODE8(0x65, ADC, ZERO, oplow)
-        INSTR_ADDRMODE8(0x66, ROR, ZERO, oplow)
-        INSTR_IMPLD(0x68, PLA)
-        INSTR_ADDRMODE8(0x69, ADC, IMM, oplow)
-        INSTR_ACCUM(0x6A, ROR)
-        INSTR_ADDRMODE16(0x6C, JMP, IND, oplow, ophigh)
-        INSTR_ADDRMODE16(0x6D, ADC, ABS, oplow, ophigh)
-        INSTR_ADDRMODE16(0x6E, ROR, ABS, oplow, ophigh)
-        INSTR_BRNCH(0x70, BVS)//, ps.ov == 1)
-        INSTR_ADDRMODE8(0x71, ADC, INDY, oplow)
-        INSTR_ADDRMODE8(0x75, ADC, ZEROX, oplow)
-        INSTR_ADDRMODE8(0x76, ROR, ZEROX, oplow)
-        INSTR_IMPLD(0x78, SEI)
-        INSTR_ADDRMODE16(0x79, ADC, ABSY, oplow, ophigh)
-        INSTR_ADDRMODE16(0x7D, ADC, ABSX, oplow, ophigh)
-        INSTR_ADDRMODE16(0x7E, ROR, ABSX, oplow, ophigh)
-        INSTR_ADDRMODE8(0x81, STA, INDX, oplow)
-        INSTR_ADDRMODE8(0x84, STY, ZERO, oplow)
-        INSTR_ADDRMODE8(0x85, STA, ZERO, oplow)
-        INSTR_ADDRMODE8(0x86, STX, ZERO, oplow)
-        INSTR_IMPLD(0x88, DEY)
-        INSTR_IMPLD(0x8A, TXA)
-        INSTR_ADDRMODE16(0x8C, STY, ABS, oplow, ophigh)
-        INSTR_ADDRMODE16(0x8D, STA, ABS, oplow, ophigh)
-        INSTR_ADDRMODE16(0x8E, STX, ABS, oplow, ophigh)
-        INSTR_BRNCH(0x90, BCC)//, ps.carry == 0)
-        INSTR_ADDRMODE8(0x91, STA, INDY, oplow)
-        INSTR_ADDRMODE8(0x94, STA, ZEROX, oplow)
-        INSTR_ADDRMODE8(0x95, STA, ZEROX, oplow)
-        INSTR_ADDRMODE8(0x96, STX, ZEROY, oplow)
-        INSTR_IMPLD(0x98, TYA)
-        INSTR_ADDRMODE16(0x99, STA, ABSY, oplow, ophigh)
-        INSTR_IMPLD(0x9A, TXS)
-        INSTR_ADDRMODE16(0x9D, STA, ABSX, oplow, ophigh)
-        INSTR_ADDRMODE8(0xA0, LDY, IMM, oplow)
-        INSTR_ADDRMODE8(0xA1, LDA, INDX, oplow)
-        INSTR_ADDRMODE8(0xA2, LDX, IMM, oplow)
-        INSTR_ADDRMODE8(0xA4, LDY, ZERO, oplow)
-        INSTR_ADDRMODE8(0xA5, LDA, ZERO, oplow)
-        INSTR_ADDRMODE8(0xA6, LDX, ZERO, oplow)
-        INSTR_IMPLD(0xA8, TAY)
-        INSTR_ADDRMODE8(0xA9, LDA, IMM, oplow)
-        INSTR_IMPLD(0xAA, TAX)
-        INSTR_ADDRMODE16(0xAC, LDY, ABS, oplow, ophigh)
-        INSTR_ADDRMODE16(0xAD, LDA, ABS, oplow, ophigh)
-        INSTR_ADDRMODE16(0xAE, LDX, ABS, oplow, ophigh)
-        INSTR_BRNCH(0xB0, BCS)//, ps.carry == 1)
-        INSTR_ADDRMODE8(0xB1, LDA, INDY, oplow)
-        INSTR_ADDRMODE8(0xB4, LDY, ZEROX, oplow)
-        INSTR_ADDRMODE8(0xB5, LDA, ZEROX, oplow)
-        INSTR_ADDRMODE8(0xB6, LDX, ZEROY, oplow)
-        INSTR_IMPLD(0xB8, CLV)
-        INSTR_ADDRMODE16(0xB9, LDA, ABSY, oplow, ophigh)
-        INSTR_IMPLD(0xBA, TSX)
-        INSTR_ADDRMODE16(0xBC, LDY, ABSX, oplow, ophigh)
-        INSTR_ADDRMODE16(0xBD, LDA, ABSX, oplow, ophigh)
-        INSTR_ADDRMODE16(0xBE, LDX, ABSY, oplow, ophigh)
-        INSTR_ADDRMODE8(0xC0, CPY, IMM, oplow)
-        INSTR_ADDRMODE8(0xC1, CMP, INDX, oplow)
-        INSTR_ADDRMODE8(0xC4, CPY, ZERO, oplow)
-        INSTR_ADDRMODE8(0xC5, CMP, ZERO, oplow)
-        INSTR_ADDRMODE8(0xC6, DEC, ZERO, oplow)
-        INSTR_IMPLD(0xC8, INY)
-        INSTR_ADDRMODE8(0xC9, CMP, IMM, oplow)
-        INSTR_IMPLD(0xCA, DEX)
-        INSTR_ADDRMODE16(0xCC, CPY, ABS, oplow, ophigh)
-        INSTR_ADDRMODE16(0xCD, CMP, ABS, oplow, ophigh)
-        INSTR_ADDRMODE16(0xCE, DEC, ABS, oplow, ophigh)
-        INSTR_BRNCH(0xD0, BNE)//, ps.ZERO == 0)
-        INSTR_ADDRMODE8(0xD1, CMP, INDY, oplow)
-        INSTR_ADDRMODE8(0xD5, CMP, ZEROX, oplow)
-        INSTR_ADDRMODE8(0xD6, DEC, ZEROX, oplow)
-        INSTR_IMPLD(0xD8, CLD)
-        INSTR_ADDRMODE16(0xD9, CMP, ABSY, oplow, ophigh)
-        INSTR_ADDRMODE16(0xDD, CMP, ABSX, oplow, ophigh)
-        INSTR_ADDRMODE16(0xDE, DEC, ABSX, oplow, ophigh)
-        INSTR_ADDRMODE8(0xE0, CPX, IMM, oplow)
-        INSTR_ADDRMODE8(0xE1, SBC, INDX, oplow)
-        INSTR_ADDRMODE8(0xE4, CPX, ZERO, oplow)
-        INSTR_ADDRMODE8(0xE5, SBC, ZERO, oplow)
-        INSTR_ADDRMODE8(0xE6, INC, ZERO, oplow)
-        INSTR_IMPLD(0xE8, INX)
-        INSTR_ADDRMODE8(0xE9, SBC, IMM, oplow)
-        INSTR_IMPLD(0xEA, NOP)
-        INSTR_ADDRMODE16(0xEC, CPX, ABS, oplow, ophigh)
-        INSTR_ADDRMODE16(0xED, SBC, ABS, oplow, ophigh)
-        INSTR_ADDRMODE16(0xEE, INC, ABS, oplow, ophigh)
-        INSTR_BRNCH(0xF0, BEQ)//, ps.ZERO == 1)
-        INSTR_ADDRMODE8(0xF1, SBC, INDY, oplow)
-        INSTR_ADDRMODE8(0xF5, SBC, ZEROX, oplow)
-        INSTR_ADDRMODE8(0xF6, INC, ZEROX, oplow)
-        INSTR_ADDRMODE16(0xF9, SBC, ABSY, oplow, ophigh)
-        INSTR_ADDRMODE16(0xFD, SBC, ABSX, oplow, ophigh)
-        INSTR_ADDRMODE16(0xFE, INC, ABSX, oplow, ophigh)
+        op(X)
         default:
             return { .str = "[Unknown]", .numb = 0 };
     }
-    // unreachable
-
-#undef INSTR_IMPLD
-#undef INSTR_ADDRMODE8
-#undef INSTR_ADDRMODE16
-#undef INSTR_IMPL
+#undef X
 }
 
 } // namespace Core

@@ -17,7 +17,7 @@ class CPU {
     uint8 rammem[RAM_SIZE];
     Bus *bus = nullptr;
     unsigned long cycles = 0;
-    std::function<void (uint16, uint3)> mem_callback;
+    std::function<void (uint16, uint3)> fetch_callback;
 
     // used in opcodes.cpp
     Reg16 opargs = 0;
@@ -44,13 +44,14 @@ public:
     void attach_bus(Bus *rambus);
     void fire_irq();
     void fire_nmi();
-    Opcode peek_opcode() const;
-    Opcode disassemble() const;
+    // debugging
+    Opcode nextopcode() const;
     uint16 nextaddr(const Opcode &op) const;
-    std::string get_info() const;
+    Opcode disassemble() const;
+    std::string status() const;
 
-    int get_cycles()          { return cycles; }
-    void register_mem_callback(auto &&callback) { mem_callback = callback; }
+    unsigned long get_cycles() { return cycles; }
+    void register_fetch_callback(auto &&callback) { fetch_callback = callback; }
 
 private:
     uint8 fetch();

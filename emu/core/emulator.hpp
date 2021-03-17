@@ -52,11 +52,11 @@ public:
 
     void enable_debugger(auto &&callb)
     {
-        // the debugger will do nothing as long we don't tie its run() function
-        // to something
-        cpu.register_mem_callback([&](uint16 addr, uint3 mode) { debugger.run(addr, mode); });
+        // the debugger will do nothing as long we don't tie its run() function to something
+        // when enabled, the debugger should stop at the first RESET.
+        // this works as long Debugger::nextstop has a value.
+        cpu.register_fetch_callback([&](uint16 addr, uint3 mode) { debugger.fetch_callback(addr, mode); });
         debugger.register_callback(callb);
-        debugger.set_stop_addr(rambus.read(RESET_VEC+1) << 8 | rambus.read(RESET_VEC));
     }
 
     void set_screen(Video::Canvas *canvas) { ppu.set_screen(canvas); }

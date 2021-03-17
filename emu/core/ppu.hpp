@@ -15,7 +15,6 @@ class Bus;
 
 class PPU {
     Bus *bus;
-    Bus *cpubus;
     Video::Canvas *screen;
     uint8 vrammem[VRAM_SIZE];
     uint8 oammem[OAM_SIZE];
