@@ -277,24 +277,29 @@ uint8 PPU::getcolor(bool select, uint8 pal, uint8 palind)
 
 void PPU::set_mirroring(Mirroring mirroring)
 {
-    const auto decode = [mirroring](uint16 addr) -> uint16 {
-        switch (mirroring) {
-        case Mirroring::VERT: return addr & 0x7FF;
-        case Mirroring::HORZ: {
-                auto tmp = addr & 0xFFF;
-                auto bits = Util::getbits(tmp, 10, 2) >> 1;
-                return Util::setbits(tmp, 10, 2, bits);
-            }
-        default: assert(false);
-        }
-    };
+    std::function<uint16(uint16)> decode;
+
+    switch (mirroring) {
+    case Mirroring::HORZ:
+        decode = [](uint16 addr) {
+            auto tmp = addr & 0xFFF;
+            auto bits = Util::getbits(tmp, 10, 2) >> 1;
+            return Util::setbits(tmp, 10, 2, bits);
+        };
+        break;
+    case Mirroring::VERT:
+        decode = [](uint16 addr) { return addr & 0x7FF; };
+        break;
+    default:
+        assert(false);
+    }
     bus->remap(NT_START, PAL_START,
-            [&](uint16 addr)             {
+            [=, this](uint16 addr)             {
                 addr = decode(addr);
                 assert(addr < VRAM_SIZE);
                 return vrammem[addr];
             },
-            [&](uint16 addr, uint8 data) {
+            [=, this](uint16 addr, uint8 data) {
                 addr = decode(addr);
                 assert(addr < VRAM_SIZE);
                 vrammem[addr] = data;
