@@ -55,6 +55,7 @@ public:
 
 private:
     uint8 fetch();
+    uint8 fetcharg();
     void execute(uint8 opcode);
     void interrupt();
     void push(uint8 val);

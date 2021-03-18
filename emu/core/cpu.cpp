@@ -98,6 +98,14 @@ uint8 CPU::fetch()
     return bus->read(pc.reg++);
 }
 
+// This is here mostly so we can differentiate between actual instructions
+// and operand fetches. It's useful for the debugger.
+uint8 CPU::fetcharg()
+{
+    cycle();
+    return bus->read(pc.reg++);
+}
+
 void CPU::execute(uint8 opcode)
 {
 #define INSTR_IMPLD(id, func) \

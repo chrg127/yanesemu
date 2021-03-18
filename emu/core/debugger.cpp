@@ -15,6 +15,11 @@ void Debugger::fetch_callback(uint16 addr, uint3 mode)
         return;
     Event ev;
     ev.pc = emu->cpu.pc.reg;
+    if (mode == 0b001 && is_jump(emu->cpu.nextopcode().code)) {
+        tracebuf.push(fmt::format("{:02X}: {}", emu->cpu.pc.reg, emu->cpu.disassemble().info.str));
+    } else if (mode == 0b001 && emu->cpu.nextopcode().code == 0x60) {
+        tracebuf.pop();
+    }
     if (nextstop) {
         /* If the user has issued a next/step command, but an interrupt
          * happened, modify the next stop address so that we get inside
@@ -44,6 +49,18 @@ void Debugger::next(Opcode &op)
                                  : emu->cpu.nextaddr(op);
 }
 
+std::string Debugger::regs() const
+{
+    return emu->cpu.status();
+}
+
+void Debugger::reset()
+{
+    // TODO: there are a lot more things to reset
+    nextstop = 0;
+    emu->reset();
+}
+
 enum Command {
     HELP,
     BREAK,
@@ -55,8 +72,8 @@ enum Command {
     DISASSEMBLE,
     NEXT,
     STEP,
-    STEP_OUT,
-    STATUS,
+    // STEP_OUT,
+    // STATUS,
     REGS,
     READ_ADDR,
     WRITE_ADDR,
@@ -74,8 +91,6 @@ enum Command {
     X("disassemble",    "dis",  Command::DISASSEMBLE,   "disassemble the current instruction") \
     X("next",           "n",    Command::NEXT,          "run next instruction") \
     X("step",           "s",    Command::STEP,          "step next instruction") \
-    X("stepout",        "so",   Command::STEP_OUT,      "step out next instruction") \
-    X("status",         "st",   Command::STATUS,        "print machine status") \
     X("regs",           "r",    Command::REGS,          "print registers") \
     X("read",           "rd",   Command::READ_ADDR,     "read address") \
     X("write",          "wr",   Command::WRITE_ADDR,    "write address") \
@@ -100,6 +115,23 @@ static const std::vector<CommandInfo> cmdinfo = {
 };
 #undef X
 
+/*
+std::pair< Command, std::vector<std::string> > parse()
+{
+    Util::File input{stdin};
+    std::string line = "";
+    if (!input.getline(line))
+        return std::make_pair(Command::QUIT, {});
+    auto tokens = Util::strsplit(line);
+    if (tokens.size() == 0)
+        return std::make_pair(Command::INVALID, {});
+    auto it = strtocmd.find(tokens[0]);
+    if (it == strtocmd.end())
+        return std::make_pair(Command::INVALID, {});
+    return std::make_pair(it->second, {});
+}
+*/
+
 static Command parse()
 {
     Util::File input{stdin};
@@ -121,6 +153,8 @@ void clirepl(Debugger &dbg, Debugger::Event &ev)
     bool exit = false;
     do {
         fmt::print("> ");
+        // auto p = parse();
+        // switch (p.first) {
         switch (parse()) {
         case Command::HELP:
             for (const auto &cmd : cmdinfo)
@@ -131,9 +165,12 @@ void clirepl(Debugger &dbg, Debugger::Event &ev)
         case Command::LIST_BREAK:
             break;
         case Command::BACKTRACE:
+            for (const auto &x : dbg.backtrace_buf())
+                fmt::print("{}\n", x);
             break;
         case Command::CONTINUE:
             fmt::print("continuing.\n");
+            dbg.continue_exec();
             exit = true;
             break;
         case Command::DISASSEMBLE:
@@ -146,12 +183,8 @@ void clirepl(Debugger &dbg, Debugger::Event &ev)
             dbg.step(ev.opcode);
             exit = true;
             break;
-        case Command::STEP_OUT:
-            break;
-        case Command::STATUS:
-            // fmt::print("{}\n", dbg.emu->status());
-            break;
         case Command::REGS:
+            fmt::print("{}\n", dbg.regs());
             break;
         case Command::READ_ADDR:
             // fmt::print("{}\n", dbg.read_addr(0);

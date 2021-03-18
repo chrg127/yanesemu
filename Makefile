@@ -1,7 +1,7 @@
 VPATH := emu:emu/core:emu/util:emu/io:emu/video:tests
 
 headers := emulator.hpp bus.hpp cartridge.hpp cpu.hpp const.hpp ppu.hpp debugger.hpp opcodeinfo.hpp \
-		  bits.hpp cmdline.hpp debug.hpp easyrandom.hpp file.hpp heaparray.hpp settings.hpp stringops.hpp unsigned.hpp settings.hpp \
+		  bits.hpp cmdline.hpp debug.hpp easyrandom.hpp file.hpp heaparray.hpp settings.hpp stringops.hpp unsigned.hpp settings.hpp circularbuffer.hpp \
 		  video.hpp opengl.hpp \
 		  external/glad/glad.h external/glad/khrplatform.h
 

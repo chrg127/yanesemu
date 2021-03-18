@@ -3,9 +3,11 @@
 
 #include <functional>
 #include <optional>
+// #include <stack>
 #include <vector>
 #include <emu/core/opcodeinfo.hpp>
 #include <emu/util/unsigned.hpp>
+#include <emu/util/circularbuffer.hpp>
 
 namespace Core {
 
@@ -32,6 +34,7 @@ private:
     std::function<void (Debugger &, Event &)> callback;
     std::vector<Breakpoint> breakpoints;
     std::optional<uint16> nextstop = 0;
+    CircularBuffer<std::string, 10> tracebuf;
     bool quit = false;
 
 public:
@@ -43,8 +46,10 @@ public:
     void set_nextstop(uint16 addr) { nextstop = addr; };
     void next(Opcode &op);
     void step(Opcode &op);
-    // uint8 read_addr(uint16 addr);
-    // void write_addr(uint16 addr, uint8 data);
+    void continue_exec() { nextstop.reset(); }
+    std::string regs() const;
+    CircularBuffer<std::string, 10> & backtrace_buf() { return tracebuf; }
+    void reset();
 
     void register_callback(auto &&f) { callback = f; }
     void set_quit(bool q)       { quit = q; }
