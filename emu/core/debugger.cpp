@@ -61,6 +61,29 @@ void Debugger::reset()
     emu->reset();
 }
 
+uint8 Debugger::read(uint16 addr)
+{
+    /* The PPU has a bunch of regs with side-effects on read.
+     * If we are reading those, read them directly instead of going
+     * through the bus. */
+    if (addr == 0x2002)
+        return emu->ppu.io.vblank << 7 | emu->ppu.io.sp_zero_hit << 6 | emu->ppu.io.sp_overflow << 5;
+    else if (addr == 0x2007) {
+        // always return the read buffer, without ever updating it
+        return emu->ppu.vram.addr < 0x3F00 ? emu->ppu.io.data_buf
+                                           : emu->vrambus.read(emu->ppu.vram.addr);
+    }
+    return emu->rambus.read(addr);
+}
+
+void Debugger::write(uint16 addr, uint8 value)
+{
+    if (addr >= CARTRIDGE_START)
+        fmt::print("warning: writes to ROM have no effects\n");
+    emu->rambus.write(addr, value);
+}
+
+
 enum Command {
     HELP,
     BREAK,
@@ -115,47 +138,71 @@ static const std::vector<CommandInfo> cmdinfo = {
 };
 #undef X
 
-/*
-std::pair< Command, std::vector<std::string> > parse()
-{
-    Util::File input{stdin};
-    std::string line = "";
-    if (!input.getline(line))
-        return std::make_pair(Command::QUIT, {});
-    auto tokens = Util::strsplit(line);
-    if (tokens.size() == 0)
-        return std::make_pair(Command::INVALID, {});
-    auto it = strtocmd.find(tokens[0]);
-    if (it == strtocmd.end())
-        return std::make_pair(Command::INVALID, {});
-    return std::make_pair(it->second, {});
-}
-*/
+using CmdArgs = std::vector<std::string>;
 
-static Command parse()
+static std::pair<Command, CmdArgs> parse()
 {
     Util::File input{stdin};
-    std::string line = "";
-    if (!input.getline(line))
-        return Command::QUIT;
-    auto tokens = Util::strsplit(line);
-    if (tokens.size() == 0)
-        return Command::INVALID;
-    auto it = strtocmd.find(tokens[0]);
+    std::string cmd = "", args = "";
+
+    if (!input.getword(cmd) || !input.getline(args))
+        return std::make_pair(Command::QUIT, CmdArgs{});
+    if (cmd == "")
+        return std::make_pair(Command::INVALID, CmdArgs{});
+    auto it = strtocmd.find(cmd);
     if (it == strtocmd.end())
-        return Command::INVALID;
-    return it->second;
+        return std::make_pair(Command::INVALID, CmdArgs{});
+    return std::make_pair(it->second, Util::strsplit(args, ' '));
 }
+
+static void read_command(Debugger &dbg, const CmdArgs &args)
+{
+    if (args.size() < 1) {
+        fmt::print("read: not enough arguments. see 'help' for more information.\n");
+        return;
+    }
+    const std::string &as = args[0];
+    auto addr = Util::strtohex(as, 4);
+    if (!addr) {
+        fmt::print("{}: invalid address\n", as);
+        return;
+    }
+    fmt::print("{:02X}\n", dbg.read(addr.value()));
+}
+
+static void write_command(Debugger &dbg, const CmdArgs &args)
+{
+    if (args.size() < 2) {
+        fmt::print("write: not enough arguments. see 'help' for more information.\n");
+        return;
+    }
+    const std::string &as = args[0];
+    const std::string &vs = args[1];
+    auto addr = Util::strtohex(as, 4);
+    if (!addr) {
+        fmt::print("{}: invalid address.\n", as);
+        return;
+    }
+    auto newval = Util::strtohex(vs, 2);
+    if (!newval) {
+        fmt::print("{}: invalid value.\n", vs);
+        return;
+    }
+    dbg.write(addr.value(), newval.value());
+}
+
 
 void clirepl(Debugger &dbg, Debugger::Event &ev)
 {
-    fmt::print("{:04X}: {}\n", ev.pc, ev.opcode.info.str);
+    fmt::print("${:04X}: [{:02X}] {}\n", ev.pc, ev.opcode.code, ev.opcode.info.str);
     bool exit = false;
     do {
         fmt::print("> ");
-        // auto p = parse();
-        // switch (p.first) {
-        switch (parse()) {
+        auto p = parse();
+        Command cmd = p.first;
+        auto args   = std::move(p.second);
+
+        switch (cmd) {
         case Command::HELP:
             for (const auto &cmd : cmdinfo)
                 fmt::print("{}, {}: {}\n", cmd.name, cmd.abbrev, cmd.desc);
@@ -173,8 +220,28 @@ void clirepl(Debugger &dbg, Debugger::Event &ev)
             dbg.continue_exec();
             exit = true;
             break;
-        case Command::DISASSEMBLE:
+        case Command::DISASSEMBLE: {
+            if (args.size() < 1) {
+                fmt::print("disasemble: not enough arguments\n");
+                break;
+            }
+            auto code = Util::strtohex(args[0], 2);
+            if (!code) {
+                fmt::print("disassemble: {}: invalid value\n", code.value());
+                break;
+            }
+            if (args.size() == 1) {
+                fmt::print("{}\n", disassemble(code.value(), 0, 0).str);
+                break;
+            }
+            auto operand = Util::strtohex(args[1], 4);
+            if (!operand) {
+                fmt::print("disassemble: invalid value found while parsing args\n");
+                break;
+            }
+            fmt::print("{}\n", disassemble(code.value(), operand.value() >> 8, operand.value()).str);
             break;
+        }
         case Command::NEXT:
             dbg.next(ev.opcode);
             exit = true;
@@ -187,10 +254,10 @@ void clirepl(Debugger &dbg, Debugger::Event &ev)
             fmt::print("{}\n", dbg.regs());
             break;
         case Command::READ_ADDR:
-            // fmt::print("{}\n", dbg.read_addr(0);
+            read_command(dbg, args);
             break;
         case Command::WRITE_ADDR:
-            // dbg.write_addr(0);
+            write_command(dbg, args);
             break;
         case Command::RESET:
             break;

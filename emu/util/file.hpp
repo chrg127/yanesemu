@@ -85,22 +85,9 @@ public:
     int getc()                                   { return std::fgetc(filbuf); }
     int ungetc(int c)                            { return std::ungetc(c, filbuf); }
 
-    bool getline(std::string &str, int delim = '\n')
-    {
-        str.erase();
-        int c;
-        while (c = getc(), c != delim && c != EOF)
-            str += c;
-        return !(c == EOF);
-    }
-
-    std::string getall()
-    {
-        std::string str;
-        for (std::string tmp; getline(tmp); )
-            str += tmp + '\n';
-        return str;
-    }
+    bool getword(std::string &str);
+    bool getline(std::string &str, int delim = '\n');
+    std::string getall();
 
     // write functions
     std::size_t bwrite(void *buf, std::size_t nb) { return std::fwrite(buf, 1, nb, filbuf); }

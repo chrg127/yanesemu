@@ -48,6 +48,8 @@ public:
     void step(Opcode &op);
     void continue_exec() { nextstop.reset(); }
     std::string regs() const;
+    uint8 read(uint16 addr);
+    void write(uint16 addr, uint8 value);
     CircularBuffer<std::string, 10> & backtrace_buf() { return tracebuf; }
     void reset();
 

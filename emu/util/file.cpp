@@ -37,5 +37,44 @@ bool File::open(const std::string_view pathname, const Mode filemode)
     return true;
 }
 
+/* getword and getline have different enough semantics that we really
+ * should not try to generalize them */
+bool File::getword(std::string &str)
+{
+    const auto isdelim = [](int c) { return c == '\n' || c == ' ' || c == '\t'; };
+    int c;
+
+    str.erase();
+    while (c = getc(), isdelim(c) && c != EOF)
+        ;
+    ungetc(c);
+    while (c = getc(), !isdelim(c) && c != EOF)
+        str += c;
+    ungetc(c);
+    return !(c == EOF);
+}
+
+bool File::getline(std::string &str, int delim)
+{
+    const auto is_space = [](int c) { return c == ' ' || c == '\t'; };
+    int c;
+
+    str.erase();
+    while (c = getc(), is_space(c) && c != EOF)
+        ;
+    ungetc(c);
+    while (c = getc(), c != delim && c != EOF)
+        str += c;
+    return !(c == EOF);
+}
+
+std::string File::getall()
+{
+    std::string str;
+    for (std::string tmp; getline(tmp); )
+        str += tmp + '\n';
+    return str;
+}
+
 } // namespace Util
 
