@@ -7,12 +7,17 @@ namespace Util {
 
 static std::string get_errstr()
 {
-#ifdef _GNU_SOURCE
+#ifdef _WIN32
+    char buf[256];
+    strerror_s(buf, sizeof(buf), errno);
+#elif defined(__linux__)
+#  ifdef _GNU_SOURCE
     char tmpbuf[1];
     char *buf = strerror_r(errno, tmpbuf, sizeof(tmpbuf));
-#else
+#  else
     char buf[256];
     strerror_r(errno, buf, sizeof(buf));
+#  endif
 #endif
     return std::string(buf);
 }
