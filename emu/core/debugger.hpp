@@ -32,9 +32,10 @@ public:
 private:
     Emulator *emu;
     std::function<void (Debugger &, Event &)> callback;
-    std::vector<Breakpoint> breakpoints;
+    std::vector<Breakpoint> breakvec;
     std::optional<uint16> nextstop = 0;
-    CircularBuffer<std::string, 10> tracebuf;
+    using TraceBuffer = std::vector<std::pair<uint16, Opcode>>;
+    TraceBuffer tracebuf;
     bool quit = false;
 
 public:
@@ -50,12 +51,15 @@ public:
     std::string regs() const;
     uint8 read(uint16 addr);
     void write(uint16 addr, uint8 value);
-    CircularBuffer<std::string, 10> & backtrace_buf() { return tracebuf; }
     void reset();
 
-    void register_callback(auto &&f) { callback = f; }
-    void set_quit(bool q)       { quit = q; }
-    bool has_quit() const       { return quit; }
+    void register_callback(auto &&f)            { callback = f; }
+    void set_quit(bool q)                       { quit = q; }
+    bool has_quit() const                       { return quit; }
+    TraceBuffer tracebuffer() const             { return tracebuf; }
+    void setbreak(Breakpoint &&p)               { breakvec.push_back(p); }
+    void delbreak(unsigned index)               { breakvec.erase(breakvec.begin() + index); }
+    std::vector<Breakpoint> breakpoints() const { return breakvec; }
 };
 
 void clirepl(Debugger &dbg, Debugger::Event &ev);

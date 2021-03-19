@@ -52,7 +52,12 @@ int main(int argc, char *argv[])
         Util::print_usage(progname, cmdflags);
         return 1;
     }
-
+#ifdef _WIN32
+    // for some reason, running in mingw, the standard output shows itself
+    // only at the program's exit. this is a work-around.
+    setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stderr, NULL, _IONBF, 0);
+#endif
     // parse command line arguments
     Util::ArgResult flags;
     flags = Util::parse(argc, argv, cmdflags);

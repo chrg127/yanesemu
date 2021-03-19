@@ -14,11 +14,13 @@ void Debugger::fetch_callback(uint16 addr, uint3 mode)
     if (quit)
         return;
     Event ev;
-    ev.pc = emu->cpu.pc.reg;
-    if (mode == 0b001 && is_jump(emu->cpu.nextopcode().code)) {
-        tracebuf.push(fmt::format("{:02X}: {}", emu->cpu.pc.reg, emu->cpu.disassemble().info.str));
-    } else if (mode == 0b001 && emu->cpu.nextopcode().code == 0x60) {
-        tracebuf.pop();
+    uint16 pc     = emu->cpu.pc.reg;
+    Opcode opcode = emu->cpu.disassemble();
+    if (mode == 0b001 && is_jump(opcode.code)) {
+        tracebuf.push_back(std::make_pair(pc, opcode));
+    } else if (mode == 0b001 && opcode.code == 0x60) {
+        if (tracebuf.back().second.code == 0x20)
+            tracebuf.pop_back();
     }
     if (nextstop) {
         /* If the user has issued a next/step command, but an interrupt
@@ -31,7 +33,8 @@ void Debugger::fetch_callback(uint16 addr, uint3 mode)
         } else if (mode == 0b001 && addr == nextstop.value()) {
             nextstop.reset();
             ev.type   = Event::Type::FETCH;
-            ev.opcode = emu->cpu.disassemble();
+            ev.pc = pc;
+            ev.opcode = opcode;
             callback(*this, ev);
         }
     }
@@ -82,6 +85,7 @@ void Debugger::write(uint16 addr, uint8 value)
         fmt::print("warning: writes to ROM have no effects\n");
     emu->rambus.write(addr, value);
 }
+
 
 
 enum Command {
@@ -212,8 +216,8 @@ void clirepl(Debugger &dbg, Debugger::Event &ev)
         case Command::LIST_BREAK:
             break;
         case Command::BACKTRACE:
-            for (const auto &x : dbg.backtrace_buf())
-                fmt::print("{}\n", x);
+            for (const auto &x : dbg.tracebuffer())
+                fmt::print("{:02X}: {}\n", x.first, x.second.info.str);
             break;
         case Command::CONTINUE:
             fmt::print("continuing.\n");
