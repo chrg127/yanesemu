@@ -81,8 +81,6 @@ uint8 Debugger::read(uint16 addr)
 
 void Debugger::write(uint16 addr, uint8 value)
 {
-    if (addr >= CARTRIDGE_START)
-        fmt::print("warning: writes to ROM have no effects\n");
     emu->rambus.write(addr, value);
 }
 
@@ -93,6 +91,7 @@ enum Command {
     BREAK,
     // WATCH,
     LIST_BREAK,
+    DELBREAK,
     // LIST_WATCH,
     BACKTRACE,
     CONTINUE,
@@ -109,22 +108,24 @@ enum Command {
     INVALID,
 };
 
+//  name                abbrev  enum                    min args    description
 #define O(X) \
-    X("help",           "h",    Command::HELP,          "prints this help text") \
-    X("break",          "b",    Command::BREAK,         "set a breakpoint") \
-    X("listb",          "lb",   Command::LIST_BREAK,    "list breakpoints") \
-    X("backtrace",      "bt",   Command::BACKTRACE,     "prints the backtrace") \
-    X("continue",       "c",    Command::CONTINUE,      "start/continue execution") \
-    X("disassemble",    "dis",  Command::DISASSEMBLE,   "disassemble the current instruction") \
-    X("next",           "n",    Command::NEXT,          "run next instruction") \
-    X("step",           "s",    Command::STEP,          "step next instruction") \
-    X("regs",           "r",    Command::REGS,          "print registers") \
-    X("read",           "rd",   Command::READ_ADDR,     "read address") \
-    X("write",          "wr",   Command::WRITE_ADDR,    "write address") \
-    X("reset",          "res",  Command::RESET,         "reset the machine") \
-    X("quit",           "q",    Command::QUIT,          "quit the emulator") \
+    X("help",           "h",    Command::HELP,          0,          "prints this help text") \
+    X("break",          "b",    Command::BREAK,         3,          "set a breakpoint") \
+    X("listbreaks",     "lb",   Command::LIST_BREAK,    0,          "list breakpoints") \
+    X("deletebreak",    "dlb",  Command::DELBREAK,      1,          "delete a breakpoint") \
+    X("backtrace",      "bt",   Command::BACKTRACE,     0,          "prints the backtrace") \
+    X("continue",       "c",    Command::CONTINUE,      0,          "start/continue execution") \
+    X("disassemble",    "dis",  Command::DISASSEMBLE,   1,          "disassemble the current instruction") \
+    X("next",           "n",    Command::NEXT,          0,          "run next instruction") \
+    X("step",           "s",    Command::STEP,          0,          "step next instruction") \
+    X("regs",           "r",    Command::REGS,          0,          "print registers") \
+    X("read",           "rd",   Command::READ_ADDR,     1,          "read address") \
+    X("write",          "wr",   Command::WRITE_ADDR,    2,          "write address") \
+    X("reset",          "res",  Command::RESET,         0,          "reset the machine") \
+    X("quit",           "q",    Command::QUIT,          0,          "quit the emulator") \
 
-#define X(name, abbrev, enumname, desc) { name, enumname }, { abbrev, enumname },
+#define X(name, abbrev, enumname, minargs, desc) { name, enumname }, { abbrev, enumname },
 static const std::unordered_map<std::string, Command> strtocmd = {
     O(X)
 };
@@ -134,12 +135,19 @@ struct CommandInfo {
     std::string name;
     std::string desc;
     std::string abbrev;
+    unsigned minargs;
 };
 
-#define X(name, abbrev, enumname, desc) { name, desc, abbrev },
-static const std::vector<CommandInfo> cmdinfo = {
+#define X(name, abbrev, enumname, minargs, desc) { enumname, CommandInfo{ name, desc, abbrev, minargs } },
+static std::unordered_map<Command, CommandInfo> cmd_to_info = {
     O(X)
 };
+#undef X
+
+#define X(name, abbrev, enumname, minargs, desc) name ", " abbrev ": " desc "\n"
+static const std::string helpstr = ""
+    O(X)
+    "";
 #undef X
 
 using CmdArgs = std::vector<std::string>;
@@ -147,11 +155,11 @@ using CmdArgs = std::vector<std::string>;
 static std::pair<Command, CmdArgs> parse()
 {
     Util::File input{stdin};
-    std::string cmd = "", args = "";
+    std::string cmd, args;
 
     if (!input.getword(cmd) || !input.getline(args))
         return std::make_pair(Command::QUIT, CmdArgs{});
-    if (cmd == "")
+    if (cmd.empty())
         return std::make_pair(Command::INVALID, CmdArgs{});
     auto it = strtocmd.find(cmd);
     if (it == strtocmd.end())
@@ -159,42 +167,121 @@ static std::pair<Command, CmdArgs> parse()
     return std::make_pair(it->second, Util::strsplit(args, ' '));
 }
 
-static void read_command(Debugger &dbg, const CmdArgs &args)
+/* execute a command and return whether to quit the repl. */
+static bool exec_command(const Command cmd, const CmdArgs &args, Debugger &dbg, Debugger::Event &ev)
 {
-    if (args.size() < 1) {
-        fmt::print("read: not enough arguments. see 'help' for more information.\n");
-        return;
-    }
-    const std::string &as = args[0];
-    auto addr = Util::strtohex(as, 4);
-    if (!addr) {
-        fmt::print("{}: invalid address\n", as);
-        return;
-    }
-    fmt::print("{:02X}\n", dbg.read(addr.value()));
-}
+    switch (cmd) {
 
-static void write_command(Debugger &dbg, const CmdArgs &args)
-{
-    if (args.size() < 2) {
-        fmt::print("write: not enough arguments. see 'help' for more information.\n");
-        return;
-    }
-    const std::string &as = args[0];
-    const std::string &vs = args[1];
-    auto addr = Util::strtohex(as, 4);
-    if (!addr) {
-        fmt::print("{}: invalid address.\n", as);
-        return;
-    }
-    auto newval = Util::strtohex(vs, 2);
-    if (!newval) {
-        fmt::print("{}: invalid value.\n", vs);
-        return;
-    }
-    dbg.write(addr.value(), newval.value());
-}
+    case Command::HELP:
+        fmt::print("{}", helpstr);
+        return false;
 
+    case Command::BREAK:
+        return false;
+
+    case Command::DELBREAK:
+        return false;
+
+    case Command::LIST_BREAK: {
+        const auto &breaks = dbg.breakpoints();
+        if (breaks.size() == 0)
+            fmt::print("No breakpoints set.\n");
+        else {
+            for (const auto &x : breaks) {
+                fmt::print("#: {:04X}-{:04X}, mode: \n", x.start, x.end,
+                        x.mode == 0b100 ? "read"
+                      : x.mode == 0b010 ? "write"
+                      :                   "exec");
+
+            }
+        }
+        return false;
+    }
+
+    case Command::BACKTRACE: {
+        const auto &buf = dbg.tracebuffer();
+        if (buf.size() == 0)
+            fmt::print("Backtrace is empty.\n");
+        else
+            for (const auto &x : dbg.tracebuffer())
+                fmt::print("${:02X}: {}\n", x.first, x.second.info.str);
+        return false;
+    }
+
+    case Command::CONTINUE:
+        fmt::print("Continuing.\n");
+        dbg.continue_exec();
+        return true;
+
+    case Command::DISASSEMBLE: {
+        auto code = Util::strtohex(args[0], 2);
+        if (!code) {
+            fmt::print("Invalid value: {}\n", args[0]);
+            return false;
+        }
+        if (args.size() == 1) {
+            fmt::print("{}\n", disassemble(code.value(), 0, 0).str);
+            return false;
+        }
+        auto operand = Util::strtohex(args[1], 4);
+        if (!operand) {
+            fmt::print("Invalid value found while parsing command arguments.\n");
+            return false;
+        }
+        fmt::print("{}\n", disassemble(code.value(), operand.value() >> 8, operand.value()).str);
+        return false;
+    }
+
+    case Command::NEXT:
+        dbg.next(ev.opcode);
+        return true;
+
+    case Command::STEP:
+        dbg.step(ev.opcode);
+        return true;
+
+    case Command::REGS:
+        fmt::print("{}\n", dbg.regs());
+        return false;
+
+    case Command::READ_ADDR: {
+        auto addr = Util::strtohex(args[0], 4);
+        if (!addr) {
+            fmt::print("Invalid value: {}\n", args[0]);
+            return false;
+        }
+        fmt::print("{:02X}\n", dbg.read(addr.value()));
+        return false;
+    }
+
+    case Command::WRITE_ADDR: {
+        auto addr   = Util::strtohex(args[0], 4);
+        auto newval = Util::strtohex(args[1], 2);
+        if (!addr || !newval) {
+            fmt::print("Invalid value found while parsing command arguments.\n");
+            return false;
+        }
+        if (addr.value() >= CARTRIDGE_START)
+            fmt::print("Warning: writes to ROM have no effects\n");
+        dbg.write(addr.value(), newval.value());
+        return false;
+    }
+
+    case Command::RESET:
+        return false;
+
+    case Command::QUIT:
+        dbg.set_quit(true);
+        return true;
+
+    case Command::INVALID:
+        fmt::print("Invalid command. Try 'help'.\n");
+        return false;
+
+    default:
+        return false;
+    }
+}
 
 void clirepl(Debugger &dbg, Debugger::Event &ev)
 {
@@ -203,76 +290,14 @@ void clirepl(Debugger &dbg, Debugger::Event &ev)
     do {
         fmt::print("> ");
         auto p = parse();
-        Command cmd = p.first;
-        auto args   = std::move(p.second);
-
-        switch (cmd) {
-        case Command::HELP:
-            for (const auto &cmd : cmdinfo)
-                fmt::print("{}, {}: {}\n", cmd.name, cmd.abbrev, cmd.desc);
-            break;
-        case Command::BREAK:
-            break;
-        case Command::LIST_BREAK:
-            break;
-        case Command::BACKTRACE:
-            for (const auto &x : dbg.tracebuffer())
-                fmt::print("{:02X}: {}\n", x.first, x.second.info.str);
-            break;
-        case Command::CONTINUE:
-            fmt::print("continuing.\n");
-            dbg.continue_exec();
-            exit = true;
-            break;
-        case Command::DISASSEMBLE: {
-            if (args.size() < 1) {
-                fmt::print("disasemble: not enough arguments\n");
-                break;
-            }
-            auto code = Util::strtohex(args[0], 2);
-            if (!code) {
-                fmt::print("disassemble: {}: invalid value\n", code.value());
-                break;
-            }
-            if (args.size() == 1) {
-                fmt::print("{}\n", disassemble(code.value(), 0, 0).str);
-                break;
-            }
-            auto operand = Util::strtohex(args[1], 4);
-            if (!operand) {
-                fmt::print("disassemble: invalid value found while parsing args\n");
-                break;
-            }
-            fmt::print("{}\n", disassemble(code.value(), operand.value() >> 8, operand.value()).str);
-            break;
+        Command cmd   = p.first;
+        auto &args    = p.second;
+        auto &cmdinfo = cmd_to_info.find(cmd)->second;
+        if (args.size() < cmdinfo.minargs) {
+            fmt::print("Not enough arguments for command {}. Try 'help'.\n", cmdinfo.name);
+            continue;
         }
-        case Command::NEXT:
-            dbg.next(ev.opcode);
-            exit = true;
-            break;
-        case Command::STEP:
-            dbg.step(ev.opcode);
-            exit = true;
-            break;
-        case Command::REGS:
-            fmt::print("{}\n", dbg.regs());
-            break;
-        case Command::READ_ADDR:
-            read_command(dbg, args);
-            break;
-        case Command::WRITE_ADDR:
-            write_command(dbg, args);
-            break;
-        case Command::RESET:
-            break;
-        case Command::QUIT:
-            dbg.set_quit(true);
-            exit = true;
-            break;
-        case Command::INVALID:
-            fmt::print("invalid command. see 'help' for a list of commands.\n");
-            break;
-        }
+        exit = exec_command(cmd, args, dbg, ev);
     } while (!exit);
 }
 

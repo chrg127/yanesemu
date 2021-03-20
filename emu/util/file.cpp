@@ -46,11 +46,12 @@ bool File::open(const std::string_view pathname, const Mode filemode)
  * should not try to generalize them */
 bool File::getword(std::string &str)
 {
+    const auto is_space = [](int c) { return c == ' ' || c == '\t'; };
     const auto isdelim = [](int c) { return c == '\n' || c == ' ' || c == '\t'; };
     int c;
 
     str.erase();
-    while (c = getc(), isdelim(c) && c != EOF)
+    while (c = getc(), is_space(c) && c != EOF)
         ;
     ungetc(c);
     while (c = getc(), !isdelim(c) && c != EOF)
