@@ -93,7 +93,7 @@ std::string CPU::status() const
 uint8 CPU::fetch()
 {
     if (fetch_callback)
-        fetch_callback(pc.reg, 0b001);
+        fetch_callback(pc.reg, 'x');
     cycle();
     return bus->read(pc.reg++);
 }
@@ -347,7 +347,7 @@ void CPU::nmipoll()
 uint8 CPU::readmem(uint16 addr)
 {
     if (fetch_callback)
-        fetch_callback(addr, 0b100);
+        fetch_callback(addr, 'r');
     cycle();
     return bus->read(addr);
 }
@@ -355,7 +355,7 @@ uint8 CPU::readmem(uint16 addr)
 void CPU::writemem(uint16 addr, uint8 data)
 {
     if (fetch_callback)
-        fetch_callback(addr, 0b010);
+        fetch_callback(addr, 'w');
     cycle();
     bus->write(addr, data);
 }

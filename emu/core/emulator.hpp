@@ -55,7 +55,7 @@ public:
         // the debugger will do nothing as long we don't tie its run() function to something
         // when enabled, the debugger should stop at the first RESET.
         // this works as long Debugger::nextstop has a value.
-        cpu.register_fetch_callback([&](uint16 addr, uint3 mode) { debugger.fetch_callback(addr, mode); });
+        cpu.register_fetch_callback([&](uint16 addr, char mode) { debugger.fetch_callback(addr, mode); });
         debugger.register_callback(callb);
     }
 

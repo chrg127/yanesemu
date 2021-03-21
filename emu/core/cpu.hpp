@@ -17,7 +17,7 @@ class CPU {
     uint8 rammem[RAM_SIZE];
     Bus *bus = nullptr;
     unsigned long cycles = 0;
-    std::function<void (uint16, uint3)> fetch_callback;
+    std::function<void (uint16, char)> fetch_callback;
 
     // used in opcodes.cpp
     Reg16 opargs = 0;
