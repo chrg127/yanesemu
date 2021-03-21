@@ -26,6 +26,8 @@ public:
         char mode;
     };
 
+    enum class StatusDev { CPU, PPU };
+
 private:
     Emulator *emu;
     std::function<void (Debugger &, Event &)> callback;
@@ -33,6 +35,7 @@ private:
     std::optional<uint16> nextstop = 0;
     using TraceBuffer = std::vector<std::pair<uint16, Opcode>>;
     TraceBuffer tracebuf;
+    // bool tracing = false;
     bool quit = false;
 
 public:
@@ -41,17 +44,17 @@ public:
     { }
 
     void fetch_callback(uint16 addr, char mode);
-    void set_nextstop(uint16 addr) { nextstop = addr; };
     void next(const Opcode &op);
     void step(const Opcode &op);
     void continue_exec() { nextstop.reset(); }
-    std::string regs() const;
     uint8 read(uint16 addr);
     void write(uint16 addr, uint8 value);
-    std::vector<uint8> readblock(uint16 start, uint16 end);
+    std::string status(StatusDev dev) const;
     void reset();
+    void enable_trace(std::string &&filename);
 
     void register_callback(auto &&f)            { callback = f; }
+    void set_nextstop(uint16 addr)              { nextstop = addr; };
     void set_quit(bool q)                       { quit = q; }
     bool has_quit() const                       { return quit; }
     TraceBuffer tracebuffer() const             { return tracebuf; }

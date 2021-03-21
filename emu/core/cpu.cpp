@@ -76,7 +76,9 @@ void CPU::fire_nmi()
 
 std::string CPU::status() const
 {
-    return fmt::format("PC: {:02X} A: {:02X} X: {:02X} Y: {:02X} S: {:02X} {}{}{}{}{}{}{}{} cycles: {}",
+    return fmt::format("PC: ${:02X} A: ${:02X} X: ${:02X} Y: ${:02X} S: ${:02X}\n"
+                       "Flags: [{}{}{}{}{}{}{}{}]\n"
+                       "Cycles: {}\n",
         pc.reg, accum, xreg, yreg, sp,
         (procstatus.neg     == 1) ? 'N' : 'n',
         (procstatus.ov      == 1) ? 'V' : 'v',

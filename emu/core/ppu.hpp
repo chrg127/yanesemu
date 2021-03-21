@@ -110,7 +110,7 @@ public:
     void reset();
     // ppumain.cpp
     void run();
-    std::string get_info() const;
+    std::string status() const;
     void attach_bus(Bus *vrambus, Bus *rambus);
     void set_mirroring(Mirroring m);
 

@@ -75,6 +75,17 @@ struct Opcode {
 };
 
 OpcodeInfo disassemble(const uint8 opcode, const uint8 arglow, const uint8 arghigh);
+void disassemble_block(uint16 start, uint16 end, auto &&readval, auto &&process)
+{
+    while (start <= end) {
+        uint8 code = readval(start);
+        uint8 low  = readval(start + 1);
+        uint8 high = readval(start + 2);
+        OpcodeInfo info = disassemble(code, low, high);
+        process(start, std::move(info.str));
+        start += info.numb;
+    }
+}
 
 
 /* It is interesting to note that branch opcodes follow a specific pattern in

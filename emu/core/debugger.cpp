@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <string>
 #include <unordered_map>
+#include <cassert>
 #include <emu/core/emulator.hpp>
 #include <emu/util/stringops.hpp>
 #include <emu/util/file.hpp>
@@ -14,16 +15,16 @@ void Debugger::fetch_callback(uint16 addr, char mode)
     if (quit)
         return;
 
-    uint16 pc     = emu->cpu.pc.reg;
-    Opcode opcode = emu->cpu.disassemble();
+    uint16 pc = emu->cpu.pc.reg;
+    Opcode op = emu->cpu.disassemble();
 
-    // trace all jumps by default
+    // tracing
     if (mode == 'x') {
-        switch (opcode.code) {
-        case 0x20: case 0x4C: case 0x6C:
-            tracebuf.push_back(std::make_pair(pc, opcode));
+        switch (op.code) {
+        case 0x20: case 0x4C: case 0x6C: // jsr, jmp, jmp (ind)
+            tracebuf.push_back(std::make_pair(pc, op));
             break;
-        case 0x60:
+        case 0x60: // rts
             if (tracebuf.back().second.code == 0x20)
                 tracebuf.pop_back();
             break;
@@ -38,7 +39,7 @@ void Debugger::fetch_callback(uint16 addr, char mode)
         Event ev = {
             .type   = Event::Type::BREAK,
             .pc     = pc,
-            .opcode = opcode,
+            .opcode = op,
             .index  = it - breakvec.begin(),
         };
         callback(*this, ev);
@@ -46,18 +47,17 @@ void Debugger::fetch_callback(uint16 addr, char mode)
 
     // handle next/step commands
     if (nextstop) {
-        /* If the user has issued a next/step command, but an interrupt
-         * happened, modify the next stop address so that we get inside the interrupt handler.
-         * The interrupt vector is read 2 times, so make sure we ignore
-         * the second read (can be done by checking addr) */
-        if (mode == 'r' && addr >= 0xFFFA && (addr & 1) == 0) {
+        /* If the user has issued a next/step command, but an interrupt happened,
+         * modify the next stop address so that we get inside the interrupt handler.
+         * The interrupt vector is read 2 times, so make sure we ignore the second read */
+        if (mode == 'r' && addr >= 0xFFFA && (addr & 1) == 0)
             nextstop = emu->rambus.read(addr+1) << 8 | emu->rambus.read(addr);
-        } else if (mode == 'x' && addr == nextstop.value()) {
+        else if (mode == 'x' && addr == nextstop.value()) {
             nextstop.reset();
             Event ev = {
                 .type   = Event::Type::FETCH,
                 .pc     = pc,
-                .opcode = opcode,
+                .opcode = op,
                 .index  = 0,
             };
             callback(*this, ev);
@@ -77,26 +77,25 @@ void Debugger::next(const Opcode &op)
                                 : emu->cpu.nextaddr(op);
 }
 
-std::string Debugger::regs() const
+std::string Debugger::status(StatusDev dev) const
 {
-    return emu->cpu.status();
+    switch (dev) {
+    case StatusDev::CPU: return emu->cpu.status();
+    case StatusDev::PPU: return emu->ppu.status();
+    default: assert(false);
+    }
 }
 
 void Debugger::reset()
 {
-    // TODO: there are a lot more things to reset
-    nextstop = 0;
-    emu->reset();
 }
 
 uint8 Debugger::read(uint16 addr)
 {
-    /* The PPU has a bunch of regs with side-effects on read.
-     * If we are reading those, read them directly instead of going
-     * through the bus. */
+    /* PPU regs 2002 and 2007 have side effects, so emulate them.
+     * for 2007, we always return the read buffer. */
     switch (addr) {
     case 0x2002: return emu->ppu.io.vblank << 7 | emu->ppu.io.sp_zero_hit << 6 | emu->ppu.io.sp_overflow << 5;
-    // always return the read buffer, without ever updating it
     case 0x2007: return emu->ppu.vram.addr < 0x3F00 ? emu->ppu.io.data_buf
                                                     : emu->vrambus.read(emu->ppu.vram.addr);
     default: return emu->rambus.read(addr);
@@ -108,14 +107,6 @@ void Debugger::write(uint16 addr, uint8 value)
     emu->rambus.write(addr, value);
 }
 
-std::vector<uint8> Debugger::readblock(uint16 start, uint16 end)
-{
-    std::vector<uint8> block;
-    for (uint16 addr = start; addr != end; addr++) {
-        block.push_back(read(addr));
-    }
-    return block;
-}
 
 
 struct CommandInfo {
@@ -125,21 +116,23 @@ struct CommandInfo {
     unsigned minargs;
 };
 
-//  name                abbrev  enum                    min args    description
+//  name                abbrev  enum           min args    description
 #define O(X) \
     X("help",           "h",    HELP,          0,          "prints this help text") \
+    X("continue",       "c",    CONTINUE,      0,          "start/continue execution") \
+    X("runframe",       "nmi",  RUNFRAME,      0,          "run entire frame, stop at nmi handler") \
     X("break",          "b",    BREAK,         2,          "set a breakpoint") \
     X("listbreaks",     "lb",   LIST_BREAK,    0,          "list breakpoints") \
     X("deletebreak",    "dlb",  DELBREAK,      1,          "delete a breakpoint") \
     X("backtrace",      "bt",   BACKTRACE,     0,          "prints the backtrace") \
-    X("continue",       "c",    CONTINUE,      0,          "start/continue execution") \
-    X("disassemble",    "dis",  DISASSEMBLE,   1,          "disassemble the current instruction") \
     X("next",           "n",    NEXT,          0,          "run next instruction") \
     X("step",           "s",    STEP,          0,          "step next instruction") \
-    X("regs",           "r",    REGS,          0,          "print registers") \
+    X("status",         "st",   STATUS,        0,          "print current status") \
     X("read",           "rd",   READ_ADDR,     1,          "read address") \
     X("write",          "wr",   WRITE_ADDR,    2,          "write address") \
     X("block",          "bl",   BLOCK,         2,          "read block") \
+    X("disassemble",    "dis",  DISASSEMBLE,   1,          "disassemble the current instruction") \
+    X("disblock",       "disb", DISBLOCK,      2,          "disassemble a given block") \
     X("reset",          "res",  RESET,         0,          "reset the machine") \
     X("quit",           "q",    QUIT,          0,          "quit the emulator") \
 
@@ -151,19 +144,19 @@ enum Command {
 #undef X
 
 #define X(name, abbrev, enumname, minargs, desc) { name, enumname }, { abbrev, enumname },
-static const std::unordered_map<std::string, Command> strtocmd = {
+static const std::unordered_map<std::string, Command> cmd_strtab = {
     O(X)
 };
 #undef X
 
 #define X(name, abbrev, enumname, minargs, desc) { enumname, CommandInfo{ name, desc, abbrev, minargs } },
-static std::unordered_map<Command, CommandInfo> cmd_to_info = {
+static std::unordered_map<Command, CommandInfo> cmd_infotab = {
     O(X)
 };
 #undef X
 
 #define X(name, abbrev, enumname, minargs, desc) name ", " abbrev ": " desc "\n"
-static const std::string helpstr = ""
+static const std::string cmd_helpstr = ""
     O(X)
     "";
 #undef X
@@ -179,23 +172,18 @@ static std::pair<Command, CmdArgs> parse()
         return std::make_pair(Command::QUIT, CmdArgs{});
     if (cmd.empty())
         return std::make_pair(Command::INVALID, CmdArgs{});
-    auto it = strtocmd.find(cmd);
-    if (it == strtocmd.end())
+    auto it = cmd_strtab.find(cmd);
+    if (it == cmd_strtab.end())
         return std::make_pair(Command::INVALID, CmdArgs{});
     return std::make_pair(it->second, Util::strsplit(args, ' '));
 }
 
-static std::optional<uint16> addrconv(const std::string &str)
+static void print_block(auto &&readvalue, uint16 start, uint16 end)
 {
-    return Util::strconv<uint16>(str, 4, 16);
-}
-
-static void print_block(std::vector<uint8> &&block, uint16 start, uint16 end)
-{
-    for (unsigned i = 0; i < block.size(); ) {
+    for (uint16 i = 0; i < (end - start); ) {
         fmt::print("{:04X}: ", i + start);
-        for (unsigned j = 0; j < 16 && i + start < end; j++) {
-            fmt::print("{:02X} ", block[i]);
+        for (uint16 j = 0; j < 16 && i + start < end; j++) {
+            fmt::print("{:02X} ", readvalue(i));
             i++;
         }
         fmt::print("\n");
@@ -208,8 +196,17 @@ static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args, 
     switch (cmd) {
 
     case Command::HELP:
-        fmt::print("{}", helpstr);
+        fmt::print("{}", cmd_helpstr);
         return false;
+
+    case Command::CONTINUE:
+        fmt::print("Continuing.\n");
+        dbg.continue_exec();
+        return true;
+
+    case Command::RUNFRAME:
+        dbg.set_nextstop(dbg.read(NMI_VEC) | dbg.read(NMI_VEC+1) << 8);
+        return true;
 
     case Command::BREAK: {
         char mode = args[0][0];
@@ -217,8 +214,8 @@ static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args, 
             fmt::print("Invalid mode for breakpoint. Try 'help'.\n");
             return false;
         }
-        auto start = addrconv(args[1]);
-        auto end = args.size() > 2 ? addrconv(args[2]) : start;
+        auto start = Util::strconv<uint16>(args[1], 16);
+        auto end = args.size() > 2 ? Util::strconv<uint16>(args[2], 16) : start;
         if (!start || !end || end <= start) {
             fmt::print("Invalid range.\n");
             return false;
@@ -229,7 +226,7 @@ static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args, 
     }
 
     case Command::DELBREAK: {
-        auto index = addrconv(args[0]);
+        auto index = Util::strconv<uint16>(args[0], 16);
         if (!index || index >= dbg.breakpoints().size()) {
             fmt::print("Index not valid.\n");
             return false;
@@ -259,19 +256,10 @@ static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args, 
         return false;
     }
 
-    case Command::CONTINUE:
-        fmt::print("Continuing.\n");
-        dbg.continue_exec();
-        return true;
-
     case Command::DISASSEMBLE: {
-        auto code = Util::strconv<uint8>(args[0], 2, 16);
-        if (!code) {
-            fmt::print("Invalid value: {}\n", args[0]);
-            return false;
-        }
-        auto operand = args.size() == 1 ? 0 : addrconv(args[1]);
-        if (!operand) {
+        auto code    = Util::strconv<uint8>(args[0], 16);
+        auto operand = args.size() == 1 ? 0 : Util::strconv<uint16>(args[1], 16);
+        if (!code || !operand) {
             fmt::print("Invalid value found while parsing command arguments.\n");
             return false;
         }
@@ -287,12 +275,15 @@ static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args, 
         dbg.step(opcode);
         return true;
 
-    case Command::REGS:
-        fmt::print("{}\n", dbg.regs());
+    case Command::STATUS:
+        if (args.size() > 0 && args[0] == "ppu")
+            fmt::print("{}", dbg.status(Debugger::StatusDev::PPU));
+        else
+            fmt::print("{}", dbg.status(Debugger::StatusDev::CPU));
         return false;
 
     case Command::READ_ADDR: {
-        auto addr = addrconv(args[0]);
+        auto addr = Util::strconv<uint16>(args[0], 16);
         if (!addr) {
             fmt::print("Invalid address: {}.\n", args[0]);
             return false;
@@ -302,8 +293,8 @@ static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args, 
     }
 
     case Command::WRITE_ADDR: {
-        auto addr   = addrconv(args[0]);
-        auto newval = Util::strconv<uint8>(args[1], 2, 16);
+        auto addr   = Util::strconv<uint16>(args[0], 16);
+        auto newval = Util::strconv<uint8 >(args[1], 16);
         if (!addr || !newval) {
             fmt::print("Invalid value found while parsing command arguments.\n");
             return false;
@@ -315,13 +306,26 @@ static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args, 
     }
 
     case Command::BLOCK: {
-        auto start = addrconv(args[0]);
-        auto end   = addrconv(args[1]);
+        auto start = Util::strconv<uint16>(args[0], 16);
+        auto end   = Util::strconv<uint16>(args[1], 16);
         if (!start || !end || end <= start) {
             fmt::print("Invalid range.\n");
             return false;
         }
-        print_block(dbg.readblock(start.value(), end.value()), start.value(), end.value());
+        print_block([&](uint16 addr) { return dbg.read(addr); }, start.value(), end.value());
+        return false;
+    }
+
+    case Command::DISBLOCK: {
+        auto start = Util::strconv<uint16>(args[0], 16);
+        auto end   = Util::strconv<uint16>(args[1], 16);
+        if (!start || !end || end <= start) {
+            fmt::print("Invalid range.\n");
+            return false;
+        }
+        disassemble_block(start.value(), end.value(),
+                [&](uint16 addr) { return dbg.read(addr); },
+                [] (uint16 addr, std::string &&s) { fmt::print("${:04X}: {}\n", addr, s); });
         return false;
     }
 
@@ -350,7 +354,7 @@ void clirepl(Debugger &dbg, Debugger::Event &ev)
     do {
         fmt::print("> ");
         auto [cmd, args] = parse();
-        auto &cmdinfo = cmd_to_info.find(cmd)->second;
+        auto &cmdinfo = cmd_infotab.find(cmd)->second;
         if (cmd != Command::INVALID && args.size() < cmdinfo.minargs) {
             fmt::print("Not enough arguments for command {}. Try 'help'.\n", cmdinfo.name);
             continue;

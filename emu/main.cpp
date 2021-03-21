@@ -41,9 +41,9 @@ void mainloop()
 }
 
 static const Util::ValidArgStruct cmdflags = {
-    { 'h', "help",         "Print this help text and quit"            },
-    { 'v', "version",      "Shows the program's version"              },
-    { 'd', "debugger",     "Use command-line debugger"                },
+    { 'h',  "help",     "Print this help text and quit" },
+    { 'v',  "version",  "Shows the program's version"   },
+    { 'd',  "debugger", "Use command-line debugger"     },
 };
 
 int main(int argc, char *argv[])
@@ -87,20 +87,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    /*
-    // open log files -- these are used to log emulator info and dump memory
-    auto open_logfile = [](Util::File &f, char flag) {
-        if (!flags.has[flag] || flags.params[flag] == "")
-            return;
-        std::string_view s = flags.params[flag];
-        if      (s == "stdout") f.assoc(stdout);
-        else if (s == "stderr") f.assoc(stderr);
-        else if (!f.open(s.data(), Util::File::Mode::WRITE))
-            error("can't open {} for writing\n", s.data());
-    };
-    open_logfile(logfile, 'l');
-    open_logfile(dumpfile, 'd');
-    */
     if (flags.has['d'])
         emu.enable_debugger([](Core::Debugger &db, Core::Debugger::Event &ev) { Core::clirepl(db, ev); });
     mainloop();
