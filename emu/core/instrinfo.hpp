@@ -63,33 +63,30 @@ struct ProcStatus {
     }
 };
 
-struct OpcodeInfo {
-    std::string str;
+struct Instruction {
+    uint16 pc;
+    uint8 id;
+    Reg16 op;
     unsigned numb;
+    std::string str;
 };
 
-struct Opcode {
-    uint8 code;
-    Reg16 args;
-    OpcodeInfo info;
-};
+std::pair<std::string, unsigned> disassemble(const uint8 instr, const uint8 oplow, const uint8 ophigh);
 
-OpcodeInfo disassemble(const uint8 opcode, const uint8 arglow, const uint8 arghigh);
 void disassemble_block(uint16 start, uint16 end, auto &&readval, auto &&process)
 {
     while (start <= end) {
-        uint8 code = readval(start);
+        uint8 id   = readval(start);
         uint8 low  = readval(start + 1);
         uint8 high = readval(start + 2);
-        OpcodeInfo info = disassemble(code, low, high);
-        process(start, std::move(info.str));
-        start += info.numb;
+        auto [str, bytes] = disassemble(id, low, high);
+        process(start, std::move(str));
+        start += bytes;
     }
 }
 
-
-/* It is interesting to note that branch opcodes follow a specific pattern in
- * their corresponding code:
+/* It is interesting to note that branch instructions follow a specific pattern in
+ * their corresponding id:
  *    ffsmmmmm
  * mmmmm = mask. must be exactly 0x1F (0b10000).
  * s     = the corresponding processor flag must be equal to this bit.
@@ -108,14 +105,14 @@ void disassemble_block(uint16 start, uint16 end, auto &&readval, auto &&process)
  * The ProcStatus struct doesn't really follow this layout so almost none
  * of this info is useful.
  */
-constexpr inline bool is_branch(const uint8 opcode)
+constexpr inline bool is_branch(const uint8 instr)
 {
-    return (opcode & 0x1F) == 0x10;
+    return (instr & 0x1F) == 0x10;
 }
 
-constexpr inline bool took_branch(uint8 opcode, const ProcStatus &ps)
+constexpr inline bool took_branch(uint8 instr, const ProcStatus &ps)
 {
-    switch (opcode) {
+    switch (instr) {
     case 0x10: return ps.neg == 0;
     case 0x30: return ps.neg == 1;
     case 0x50: return ps.ov == 0;
@@ -133,9 +130,9 @@ constexpr inline uint16 branch_pointer(const uint8 branch_arg, const uint16 pc)
     return pc + 2 + (int8_t) branch_arg;
 }
 
-constexpr inline bool is_jump(const uint8 opcode)
+constexpr inline bool is_jump(const uint8 instr)
 {
-    return opcode == 0x20 || opcode == 0x4C || opcode == 0x6C;
+    return instr == 0x20 || instr == 0x4C || instr == 0x6C;
 }
 
 } // namespace Core

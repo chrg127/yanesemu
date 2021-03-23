@@ -4,7 +4,7 @@
 #include <functional>
 #include <optional>
 #include <vector>
-#include <emu/core/opcodeinfo.hpp>
+#include <emu/core/instrinfo.hpp>
 
 namespace Core {
 
@@ -15,8 +15,7 @@ public:
     struct Event {
         enum class Type { FETCH, BREAK, };
         Type type;
-        uint16 pc;
-        Opcode opcode;
+        Instruction instr;
         long index;
     };
 
@@ -33,8 +32,7 @@ private:
     std::function<void (Debugger &, Event &)> callback;
     std::vector<Breakpoint> breakvec;
     std::optional<uint16> nextstop = 0;
-    using TraceBuffer = std::vector<std::pair<uint16, Opcode>>;
-    TraceBuffer tracebuf;
+    std::vector<Instruction> btrace;
     // bool tracing = false;
     bool quit = false;
 
@@ -44,8 +42,8 @@ public:
     { }
 
     void fetch_callback(uint16 addr, char mode);
-    void next(const Opcode &op);
-    void step(const Opcode &op);
+    void next(const Instruction &op);
+    void step(const Instruction &op);
     void continue_exec() { nextstop.reset(); }
     uint8 read(uint16 addr);
     void write(uint16 addr, uint8 value);
@@ -57,7 +55,7 @@ public:
     void set_nextstop(uint16 addr)              { nextstop = addr; };
     void set_quit(bool q)                       { quit = q; }
     bool has_quit() const                       { return quit; }
-    TraceBuffer tracebuffer() const             { return tracebuf; }
+    std::vector<Instruction> backtrace() const  { return btrace; }
     unsigned setbreak(Breakpoint &&p)           { breakvec.push_back(p); return breakvec.size() - 1; }
     void delbreak(unsigned index)               { breakvec.erase(breakvec.begin() + index); }
     std::vector<Breakpoint> breakpoints() const { return breakvec; }

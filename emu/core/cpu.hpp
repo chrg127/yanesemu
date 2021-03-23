@@ -5,22 +5,13 @@
 #include <string>
 #include <emu/core/const.hpp>
 #include <emu/core/bus.hpp>
-#include <emu/core/opcodeinfo.hpp>
+#include <emu/core/instrinfo.hpp>
 #include <emu/util/unsigned.hpp>
 
 namespace Core {
 
 class CPU {
-    using InstrFuncRead = void (CPU::*)(const uint8);
-    using InstrFuncMod = uint8 (CPU::*)(uint8);
-
-    uint8 rammem[RAM_SIZE];
     Bus *bus = nullptr;
-    unsigned long cycles = 0;
-    std::function<void (uint16, char)> fetch_callback;
-
-    // used in opcodes.cpp
-    Reg16 opargs = 0;
 
     // registers
     Reg16 pc    = 0;
@@ -37,6 +28,13 @@ class CPU {
     bool execnmi    = false;
     bool execirq    = false;
 
+    // used in instructions.cpp
+    Reg16 opargs = 0;
+
+    unsigned long cycles = 0;
+    std::function<void (uint16, char)> fetch_callback;
+    uint8 rammem[RAM_SIZE];
+
 public:
     void run();
     void power();
@@ -45,9 +43,8 @@ public:
     void fire_irq();
     void fire_nmi();
     // debugging
-    Opcode nextopcode() const;
-    uint16 nextaddr(const Opcode &op) const;
-    Opcode disassemble() const;
+    uint16 nextaddr(const Instruction &op) const;
+    Instruction disassemble() const;
     std::string status() const;
 
     unsigned long get_cycles() { return cycles; }
@@ -55,8 +52,8 @@ public:
 
 private:
     uint8 fetch();
-    uint8 fetcharg();
-    void execute(uint8 opcode);
+    uint8 fetchop();
+    void execute(uint8 instr);
     void interrupt();
     void push(uint8 val);
     uint8 pull();
@@ -65,7 +62,10 @@ private:
     void cycle();
     void last_cycle();
 
-    // opcodes.cpp
+    // instructions.cpp
+    using InstrFuncRead = void (CPU::*)(const uint8);
+    using InstrFuncMod = uint8 (CPU::*)(uint8);
+
     void addrmode_imm_read(InstrFuncRead f);
     void addrmode_zero_read(InstrFuncRead f);
     void addrmode_zerox_read(InstrFuncRead f);
@@ -94,7 +94,7 @@ private:
     void addrmode_indx_write(uint8 val);
     void addrmode_indy_write(uint8 val);
     /*
-     * opcode functions missing (as they are not needed):
+     * instruction functions missing (as they are not needed):
      * - STA, STX, STY (use addrmode_write functions directly)
      * - BEQ, BNE, BMI, BPL, BVC, BVS, BCC, BCS (use instr_branch)
      * - TAX, TXA, TAY, TYA, TXS, TSX (use instr_transfer)

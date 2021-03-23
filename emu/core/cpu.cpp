@@ -7,7 +7,7 @@
 namespace Core {
 
 #define INSIDE_CPU_CPP
-#include <emu/core/opcodes.cpp>
+#include <emu/core/instructions.cpp>
 #undef INSIDE_CPU_CPP
 
 void CPU::run()
@@ -102,13 +102,13 @@ uint8 CPU::fetch()
 
 // This is here mostly so we can differentiate between actual instructions
 // and operand fetches. It's useful for the debugger.
-uint8 CPU::fetcharg()
+uint8 CPU::fetchop()
 {
     cycle();
     return bus->read(pc.reg++);
 }
 
-void CPU::execute(uint8 opcode)
+void CPU::execute(uint8 instr)
 {
 #define INSTR_IMPLD(id, func) \
     case id: instr_##func(); return;
@@ -119,7 +119,7 @@ void CPU::execute(uint8 opcode)
 #define INSTR_OTHER(id, func, ...) \
     case id: instr_##func(__VA_ARGS__); return;
 
-    switch(opcode) {
+    switch(instr) {
         INSTR_IMPLD(0x00, brk)
         INSTR_AMODE(0x01, ora, indx, read)
         INSTR_AMODE(0x05, ora, zero, read)
@@ -272,7 +272,7 @@ void CPU::execute(uint8 opcode)
         INSTR_AMODE(0xFD, sbc, absx, read)
         INSTR_AMODE(0xFE, inc, absx, modify)
         default:
-            dbgprint("error: unknown opcode: {:02X}\n", opcode);
+            dbgprint("error: unknown instruction: {:02X}\n", instr);
             return;
     }
 #undef INSTR_IMPLD
@@ -362,54 +362,51 @@ void CPU::writemem(uint16 addr, uint8 data)
     bus->write(addr, data);
 }
 
-Opcode CPU::nextopcode() const
+Instruction CPU::disassemble() const
 {
-    Opcode res;
-    res.code      = bus->read(pc.reg);
-    res.args.low  = bus->read(pc.reg+1);
-    res.args.high = bus->read(pc.reg+2);
-    return res;
-}
-
-Opcode CPU::disassemble() const
-{
-    Opcode op = nextopcode();
-    op.info = Core::disassemble(op.code, op.args.low, op.args.high);
-    if (is_branch(op.code)) {
-        op.info.str += fmt::format(" [{:02X}] [{}]",
-                branch_pointer(op.args.low, pc.reg),
-                took_branch(op.code, procstatus) ? "Branch taken" : "Branch not taken");
+    Instruction instr;
+    instr.pc      = pc.reg;
+    instr.id      = bus->read(pc.reg);
+    instr.op.low  = bus->read(pc.reg+1);
+    instr.op.high = bus->read(pc.reg+2);
+    auto [str, nb] = Core::disassemble(instr.id, instr.op.low, instr.op.high);
+    instr.str  = std::move(str);
+    instr.numb = nb;
+    if (is_branch(instr.id)) {
+        instr.str += fmt::format(" [{:02X}] [{}]",
+                branch_pointer(instr.op.low, instr.pc),
+                took_branch(instr.id, procstatus) ? "Branch taken" : "Branch not taken");
     }
-    return op;
+    return instr;
 }
 
-/* This method assumes we have obtained the full Opcode struct in some way
+/* This method assumes we have obtained the full Instruction struct in some way
  * (usually with disassemble())
  * I would have tried making something more general, but figuring out
  * the next address requires the full state of the CPU, including memory
- * The method used here is emulating some risky opcodes to find out the next
- * address, and using the normal formula of "pc + opcode num bytes" for the
+ * The method used here is emulating some risky instructions to find out the next
+ * address, and using the normal formula of "pc + instr num bytes" for the
  * rest. Another approach would be backing up all regs, then call run().
  * I prefer this method since this means the function can be const. */
-uint16 CPU::nextaddr(const Opcode &op) const
+uint16 CPU::nextaddr(const Instruction &instr) const
 {
-    switch (op.code) {
+    switch (instr.id) {
     case 0x00:
         return resetpending ? RESET_VEC
              : nmipending   ? NMI_VEC
              :                IRQ_BRK_VEC;
     case 0x20: case 0x4C:
-        return op.args.reg;
+        return instr.op.reg;
     case 0x6C:
-        return op.args.low == 0xFF ? bus->read(op.args.reg) | bus->read(op.args.reg & 0xFF00) << 8
-                                   : bus->read(op.args.reg) | bus->read(op.args.reg + 1);
+        return instr.op.low == 0xFF ? bus->read(instr.op.reg) | bus->read(instr.op.reg & 0xFF00) << 8
+                                    : bus->read(instr.op.reg) | bus->read(instr.op.reg + 1);
     case 0x60:
         return (bus->read(sp + 1 + STACK_BASE) | bus->read(sp + 2 + STACK_BASE) << 8) + 1;
     case 0x40:
         return bus->read(sp + 1 + STACK_BASE) | bus->read(sp + 2 + STACK_BASE);
     default:
-        return took_branch(op.code, procstatus) ? branch_pointer(op.args.low, pc.reg)
-                                                : pc.reg + op.info.numb;
+        return took_branch(instr.id, procstatus) ? branch_pointer(instr.op.low, instr.pc)
+                                                   : instr.pc + instr.numb;
     }
 }
 

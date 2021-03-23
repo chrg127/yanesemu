@@ -15,18 +15,17 @@ void Debugger::fetch_callback(uint16 addr, char mode)
     if (quit)
         return;
 
-    uint16 pc = emu->cpu.pc.reg;
-    Opcode op = emu->cpu.disassemble();
+    Instruction instr = emu->cpu.disassemble();
 
     // tracing
     if (mode == 'x') {
-        switch (op.code) {
+        switch (instr.id) {
         case 0x20: case 0x4C: case 0x6C: // jsr, jmp, jmp (ind)
-            tracebuf.push_back(std::make_pair(pc, op));
+            btrace.push_back(instr);
             break;
         case 0x60: // rts
-            if (tracebuf.back().second.code == 0x20)
-                tracebuf.pop_back();
+            if (btrace.back().id == 0x20)
+                btrace.pop_back();
             break;
         }
     }
@@ -38,8 +37,7 @@ void Debugger::fetch_callback(uint16 addr, char mode)
     if (it != breakvec.end()) {
         Event ev = {
             .type   = Event::Type::BREAK,
-            .pc     = pc,
-            .opcode = op,
+            .instr  = instr,
             .index  = it - breakvec.begin(),
         };
         callback(*this, ev);
@@ -56,8 +54,7 @@ void Debugger::fetch_callback(uint16 addr, char mode)
             nextstop.reset();
             Event ev = {
                 .type   = Event::Type::FETCH,
-                .pc     = pc,
-                .opcode = op,
+                .instr  = instr,
                 .index  = 0,
             };
             callback(*this, ev);
@@ -65,16 +62,16 @@ void Debugger::fetch_callback(uint16 addr, char mode)
     }
 }
 
-void Debugger::step(const Opcode &op)
+void Debugger::step(const Instruction &instr)
 {
-    nextstop = emu->cpu.nextaddr(op);
+    nextstop = emu->cpu.nextaddr(instr);
 }
 
-void Debugger::next(const Opcode &op)
+void Debugger::next(const Instruction &instr)
 {
     // check for jumps and skip them, otherwise use the usual function
-    nextstop = is_jump(op.code) ? emu->cpu.pc.reg + op.info.numb
-                                : emu->cpu.nextaddr(op);
+    nextstop = is_jump(instr.id) ? emu->cpu.pc.reg + instr.numb
+                                 : emu->cpu.nextaddr(instr);
 }
 
 std::string Debugger::status(StatusDev dev) const
@@ -191,7 +188,7 @@ static void print_block(auto &&readvalue, uint16 start, uint16 end)
 }
 
 /* execute a command and return whether to quit the repl. */
-static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args, const Opcode &opcode)
+static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args, const Instruction &instr)
 {
     switch (cmd) {
 
@@ -247,32 +244,33 @@ static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args, 
     }
 
     case Command::BACKTRACE: {
-        const auto &buf = dbg.tracebuffer();
+        const auto &buf = dbg.backtrace();
         if (buf.size() == 0)
             fmt::print("Backtrace is empty.\n");
         else
-            for (const auto &x : dbg.tracebuffer())
-                fmt::print("${:02X}: {}\n", x.first, x.second.info.str);
+            for (const auto &x : dbg.backtrace())
+                fmt::print("${:02X}: {}\n", x.pc, x.str);
         return false;
     }
 
     case Command::DISASSEMBLE: {
-        auto code    = Util::strconv<uint8>(args[0], 16);
+        auto id      = Util::strconv<uint8>(args[0], 16);
         auto operand = args.size() == 1 ? 0 : Util::strconv<uint16>(args[1], 16);
-        if (!code || !operand) {
+        if (!id || !operand) {
             fmt::print("Invalid value found while parsing command arguments.\n");
             return false;
         }
-        fmt::print("{}\n", disassemble(code.value(), operand.value() >> 8, operand.value()).str);
+        auto [str, _] = disassemble(id.value(), operand.value() >> 8, operand.value());
+        fmt::print("{}\n", str);
         return false;
     }
 
     case Command::NEXT:
-        dbg.next(opcode);
+        dbg.next(instr);
         return true;
 
     case Command::STEP:
-        dbg.step(opcode);
+        dbg.step(instr);
         return true;
 
     case Command::STATUS:
@@ -349,7 +347,7 @@ void clirepl(Debugger &dbg, Debugger::Event &ev)
 {
     if (ev.type == Debugger::Event::Type::BREAK)
         fmt::print("Breakpoint #{} reached.\n", ev.index);
-    fmt::print("${:04X}: [{:02X}] {}\n", ev.pc, ev.opcode.code, ev.opcode.info.str);
+    fmt::print("${:04X}: [{:02X}] {}\n", ev.instr.pc, ev.instr.id, ev.instr.str);
     bool exit = false;
     do {
         fmt::print("> ");
@@ -359,7 +357,7 @@ void clirepl(Debugger &dbg, Debugger::Event &ev)
             fmt::print("Not enough arguments for command {}. Try 'help'.\n", cmdinfo.name);
             continue;
         }
-        exit = exec_command(dbg, cmd, args, ev.opcode);
+        exit = exec_command(dbg, cmd, args, ev.instr);
     } while (!exit);
 }
 

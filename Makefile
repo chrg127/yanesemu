@@ -1,11 +1,11 @@
 VPATH := emu:emu/core:emu/util:emu/io:emu/video:tests
 
-headers := emulator.hpp bus.hpp cartridge.hpp cpu.hpp const.hpp ppu.hpp debugger.hpp opcodeinfo.hpp \
+headers := emulator.hpp bus.hpp cartridge.hpp cpu.hpp const.hpp ppu.hpp debugger.hpp instrinfo.hpp \
 		  bits.hpp cmdline.hpp debug.hpp easyrandom.hpp file.hpp heaparray.hpp settings.hpp stringops.hpp unsigned.hpp settings.hpp circularbuffer.hpp \
 		  video.hpp opengl.hpp \
 		  external/glad/glad.h external/glad/khrplatform.h
 
-_objs := emulator.o bus.o cartridge.o cpu.o ppu.o debugger.o opcodeinfo.o \
+_objs := emulator.o bus.o cartridge.o cpu.o ppu.o debugger.o instrinfo.o \
 	   cmdline.o easyrandom.o file.o stringops.o settings.o \
 	   video.o opengl.o \
 	   glad.o
@@ -46,7 +46,7 @@ endif
 
 all: $(outdir)/$(programname)
 
-$(outdir)/cpu.o: emu/core/cpu.cpp emu/core/opcodes.cpp emu/core/disassemble.cpp $(headers)
+$(outdir)/cpu.o: emu/core/cpu.cpp emu/core/instructions.cpp emu/core/disassemble.cpp $(headers)
 $(outdir)/ppu.o: emu/core/ppu.cpp emu/core/ppumain.cpp $(headers)
 $(outdir)/glad.o: external/glad/glad.c $(headers)
 	$(info Compiling $< ...)

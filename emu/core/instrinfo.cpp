@@ -1,9 +1,10 @@
+#include <emu/core/instrinfo.hpp>
+
 #include <fmt/core.h>
-#include <emu/core/opcodeinfo.hpp>
 
 namespace Core {
 
-#define op(X) \
+#define INSTR_MODE(X) \
     X(0x00, brk, impld) \
     X(0x01, ora, indx) \
     X(0x05, ora, zero) \
@@ -155,7 +156,9 @@ namespace Core {
     X(0xFD, sbc, absx) \
     X(0xFE, inc, absx) \
 
-#define opdesc(X) \
+
+
+#define INSTR_DESC(X) \
     X(adc, "", "") \
     X(and, "", "") \
     X(asl, "", "") \
@@ -214,30 +217,46 @@ namespace Core {
     X(txs, "", "") \
     X(tya, "", "") \
 
-OpcodeInfo disassemble(const uint8 opcode, const uint8 arglow, const uint8 arghigh)
+std::pair<std::string, unsigned> disassemble(const uint8 instr, const uint8 oplow, const uint8 ophigh)
 {
-    const auto disass_impld = [&](const char name[4]) -> OpcodeInfo { return { std::string(name),                                        1 }; };
-    const auto disass_accum = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} A", name),                                1 }; };
-    const auto disass_branch= [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} {}", name, (int8_t) arglow),              2 }; };
-    const auto disass_imm   = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} #${:02X}",        name, arglow),          2 }; };
-    const auto disass_zero  = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} ${:02X}",         name, arglow),          2 }; };
-    const auto disass_zerox = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} ${:02X},x",       name, arglow),          2 }; };
-    const auto disass_zeroy = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} ${:02X},y",       name, arglow),          2 }; };
-    const auto disass_indx  = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} (${:02X},x)",     name, arglow),          2 }; };
-    const auto disass_indy  = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} (${:02X}),y",     name, arglow),          2 }; };
-    const auto disass_abs   = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} ${:02X}{:02X}",   name, arghigh, arglow), 3 }; };
-    const auto disass_absx  = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} ${:02X}{:02X},x", name, arghigh, arglow), 3 }; };
-    const auto disass_absy  = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} ${:02X}{:02X},y", name, arghigh, arglow), 3 }; };
-    const auto disass_ind   = [&](const char name[4]) -> OpcodeInfo { return { fmt::format("{} (${:02X}{:02X})", name, arghigh, arglow), 3 }; };
+#define modefmt(mode, formt, numb, ...) \
+    const auto disass_##mode = [&](const char name[4]) { return std::make_pair(fmt::format(formt, __VA_ARGS__), numb); }
+
+    const auto disass_impld = [&](const char name[4]) { return std::make_pair(std::string(name), 1); };
+    modefmt(accum,  "{} A",                 1, name);
+    modefmt(branch, "{} {}",                2, name, (int8_t) oplow);
+    modefmt(imm,    "{} #${:02X}",          2, name, oplow);
+    modefmt(zero,   "{} ${:02X}",           2, name, oplow);
+    modefmt(zerox,  "{} ${:02X},x",         2, name, oplow);
+    modefmt(zeroy,  "{} ${:02X},y",         2, name, oplow);
+    modefmt(indx,   "{} (${:02X},x)",       2, name, oplow);
+    modefmt(indy,   "{} (${:02X}),y",       2, name, oplow);
+    modefmt(abs,    "{} ${:02X}{:02X}",     3, name, ophigh, oplow);
+    modefmt(absx,   "{} ${:02X}{:02X},x",   3, name, ophigh, oplow);
+    modefmt(absy,   "{} ${:02X}{:02X},y",   3, name, ophigh, oplow);
+    modefmt(ind,    "{} (${:02X}{:02X})",   3, name, ophigh, oplow);
 
 #define X(id, name, mode) case id: return disass_##mode(#name);
-    switch(opcode) {
-        op(X)
+    switch(instr) {
+        INSTR_MODE(X)
         default:
             return { .str = "[Unknown]", .numb = 0 };
     }
 #undef X
 }
 
+/*
+#define X(name, title, desc) { #name, desc },
+static const std::unordered_map<std::string, std::string> desctab = {
+    INSTR_MODE(X)
+}
+#undef X
+
+std::string get_instr_desc(const std::string &s)
+{
+    auto it = desctab.find(s);
+    return it == desctab.end() ? "[Unknown instruction]", *it;
+}
+*/
 } // namespace Core
 
