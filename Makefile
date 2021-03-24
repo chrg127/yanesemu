@@ -46,7 +46,7 @@ endif
 
 all: $(outdir)/$(programname)
 
-$(outdir)/cpu.o: emu/core/cpu.cpp emu/core/instructions.cpp emu/core/disassemble.cpp $(headers)
+$(outdir)/cpu.o: emu/core/cpu.cpp emu/core/instructions.cpp $(headers)
 $(outdir)/ppu.o: emu/core/ppu.cpp emu/core/ppumain.cpp $(headers)
 $(outdir)/glad.o: external/glad/glad.c $(headers)
 	$(info Compiling $< ...)
