@@ -19,45 +19,12 @@ void Emulator::run()
     cycle = curr_cycle;
 }
 
-// void Emulator::log(Util::File &logfile)
-// {
-//     if (!logfile)
-//         return;
-//     logfile.print(cpu.get_info() + ' ');
-//     logfile.print(ppu.get_info() + ' ');
-//     logfile.print(cpu.disassemble());
-//     logfile.putc('\n');
-// }
-
-/*
-void Emulator::dump(Util::File &dumpfile)
+void Emulator::run_frame()
 {
-    if (!dumpfile)
-        return;
-    auto dump_mem = [&](Bus &bus) {
-        for (std::size_t i = 0; i < bus.size(); ) {
-            dumpfile.print("{:04X}: ", i);
-            for (std::size_t j = 0; j < 16; j++) {
-                dumpfile.print("{:02X} ", bus.read(i));
-                i++;
-            }
-            dumpfile.putc('\n');
-        }
-        dumpfile.putc('\n');
-    };
-    dump_mem(rambus);
-    dump_mem(vrambus);
+    while (!nmi)
+        run();
+    nmi = false;
 }
-*/
-
-// void Emulator::run_frame(Util::File &logfile)
-// {
-//     while (!nmi) {
-//         log(logfile);
-//         run();
-//     }
-//     nmi = false;
-// }
 
 bool Emulator::insert_rom(Util::File &romfile)
 {

@@ -29,16 +29,16 @@ void CPU::run()
 
 void CPU::power()
 {
-    accum = xreg = yreg = 0;
+    r.acc = r.x = r.y = 0;
     for (uint16 i = 0; i < 0x800; i++)
         bus->write(i, 0); //Util::random8());
-    procstatus.reset();
+    r.flags.reset();
     // these are probably APU regs. i'll add them later. for now this is enough.
     bus->write(0x4017, 0);
     bus->write(0x4015, 0);
     for (uint16 i = 0x4000; i < 0x4013; i++)
         bus->write(i, 0);
-    sp = 0;
+    r.sp = 0;
     // an interrupt is performed during 6502 start up. this is why SP = $FD.
     resetpending = true;
     interrupt();
@@ -74,30 +74,55 @@ void CPU::fire_nmi()
     nmipending = true;
 }
 
-std::string CPU::status() const
+CPU::Status CPU::status() const
 {
-    return fmt::format("PC: ${:02X} A: ${:02X} X: ${:02X} Y: ${:02X} S: ${:02X}\n"
-                       "Flags: [{}{}{}{}{}{}{}{}]\n"
-                       "Cycles: {}\n",
-        pc.reg, accum, xreg, yreg, sp,
-        (procstatus.neg     == 1) ? 'N' : 'n',
-        (procstatus.ov      == 1) ? 'V' : 'v',
-        (procstatus.unused  == 1) ? 'U' : 'u',
-        (procstatus.breakf  == 1) ? 'B' : 'b',
-        (procstatus.decimal == 1) ? 'D' : 'd',
-        (procstatus.intdis  == 1) ? 'I' : 'i',
-        (procstatus.zero    == 1) ? 'Z' : 'z',
-        (procstatus.carry   == 1) ? 'C' : 'c',
-        cycles
-    );
+    Status st;
+    st.regs = r;
+    st.instr.id      = bus->read(r.pc.full);
+    st.instr.op.low  = bus->read(r.pc.full+1);
+    st.instr.op.high = bus->read(r.pc.full+2);
+    return st;
 }
+
+/* The method used here is emulating some risky instructions to find out the next
+ * address, and using the normal formula of "pc + instr num bytes" for the
+ * rest. Another approach would be backing up all regs, then call run().
+ * I prefer this method since this means the function can be const. */
+uint16 CPU::nextaddr() const
+{
+    uint16 id = bus->read(r.pc.full);
+    Reg16 op;
+    op.low  = bus->read(r.pc.full + 1);
+    op.high = bus->read(r.pc.full + 2);
+
+    switch (id) {
+    case 0x00:
+        return resetpending ? RESET_VEC
+            :  nmipending   ? NMI_VEC
+            :                 IRQ_BRK_VEC;
+    case 0x20: case 0x4C:
+        return op.full;
+    case 0x6C:
+        return op.low == 0xFF ? bus->read(op.full) | bus->read(op.full & 0xFF00) << 8
+                              : bus->read(op.full) | bus->read(op.full + 1)      << 8;
+    case 0x60:
+        return 1 + (bus->read(r.sp + 1 + STACK_BASE) | bus->read(r.sp + 2 + STACK_BASE) << 8);
+    case 0x40:
+        return      bus->read(r.sp + 1 + STACK_BASE) | bus->read(r.sp + 2 + STACK_BASE) << 8;
+    default:
+        return took_branch(id, r.flags) ? branch_pointer(op.low, r.pc.full)
+                                        : r.pc.full + num_bytes(id);
+    }
+}
+
+
 
 uint8 CPU::fetch()
 {
     if (fetch_callback)
-        fetch_callback(pc.reg, 'x');
+        fetch_callback(status(), r.pc.full, 'x');
     cycle();
-    return bus->read(pc.reg++);
+    return bus->read(r.pc.full++);
 }
 
 // This is here mostly so we can differentiate between actual instructions
@@ -105,7 +130,7 @@ uint8 CPU::fetch()
 uint8 CPU::fetchop()
 {
     cycle();
-    return bus->read(pc.reg++);
+    return bus->read(r.pc.full++);
 }
 
 void CPU::execute(uint8 instr)
@@ -129,11 +154,11 @@ void CPU::execute(uint8 instr)
         INSTR_AMODE(0x0A, asl, accum, modify)
         INSTR_AMODE(0x0D, ora, abs, read)
         INSTR_AMODE(0x0E, asl, abs, modify)
-        INSTR_OTHER(0x10, branch, procstatus.neg == 0)     // bpl
+        INSTR_OTHER(0x10, branch, r.flags.neg == 0)     // bpl
         INSTR_AMODE(0x11, ora, indy, read)
         INSTR_AMODE(0x15, ora, zerox, read)
         INSTR_AMODE(0x16, asl, zerox, modify)
-        INSTR_OTHER(0x18, flag, procstatus.carry, false)   // clc
+        INSTR_OTHER(0x18, flag, r.flags.carry, false)   // clc
         INSTR_AMODE(0x19, ora, absy, read)
         INSTR_AMODE(0x1D, ora, absx, read)
         INSTR_AMODE(0x1E, asl, absx, modify)
@@ -148,11 +173,11 @@ void CPU::execute(uint8 instr)
         INSTR_AMODE(0x2C, bit, abs, read)
         INSTR_AMODE(0x2D, and, abs, read)
         INSTR_AMODE(0x2E, rol, abs, modify)
-        INSTR_OTHER(0x30, branch, procstatus.neg == 1)     // bmi
+        INSTR_OTHER(0x30, branch, r.flags.neg == 1)     // bmi
         INSTR_AMODE(0x31, and, indy, read)
         INSTR_AMODE(0x35, and, zerox, read)
         INSTR_AMODE(0x36, rol, zerox, modify)
-        INSTR_OTHER(0x38, flag, procstatus.carry, true)    //sec
+        INSTR_OTHER(0x38, flag, r.flags.carry, true)    //sec
         INSTR_AMODE(0x39, and, absy, read)
         INSTR_AMODE(0x3D, and, absx, read)
         INSTR_AMODE(0x3E, rol, absx, modify)
@@ -166,11 +191,11 @@ void CPU::execute(uint8 instr)
         INSTR_IMPLD(0x4C, jmp)
         INSTR_AMODE(0x4D, eor, abs, read)
         INSTR_AMODE(0x4E, lsr, abs, modify)
-        INSTR_OTHER(0x50, branch, procstatus.ov == 0)      // bvc
+        INSTR_OTHER(0x50, branch, r.flags.ov == 0)      // bvc
         INSTR_AMODE(0x51, eor, indy, read)
         INSTR_AMODE(0x55, eor, zerox, read)
         INSTR_AMODE(0x56, lsr, zerox, modify)
-        INSTR_OTHER(0x58, flag, procstatus.intdis, false)  //cli
+        INSTR_OTHER(0x58, flag, r.flags.intdis, false)  //cli
         INSTR_AMODE(0x59, eor, absy, read)
         INSTR_AMODE(0x5D, eor, absx, read)
         INSTR_AMODE(0x5E, lsr, absx, modify)
@@ -184,52 +209,52 @@ void CPU::execute(uint8 instr)
         INSTR_IMPLD(0x6C, jmp_ind)
         INSTR_AMODE(0x6D, adc, abs, read)
         INSTR_AMODE(0x6E, ror, abs, modify)
-        INSTR_OTHER(0x70, branch, procstatus.ov == 1)      // bvs
+        INSTR_OTHER(0x70, branch, r.flags.ov == 1)      // bvs
         INSTR_AMODE(0x71, adc, indy, read)
         INSTR_AMODE(0x75, adc, zerox, read)
         INSTR_AMODE(0x76, ror, zerox, modify)
-        INSTR_OTHER(0x78, flag, procstatus.intdis, true)   //sei
+        INSTR_OTHER(0x78, flag, r.flags.intdis, true)   //sei
         INSTR_AMODE(0x79, adc, absy, read)
         INSTR_AMODE(0x7D, adc, absx, read)
         INSTR_AMODE(0x7E, ror, absx, modify)
-        INSTR_WRITE(0x81, indx, accum)                      // sta
-        INSTR_WRITE(0x84, zero, yreg)                       // sty
-        INSTR_WRITE(0x85, zero, accum)                      // sta
-        INSTR_WRITE(0x86, zero, xreg)                       // stx
+        INSTR_WRITE(0x81, indx, r.acc)                      // sta
+        INSTR_WRITE(0x84, zero, r.y)                       // sty
+        INSTR_WRITE(0x85, zero, r.acc)                      // sta
+        INSTR_WRITE(0x86, zero, r.x)                       // stx
         INSTR_IMPLD(0x88, dey)
-        INSTR_OTHER(0x8A, transfer, xreg, accum)            // txa
-        INSTR_WRITE(0x8C, abs, yreg)                        // sty
-        INSTR_WRITE(0x8D, abs, accum)                       // sta
-        INSTR_WRITE(0x8E, abs, xreg)                        // stx
-        INSTR_OTHER(0x90, branch, procstatus.carry == 0)    // bcc
-        INSTR_WRITE(0x91, indy, accum)                      // sta
-        INSTR_WRITE(0x94, zerox, yreg)                      // sty
-        INSTR_WRITE(0x95, zerox, accum)                     // sta
-        INSTR_WRITE(0x96, zeroy, xreg)                      // stx
-        INSTR_OTHER(0x98, transfer, yreg, accum)            // tya
-        INSTR_WRITE(0x99, absy, accum)                      // sta
-        INSTR_OTHER(0x9A, transfer, xreg, sp)               // txs
-        INSTR_WRITE(0x9D, absx, accum)                      // sta
+        INSTR_OTHER(0x8A, transfer, r.x, r.acc)            // txa
+        INSTR_WRITE(0x8C, abs, r.y)                        // sty
+        INSTR_WRITE(0x8D, abs, r.acc)                       // sta
+        INSTR_WRITE(0x8E, abs, r.x)                        // stx
+        INSTR_OTHER(0x90, branch, r.flags.carry == 0)    // bcc
+        INSTR_WRITE(0x91, indy, r.acc)                      // sta
+        INSTR_WRITE(0x94, zerox, r.y)                      // sty
+        INSTR_WRITE(0x95, zerox, r.acc)                     // sta
+        INSTR_WRITE(0x96, zeroy, r.x)                      // stx
+        INSTR_OTHER(0x98, transfer, r.y, r.acc)            // tya
+        INSTR_WRITE(0x99, absy, r.acc)                      // sta
+        INSTR_OTHER(0x9A, transfer, r.x, r.sp)               // txs
+        INSTR_WRITE(0x9D, absx, r.acc)                      // sta
         INSTR_AMODE(0xA0, ldy, imm, read)
         INSTR_AMODE(0xA1, lda, indx, read)
         INSTR_AMODE(0xA2, ldx, imm, read)
         INSTR_AMODE(0xA4, ldy, zero, read)
         INSTR_AMODE(0xA5, lda, zero, read)
         INSTR_AMODE(0xA6, ldx, zero, read)
-        INSTR_OTHER(0xA8, transfer, accum, yreg)            // tay
+        INSTR_OTHER(0xA8, transfer, r.acc, r.y)            // tay
         INSTR_AMODE(0xA9, lda, imm, read)
-        INSTR_OTHER(0xAA, transfer, accum, xreg)            // tax
+        INSTR_OTHER(0xAA, transfer, r.acc, r.x)            // tax
         INSTR_AMODE(0xAC, ldy, abs, read)
         INSTR_AMODE(0xAD, lda, abs, read)
         INSTR_AMODE(0xAE, ldx, abs, read)
-        INSTR_OTHER(0xB0, branch, procstatus.carry == 1)    // bcs
+        INSTR_OTHER(0xB0, branch, r.flags.carry == 1)    // bcs
         INSTR_AMODE(0xB1, lda, indy, read)
         INSTR_AMODE(0xB4, ldy, zerox, read)
         INSTR_AMODE(0xB5, lda, zerox, read)
         INSTR_AMODE(0xB6, ldx, zeroy, read)
-        INSTR_OTHER(0xB8, flag, procstatus.ov, false)       // clv
+        INSTR_OTHER(0xB8, flag, r.flags.ov, false)       // clv
         INSTR_AMODE(0xB9, lda, absy, read)
-        INSTR_OTHER(0xBA, transfer, sp, xreg)               // tsx
+        INSTR_OTHER(0xBA, transfer, r.sp, r.x)               // tsx
         INSTR_AMODE(0xBC, ldy, absx, read)
         INSTR_AMODE(0xBD, lda, absx, read)
         INSTR_AMODE(0xBE, ldx, absy, read)
@@ -244,11 +269,11 @@ void CPU::execute(uint8 instr)
         INSTR_AMODE(0xCC, cpy, abs, read)
         INSTR_AMODE(0xCD, cmp, abs, read)
         INSTR_AMODE(0xCE, dec, abs, modify)
-        INSTR_OTHER(0xD0, branch, procstatus.zero == 0)    // bne
+        INSTR_OTHER(0xD0, branch, r.flags.zero == 0)    // bne
         INSTR_AMODE(0xD1, cmp, indy, read)
         INSTR_AMODE(0xD5, cmp, zerox, read)
         INSTR_AMODE(0xD6, dec, zerox, modify)
-        INSTR_OTHER(0xD8, flag, procstatus.decimal, false) //cld
+        INSTR_OTHER(0xD8, flag, r.flags.decimal, false) //cld
         INSTR_AMODE(0xD9, cmp, absy, read)
         INSTR_AMODE(0xDD, cmp, absx, read)
         INSTR_AMODE(0xDE, dec, absx, modify)
@@ -263,11 +288,11 @@ void CPU::execute(uint8 instr)
         INSTR_AMODE(0xEC, cpx, abs, read)
         INSTR_AMODE(0xED, sbc, abs, read)
         INSTR_AMODE(0xEE, inc, abs, modify)
-        INSTR_OTHER(0xF0, branch, procstatus.zero == 1)    // beq
+        INSTR_OTHER(0xF0, branch, r.flags.zero == 1)    // beq
         INSTR_AMODE(0xF1, sbc, indy, read)
         INSTR_AMODE(0xF5, sbc, zerox, read)
         INSTR_AMODE(0xF6, inc, zerox, modify)
-        INSTR_OTHER(0xF8, flag, procstatus.decimal, true)   // sed
+        INSTR_OTHER(0xF8, flag, r.flags.decimal, true)   // sed
         INSTR_AMODE(0xF9, sbc, absy, read)
         INSTR_AMODE(0xFD, sbc, absx, read)
         INSTR_AMODE(0xFE, inc, absx, modify)
@@ -285,12 +310,12 @@ void CPU::interrupt()
 {
     // one cycle for reading next instruction byte and throw away
     cycle();
-    push(pc.high);
-    push(pc.low);
-    push(procstatus.reg());
+    push(r.pc.high);
+    push(r.pc.low);
+    push(r.flags);
     // reset this here just in case
-    procstatus.breakf = 0;
-    procstatus.intdis = 1;
+    r.flags.breakf = 0;
+    r.flags.intdis = 1;
     // interrupt hijacking
     // reset is put at the top so that it will always run. i'm not sure if
     // this is the actual behavior - nesdev says nothing about it.
@@ -306,25 +331,25 @@ void CPU::interrupt()
         vec = IRQ_BRK_VEC;
     } else
         vec = IRQ_BRK_VEC;
-    pc.low = readmem(vec);
-    pc.high = readmem(vec+1);
+    r.pc.low = readmem(vec);
+    r.pc.high = readmem(vec+1);
 }
 
 void CPU::push(uint8 val)
 {
-    writemem(sp + STACK_BASE, val);
-    sp--;
+    writemem(r.sp + STACK_BASE, val);
+    r.sp--;
 }
 
 uint8 CPU::pull()
 {
-    ++sp;
-    return readmem(sp + STACK_BASE);
+    ++r.sp;
+    return readmem(r.sp + STACK_BASE);
 }
 
 void CPU::cycle()
 {
-    cycles++;
+    r.cycles++;
 }
 
 // NOTE: doesn't increment cycles!
@@ -336,7 +361,7 @@ void CPU::last_cycle()
 
 void CPU::irqpoll()
 {
-    if (!execirq && !procstatus.intdis && irqpending)
+    if (!execirq && !r.flags.intdis && irqpending)
         execirq = true;
 }
 
@@ -349,7 +374,7 @@ void CPU::nmipoll()
 uint8 CPU::readmem(uint16 addr)
 {
     if (fetch_callback)
-        fetch_callback(addr, 'r');
+        fetch_callback(status(), addr, 'r');
     cycle();
     return bus->read(addr);
 }
@@ -357,57 +382,9 @@ uint8 CPU::readmem(uint16 addr)
 void CPU::writemem(uint16 addr, uint8 data)
 {
     if (fetch_callback)
-        fetch_callback(addr, 'w');
+        fetch_callback(status(), addr, 'w');
     cycle();
     bus->write(addr, data);
-}
-
-Instruction CPU::disassemble() const
-{
-    Instruction instr;
-    instr.pc      = pc.reg;
-    instr.id      = bus->read(pc.reg);
-    instr.op.low  = bus->read(pc.reg+1);
-    instr.op.high = bus->read(pc.reg+2);
-    auto [str, nb] = Core::disassemble(instr.id, instr.op.low, instr.op.high);
-    instr.str  = std::move(str);
-    instr.numb = nb;
-    if (is_branch(instr.id)) {
-        instr.str += fmt::format(" [{:02X}] [{}]",
-                branch_pointer(instr.op.low, instr.pc),
-                took_branch(instr.id, procstatus) ? "Branch taken" : "Branch not taken");
-    }
-    return instr;
-}
-
-/* This method assumes we have obtained the full Instruction struct in some way
- * (usually with disassemble())
- * I would have tried making something more general, but figuring out
- * the next address requires the full state of the CPU, including memory
- * The method used here is emulating some risky instructions to find out the next
- * address, and using the normal formula of "pc + instr num bytes" for the
- * rest. Another approach would be backing up all regs, then call run().
- * I prefer this method since this means the function can be const. */
-uint16 CPU::nextaddr(const Instruction &instr) const
-{
-    switch (instr.id) {
-    case 0x00:
-        return resetpending ? RESET_VEC
-             : nmipending   ? NMI_VEC
-             :                IRQ_BRK_VEC;
-    case 0x20: case 0x4C:
-        return instr.op.reg;
-    case 0x6C:
-        return instr.op.low == 0xFF ? bus->read(instr.op.reg) | bus->read(instr.op.reg & 0xFF00) << 8
-                                    : bus->read(instr.op.reg) | bus->read(instr.op.reg + 1);
-    case 0x60:
-        return (bus->read(sp + 1 + STACK_BASE) | bus->read(sp + 2 + STACK_BASE) << 8) + 1;
-    case 0x40:
-        return bus->read(sp + 1 + STACK_BASE) | bus->read(sp + 2 + STACK_BASE);
-    default:
-        return took_branch(instr.id, procstatus) ? branch_pointer(instr.op.low, instr.pc)
-                                                   : instr.pc + instr.numb;
-    }
 }
 
 } // namespace Core

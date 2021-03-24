@@ -14,12 +14,15 @@ class CPU {
     Bus *bus = nullptr;
 
     // registers
-    Reg16 pc    = 0;
-    uint8 accum = 0;
-    uint8 xreg  = 0;
-    uint8 yreg  = 0;
-    uint8 sp    = 0;
-    ProcStatus procstatus;
+    struct Regs {
+        Reg16 pc  = 0;
+        uint8 acc = 0;
+        uint8 x   = 0;
+        uint8 y   = 0;
+        uint8 sp  = 0;
+        ProcStatus flags;
+        unsigned long cycles = 0;
+    } r;
 
     // interrupt signals
     bool nmipending = false;
@@ -31,8 +34,6 @@ class CPU {
     // used in instructions.cpp
     Reg16 opargs = 0;
 
-    unsigned long cycles = 0;
-    std::function<void (uint16, char)> fetch_callback;
     uint8 rammem[RAM_SIZE];
 
 public:
@@ -42,12 +43,24 @@ public:
     void attach_bus(Bus *rambus);
     void fire_irq();
     void fire_nmi();
-    // debugging
-    uint16 nextaddr(const Instruction &op) const;
-    Instruction disassemble() const;
-    std::string status() const;
 
-    unsigned long get_cycles() { return cycles; }
+    struct Status {
+        Regs regs;
+        struct {
+            uint8 id;
+            Reg16 op;
+        } instr;
+    };
+
+private:
+    using FetchFn = std::function<void (CPU::Status &&st, uint16, char)>;
+    FetchFn fetch_callback;
+public:
+
+    Status status() const;
+    uint16 nextaddr() const;
+
+    unsigned long get_cycles() { return r.cycles; }
     void register_fetch_callback(auto &&callback) { fetch_callback = callback; }
 
 private:

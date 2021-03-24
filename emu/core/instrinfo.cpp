@@ -217,12 +217,12 @@ namespace Core {
     X(txs, "", "") \
     X(tya, "", "") \
 
-std::pair<std::string, unsigned> disassemble(const uint8 instr, const uint8 oplow, const uint8 ophigh)
+std::string disassemble(const uint8 instr, const uint8 oplow, const uint8 ophigh)
 {
 #define modefmt(mode, formt, numb, ...) \
-    const auto disass_##mode = [&](const char name[4]) { return std::make_pair(fmt::format(formt, __VA_ARGS__), numb); }
+    const auto disass_##mode = [&](const char name[4]) { return fmt::format(formt, __VA_ARGS__); };
 
-    const auto disass_impld = [&](const char name[4]) { return std::make_pair(std::string(name), 1); };
+    const auto disass_impld = [&](const char name[4]) { return std::string(name); };
     modefmt(accum,  "{} A",                 1, name);
     modefmt(branch, "{} {}",                2, name, (int8_t) oplow);
     modefmt(imm,    "{} #${:02X}",          2, name, oplow);
@@ -241,6 +241,29 @@ std::pair<std::string, unsigned> disassemble(const uint8 instr, const uint8 oplo
         INSTR_MODE(X)
         default:
             return { .str = "[Unknown]", .numb = 0 };
+    }
+#undef X
+}
+
+unsigned num_bytes(uint8 id)
+{
+    constexpr unsigned nb_impld  = 1;
+    constexpr unsigned nb_accum  = 1;
+    constexpr unsigned nb_branch = 2;
+    constexpr unsigned nb_imm    = 2;
+    constexpr unsigned nb_zero   = 2;
+    constexpr unsigned nb_zerox  = 2;
+    constexpr unsigned nb_zeroy  = 2;
+    constexpr unsigned nb_indx   = 2;
+    constexpr unsigned nb_indy   = 2;
+    constexpr unsigned nb_abs    = 3;
+    constexpr unsigned nb_absx   = 3;
+    constexpr unsigned nb_absy   = 3;
+    constexpr unsigned nb_ind    = 3;
+#define X(id, name, mode) case id: return nb_##mode;
+    switch (id) {
+        INSTR_MODE(X)
+        default: return 1;
     }
 #undef X
 }

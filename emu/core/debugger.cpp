@@ -10,24 +10,14 @@
 
 namespace Core {
 
-void Debugger::fetch_callback(uint16 addr, char mode)
+void Debugger::fetch_callback(CPU::Status &&st, uint16 addr, char mode)
 {
     if (quit)
         return;
 
-    Instruction instr = emu->cpu.disassemble();
-
     // tracing
     if (mode == 'x') {
-        switch (instr.id) {
-        case 0x20: case 0x4C: case 0x6C: // jsr, jmp, jmp (ind)
-            btrace.push_back(instr);
-            break;
-        case 0x60: // rts
-            if (btrace.back().id == 0x20)
-                btrace.pop_back();
-            break;
-        }
+        update_backtrace(st);
     }
 
     // check if we've reached a breakpoint
@@ -35,12 +25,11 @@ void Debugger::fetch_callback(uint16 addr, char mode)
                 return p.mode == mode && addr >= p.start && addr <= p.end;
             });
     if (it != breakvec.end()) {
-        Event ev = {
+        callback(*this, {
             .type   = Event::Type::BREAK,
-            .instr  = instr,
+            .cpu_st = st,
             .index  = it - breakvec.begin(),
-        };
-        callback(*this, ev);
+        });
     }
 
     // handle next/step commands
@@ -52,40 +41,52 @@ void Debugger::fetch_callback(uint16 addr, char mode)
             nextstop = emu->rambus.read(addr+1) << 8 | emu->rambus.read(addr);
         else if (mode == 'x' && addr == nextstop.value()) {
             nextstop.reset();
-            Event ev = {
+            callback(*this, {
                 .type   = Event::Type::FETCH,
-                .instr  = instr,
+                .cpu_st = st,
                 .index  = 0,
-            };
-            callback(*this, ev);
+            });
         }
     }
 }
 
-void Debugger::step(const Instruction &instr)
+void Debugger::update_backtrace(CPU::Status st)
 {
-    nextstop = emu->cpu.nextaddr(instr);
-}
-
-void Debugger::next(const Instruction &instr)
-{
-    // check for jumps and skip them, otherwise use the usual function
-    nextstop = is_jump(instr.id) ? emu->cpu.pc.reg + instr.numb
-                                 : emu->cpu.nextaddr(instr);
-}
-
-std::string Debugger::status(StatusDev dev) const
-{
-    switch (dev) {
-    case StatusDev::CPU: return emu->cpu.status();
-    case StatusDev::PPU: return emu->ppu.status();
-    default: assert(false);
+    switch (st.instr.id) {
+    // jsr, jmp, jmp (ind)
+    case 0x20: case 0x4C: case 0x6C:
+        btrace.push_back(st);
+        break;
+    // rts
+    case 0x60:
+        if (btrace.back().instr.id == 0x20)
+            btrace.pop_back();
+        break;
     }
 }
 
-void Debugger::reset()
+void Debugger::step()
 {
+    nextstop = emu->cpu.nextaddr();
 }
+
+void Debugger::next()
+{
+    uint16 pc = emu->cpu.r.pc.full;
+    uint8 id = emu->rambus.read(pc);
+    // check for jumps and skip them, otherwise use nextaddr()
+    nextstop = is_jump(id) ? pc + num_bytes(id)
+                           : emu->cpu.nextaddr();
+}
+
+CPU::Status Debugger::cpu_status() const
+{
+    return emu->cpu.status();
+}
+
+// void Debugger::reset()
+// {
+// }
 
 uint8 Debugger::read(uint16 addr)
 {
@@ -133,13 +134,6 @@ struct CommandInfo {
     X("reset",          "res",  RESET,         0,          "reset the machine") \
     X("quit",           "q",    QUIT,          0,          "quit the emulator") \
 
-#define X(name, abbrev, enumname, minargs, desc) enumname,
-enum Command {
-    O(X)
-    INVALID,
-};
-#undef X
-
 #define X(name, abbrev, enumname, minargs, desc) { name, enumname }, { abbrev, enumname },
 static const std::unordered_map<std::string, Command> cmd_strtab = {
     O(X)
@@ -149,6 +143,7 @@ static const std::unordered_map<std::string, Command> cmd_strtab = {
 #define X(name, abbrev, enumname, minargs, desc) { enumname, CommandInfo{ name, desc, abbrev, minargs } },
 static std::unordered_map<Command, CommandInfo> cmd_infotab = {
     O(X)
+    { Command::INVALID, CommandInfo{} },
 };
 #undef X
 
@@ -158,7 +153,6 @@ static const std::string cmd_helpstr = ""
     "";
 #undef X
 
-using CmdArgs = std::vector<std::string>;
 
 static std::pair<Command, CmdArgs> parse()
 {
@@ -168,7 +162,7 @@ static std::pair<Command, CmdArgs> parse()
     if (!input.getword(cmd) || !input.getline(args))
         return std::make_pair(Command::QUIT, CmdArgs{});
     if (cmd.empty())
-        return std::make_pair(Command::INVALID, CmdArgs{});
+        return std::make_pair(Command::LAST, CmdArgs{});
     auto it = cmd_strtab.find(cmd);
     if (it == cmd_strtab.end())
         return std::make_pair(Command::INVALID, CmdArgs{});
@@ -187,8 +181,31 @@ static void print_block(auto &&readvalue, uint16 start, uint16 end)
     }
 }
 
+static void print_cpu_status(CPU::Status &&st)
+{
+    fmt::print("PC: ${:02X} A: ${:02X} X: ${:02X} Y: ${:02X} S: ${:02X}\n"
+                "Flags: [{}{}{}{}{}{}{}{}]\n"
+                "Cycles: {}\n",
+        st.regs.pc.full, st.regs.acc, st.regs.x, st.regs.y, st.regs.sp,
+        (st.regs.flags.neg     == 1) ? 'N' : 'n',
+        (st.regs.flags.ov      == 1) ? 'V' : 'v',
+        (st.regs.flags.unused  == 1) ? 'U' : 'u',
+        (st.regs.flags.breakf  == 1) ? 'B' : 'b',
+        (st.regs.flags.decimal == 1) ? 'D' : 'd',
+        (st.regs.flags.intdis  == 1) ? 'I' : 'i',
+        (st.regs.flags.zero    == 1) ? 'Z' : 'z',
+        (st.regs.flags.carry   == 1) ? 'C' : 'c',
+        st.regs.cycles
+    );
+}
+
+static void print_ppu_status()
+{
+
+}
+
 /* execute a command and return whether to quit the repl. */
-static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args, const Instruction &instr)
+static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args)
 {
     switch (cmd) {
 
@@ -218,18 +235,18 @@ static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args, 
             return false;
         }
         unsigned i = dbg.setbreak({ .start = start.value(), .end = end.value(), .mode = mode });
-        fmt::print("Set breakpoint {} to {:04X}-{:04X}.\n", i, start.value(), end.value());
+        fmt::print("Set breakpoint #{} to {:04X}-{:04X}.\n", i, start.value(), end.value());
         return false;
     }
 
     case Command::DELBREAK: {
         auto index = Util::strconv<uint16>(args[0], 16);
-        if (!index || index >= dbg.breakpoints().size()) {
+        if (!index || index >= dbg.breakpoints().size())
             fmt::print("Index not valid.\n");
-            return false;
+        else {
+            dbg.delbreak(index.value());
+            fmt::print("Breakpoint #{} deleted.\n", index.value());
         }
-        dbg.delbreak(index.value());
-        fmt::print("Breakpoint #{} deleted.\n", index.value());
         return false;
     }
 
@@ -249,81 +266,77 @@ static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args, 
             fmt::print("Backtrace is empty.\n");
         else
             for (const auto &x : dbg.backtrace())
-                fmt::print("${:02X}: {}\n", x.pc, x.str);
+                fmt::print("${:04X}: {}\n", x.regs.pc.full, disassemble(x.instr.id, x.instr.op.low, x.instr.op.high));
         return false;
     }
 
     case Command::DISASSEMBLE: {
         auto id      = Util::strconv<uint8>(args[0], 16);
         auto operand = args.size() == 1 ? 0 : Util::strconv<uint16>(args[1], 16);
-        if (!id || !operand) {
+        if (!id || !operand)
             fmt::print("Invalid value found while parsing command arguments.\n");
-            return false;
-        }
-        auto [str, _] = disassemble(id.value(), operand.value() >> 8, operand.value());
-        fmt::print("{}\n", str);
+        else
+            fmt::print("{}\n", disassemble(id.value(), operand.value() >> 8, operand.value()));
         return false;
     }
 
     case Command::NEXT:
-        dbg.next(instr);
+        dbg.next();
         return true;
 
     case Command::STEP:
-        dbg.step(instr);
+        dbg.step();
         return true;
 
     case Command::STATUS:
         if (args.size() > 0 && args[0] == "ppu")
-            fmt::print("{}", dbg.status(Debugger::StatusDev::PPU));
+            print_ppu_status();
         else
-            fmt::print("{}", dbg.status(Debugger::StatusDev::CPU));
+            print_cpu_status(dbg.cpu_status());
         return false;
 
     case Command::READ_ADDR: {
         auto addr = Util::strconv<uint16>(args[0], 16);
-        if (!addr) {
+        if (!addr)
             fmt::print("Invalid address: {}.\n", args[0]);
-            return false;
-        }
-        fmt::print("{:02X}\n", dbg.read(addr.value()));
+        else
+            fmt::print("{:02X}\n", dbg.read(addr.value()));
         return false;
     }
 
     case Command::WRITE_ADDR: {
         auto addr   = Util::strconv<uint16>(args[0], 16);
         auto newval = Util::strconv<uint8 >(args[1], 16);
-        if (!addr || !newval) {
+        if (!addr || !newval)
             fmt::print("Invalid value found while parsing command arguments.\n");
-            return false;
+        else {
+            if (addr.value() >= CARTRIDGE_START)
+                fmt::print("Warning: writes to ROM have no effects\n");
+            dbg.write(addr.value(), newval.value());
         }
-        if (addr.value() >= CARTRIDGE_START)
-            fmt::print("Warning: writes to ROM have no effects\n");
-        dbg.write(addr.value(), newval.value());
         return false;
     }
 
     case Command::BLOCK: {
         auto start = Util::strconv<uint16>(args[0], 16);
         auto end   = Util::strconv<uint16>(args[1], 16);
-        if (!start || !end || end <= start) {
+        if (!start || !end || end <= start)
             fmt::print("Invalid range.\n");
-            return false;
-        }
-        print_block([&](uint16 addr) { return dbg.read(addr); }, start.value(), end.value());
+        else
+            print_block([&](uint16 addr) { return dbg.read(addr); }, start.value(), end.value());
         return false;
     }
 
     case Command::DISBLOCK: {
         auto start = Util::strconv<uint16>(args[0], 16);
         auto end   = Util::strconv<uint16>(args[1], 16);
-        if (!start || !end || end <= start) {
+        if (!start || !end || end <= start)
             fmt::print("Invalid range.\n");
-            return false;
-        }
-        disassemble_block(start.value(), end.value(),
+        else {
+            disassemble_block(start.value(), end.value(),
                 [&](uint16 addr) { return dbg.read(addr); },
                 [] (uint16 addr, std::string &&s) { fmt::print("${:04X}: {}\n", addr, s); });
+        }
         return false;
     }
 
@@ -343,21 +356,40 @@ static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args, 
     }
 }
 
-void clirepl(Debugger &dbg, Debugger::Event &ev)
+static void print_curr_instr(CPU::Status &st)
+{
+    const auto &regs  = st.regs;
+    const auto &instr = st.instr;
+    std::string instr_str = disassemble(instr.id, instr.op.low, instr.op.high);
+
+    if (is_branch(instr.id)) {
+        instr_str += fmt::format(" [{:02X}] [{}]",
+                branch_pointer(instr.op.low, regs.pc.full),
+                took_branch(instr.id, regs.flags) ? "Branch taken" : "Branch not taken");
+    }
+    fmt::print("${:04X}: [${:02X}] {}\n", regs.pc.full, instr.id, instr_str);
+}
+
+void CliDebugger::repl(Debugger &dbg, Debugger::Event &&ev)
 {
     if (ev.type == Debugger::Event::Type::BREAK)
         fmt::print("Breakpoint #{} reached.\n", ev.index);
-    fmt::print("${:04X}: [{:02X}] {}\n", ev.instr.pc, ev.instr.id, ev.instr.str);
+    print_curr_instr(ev.cpu_st);
+
     bool exit = false;
     do {
         fmt::print("> ");
-        auto [cmd, args] = parse();
-        auto &cmdinfo = cmd_infotab.find(cmd)->second;
-        if (cmd != Command::INVALID && args.size() < cmdinfo.minargs) {
-            fmt::print("Not enough arguments for command {}. Try 'help'.\n", cmdinfo.name);
+        auto [input_cmd, input_args] = parse();
+        if (input_cmd != Command::LAST) {
+            cmd     = input_cmd;
+            cmdargs = std::move(input_args);
+        }
+        if (const auto &info = cmd_infotab.find(cmd)->second;
+            cmdargs.size() < info.minargs) {
+            fmt::print("Not enough arguments for command {}. Try 'help'.\n", info.name);
             continue;
         }
-        exit = exec_command(dbg, cmd, args, ev.instr);
+        exit = exec_command(dbg, cmd, cmdargs);
     } while (!exit);
 }
 

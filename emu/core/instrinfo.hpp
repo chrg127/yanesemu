@@ -9,24 +9,15 @@ namespace Core {
 /* These structures are used inside the CPU -- but I define
  * them here to avoid a circular dependency */
 union Reg16 {
-    struct {
-        uint8 low, high;
-    };
-    uint16 reg = 0;
+    struct { uint8 low, high; };
+    uint16 full = 0;
 
     Reg16() = default;
     Reg16(uint16 val)                                     { operator=(val); }
-    Reg16 & operator=(const uint16 val)                   { reg = val;  return *this; }
-    template <typename T> Reg16 & operator&=(const T val) { reg &= val; return *this; }
-    template <typename T> Reg16 & operator|=(const T val) { reg |= val; return *this; }
+    Reg16 & operator=(const uint16 val)                   { full = val;  return *this; }
+    template <typename T> Reg16 & operator&=(const T val) { full &= val; return *this; }
+    template <typename T> Reg16 & operator|=(const T val) { full |= val; return *this; }
 };
-/* Can be different:
-union Reg16 {
-    uint16 value = 0;
-    Util::BitField<uint16, 0, 8> low;
-    Util::BitField<uint16, 8, 8> high;
-};
-But I still don't feel like changing so much code. */
 
 struct ProcStatus {
     bool carry   = 0;
@@ -38,7 +29,7 @@ struct ProcStatus {
     bool ov      = 0;
     bool neg     = 0;
 
-    uint8 reg()
+    operator uint8() const
     {
         return carry  << 0  | zero   << 1  | intdis << 2 | decimal << 3 |
                breakf << 4  | unused << 5  | ov     << 6 | neg     << 7;
@@ -64,14 +55,15 @@ struct ProcStatus {
 };
 
 struct Instruction {
-    uint16 pc;
+    // uint16 pc;
     uint8 id;
     Reg16 op;
     unsigned numb;
     std::string str;
 };
 
-std::pair<std::string, unsigned> disassemble(const uint8 instr, const uint8 oplow, const uint8 ophigh);
+std::string disassemble(const uint8 instr, const uint8 oplow, const uint8 ophigh);
+unsigned num_bytes(uint8 id);
 
 void disassemble_block(uint16 start, uint16 end, auto &&readval, auto &&process)
 {
@@ -79,9 +71,8 @@ void disassemble_block(uint16 start, uint16 end, auto &&readval, auto &&process)
         uint8 id   = readval(start);
         uint8 low  = readval(start + 1);
         uint8 high = readval(start + 2);
-        auto [str, bytes] = disassemble(id, low, high);
-        process(start, std::move(str));
-        start += bytes;
+        process(start, disassemble(id, low, high));
+        start += num_bytes(id);
     }
 }
 

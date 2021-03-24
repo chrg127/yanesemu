@@ -10,15 +10,22 @@
 
 static Core::Emulator emu;
 static Video::Context context;
+static Util::ArgResult flags;
 
 void mainloop()
 {
     Video::Canvas screen { context, Core::SCREEN_WIDTH, Core::SCREEN_HEIGHT };
     bool running = true;
     SDL_Event ev;
+    Core::CliDebugger clidbg;
 
     Util::seed();
     emu.set_screen(&screen);
+    if (flags.has['d']) {
+        emu.enable_debugger([&clidbg](Core::Debugger &db, Core::Debugger::Event &&ev) {
+            clidbg.repl(db, std::move(ev));
+        });
+    }
     emu.power();
     fmt::print(stderr, "{}\n", emu.rominfo());
     while (running) {
@@ -59,7 +66,6 @@ int main(int argc, char *argv[])
     setvbuf(stderr, NULL, _IONBF, 0);
 #endif
     // parse command line arguments
-    Util::ArgResult flags;
     flags = Util::parse(argc, argv, cmdflags);
     if (flags.has['h']) { Util::print_usage(progname, cmdflags); return 0; }
     if (flags.has['v']) { Util::print_version(progname, version); return 0; }
@@ -87,8 +93,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (flags.has['d'])
-        emu.enable_debugger([](Core::Debugger &db, Core::Debugger::Event &ev) { Core::clirepl(db, ev); });
     mainloop();
 
     return 0;

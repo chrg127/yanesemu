@@ -30,7 +30,7 @@ void CPU::addrmode_zerox_read(InstrFuncRead f)
 {
     // cycles: 4
     opargs.low = fetchop();
-    (this->*f)(readmem(opargs.low + xreg));
+    (this->*f)(readmem(opargs.low + r.x));
     // increment due to indexed addressing
     cycle();
     last_cycle();
@@ -40,7 +40,7 @@ void CPU::addrmode_zeroy_read(InstrFuncRead f)
 {
     // cycles: 4
     opargs.low = fetchop();
-    (this->*f)(readmem(opargs.low + yreg));
+    (this->*f)(readmem(opargs.low + r.y));
     cycle();
     last_cycle();
 }
@@ -50,7 +50,7 @@ void CPU::addrmode_abs_read(InstrFuncRead f)
     // cycles: 4
     opargs.low = fetchop();
     opargs.high = fetchop();
-    (this->*f)(readmem(opargs.reg));
+    (this->*f)(readmem(opargs.full));
     last_cycle();
 }
 
@@ -62,8 +62,8 @@ void CPU::addrmode_absx_read(InstrFuncRead f)
     opargs.low = fetchop();
     // cycle 3 is second operand fetch + adding X to the full reg
     opargs.high = fetchop();
-    res = readmem(opargs.reg+xreg);
-    (this->*f)(res.reg);
+    res = readmem(opargs.full+r.x);
+    (this->*f)(res.full);
     if (opargs.high != res.high)
         cycle();
     last_cycle();
@@ -76,8 +76,8 @@ void CPU::addrmode_absy_read(InstrFuncRead f)
 
     opargs.low = fetchop();
     opargs.high = fetchop();
-    res = readmem(opargs.reg+yreg);
-    (this->*f)(res.reg);
+    res = readmem(opargs.full+r.y);
+    (this->*f)(res.full);
     if (opargs.high != res.high)
         cycle();
     last_cycle();
@@ -90,9 +90,9 @@ void CPU::addrmode_indx_read(InstrFuncRead f)
 
     opargs.low = fetchop();
     cycle();
-    res.low = readmem(opargs.low+xreg);
-    res.high = readmem(opargs.low+xreg+1);
-    (this->*f)(readmem(res.reg));
+    res.low = readmem(opargs.low+r.x);
+    res.high = readmem(opargs.low+r.x+1);
+    (this->*f)(readmem(res.full));
     last_cycle();
 }
 
@@ -104,8 +104,8 @@ void CPU::addrmode_indy_read(InstrFuncRead f)
     opargs.low = fetchop();
     res.low = readmem(opargs.low);
     res.high = readmem(opargs.low+1);
-    res.reg += yreg;
-    (this->*f)(readmem(res.reg));
+    res.full += r.y;
+    (this->*f)(readmem(res.full));
     if (opargs.high != res.high)
         cycle();
     last_cycle();
@@ -117,7 +117,7 @@ void CPU::addrmode_accum_modify(InstrFuncMod f)
 {
     // cycles: 2
     cycle();
-    accum = (this->*f)(accum);
+    r.acc = (this->*f)(r.acc);
     last_cycle();
 }
 
@@ -130,7 +130,7 @@ void CPU::addrmode_zero_modify(InstrFuncMod f)
     res = (this->*f)(readmem(opargs.low));
     // the cpu uses a cycle to write back an unmodified value
     cycle();
-    writemem(opargs.low, res.reg);
+    writemem(opargs.low, res.full);
     last_cycle();
 }
 
@@ -141,9 +141,9 @@ void CPU::addrmode_zerox_modify(InstrFuncMod f)
 
     opargs.low = fetchop();
     cycle();
-    res = (this->*f)(readmem(opargs.low + xreg));
+    res = (this->*f)(readmem(opargs.low + r.x));
     cycle();
-    writemem(opargs.low + xreg, res.reg);
+    writemem(opargs.low + r.x, res.full);
     last_cycle();
 }
 
@@ -154,9 +154,9 @@ void CPU::addrmode_abs_modify(InstrFuncMod f)
 
     opargs.low = fetchop();
     opargs.high = fetchop();
-    res = (this->*f)(readmem(opargs.reg));
+    res = (this->*f)(readmem(opargs.full));
     cycle();
-    writemem(opargs.reg, res.reg);
+    writemem(opargs.full, res.full);
     last_cycle();
 }
 
@@ -167,12 +167,12 @@ void CPU::addrmode_absx_modify(InstrFuncMod f)
 
     opargs.low = fetchop();
     opargs.high = fetchop();
-    res = (this->*f)(readmem(opargs.reg + xreg));
+    res = (this->*f)(readmem(opargs.full + r.x));
     // reread from effective address
     cycle();
     // write the value back to effective address
     cycle();
-    writemem(opargs.reg + xreg, res.reg);
+    writemem(opargs.full + r.x, res.full);
     last_cycle();
 }
 
@@ -191,7 +191,7 @@ void CPU::addrmode_zerox_write(uint8 val)
     // cycles: 4
     opargs.low = fetchop();
     cycle();
-    writemem(opargs.low + xreg, val);
+    writemem(opargs.low + r.x, val);
     last_cycle();
 }
 
@@ -200,7 +200,7 @@ void CPU::addrmode_zeroy_write(uint8 val)
     // cycles: 4
     opargs.low = fetchop();
     cycle();
-    writemem(opargs.low + yreg, val);
+    writemem(opargs.low + r.y, val);
     last_cycle();
 }
 
@@ -209,7 +209,7 @@ void CPU::addrmode_abs_write(uint8 val)
     // cycles: 4
     opargs.low = fetchop();
     opargs.high = fetchop();
-    writemem(opargs.reg, val);
+    writemem(opargs.full, val);
     last_cycle();
 }
 
@@ -219,7 +219,7 @@ void CPU::addrmode_absx_write(uint8 val)
     opargs.low = fetchop();
     opargs.high = fetchop();
     cycle();
-    writemem(opargs.reg + xreg, val);
+    writemem(opargs.full + r.x, val);
     last_cycle();
 }
 
@@ -229,7 +229,7 @@ void CPU::addrmode_absy_write(uint8 val)
     opargs.low = fetchop();
     opargs.high = fetchop();
     cycle();
-    writemem(opargs.reg + yreg, val);
+    writemem(opargs.full + r.y, val);
     last_cycle();
 }
 
@@ -241,9 +241,9 @@ void CPU::addrmode_indx_write(uint8 val)
     opargs.low = fetchop();
     // read from addres, add X to it
     cycle();
-    res.low = readmem(opargs.low+xreg);
-    res.high = readmem(opargs.low+xreg+1);
-    writemem(res.reg, val);
+    res.low = readmem(opargs.low+r.x);
+    res.high = readmem(opargs.low+r.x+1);
+    writemem(res.full, val);
     last_cycle();
 }
 
@@ -255,9 +255,9 @@ void CPU::addrmode_indy_write(uint8 val)
     opargs.low = fetchop();
     res.low = readmem(opargs.low);
     res.high = readmem(opargs.low+1);
-    res.reg += yreg;
+    res.full += r.y;
     cycle();
-    writemem(res.reg, val);
+    writemem(res.full, val);
     last_cycle();
 }
 
@@ -271,13 +271,13 @@ void CPU::instr_branch(bool take)
 
     last_cycle();
     opargs.low = fetchop();
-    tmp = pc;
+    tmp = r.pc;
     if (!take)
         return;
     cycle();
-    pc.reg += (int8_t) opargs.low;
+    r.pc.full += (int8_t) opargs.low;
     last_cycle();
-    if (tmp.high != pc.high)
+    if (tmp.high != r.pc.high)
         cycle();
 }
 
@@ -295,8 +295,8 @@ void CPU::instr_transfer(uint8 from, uint8 &to)
     last_cycle();
     cycle();
     to = from;
-    procstatus.zero = (to == 0);
-    procstatus.neg  = (to & 0x80);
+    r.flags.zero = (to == 0);
+    r.flags.neg  = (to & 0x80);
 }
 
 
@@ -304,97 +304,96 @@ void CPU::instr_transfer(uint8 from, uint8 &to)
 // NOTE: all instruction functions.
 void CPU::instr_lda(const uint8 val)
 {
-    ;
-    accum = val;
-    procstatus.zero = accum == 0;
-    procstatus.neg  = accum & 0x80;
+    r.acc = val;
+    r.flags.zero = r.acc == 0;
+    r.flags.neg  = r.acc & 0x80;
 }
 
 void CPU::instr_ldx(const uint8 val)
 {
-    xreg = val;
-    procstatus.zero = xreg == 0;
-    procstatus.neg  = xreg & 0x80;
+    r.x = val;
+    r.flags.zero = r.x == 0;
+    r.flags.neg  = r.x & 0x80;
 }
 
 void CPU::instr_ldy(const uint8 val)
 {
-    yreg = val;
-    procstatus.zero = yreg == 0;
-    procstatus.neg  = yreg & 0x80;
+    r.y = val;
+    r.flags.zero = r.y == 0;
+    r.flags.neg  = r.y & 0x80;
 }
 
 void CPU::instr_cmp(const uint8 val)
 {
-    int res = accum-val;
-    procstatus.zero     = res == 0;
-    procstatus.neg      = res & 0x80;
-    procstatus.carry    = res >= 0;
+    int res = r.acc-val;
+    r.flags.zero     = res == 0;
+    r.flags.neg      = res & 0x80;
+    r.flags.carry    = res >= 0;
 }
 
 void CPU::instr_cpx(const uint8 val)
 {
-    int res = xreg-val;
-    procstatus.zero     = res == 0;
-    procstatus.neg      = res & 0x80;
-    procstatus.carry    = res >= 0;
+    int res = r.x-val;
+    r.flags.zero     = res == 0;
+    r.flags.neg      = res & 0x80;
+    r.flags.carry    = res >= 0;
 }
 
 void CPU::instr_cpy(const uint8 val)
 {
-    int res = yreg-val;
-    procstatus.zero     = res == 0;
-    procstatus.neg      = res & 0x80;
-    procstatus.carry    = res >= 0;
+    int res = r.y-val;
+    r.flags.zero     = res == 0;
+    r.flags.neg      = res & 0x80;
+    r.flags.carry    = res >= 0;
 }
 
 void CPU::instr_adc(const uint8 val)
 {
-    int sum = accum + val + procstatus.carry;
-    procstatus.zero     = (uint8) sum == 0;
-    procstatus.neg      = sum & 0x80;
-    procstatus.carry    = sum > 0xFF;
-    procstatus.ov       = (accum^sum) & ~(accum^val) & 0x80;
-    accum = sum;
+    int sum = r.acc + val + r.flags.carry;
+    r.flags.zero     = (uint8) sum == 0;
+    r.flags.neg      = sum & 0x80;
+    r.flags.carry    = sum > 0xFF;
+    r.flags.ov       = (r.acc^sum) & ~(r.acc^val) & 0x80;
+    r.acc = sum;
 }
 
 void CPU::instr_sbc(const uint8 val)
 {
     uint8 tmp = ~val;
-    int sum = accum + tmp + procstatus.carry;
-    procstatus.zero     = (uint8) sum == 0;
-    procstatus.neg      = sum & 0x80;
-    procstatus.carry    = sum > 0xFF;
-    procstatus.ov       = (accum^sum) & ~(accum^val) & 0x80;
-    accum = sum;
+    int sum = r.acc + tmp + r.flags.carry;
+    r.flags.zero     = (uint8) sum == 0;
+    r.flags.neg      = sum & 0x80;
+    r.flags.carry    = sum > 0xFF;
+    r.flags.ov       = (r.acc^sum) & ~(r.acc^val) & 0x80;
+    r.acc = sum;
 }
 
 void CPU::instr_ora(const uint8 val)
 {
-    accum |= val;
-    procstatus.neg  = accum & 0x80;
-    procstatus.zero = accum == 0;
+    r.acc |= val;
+    r.flags.neg  = r.acc & 0x80;
+    r.flags.zero = r.acc == 0;
 }
 
 void CPU::instr_and(const uint8 val)
 {
-    accum &= val;
-    procstatus.neg  = accum & 0x80;
-    procstatus.zero = accum == 0;
+    r.acc &= val;
+    r.flags.neg  = r.acc & 0x80;
+    r.flags.zero = r.acc == 0;
 }
 
 void CPU::instr_eor(const uint8 val)
 {
-    accum ^= val;
-    procstatus.neg  = accum & 0x80;
-    procstatus.zero = accum == 0;
+    r.acc ^= val;
+    r.flags.neg  = r.acc & 0x80;
+    r.flags.zero = r.acc == 0;
 }
 
 void CPU::instr_bit(const uint8 val)
 {
-    procstatus.neg  = (accum & val) == 0;
-    procstatus.zero = val == 0;
-    procstatus.ov   = val & 0x40;
+    r.flags.neg  = (r.acc & val) == 0;
+    r.flags.zero = val == 0;
+    r.flags.ov   = val & 0x40;
 }
 
 
@@ -402,54 +401,54 @@ void CPU::instr_bit(const uint8 val)
 uint8 CPU::instr_inc(uint8 val)
 {
     val++;
-    procstatus.zero = val == 0;
-    procstatus.neg  = val & 0x80;
+    r.flags.zero = val == 0;
+    r.flags.neg  = val & 0x80;
     return val;
 }
 
 uint8 CPU::instr_dec(uint8 val)
 {
     val--;
-    procstatus.zero = val == 0;
-    procstatus.neg  = val & 0x80;
+    r.flags.zero = val == 0;
+    r.flags.neg  = val & 0x80;
     return val;
 }
 
 uint8 CPU::instr_asl(uint8 val)
 {
-    procstatus.carry = val & 0x80;
+    r.flags.carry = val & 0x80;
     val <<= 1;
-    procstatus.zero = val == 0;
-    procstatus.neg  = val & 0x80;
+    r.flags.zero = val == 0;
+    r.flags.neg  = val & 0x80;
     return val;
 }
 
 uint8 CPU::instr_lsr(uint8 val)
 {
-    procstatus.carry = val & 1;
+    r.flags.carry = val & 1;
     val >>= 1;
-    procstatus.zero = val == 0;
-    procstatus.neg  = val & 0x80;
+    r.flags.zero = val == 0;
+    r.flags.neg  = val & 0x80;
     return val;
 }
 
 uint8 CPU::instr_rol(uint8 val)
 {
-    bool c = procstatus.carry;
-    procstatus.carry = val & 0x80;
+    bool c = r.flags.carry;
+    r.flags.carry = val & 0x80;
     val = val << 1 | c;
-    procstatus.zero = val == 0;
-    procstatus.neg  = val & 0x80;
+    r.flags.zero = val == 0;
+    r.flags.neg  = val & 0x80;
     return val;
 }
 
 uint8 CPU::instr_ror(uint8 val)
 {
-    bool c = procstatus.carry;
-    procstatus.carry = val & 1;
+    bool c = r.flags.carry;
+    r.flags.carry = val & 1;
     val = val >> 1 | c << 7;
-    procstatus.zero = val == 0;
-    procstatus.neg  = val & 0x80;
+    r.flags.zero = val == 0;
+    r.flags.neg  = val & 0x80;
     return val;
 }
 
@@ -457,36 +456,36 @@ uint8 CPU::instr_ror(uint8 val)
 void CPU::instr_inx()
 {
     cycle();
-    xreg++;
-    procstatus.zero = (xreg == 0);
-    procstatus.neg  = (xreg & 0x80);
+    r.x++;
+    r.flags.zero = (r.x == 0);
+    r.flags.neg  = (r.x & 0x80);
     last_cycle();
 }
 
 void CPU::instr_iny()
 {
     cycle();
-    yreg++;
-    procstatus.zero = (yreg == 0);
-    procstatus.neg  = (yreg & 0x80);
+    r.y++;
+    r.flags.zero = (r.y == 0);
+    r.flags.neg  = (r.y & 0x80);
     last_cycle();
 }
 
 void CPU::instr_dex()
 {
     cycle();
-    xreg--;
-    procstatus.zero = (xreg == 0);
-    procstatus.neg  = (xreg & 0x80);
+    r.x--;
+    r.flags.zero = (r.x == 0);
+    r.flags.neg  = (r.x & 0x80);
     last_cycle();
 }
 
 void CPU::instr_dey()
 {
     cycle();
-    yreg--;
-    procstatus.zero = (yreg == 0);
-    procstatus.neg  = (yreg & 0x80);
+    r.y--;
+    r.flags.zero = (r.y == 0);
+    r.flags.neg  = (r.y & 0x80);
     last_cycle();
 }
 
@@ -495,9 +494,9 @@ void CPU::instr_php()
     // cycles: 3
     // one cycle for reading next instruction and throwing away
     cycle();
-    procstatus.breakf = 1;
-    push(procstatus.reg());
-    procstatus.breakf = 0;
+    r.flags.breakf = 1;
+    push(r.flags);
+    r.flags.breakf = 0;
     last_cycle();
 }
 
@@ -506,7 +505,7 @@ void CPU::instr_pha()
     // cycles: 3
     // one cycle for reading next instruction and throwing away
     cycle();
-    push(accum);
+    push(r.acc);
     last_cycle();
 }
 
@@ -518,8 +517,8 @@ void CPU::instr_plp()
     cycle();
     // plp polls for interrupts before pulling
     last_cycle();
-    procstatus = pull();
-    procstatus.breakf = 0;
+    r.flags = pull();
+    r.flags.breakf = 0;
 }
 
 void CPU::instr_pla()
@@ -528,9 +527,9 @@ void CPU::instr_pla()
     // one cycle for reading next instruction, one for incrementing S
     cycle();
     cycle();
-    accum = pull();
-    procstatus.zero = accum == 0;
-    procstatus.neg  = accum & 0x80;
+    r.acc = pull();
+    r.flags.zero = r.acc == 0;
+    r.flags.neg  = r.acc & 0x80;
     last_cycle();
 }
 
@@ -542,16 +541,16 @@ void CPU::instr_jsr()
     // copargsied, then the high byte is fetched. doing the opargss in this order is
     // wrong and a bug, fetch the high byte first before doing whatever with pc.
     opargs.high = fetchop();
-    pc.reg--;
+    r.pc.full--;
     // internal opargseration, 1 cycle
     cycle();
-    push(pc.high);
-    push(pc.low);
+    push(r.pc.high);
+    push(r.pc.low);
     // the original hardware technically fetches the next opargserand right into the pc's high byte.
     // I save it in opargs.high first to enable disassembling.
-    pc.low = opargs.low;
-    pc.high = opargs.high;
-    // pc = opargs.reg; would be better!
+    r.pc.low = opargs.low;
+    r.pc.high = opargs.high;
+    // r.pc = opargs.full; would be better!
     last_cycle();
 }
 
@@ -560,7 +559,7 @@ void CPU::instr_jmp()
     // cycles: 3
     opargs.low = fetchop();
     opargs.high = fetchop();
-    pc = opargs.reg;
+    r.pc = opargs.full;
     last_cycle();
 }
 
@@ -573,12 +572,12 @@ void CPU::instr_jmp_ind()
     opargs.high = fetchop();
     // hardware bug
     if (opargs.low == 0xFF) {
-        pc.low = readmem(opargs.reg);
+        r.pc.low = readmem(opargs.full);
         // reset the low byte, e.g. $02FF -> $0200
-        pc.high = readmem(opargs.reg & 0xFF00);
+        r.pc.high = readmem(opargs.full & 0xFF00);
     } else {
-        pc.low = readmem(opargs.reg);
-        pc.high = readmem(opargs.reg+1);
+        r.pc.low = readmem(opargs.full);
+        r.pc.high = readmem(opargs.full+1);
     }
     last_cycle();
 }
@@ -589,9 +588,9 @@ void CPU::instr_rts()
     // one for read of the next instruction, one for incrementing S
     cycle();
     cycle();
-    pc.low = pull();
-    pc.high = pull();
-    pc.reg++;
+    r.pc.low = pull();
+    r.pc.high = pull();
+    r.pc.full++;
     // cycle for incrementing pc
     cycle();
     last_cycle();
@@ -599,7 +598,7 @@ void CPU::instr_rts()
 
 void CPU::instr_brk()
 {
-    procstatus.breakf = 1;
+    r.flags.breakf = 1;
     // cycles are counted in the interrupt function
     interrupt();
     // the break flag will be reset in the interrupt
@@ -611,11 +610,11 @@ void CPU::instr_rti()
     // one for read of the next instruction, one for incrementing S
     cycle();
     cycle();
-    procstatus = pull();
+    r.flags = pull();
     // reset this just to be sure
-    procstatus.breakf = 0;
-    pc.low = pull();
-    pc.high = pull();
+    r.flags.breakf = 0;
+    r.pc.low = pull();
+    r.pc.high = pull();
     last_cycle();
 }
 

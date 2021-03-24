@@ -35,8 +35,8 @@ public:
     }
 
     void run();
+    void run_frame();
     bool insert_rom(Util::File &romfile);
-    std::string status() const;
 
     void power()
     {
@@ -52,10 +52,9 @@ public:
 
     void enable_debugger(auto &&callb)
     {
-        // the debugger will do nothing as long we don't tie its run() function to something
-        // when enabled, the debugger should stop at the first RESET.
-        // this works as long Debugger::nextstop has a value.
-        cpu.register_fetch_callback([&](uint16 addr, char mode) { debugger.fetch_callback(addr, mode); });
+        cpu.register_fetch_callback([&](CPU::Status &&st, uint16 addr, char mode) {
+            debugger.fetch_callback(std::move(st), addr, mode);
+        });
         debugger.register_callback(callb);
     }
 
