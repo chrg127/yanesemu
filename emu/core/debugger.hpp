@@ -5,6 +5,7 @@
 #include <optional>
 #include <vector>
 #include <emu/core/cpu.hpp>
+#include <emu/core/ppu.hpp>
 #include <emu/core/instrinfo.hpp>
 
 namespace Core {
@@ -46,6 +47,7 @@ public:
     uint8 read(uint16 addr);
     void write(uint16 addr, uint8 value);
     CPU::Status cpu_status() const;
+    PPU::Status ppu_status() const;
 
     void continue_exec()                        { nextstop.reset(); }
     void register_callback(auto &&f)            { callback = f; }

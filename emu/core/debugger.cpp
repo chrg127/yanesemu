@@ -84,6 +84,11 @@ CPU::Status Debugger::cpu_status() const
     return emu->cpu.status();
 }
 
+PPU::Status Debugger::ppu_status() const
+{
+    return emu->ppu.status();
+}
+
 // void Debugger::reset()
 // {
 // }
@@ -199,10 +204,26 @@ static void print_cpu_status(CPU::Status &&st)
     );
 }
 
-static void print_ppu_status()
+static void print_ppu_status(PPU::Status &&st)
 {
-
+    fmt::print("Line: {} Cycle: {}\nVRAM Address: {:04X} TMP Address: {:04X}\n",
+               st.line, st.cycle, st.vram.addr, st.vram.tmp);
 }
+
+static void print_curr_instr(CPU::Status &st)
+{
+    const auto &regs  = st.regs;
+    const auto &instr = st.instr;
+    std::string instr_str = disassemble(instr.id, instr.op.low, instr.op.high);
+
+    if (is_branch(instr.id)) {
+        instr_str += fmt::format(" [{:02X}] [{}]",
+                branch_pointer(instr.op.low, regs.pc.full),
+                took_branch(instr.id, regs.flags) ? "Branch taken" : "Branch not taken");
+    }
+    fmt::print("${:04X}: [${:02X}] {}\n", regs.pc.full, instr.id, instr_str);
+}
+
 
 /* execute a command and return whether to quit the repl. */
 static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args)
@@ -290,7 +311,7 @@ static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args)
 
     case Command::STATUS:
         if (args.size() > 0 && args[0] == "ppu")
-            print_ppu_status();
+            print_ppu_status(dbg.ppu_status());
         else
             print_cpu_status(dbg.cpu_status());
         return false;
@@ -354,20 +375,6 @@ static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args)
     default:
         return false;
     }
-}
-
-static void print_curr_instr(CPU::Status &st)
-{
-    const auto &regs  = st.regs;
-    const auto &instr = st.instr;
-    std::string instr_str = disassemble(instr.id, instr.op.low, instr.op.high);
-
-    if (is_branch(instr.id)) {
-        instr_str += fmt::format(" [{:02X}] [{}]",
-                branch_pointer(instr.op.low, regs.pc.full),
-                took_branch(instr.id, regs.flags) ? "Branch taken" : "Branch not taken");
-    }
-    fmt::print("${:04X}: [${:02X}] {}\n", regs.pc.full, instr.id, instr_str);
 }
 
 void CliDebugger::repl(Debugger &dbg, Debugger::Event &&ev)

@@ -38,7 +38,7 @@ class PPU {
         VRAMAddress & operator+=(uint16 n)               { value += n; return *this; }
     };
 
-    struct {
+    struct IO {
         // used as internal buffer with regs I/O
         uint8 latch = 0;
 
@@ -78,7 +78,7 @@ class PPU {
         uint8 data_buf;
     } io;
 
-    struct {
+    struct VRAM {
         VRAMAddress addr;
         VRAMAddress tmp;
         uint8 fine_x;
@@ -87,20 +87,20 @@ class PPU {
         uint8 vy() const  { return addr.fine_y | addr.coarse_y << 3 | (addr.nt & 2) << 8; }
     } vram;
 
-    struct {
+    struct Tile {
         uint8 nt;
         uint8 attr;
         uint8 low;
         uint8 high;
     } tile;
 
-    struct {
+    struct Shift {
         uint16 tlow, thigh;
         uint8  alow, ahigh;
         bool feed_low, feed_high;
     } shift;
 
-    struct {
+    struct OAM {
         uint8 shifts[8], latches[8], counters[8];
     } oam;
 
@@ -110,7 +110,20 @@ public:
     void reset();
     // ppumain.cpp
     void run();
-    std::string status() const;
+
+    struct Status {
+        VRAM vram;
+        Tile tile;
+        Shift shift;
+        unsigned long line;
+        unsigned long cycle;
+    };
+
+    Status status() const
+    {
+        return { .vram = vram, .tile = tile, .shift = shift, .line = lines, .cycle = cycles };
+    }
+
     void attach_bus(Bus *vrambus, Bus *rambus);
     void set_mirroring(Mirroring m);
 
