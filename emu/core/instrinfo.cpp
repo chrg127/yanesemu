@@ -240,7 +240,7 @@ std::string disassemble(const uint8 instr, const uint8 oplow, const uint8 ophigh
     switch(instr) {
         INSTR_MODE(X)
         default:
-            return { .str = "[Unknown]", .numb = 0 };
+            return "[Unknown]";
     }
 #undef X
 }

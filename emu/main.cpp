@@ -2,6 +2,7 @@
 #include <SDL2/SDL.h>
 #include <emu/version.hpp>
 #include <emu/core/emulator.hpp>
+#include <emu/core/clidbg.hpp>
 #include <emu/util/cmdline.hpp>
 #include <emu/util/easyrandom.hpp>
 #include <emu/util/debug.hpp>
