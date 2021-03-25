@@ -126,6 +126,9 @@ constexpr inline bool is_jump(const uint8 instr)
     return instr == 0x20 || instr == 0x4C || instr == 0x6C;
 }
 
+std::string format_flags(ProcStatus &ps);
+std::string format_instr(uint8 id, uint8 low, uint8 high, uint16 pc, ProcStatus &ps);
+
 } // namespace Core
 
 #endif

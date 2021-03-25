@@ -62,7 +62,7 @@ public:
 
 private:
     void update_backtrace(CPU::Status st);
-    void trace(CPU::Status st);
+    void trace(CPU::Status &st, PPU::Status &&pst);
 };
 
 } // namespace Core

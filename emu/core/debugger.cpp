@@ -19,7 +19,7 @@ void Debugger::fetch_callback(CPU::Status &&st, uint16 addr, char mode)
     // tracing
     if (mode == 'x') {
         update_backtrace(st);
-        trace(st);
+        trace(st, emu->ppu.status());
     }
 
     // check if we've reached a breakpoint
@@ -52,27 +52,6 @@ void Debugger::fetch_callback(CPU::Status &&st, uint16 addr, char mode)
     }
 }
 
-void Debugger::update_backtrace(CPU::Status st)
-{
-    switch (st.instr.id) {
-    // jsr, jmp, jmp (ind)
-    case 0x20: case 0x4C: case 0x6C:
-        btrace.push_back(st);
-        break;
-    // rts
-    case 0x60:
-        if (btrace.back().instr.id == 0x20)
-            btrace.pop_back();
-        break;
-    }
-}
-
-void Debugger::trace(CPU::Status st)
-{
-    if (tracefile)
-        tracefile.print("{}\n", st.instr.id);
-}
-
 void Debugger::step()
 {
     nextstop = emu->cpu.nextaddr();
@@ -97,10 +76,6 @@ PPU::Status Debugger::ppu_status() const
     return emu->ppu.status();
 }
 
-// void Debugger::reset()
-// {
-// }
-
 uint8 Debugger::read(uint16 addr)
 {
     /* PPU regs 2002 and 2007 have side effects, so emulate them.
@@ -122,6 +97,40 @@ void Debugger::start_tracing(Util::File &&f)
 {
     stop_tracing();
     tracefile = std::move(f);
+}
+
+// void Debugger::reset()
+// {
+// }
+
+void Debugger::update_backtrace(CPU::Status st)
+{
+    switch (st.instr.id) {
+    // jsr, jmp, jmp (ind)
+    case 0x20: case 0x4C: case 0x6C:
+        btrace.push_back(st);
+        break;
+    // rts
+    case 0x60:
+        if (btrace.back().instr.id == 0x20)
+            btrace.pop_back();
+        break;
+    }
+}
+
+void Debugger::trace(CPU::Status &st, PPU::Status &&pst)
+{
+    if (!tracefile)
+        return;
+    tracefile.print("PC: ${:04X} A: ${:02X} X: ${:02X} Y: ${:02X} SP: ${:02X} {} "
+                    "V: {:04X}"
+                    " {}\n",
+        st.regs.pc.full, st.regs.acc, st.regs.x, st.regs.y, st.regs.sp,
+        format_flags(st.regs.flags),
+        pst.vram.addr.value,
+        format_instr(st.instr.id, st.instr.op.low, st.instr.op.high,
+                     st.regs.pc.full, st.regs.flags)
+    );
 }
 
 } // namespace Core

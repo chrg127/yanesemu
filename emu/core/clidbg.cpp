@@ -92,18 +92,10 @@ static void print_block(auto &&readvalue, uint16 start, uint16 end)
 static void print_cpu_status(CPU::Status &&st)
 {
     fmt::print("PC: ${:02X} A: ${:02X} X: ${:02X} Y: ${:02X} S: ${:02X}\n"
-               "Flags: [{}{}{}{}{}{}{}{}]\n"
+               "Flags: [{}]\n"
                "Cycles: {}\n",
         st.regs.pc.full, st.regs.acc, st.regs.x, st.regs.y, st.regs.sp,
-        (st.regs.flags.neg     == 1) ? 'N' : 'n',
-        (st.regs.flags.ov      == 1) ? 'V' : 'v',
-        (st.regs.flags.unused  == 1) ? 'U' : 'u',
-        (st.regs.flags.breakf  == 1) ? 'B' : 'b',
-        (st.regs.flags.decimal == 1) ? 'D' : 'd',
-        (st.regs.flags.intdis  == 1) ? 'I' : 'i',
-        (st.regs.flags.zero    == 1) ? 'Z' : 'z',
-        (st.regs.flags.carry   == 1) ? 'C' : 'c',
-        st.regs.cycles
+        format_flags(st.regs.flags), st.regs.cycles
     );
 }
 
@@ -115,16 +107,11 @@ static void print_ppu_status(PPU::Status &&st)
 
 static void print_curr_instr(CPU::Status &st)
 {
-    const auto &regs  = st.regs;
-    const auto &instr = st.instr;
-    std::string instr_str = disassemble(instr.id, instr.op.low, instr.op.high);
-
-    if (is_branch(instr.id)) {
-        instr_str += fmt::format(" [{:02X}] [{}]",
-                branch_pointer(instr.op.low, regs.pc.full),
-                took_branch(instr.id, regs.flags) ? "Branch taken" : "Branch not taken");
-    }
-    fmt::print("${:04X}: [${:02X}] {}\n", regs.pc.full, instr.id, instr_str);
+    fmt::print("${:04X}: {}\n", st.regs.pc.full, format_instr(
+            st.instr.id, st.instr.op.low, st.instr.op.high,
+            st.regs.pc.full, st.regs.flags
+        )
+    );
 }
 
 

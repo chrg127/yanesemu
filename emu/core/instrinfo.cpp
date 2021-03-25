@@ -281,5 +281,31 @@ std::string get_instr_desc(const std::string &s)
     return it == desctab.end() ? "[Unknown instruction]", *it;
 }
 */
+
+std::string format_flags(ProcStatus &flags)
+{
+    return fmt::format("{}{}{}{}{}{}{}{}",
+        (flags.neg     == 1) ? 'N' : 'n',
+        (flags.ov      == 1) ? 'V' : 'v',
+        (flags.unused  == 1) ? 'U' : 'u',
+        (flags.breakf  == 1) ? 'B' : 'b',
+        (flags.decimal == 1) ? 'D' : 'd',
+        (flags.intdis  == 1) ? 'I' : 'i',
+        (flags.zero    == 1) ? 'Z' : 'z',
+        (flags.carry   == 1) ? 'C' : 'c'
+        );
+}
+
+std::string format_instr(uint8 id, uint8 low, uint8 high, uint16 pc, ProcStatus &flags)
+{
+    std::string instr_str = disassemble(id, low, high);
+    if (is_branch(id)) {
+        instr_str += fmt::format(" [{:02X}] [{}]",
+                branch_pointer(low, pc),
+                took_branch(id, flags) ? "Branch taken" : "Branch not taken");
+    }
+    return fmt::format("[${:02X}] {}", id, instr_str);
+}
+
 } // namespace Core
 
