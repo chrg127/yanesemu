@@ -297,7 +297,7 @@ void CPU::execute(uint8 instr)
         INSTR_AMODE(0xFD, sbc, absx, read)
         INSTR_AMODE(0xFE, inc, absx, modify)
         default:
-            dbgprint("error: unknown instruction: {:02X}\n", instr);
+            dbgprint(__FILE__, __LINE__, "error: unknown instruction: {:02X}\n", instr);
             return;
     }
 #undef INSTR_IMPLD

@@ -108,24 +108,28 @@ public:
 
     void power();
     void reset();
+    void attach_bus(Bus *vrambus, Bus *rambus);
+    void set_mirroring(Mirroring m);
+
     // ppumain.cpp
     void run();
 
     struct Status {
+        uint8 ctrl;
+        uint8 mask;
+        uint8 status;
+        uint8 oamaddr;
+        uint8 oamdata;
+        uint8 vram_scroll;
+        uint8 vram_addr;
+        uint8 vram_data;
         VRAM vram;
         Tile tile;
         Shift shift;
         unsigned long line;
         unsigned long cycle;
     };
-
-    Status status() const
-    {
-        return { .vram = vram, .tile = tile, .shift = shift, .line = lines, .cycle = cycles };
-    }
-
-    void attach_bus(Bus *vrambus, Bus *rambus);
-    void set_mirroring(Mirroring m);
+    Status status() const;
 
     void set_screen(Video::Canvas *canvas) { screen = canvas; }
     void set_nmi_callback(auto &&callback) { nmi_callback = callback; }
@@ -139,6 +143,7 @@ public:
 private:
     uint8 readreg(const uint16 which);
     void writereg(const uint16 which, const uint8 data);
+    uint8 readreg_no_sideeff(const uint16 which) const;
 
     void output();
     uint8 getcolor(bool select, uint8 pal, uint8 palind);

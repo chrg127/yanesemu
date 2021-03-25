@@ -21,6 +21,8 @@ void Emulator::run()
 
 void Emulator::run_frame()
 {
+    if (debugger_has_quit())
+        return;
     while (!nmi)
         run();
     nmi = false;

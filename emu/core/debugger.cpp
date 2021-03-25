@@ -78,14 +78,9 @@ PPU::Status Debugger::ppu_status() const
 
 uint8 Debugger::read(uint16 addr)
 {
-    /* PPU regs 2002 and 2007 have side effects, so emulate them.
-     * for 2007, we always return the read buffer. */
-    switch (addr) {
-    case 0x2002: return emu->ppu.io.vblank << 7 | emu->ppu.io.sp_zero_hit << 6 | emu->ppu.io.sp_overflow << 5;
-    case 0x2007: return emu->ppu.vram.addr < 0x3F00 ? emu->ppu.io.data_buf
-                                                    : emu->vrambus.read(emu->ppu.vram.addr);
-    default: return emu->rambus.read(addr);
-    }
+    if (addr >= 0x2000 && addr <= 0x2007)
+        return emu->ppu.readreg_no_sideeff(addr);
+    return emu->rambus.read(addr);
 }
 
 void Debugger::write(uint16 addr, uint8 value)

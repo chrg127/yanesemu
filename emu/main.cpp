@@ -42,7 +42,7 @@ void mainloop()
         }
         if (emu.debugger_has_quit())
             running = false;
-        emu.run();
+        emu.run_frame();
         screen.update();
         context.draw();
     }

@@ -77,12 +77,13 @@ reset, res:         reset the machine
 quit, q:            quit the emulator
 )";
 
-static void print_block(auto &&readvalue, uint16 start, uint16 end)
+static void print_block(uint16 start, uint16 end, auto &&readvalue)
 {
     for (uint16 i = 0; i < (end - start); ) {
         fmt::print("{:04X}: ", i + start);
         for (uint16 j = 0; j < 16 && i + start < end; j++) {
-            fmt::print("{:02X} ", readvalue(i));
+            uint8 val = readvalue(i + start);
+            fmt::print("{:02X} ", val);
             i++;
         }
         fmt::print("\n");
@@ -234,8 +235,10 @@ static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args)
         auto end   = Util::strconv<uint16>(args[1], 16);
         if (!start || !end || end <= start)
             fmt::print("Invalid range.\n");
-        else
-            print_block([&](uint16 addr) { return dbg.read(addr); }, start.value(), end.value());
+        else {
+            print_block(start.value(), end.value(),
+                        [&](uint16 addr) { return dbg.read(addr); });
+        }
         return false;
     }
 

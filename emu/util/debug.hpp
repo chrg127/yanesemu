@@ -31,9 +31,9 @@ inline void panic(std::string &&fmt, T... args)
 
 #ifdef DEBUG
 template <typename... T>
-inline void dbgprint(std::string &&fmt, T... args)
+inline void dbgprint(const char *file, int line, std::string &&fmt, T... args)
 {
-    fmt::print(stderr, "{}:{}\n", __FILE__, __LINE__);
+    fmt::print(stderr, "{}:{} ", file, line);
     fmt::print(stderr, fmt, args...);
 }
 #else
