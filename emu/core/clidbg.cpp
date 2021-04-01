@@ -256,9 +256,9 @@ static bool exec_command(Debugger &dbg, const Command cmd, const CmdArgs &args)
     }
 
     case Command::TRACE: {
-        Util::File f(args[0], Util::File::Mode::WRITE);
+        Util::File f(args[0], Util::Access::WRITE);
         if (!f)
-            fmt::print("{}\n", f.error_str());
+            fmt::print("{}\n", Util::syserr());
         else
             dbg.start_tracing(std::move(f));
         return false;

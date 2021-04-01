@@ -117,9 +117,10 @@ void Debugger::trace(CPU::Status &st, PPU::Status &&pst)
 {
     if (!tracefile)
         return;
-    tracefile.print("PC: ${:04X} A: ${:02X} X: ${:02X} Y: ${:02X} SP: ${:02X} {} "
-                    "V: {:04X}"
-                    " {}\n",
+    fmt::print(tracefile.data(),
+        "PC: ${:04X} A: ${:02X} X: ${:02X} Y: ${:02X} SP: ${:02X} {} "
+        "V: {:04X}"
+        " {}\n",
         st.regs.pc.full, st.regs.acc, st.regs.x, st.regs.y, st.regs.sp,
         format_flags(st.regs.flags),
         pst.vram.addr.value,

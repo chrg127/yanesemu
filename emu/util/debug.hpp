@@ -22,6 +22,9 @@ inline void warning(std::string &&fmt, T... args)
 }
 
 template <typename... T>
+#if defined(__GNUC__) || defined(__GNUG__)
+__attribute__((noreturn))
+#endif
 inline void panic(std::string &&fmt, T... args)
 {
     fmt::print(stderr, "panic: ");

@@ -2,51 +2,55 @@
 
 #include <cstring>
 #include <cerrno>
+#include <system_error>
+#include <emu/util/debug.hpp>
+
+static FILE *open_file(const char *name, Util::Access access)
+{
+    switch (access) {
+    case Util::Access::READ:   return fopen(name, "rb");
+    case Util::Access::WRITE:  return fopen(name, "wb");
+    case Util::Access::APPEND: return fopen(name, "ab");
+    case Util::Access::MODIFY: return fopen(name, "rb+");
+    }
+    panic("invalid value passed to open_file");
+}
+
+static bool is_space(int c)
+{
+    return c == ' ' || c == '\t';
+};
 
 namespace Util {
 
-static std::string get_errstr()
+std::string syserr()
 {
-#ifdef _WIN32
-    char buf[256];
-    strerror_s(buf, sizeof(buf), errno);
-#elif defined(__linux__)
-#  ifdef _GNU_SOURCE
-    char tmpbuf[1];
-    char *buf = strerror_r(errno, tmpbuf, sizeof(tmpbuf));
-#  else
-    char buf[256];
-    strerror_r(errno, buf, sizeof(buf));
-#  endif
-#endif
-    return std::string(buf);
+    return std::make_error_code(static_cast<std::errc>(errno)).message();
 }
 
-bool File::open(const std::string_view pathname, const Mode filemode)
+bool File::open(std::string_view pathname, Access access)
 {
     close();
-    switch (filemode) {
-    case Mode::READ:   filbuf = std::fopen(pathname.data(), "rb");  break;
-    case Mode::WRITE:  filbuf = std::fopen(pathname.data(), "wb");  break;
-    case Mode::MODIFY: filbuf = std::fopen(pathname.data(), "rb+"); break;
-    case Mode::APPEND: filbuf = std::fopen(pathname.data(), "ab");  break;
-    }
-    if (!filbuf) {
-        errstr = get_errstr();
+    filbuf = open_file(pathname.data(), access);
+    if (!filbuf)
         return false;
-    }
     filname = std::string(pathname);
-    // std::fseek(filbuf, 0, SEEK_END);
-    // filesize = std::ftell(filbuf);
-    // std::fseek(filbuf, 0, SEEK_SET);
     return true;
+}
+
+long File::filesize() const
+{
+    long curr = std::ftell(filbuf);
+    std::fseek(filbuf, 0L, SEEK_END);
+    long size = std::ftell(filbuf);
+    std::fseek(filbuf, curr, SEEK_SET);
+    return size;
 }
 
 /* getword and getline have different enough semantics that we really
  * should not try to generalize them */
 bool File::getword(std::string &str)
 {
-    const auto is_space = [](int c) { return c == ' ' || c == '\t'; };
     const auto isdelim = [](int c) { return c == '\n' || c == ' ' || c == '\t'; };
     int c;
 
@@ -62,7 +66,6 @@ bool File::getword(std::string &str)
 
 bool File::getline(std::string &str, int delim)
 {
-    const auto is_space = [](int c) { return c == ' ' || c == '\t'; };
     int c;
 
     str.erase();
@@ -76,10 +79,12 @@ bool File::getline(std::string &str, int delim)
 
 std::string File::getall()
 {
-    std::string str;
-    for (std::string tmp; getline(tmp); )
-        str += tmp + '\n';
-    return str;
+    std::string contents;
+    int c;
+    contents.reserve(filesize());
+    while (c = getc(), c != EOF)
+        contents += c;
+    return contents;
 }
 
 } // namespace Util

@@ -77,9 +77,10 @@ int main(int argc, char *argv[])
         return 1;
     } else if (flags.items.size() > 1)
         warning("Multiple ROM files specified, only the first will be chosen\n");
-    Util::File romfile(flags.items[0], Util::File::Mode::READ);
+
+    Util::File romfile(flags.items[0], Util::Access::READ);
     if (!romfile) {
-        error("{}: {}\n", flags.items[0], romfile.error_str());
+        error("{}: {}\n", flags.items[0], Util::syserr());
         return 1;
     }
     if (!emu.insert_rom(romfile)) {
