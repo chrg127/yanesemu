@@ -1,7 +1,7 @@
 #include "easyrandom.hpp"
 
-#include <random>
 #include <mutex>
+#include <random>
 
 namespace Util {
 
@@ -23,4 +23,3 @@ uint8_t random8()
 }
 
 } // namespace Util
-

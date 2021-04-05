@@ -1,19 +1,18 @@
 #ifndef UTIL_UNSIGNED_HPP_INCLUDED
 #define UTIL_UNSIGNED_HPP_INCLUDED
 
+/* This library provides uint* types. This includes the usual
+ * uint8, uint16, uint32, uint64, but also anything in-between,
+ * giving unusual types such as uint3, uint15, etc.  */
+
 #include <cstdint>
 #include <type_traits>
 
-/* the most common typedef's */
 using uint8  = uint_least8_t;
 using uint16 = uint_least16_t;
 using uint32 = uint_least32_t;
 using uint64 = uint_least64_t;
 
-/* Unsigned integer with bit width specified by Bits.
- * Idea pretty much stolen from bsnes.
- * Printing these numbers might be tricky. Remember to always use %u and,
- * if Bits >= 32, %lu specifiers. */
 template <unsigned Bits>
 struct UInt {
     static_assert(Bits <= 64);
@@ -33,19 +32,19 @@ public:
 
     static constexpr inttype MAX = (~0ull >> (64 - Bits));
 
-    // permits conversions and casts from UInt<Bits> to inttype
-    inline operator inttype() const { return num; }
-    inline inttype value() const    { return num; }
+    // Permits conversions and casts from UInt<Bits> to inttype
+    operator inttype() const { return num; }
+    inttype value() const    { return num; }
 
-    template <typename T> UInt operator= (const T val) { num =  cast(val); return *this; }
-    template <typename T> UInt operator+=(const T val) { num += cast(val); return *this; }
-    template <typename T> UInt operator-=(const T val) { num -= cast(val); return *this; }
-    template <typename T> UInt operator*=(const T val) { num *= cast(val); return *this; }
-    template <typename T> UInt operator/=(const T val) { num /= cast(val); return *this; }
-    template <typename T> UInt operator&=(const T val) { num &= cast(val); return *this; }
-    template <typename T> UInt operator|=(const T val) { num |= cast(val); return *this; }
-    template <typename T> UInt operator%=(const T val) { num %= cast(val); return *this; }
-    template <typename T> UInt operator^=(const T val) { num ^= cast(val); return *this; }
+    template <typename T> UInt operator=  (const T val) { num =   cast(val); return *this; }
+    template <typename T> UInt operator+= (const T val) { num +=  cast(val); return *this; }
+    template <typename T> UInt operator-= (const T val) { num -=  cast(val); return *this; }
+    template <typename T> UInt operator*= (const T val) { num *=  cast(val); return *this; }
+    template <typename T> UInt operator/= (const T val) { num /=  cast(val); return *this; }
+    template <typename T> UInt operator&= (const T val) { num &=  cast(val); return *this; }
+    template <typename T> UInt operator|= (const T val) { num |=  cast(val); return *this; }
+    template <typename T> UInt operator%= (const T val) { num %=  cast(val); return *this; }
+    template <typename T> UInt operator^= (const T val) { num ^=  cast(val); return *this; }
     template <typename T> UInt operator>>=(const T val) { num >>= cast(val); return *this; }
     template <typename T> UInt operator<<=(const T val) { num <<= cast(val); return *this; }
 
@@ -62,7 +61,7 @@ inline UInt<Bits> operator&(UInt<Bits> n, T val)
     return n;
 }
 
-/* helpers. 8, 16, 32 and 64 not included for obvious reason. */
+// Helpers.
 using uint1 = UInt<1>; using uint2 = UInt<2>; using uint3 = UInt<3>;
 using uint4 = UInt<4>; using uint5 = UInt<5>; using uint6 = UInt<6>;
 using uint7 = UInt<7>;

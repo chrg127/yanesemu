@@ -11,6 +11,7 @@ namespace Util {
  * there are a few cases where one would like to use a fixed size array only
  * known at run-time, and there are a few cases where using such fixed size
  * array would be faster. This class is an attempt at that.
+ *
  * Note that this class looks and acts like an actual array. That means it's
  * still undefined behavior to read uninitialized elements of the array (one
  * can quickly initialize the elements by calling clear() or fill()). */
@@ -36,8 +37,6 @@ public:
 
     HeapArray(const HeapArray &a) { operator=(a); }
 
-    T & operator[](std::size_t i) const { return arrptr[i]; }
-
     HeapArray<T> & operator=(const HeapArray<T> &arr)
     {
         std::size_t size = arr.size();
@@ -47,17 +46,24 @@ public:
         return *this;
     }
 
-    bool operator==(const HeapArray &arr)
+    HeapArray<T> & operator=(HeapArray<T> &&arr)
+    {
+        len = arr.len;
+        arrptr = arr.arrptr;
+        arr.len = 0;
+        arr.arrptr = nullptr;
+        return *this;
+    }
+
+    T & operator[](std::size_t i) const { return arrptr[i]; }
+
+    bool operator==(const HeapArray<T> &arr)
     {
         for (std::size_t i = 0; i != arr.size(); i++)
             if (arrptr[i] != arr[i])
                 return false;
         return true;
     }
-
-    std::size_t size() const { return len; }
-    bool empty() const       { return len == 0; }
-    inline T *data() const   { return arrptr; }
 
     void clear()
     {
@@ -71,7 +77,11 @@ public:
         arrptr = new T[len];
     }
 
-    // basic iterator support
+    std::size_t size() const { return len; }
+    bool empty() const       { return len == 0; }
+    inline T *data() const   { return arrptr; }
+
+    // iterator support
     using value_type      = T;
     using reference       = T &;
     using const_reference = const T &;
@@ -89,7 +99,7 @@ public:
         using pointer    = T *;
         using difference_type = std::ptrdiff_t;
 
-        iterator(HeapArray *a) : arr(a) { }
+        explicit iterator(HeapArray *a) : arr(a) { }
         iterator(HeapArray *a, std::size_t i) : arr(a), index(i) { }
         iterator(const iterator &i) : arr(i.arr), index(i.index) { }
         iterator &  operator= (const iterator &i)       { arr = i.arr; index = i.index; return *this; }

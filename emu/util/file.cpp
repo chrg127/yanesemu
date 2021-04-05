@@ -1,6 +1,5 @@
 #include <emu/util/file.hpp>
 
-#include <cstring>
 #include <cerrno>
 #include <system_error>
 #include <emu/util/debug.hpp>
@@ -31,8 +30,8 @@ std::string syserr()
 bool File::open(std::string_view pathname, Access access)
 {
     close();
-    filbuf = open_file(pathname.data(), access);
-    if (!filbuf)
+    fp = open_file(pathname.data(), access);
+    if (!fp)
         return false;
     filname = std::string(pathname);
     return true;
@@ -40,10 +39,10 @@ bool File::open(std::string_view pathname, Access access)
 
 long File::filesize() const
 {
-    long curr = std::ftell(filbuf);
-    std::fseek(filbuf, 0L, SEEK_END);
-    long size = std::ftell(filbuf);
-    std::fseek(filbuf, curr, SEEK_SET);
+    long curr = std::ftell(fp);
+    std::fseek(fp, 0L, SEEK_END);
+    long size = std::ftell(fp);
+    std::fseek(fp, curr, SEEK_SET);
     return size;
 }
 

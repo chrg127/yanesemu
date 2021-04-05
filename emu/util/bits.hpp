@@ -1,14 +1,18 @@
-/* Bit operations library.
- * Most routines here are OF THE UTMOST IMPORTANCE. Making an error while
- * changing one means an obscure bug in all the emulator. Proceed with caution.
- */
-
 #ifndef UTIL_BITS_HPP_INCLUDED
 #define UTIL_BITS_HPP_INCLUDED
+
+/* Bit manipulation library. */
 
 #include <cstdint>
 
 namespace Util {
+
+/* Returns a mask usable to mask off a given number of bits.
+ * For example: 3 -> 0b11; 6 -> 0b111111 */
+constexpr inline uint64_t get_mask_nbits(uint8_t nbits)
+{
+    return (1UL << nbits) - 1UL;
+}
 
 /* Routines for getting/settings bits at once. More readable, and thus
  * preferable, than using naked complicated bit operations. */
@@ -20,13 +24,6 @@ constexpr inline uint64_t getbits(uint64_t num, uint8_t bitno, uint8_t nbits)
 constexpr inline uint64_t getbit(uint64_t num, uint8_t bitno)
 {
     return getbits(num, bitno, 1);
-}
-
-/* Returns a mask usable to mask off a given number of bits.
- * For example: 3 -> 0b11; 6 -> 0b111111 */
-constexpr inline uint64_t get_mask_nbits(uint8_t nbits)
-{
-    return (1UL << nbits) - 1UL;
 }
 
 constexpr inline uint64_t setbits(uint64_t num, uint8_t bitno, uint8_t nbits, uint64_t data)
@@ -54,29 +51,28 @@ constexpr inline uint32_t rotr32(const uint32_t x, const int k)
 /* A struct for portable bit-fields. Use it like so:
  * union {
  *     uint16_t full
- *     BitField<1, uint16_t> flag;
- *     BitField<2, uint16_t> flag2;
+ *     BitField<uint16_t, 1, 1> flag;
+ *     BitField<uint16_t, 2, 3> flag_3bits;
  *     // ...
  * } data;
- * the types must necessarily be the same or else it won't work at all.
- */
+ * the types must necessarily be the same or else it won't work at all. */
 template <typename T, unsigned Bitno, unsigned Nbits = 1>
 struct BitField {
     T data;
 
-    // this operator= below is ESSENTIAL. before adding it I got a bunch of bugs
-    // when copying BitFields with the same exact types.
+    // this operator= below is ESSENTIAL. before adding it I got a bunch
+    // of bugs when copying BitFields with the same exact types.
     BitField & operator=(const BitField<T, Bitno, Nbits> &oth) { data = setbits(data, Bitno, Nbits, oth.data); return *this; }
     BitField & operator=(const T val)                          { data = setbits(data, Bitno, Nbits, val);      return *this; }
     operator uint64_t() const                                  { return (data >> Bitno) & get_mask_nbits(Nbits); }
 
-    template <typename U> BitField & operator+=(const U val) { *this = *this + val; return *this; }
-    template <typename U> BitField & operator-=(const U val) { *this = *this - val; return *this; }
-    template <typename U> BitField & operator*=(const U val) { *this = *this * val; return *this; }
-    template <typename U> BitField & operator/=(const U val) { *this = *this / val; return *this; }
-    template <typename U> BitField & operator&=(const U val) { *this = *this & val; return *this; }
-    template <typename U> BitField & operator|=(const U val) { *this = *this | val; return *this; }
-    template <typename U> BitField & operator^=(const U val) { *this = *this ^ val; return *this; }
+    template <typename U> BitField & operator+= (const U val) { *this = *this + val; return *this; }
+    template <typename U> BitField & operator-= (const U val) { *this = *this - val; return *this; }
+    template <typename U> BitField & operator*= (const U val) { *this = *this * val; return *this; }
+    template <typename U> BitField & operator/= (const U val) { *this = *this / val; return *this; }
+    template <typename U> BitField & operator&= (const U val) { *this = *this & val; return *this; }
+    template <typename U> BitField & operator|= (const U val) { *this = *this | val; return *this; }
+    template <typename U> BitField & operator^= (const U val) { *this = *this ^ val; return *this; }
     template <typename U> BitField & operator>>=(const U val) { *this = *this >> val; return *this; }
     template <typename U> BitField & operator<<=(const U val) { *this = *this << val; return *this; }
 
@@ -103,3 +99,4 @@ inline constexpr unsigned long long to_tibit(unsigned long long bytes) { return 
 } // namespace Util
 
 #endif
+

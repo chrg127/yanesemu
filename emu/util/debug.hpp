@@ -1,9 +1,9 @@
-/* debug.h: debugging utilities: a collection of macros and inline functions to
- * be used for debugging and error messages.
- * #define DEBUG to use the macros. error message functions need not to define
- * it. */
 #ifndef UTIL_DEBUG_HPP_INCLUDED
 #define UTIL_DEBUG_HPP_INCLUDED
+
+/* This is a collection of macros and inline functions to
+ * be used for debugging and error messages.
+ * #define DEBUG to use the macros. Error message functions need not to define it. */
 
 #include <fmt/core.h>
 

@@ -1,10 +1,15 @@
 #ifndef UTIL_FILE_HPP_INCLUDED
 #define UTIL_FILE_HPP_INCLUDED
 
+/* A File class that C-Style file handling, but uses RAII
+ * and std::string.
+ * The File object itself can be empty, that is, it may
+ * not have a valid file handle inside. This is intended
+ * and can be tested using operator bool(). */
+
 #include <cstdio>
 #include <string>
 #include <string_view>
-// #include <fmt/core.h>
 
 namespace Util {
 
@@ -15,8 +20,8 @@ enum class Access {
 std::string syserr();
 
 class File {
-    FILE *filbuf = nullptr;
-    std::string filname = "";
+    FILE *fp = nullptr;
+    std::string filname;
 
 public:
     File() = default;
@@ -29,12 +34,12 @@ public:
     File & operator=(const File &f) = delete;
     File & operator=(File &&f)
     {
-        std::swap(filbuf, f.filbuf);
+        std::swap(fp, f.fp);
         std::swap(filname, f.filname);
         return *this;
     }
 
-    explicit operator bool() { return filbuf; }
+    explicit operator bool() { return fp; }
 
     bool open(std::string_view pathname, Access access);
     long filesize() const;
@@ -44,10 +49,10 @@ public:
 
     int close()
     {
-        if (!filbuf || filbuf == stdin || filbuf == stdout || filbuf == stderr)
+        if (!fp || fp == stdin || fp == stdout || fp == stderr)
             return 0;
-        int ret = fclose(filbuf);
-        filbuf = nullptr;
+        int ret = fclose(fp);
+        fp = nullptr;
         filname.erase();
         return ret;
     }
@@ -55,32 +60,25 @@ public:
     FILE *release()
     {
         filname.erase();
-        FILE *ret = filbuf;
-        filbuf = nullptr;
+        FILE *ret = fp;
+        fp = nullptr;
         return ret;
     }
 
-    void assoc(FILE *buf) { filbuf = buf; }
-    bool eof()                        { return !filbuf || (std::feof(filbuf)   != 0); }
-    bool error()                      { return !filbuf || (std::ferror(filbuf) != 0); }
-    int flush()                       { return std::fflush(filbuf); }
-    int seek(long offset, int origin) { return std::fseek(filbuf, offset, origin); }
-    int fd()                          { return fileno(filbuf); }
+    void assoc(FILE *buf) { fp = buf; }
+    bool eof()                        { return !fp || (std::feof(fp) != 0); }
+    bool error()                      { return !fp || (std::ferror(fp) != 0); }
+    int flush()                       { return std::fflush(fp); }
+    int seek(long offset, int origin) { return std::fseek(fp, offset, origin); }
+    int fd()                          { return fileno(fp); }
     std::string filename() const      { return filname; }
-    FILE *data() const                { return filbuf; }
+    FILE *data() const                { return fp; }
 
-    std::size_t bread(void *buf, std::size_t nb)  { return std::fread(buf, 1, nb, filbuf); }
-    int getc()                                    { return std::fgetc(filbuf); }
-    int ungetc(int c)                             { return std::ungetc(c, filbuf); }
-    std::size_t bwrite(void *buf, std::size_t nb) { return std::fwrite(buf, 1, nb, filbuf); }
-    int putc(char c)                              { return std::fputc(c, filbuf); }
-
-    /*
-    template <typename... T> void print(std::string &&fmt, T... args)
-    {
-        fmt::print(filbuf, fmt, args...);
-    }
-    */
+    std::size_t bread(void *buf, std::size_t nb)  { return std::fread(buf, 1, nb, fp); }
+    int getc()                                    { return std::fgetc(fp); }
+    int ungetc(int c)                             { return std::ungetc(c, fp); }
+    std::size_t bwrite(void *buf, std::size_t nb) { return std::fwrite(buf, 1, nb, fp); }
+    int putc(char c)                              { return std::fputc(c, fp); }
 };
 
 } // namespace Util

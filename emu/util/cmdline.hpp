@@ -1,36 +1,3 @@
-/* This is a library for command line arguments. How to use:
- * First, define a ValidArgStruct like so:
- *
- *      const ValidArgStruct valid_arguments = {
- *          { 'b', "break" }, // default: ParamType::NONE, default_validator
- *          { 'f', "log-file", ParamType::MUST_HAVE },
- *          { 'C', "files", ParamType::OPTIONAL, some_custom_validator }
- *      };
- *
- * This describes all valid arguments. First are both the short
- * and long version of the argument, then what kind of parameters accepts.
- * NONE is the default.
- * You can also have custom parameter validators. To use one, declare it
- * as:
- *
- *      bool some_custom_validator(std::string_view param);
- *
- * and pass it to the valid_arguments struct.
- *
- * To actually parse the arguments, you just need to call parse:
- *
- *      auto result = parse(argc, argv, valid_arguments);
- *
- * result.found will list all arguments found; index into it using the
- * short version of the argument.
- * result.params lists the parameters found; use it like result.found.
- * result.items lists any argument without the usual dash (-).
- *
- * None that this library has the fixed behaviour of only accepting arguments
- * starting with - or -- as real arguments; for any other behaviour, use
- * something else.
- */
-
 #ifndef UTIL_CMDLINE_HPP_INCLUDED
 #define UTIL_CMDLINE_HPP_INCLUDED
 
@@ -41,37 +8,36 @@
 
 namespace Util {
 
-/* An Argument is a command line option starting with a dash (-).
- * It has always two versions: a short version that uses one dash and
- * one character and a longer version with two dashes.
- * An Argument can take a Parameter. Whether it takes a parameter is specified
- * by the ParamType field.
- * Parameters can also be validated at parsing. This is done by passing a
- * Validator function, of the prototype bool validator(std::string_view).
- * The Validator will be called during parsing.
- * Finally, an Item is any option that is not an Argument or a Parameter.
- * Items are collected automatically by parsing.
- *
- * When the parsing is done, it returns an ArgResult. The ArgResult struct
- * holds Arguments, Parameters and Items. To search for specific properties
- * of Arguments, simply use its fields: has[] returns whether an Argument was
- * found, params[] returns the parameter for the argument. Items are stored
- * in the items field. */
-
 using ParamValidator = bool (*)(std::string_view);
 enum class ParamType { NONE, OPTIONAL, MUST_HAVE };
 
 bool default_validator(std::string_view);
 
+/* Represents a command line argument. They come in two forms:
+ * a short version starting with - and a long version starting with --.
+ * An argument can take a (single) parameter. Whether it does is described
+ * by ptype, and if parameter, if any, is validated by validator. */
 struct Argument {
     char short_opt;
     std::string_view long_opt;
     std::string_view desc;
-    ParamType paramt = ParamType::NONE;
+    ParamType ptype = ParamType::NONE;
     ParamValidator validator = default_validator;
 };
+
+/* A type that contains all defined arguments. It is read-only
+ * by parse() and company. One should define a ValidArgStruct at
+ * the start of the program like so:
+ *  static const ValidArgStruct args = {
+ *      { ...first arg... }
+ *      { ... other args ... }
+ *  }; */
 using ValidArgStruct = std::vector<Argument>;
 
+/* Result of parse(). Use the short option to search for arguments.
+ * has[] contains what arguments were found. params[] contains
+ * the parameters for each argument. Items are any string found
+ * that weren't arguments, ordered by when they were found. */
 struct ArgResult {
     std::unordered_map<char, bool>             has;
     std::unordered_map<char, std::string_view> params;
@@ -85,4 +51,3 @@ void print_version(std::string_view progname, std::string_view version);
 } // namespace Util
 
 #endif
-
