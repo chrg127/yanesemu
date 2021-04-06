@@ -5,10 +5,10 @@
 #include <emu/core/cpu.hpp>
 #include <emu/core/ppu.hpp>
 #include <emu/core/cartridge.hpp>
-#include <emu/core/debugger.hpp>
 #include <fmt/core.h>
 
 namespace Util { class File; }
+namespace Debugger { class Debugger; }
 
 namespace Core {
 
@@ -16,9 +16,8 @@ class Emulator {
     Bus rambus { CPUBUS_SIZE };
     Bus vrambus { PPUBUS_SIZE };
     Cartridge cartridge;
-    CPU cpu;
-    PPU ppu;
-    Debugger debugger {this};
+    CPU cpu{&rambus};
+    PPU ppu{&rambus, &vrambus};
     int cycle = 0;
     // this is internal to the emulator only and doesn't affect the cpu and ppu
     bool nmi = false;
@@ -26,9 +25,8 @@ class Emulator {
 public:
     Emulator()
     {
-        cpu.attach_bus(&rambus);
         ppu.attach_bus(&vrambus, &rambus);
-        ppu.set_nmi_callback([this]() {
+        ppu.on_nmi([this]() {
             nmi = true;
             cpu.fire_nmi();
         });
@@ -46,23 +44,14 @@ public:
 
     void reset()
     {
-        cpu.reset();
+        cpu.power(true);
         ppu.reset();
-    }
-
-    void enable_debugger(auto &&callb)
-    {
-        cpu.register_fetch_callback([&](CPU::Status &&st, uint16 addr, char mode) {
-            debugger.fetch_callback(std::move(st), addr, mode);
-        });
-        debugger.register_callback(callb);
     }
 
     void set_screen(Video::Canvas *canvas) { ppu.set_screen(canvas); }
     std::string rominfo()                  { return cartridge.getinfo(); }
-    bool debugger_has_quit() const         { return debugger.has_quit(); }
 
-    friend class Debugger;
+    friend class Debugger::Debugger;
 };
 
 } // namespace Core

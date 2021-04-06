@@ -1,6 +1,6 @@
 #include <emu/core/cpu.hpp>
 
-#include <fmt/core.h>
+#include <cstring> // memset
 #include <emu/util/easyrandom.hpp>
 #include <emu/util/debug.hpp>
 
@@ -10,117 +10,74 @@ namespace Core {
 #include <emu/core/instructions.cpp>
 #undef INSIDE_CPU_CPP
 
+CPU::CPU(Bus *b)
+    : bus(b)
+{
+    std::memset(rammem, 0, sizeof(rammem));
+}
+
+void CPU::power(bool reset)
+{
+    bus->map(RAM_START, PPUREG_START,
+             [this](uint16 addr)             { return rammem[addr & 0x7FF]; },
+             [this](uint16 addr, uint8 data) { rammem[addr & 0x7FF] = data; });
+    bus->map(APU_START, CARTRIDGE_START,
+             [this](uint16 addr)             { return read_apu_reg(addr); },
+             [this](uint16 addr, uint8 data) { write_apu_reg(addr, data); });
+    if (!reset) {
+        r.acc = 0;
+        r.x = 0;
+        r.y = 0;
+        r.sp = 0;
+        r.pc = 0;
+        r.flags.reset();
+        for (uint16 i = 0; i < 0x800; i++)
+            bus->write(i, 0);
+        for (uint16 i = 0x4000; i < 0x4013; i++)
+            bus->write(i, 0);
+        bus->write(0x4017, 0);
+    }
+    r.flags.intdis = 1;
+    r.cycles = 0;
+    bus->write(0x4015, 0);
+    // an interrupt is performed during 6502 start up. this is why SP = $FD.
+    signal.resetpending = true;
+    interrupt();
+}
+
 void CPU::run()
 {
-    if (execnmi) {
+    if (!signal.interrupt_pending)
+        execute(fetch());
+    if (signal.execnmi) {
+        signal.execnmi = 0;
         cycle();
         interrupt();
-        execnmi = false;
         return;
     }
-    if (execirq) {
+    if (signal.execirq) {
+        signal.execirq = 0;
         cycle();
         interrupt();
-        execirq = false;
         return;
     }
     execute(fetch());
 }
 
-void CPU::power()
-{
-    r.acc = r.x = r.y = 0;
-    for (uint16 i = 0; i < 0x800; i++)
-        bus->write(i, 0); //Util::random8());
-    r.flags.reset();
-    // these are probably APU regs. i'll add them later. for now this is enough.
-    bus->write(0x4017, 0);
-    bus->write(0x4015, 0);
-    for (uint16 i = 0x4000; i < 0x4013; i++)
-        bus->write(i, 0);
-    r.sp = 0;
-    // an interrupt is performed during 6502 start up. this is why SP = $FD.
-    resetpending = true;
-    interrupt();
-}
-
-void CPU::reset()
-{
-    bus->write(0x4015, 0);
-    resetpending = true;
-    interrupt();
-}
-
-void CPU::attach_bus(Bus *rambus)
-{
-    bus = rambus;
-    bus->map(RAM_START, PPUREG_START,
-        [this](uint16 addr)             { return rammem[addr & 0x7FF]; },
-        [this](uint16 addr, uint8 data) { rammem[addr & 0x7FF] = data; });
-    bus->map(APU_START, CARTRIDGE_START,
-        [this](uint16 addr)             { return read_apu_reg(addr); },
-        [this](uint16 addr, uint8 data) { write_apu_reg(addr, data); });
-}
-
-/* Sends an IRQ signal. */
 void CPU::fire_irq()
 {
-    irqpending = true;
+    signal.irqpending = true;
 }
 
-/* Sends an NMI signal */
 void CPU::fire_nmi()
 {
-    nmipending = true;
+    signal.nmipending = true;
 }
-
-CPU::Status CPU::status() const
-{
-    Status st;
-    st.regs = r;
-    st.instr.id      = bus->read(r.pc.full);
-    st.instr.op.low  = bus->read(r.pc.full+1);
-    st.instr.op.high = bus->read(r.pc.full+2);
-    return st;
-}
-
-/* The method used here is emulating some risky instructions to find out the next
- * address, and using the normal formula of "pc + instr num bytes" for the
- * rest. Another approach would be backing up all regs, then call run().
- * I prefer this method since this means the function can be const. */
-uint16 CPU::nextaddr() const
-{
-    uint16 id = bus->read(r.pc.full);
-    Reg16 op;
-    op.low  = bus->read(r.pc.full + 1);
-    op.high = bus->read(r.pc.full + 2);
-
-    switch (id) {
-    case 0x00:
-        return resetpending ? RESET_VEC
-            :  nmipending   ? NMI_VEC
-            :                 IRQ_BRK_VEC;
-    case 0x20: case 0x4C:
-        return op.full;
-    case 0x6C:
-        return op.low == 0xFF ? bus->read(op.full) | bus->read(op.full & 0xFF00) << 8
-                              : bus->read(op.full) | bus->read(op.full + 1)      << 8;
-    case 0x60:
-        return 1 + (bus->read(r.sp + 1 + STACK_BASE) | bus->read(r.sp + 2 + STACK_BASE) << 8);
-    case 0x40:
-        return      bus->read(r.sp + 1 + STACK_BASE) | bus->read(r.sp + 2 + STACK_BASE) << 8;
-    default:
-        return took_branch(id, r.flags) ? branch_pointer(op.low, r.pc.full)
-                                        : r.pc.full + num_bytes(id);
-    }
-}
-
-
 
 uint8 CPU::fetch()
 {
     if (fetch_callback)
-        fetch_callback(status(), r.pc.full, 'x');
+        fetch_callback(r.pc.full, 'x');
     cycle();
     return bus->read(r.pc.full++);
 }
@@ -297,8 +254,8 @@ void CPU::execute(uint8 instr)
         INSTR_AMODE(0xFD, sbc, absx, read)
         INSTR_AMODE(0xFE, inc, absx, modify)
         default:
-            dbgprint(__FILE__, __LINE__, "error: unknown instruction: {:02X}\n", instr);
-            return;
+            if (error_callback)
+                error_callback(instr, r.pc.full);
     }
 #undef INSTR_IMPLD
 #undef INSTR_AMODE
@@ -320,14 +277,14 @@ void CPU::interrupt()
     // reset is put at the top so that it will always run. i'm not sure if
     // this is the actual behavior - nesdev says nothing about it.
     uint16 vec;
-    if (resetpending) {
-        resetpending = false;
+    if (signal.resetpending) {
+        signal.resetpending = false;
         vec = RESET_VEC;
-    } else if (nmipending) {
-        nmipending = false;
+    } else if (signal.nmipending) {
+        signal.nmipending = false;
         vec = NMI_VEC;
-    } else if (irqpending) {
-        irqpending = false;
+    } else if (signal.irqpending) {
+        signal.irqpending = false;
         vec = IRQ_BRK_VEC;
     } else
         vec = IRQ_BRK_VEC;
@@ -361,20 +318,20 @@ void CPU::last_cycle()
 
 void CPU::irqpoll()
 {
-    if (!execirq && !r.flags.intdis && irqpending)
-        execirq = true;
+    if (!signal.execirq && !r.flags.intdis && signal.irqpending)
+        signal.execirq = true;
 }
 
 void CPU::nmipoll()
 {
-    if (!execnmi && nmipending)
-        execnmi = true;
+    if (!signal.execnmi && signal.nmipending)
+        signal.execnmi = true;
 }
 
 uint8 CPU::readmem(uint16 addr)
 {
     if (fetch_callback)
-        fetch_callback(status(), addr, 'r');
+        fetch_callback(addr, 'r');
     cycle();
     return bus->read(addr);
 }
@@ -382,11 +339,9 @@ uint8 CPU::readmem(uint16 addr)
 void CPU::writemem(uint16 addr, uint8 data)
 {
     if (fetch_callback)
-        fetch_callback(status(), addr, 'w');
+        fetch_callback(addr, 'w');
     cycle();
     bus->write(addr, data);
 }
 
 } // namespace Core
-
-#undef INSIDE_CPU_CPP

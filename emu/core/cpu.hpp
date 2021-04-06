@@ -5,16 +5,73 @@
 #include <string>
 #include <emu/core/const.hpp>
 #include <emu/core/bus.hpp>
-#include <emu/core/instrinfo.hpp>
 #include <emu/util/unsigned.hpp>
+
+namespace Debugger {
+    class Debugger;
+    class CPUDebugger;
+}
 
 namespace Core {
 
-class CPU {
-    Bus *bus = nullptr;
+union Reg16 {
+    struct { uint8 low, high; };
+    uint16 full;
 
-    // registers
-    struct Regs {
+    Reg16() = default;
+    Reg16(uint16 val)                   { operator=(val); }
+    Reg16 & operator=(const uint16 val) { full = val;  return *this; }
+    template <typename T> Reg16 & operator&=(const T val) { full &= val; return *this; }
+    template <typename T> Reg16 & operator|=(const T val) { full |= val; return *this; }
+};
+
+/* The CPU has 2 main states:
+ * - When it is constructed, all members are initialized to 0, except
+ *   for the following:
+ *   - bus, which is not mapped;
+ *   - fetch_callback, which is a function containing nothing
+ * - On power(), every member is initialized as if a power signal was sent to
+ *   the CPU.
+ * To initialize the CPU, one therefore must first create a bus before creating
+ * the CPU, then power() must be called.
+ */
+class CPU {
+    struct ProcStatus {
+        bool carry   = 0;
+        bool zero    = 0;
+        bool intdis  = 0;
+        bool decimal = 0;
+        bool breakf  = 0;
+        bool unused  = 1;
+        bool ov      = 0;
+        bool neg     = 0;
+
+        operator uint8() const
+        {
+            return carry  << 0  | zero   << 1  | intdis << 2 | decimal << 3 |
+                   breakf << 4  | unused << 5  | ov     << 6 | neg     << 7;
+        }
+
+        void operator=(const uint8 data)
+        {
+            carry   = data & 0x01;
+            zero    = data & 0x02;
+            intdis  = data & 0x04;
+            decimal = data & 0x08;
+            breakf  = data & 0x10;
+            unused  = data & 0x20;
+            ov      = data & 0x40;
+            neg     = data & 0x80;
+        }
+
+        void reset()
+        {
+            carry = zero = intdis = decimal = breakf = ov = neg = 0;
+            unused = 1;
+        }
+    };
+
+    struct {
         Reg16 pc  = 0;
         uint8 acc = 0;
         uint8 x   = 0;
@@ -24,46 +81,37 @@ class CPU {
         unsigned long cycles = 0;
     } r;
 
-    // interrupt signals
-    bool nmipending = false;
-    bool irqpending = false;
-    bool resetpending = false;
-    bool execnmi    = false;
-    bool execirq    = false;
+    struct {
+        bool interrupt_pending = 0;
+        bool nmipending = false;
+        bool irqpending = false;
+        bool resetpending = false;
+        bool execnmi    = false;
+        bool execirq    = false;
+    } signal;
 
-    // used in instructions.cpp
-    Reg16 opargs = 0;
-
+    Bus *bus = nullptr;
+    Reg16 opargs    = 0;
     uint8 rammem[RAM_SIZE];
+    std::function<void(uint16, char)> fetch_callback;
+    std::function<void(uint8, uint16)> error_callback;
 
 public:
+    explicit CPU(Bus *b);
+    void power(bool reset = false);
     void run();
-    void power();
-    void reset();
-    void attach_bus(Bus *rambus);
     void fire_irq();
     void fire_nmi();
 
-    struct Status {
-        Regs regs;
-        struct {
-            uint8 id;
-            Reg16 op;
-        } instr;
-    };
+    unsigned long cycles() const { return r.cycles; }
+    void on_fetch(auto &&f) { fetch_callback = f; }
+    void on_error(auto &&f) { error_callback = f; }
+
+    friend class Debugger::Debugger;
+    friend class Debugger::CPUDebugger;
 
 private:
-    using FetchFn = std::function<void (CPU::Status &&st, uint16, char)>;
-    FetchFn fetch_callback;
-public:
-
-    Status status() const;
-    uint16 nextaddr() const;
-
-    unsigned long get_cycles() { return r.cycles; }
-    void register_fetch_callback(auto &&callback) { fetch_callback = callback; }
-
-private:
+    void attach_bus(Bus *rambus);
     uint8 fetch();
     uint8 fetchop();
     void execute(uint8 instr);
@@ -74,6 +122,10 @@ private:
     void nmipoll();
     void cycle();
     void last_cycle();
+    uint8 readmem(uint16 addr);
+    void writemem(uint16 addr, uint8 data);
+    uint8 read_apu_reg(uint16 addr) { return 0; }
+    void write_apu_reg(uint16 addr, uint8 data) { }
 
     // instructions.cpp
     using InstrFuncRead = void (CPU::*)(const uint8);
@@ -91,12 +143,9 @@ private:
     void addrmode_accum_modify(InstrFuncMod f);
     void addrmode_zero_modify(InstrFuncMod f);
     void addrmode_zerox_modify(InstrFuncMod f);
-    void addrmode_zeroy_modify(InstrFuncMod f);
     void addrmode_abs_modify(InstrFuncMod f);
     void addrmode_absx_modify(InstrFuncMod f);
-    void addrmode_absy_modify(InstrFuncMod f);
-    void addrmode_indx_modify(InstrFuncMod f);
-    void addrmode_indy_modify(InstrFuncMod f);
+
     // these are only used by STA, STX, and STY
     void addrmode_zero_write(uint8 val);
     void addrmode_zerox_write(uint8 val);
@@ -134,6 +183,7 @@ private:
     uint8 instr_lsr(uint8 val);
     uint8 instr_rol(uint8 val);
     uint8 instr_ror(uint8 val);
+
     // these instruction are called directly
     void instr_inx();
     void instr_iny();
@@ -150,17 +200,8 @@ private:
     void instr_brk();
     void instr_rti();
     void instr_nop();
-
-    uint8 readmem(uint16 addr);
-    void writemem(uint16 addr, uint8 data);
-
-    uint8 read_apu_reg(uint16 addr) { return 0; }
-    void write_apu_reg(uint16 addr, uint8 data) { }
-
-    friend class Debugger;
 };
 
 } // namespace Core
 
 #endif
-

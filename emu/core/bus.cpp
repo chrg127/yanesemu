@@ -1,7 +1,7 @@
 #include "bus.hpp"
 
 #include <algorithm>
-#include <cstring> // memcpy, memset
+#include <cstring>
 #include <emu/util/debug.hpp>
 
 namespace Core {
@@ -30,13 +30,13 @@ void Bus::map(uint16 start, uint32 end, Reader reader, Writer writer)
     // search for a new id
     while (assigned[id]) {
         if (++id > TABSIZ) {
-            error("mapping exausted\n");
+            error("mapping exhausted\n");
             return;
         }
     }
     assigned[id] = true;
-    readtab[id] = reader;
-    writetab[id] = writer;
+    readtab[id] = std::move(reader);
+    writetab[id] = std::move(writer);
     std::fill(lookup.begin() + start, lookup.begin() + end, id);
 }
 
@@ -51,8 +51,8 @@ void Bus::remap(uint16 start, uint32 end, Reader reader, Writer writer)
         warning("remap: {} isn't the real end of the area\n", end);
         return;
     }
-    readtab[id] = reader;
-    writetab[id] = writer;
+    readtab[id] = std::move(reader);
+    writetab[id] = std::move(writer);
 }
 
 } // namespace Core

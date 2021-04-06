@@ -5,7 +5,6 @@
 #include <functional>
 #include <fmt/core.h>
 #include <emu/core/bus.hpp>
-#include <emu/util/file.hpp>
 #include <emu/util/easyrandom.hpp>
 #include <emu/util/debug.hpp>
 #include <emu/video/video.hpp>
@@ -98,25 +97,6 @@ void PPU::reset()
     lines = cycles = 0;
     for (unsigned i = 0; i < OAM_SIZE; i++)
         oammem[i] = 0;
-}
-
-PPU::Status PPU::status() const
-{
-    return {
-        .ctrl           = readreg_no_sideeff(0x2000),
-        .mask           = readreg_no_sideeff(0x2000),
-        .status         = readreg_no_sideeff(0x2000),
-        .oamaddr        = readreg_no_sideeff(0x2000),
-        .oamdata        = readreg_no_sideeff(0x2000),
-        .vram_scroll    = readreg_no_sideeff(0x2000),
-        .vram_addr      = readreg_no_sideeff(0x2000),
-        .vram_data      = readreg_no_sideeff(0x2000),
-        .vram           = vram,
-        .tile           = tile,
-        .shift          = shift,
-        .line           = lines,
-        .cycle          = cycles
-    };
 }
 
 void PPU::attach_bus(Bus *vrambus, Bus *rambus)

@@ -8,6 +8,10 @@
 #include <emu/util/bits.hpp>
 
 namespace Video { class Canvas; }
+namespace Debugger {
+    class Debugger;
+    class PPUDebugger;
+}
 
 namespace Core {
 
@@ -105,6 +109,10 @@ class PPU {
     } oam;
 
 public:
+    PPU(Bus *rambus, Bus *vrambus)
+    {
+        attach_bus(vrambus, rambus);
+    }
 
     void power();
     void reset();
@@ -114,25 +122,8 @@ public:
     // ppumain.cpp
     void run();
 
-    struct Status {
-        uint8 ctrl;
-        uint8 mask;
-        uint8 status;
-        uint8 oamaddr;
-        uint8 oamdata;
-        uint8 vram_scroll;
-        uint8 vram_addr;
-        uint8 vram_data;
-        VRAM vram;
-        Tile tile;
-        Shift shift;
-        unsigned long line;
-        unsigned long cycle;
-    };
-    Status status() const;
-
     void set_screen(Video::Canvas *canvas) { screen = canvas; }
-    void set_nmi_callback(auto &&callback) { nmi_callback = callback; }
+    void on_nmi(auto &&callback) { nmi_callback = callback; }
 
     // these shouldn't be called outside ppumain.cpp
     template <unsigned int Cycle> void ccycle();
@@ -177,7 +168,8 @@ private:
     void vblank_begin();
     void vblank_end();
 
-    friend class Debugger;
+    friend class Debugger::Debugger;
+    friend class Debugger::PPUDebugger;
 };
 
 } // namespace Core

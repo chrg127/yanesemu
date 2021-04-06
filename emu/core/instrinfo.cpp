@@ -217,7 +217,7 @@ namespace Core {
     X(txs, "", "") \
     X(tya, "", "") \
 
-std::string disassemble(const uint8 instr, const uint8 oplow, const uint8 ophigh)
+std::string disassemble(const uint8 id, const uint8 oplow, const uint8 ophigh)
 {
 #define modefmt(mode, formt, numb, ...) \
     const auto disass_##mode = [&](const char name[4]) { return fmt::format(formt, __VA_ARGS__); };
@@ -237,7 +237,7 @@ std::string disassemble(const uint8 instr, const uint8 oplow, const uint8 ophigh
     modefmt(ind,    "{} (${:02X}{:02X})",   3, name, ophigh, oplow);
 
 #define X(id, name, mode) case id: return disass_##mode(#name);
-    switch(instr) {
+    switch(id) {
         INSTR_MODE(X)
         default:
             return "[Unknown]";
@@ -281,31 +281,6 @@ std::string get_instr_desc(const std::string &s)
     return it == desctab.end() ? "[Unknown instruction]", *it;
 }
 */
-
-std::string format_flags(ProcStatus &flags)
-{
-    return fmt::format("{}{}{}{}{}{}{}{}",
-        (flags.neg     == 1) ? 'N' : 'n',
-        (flags.ov      == 1) ? 'V' : 'v',
-        (flags.unused  == 1) ? 'U' : 'u',
-        (flags.breakf  == 1) ? 'B' : 'b',
-        (flags.decimal == 1) ? 'D' : 'd',
-        (flags.intdis  == 1) ? 'I' : 'i',
-        (flags.zero    == 1) ? 'Z' : 'z',
-        (flags.carry   == 1) ? 'C' : 'c'
-        );
-}
-
-std::string format_instr(uint8 id, uint8 low, uint8 high, uint16 pc, ProcStatus &flags)
-{
-    std::string instr_str = disassemble(id, low, high);
-    if (is_branch(id)) {
-        instr_str += fmt::format(" [{:02X}] [{}]",
-                branch_pointer(low, pc),
-                took_branch(id, flags) ? "Branch taken" : "Branch not taken");
-    }
-    return fmt::format("[${:02X}] {}", id, instr_str);
-}
 
 } // namespace Core
 

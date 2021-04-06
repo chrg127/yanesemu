@@ -11,7 +11,7 @@ using namespace Core;
 void Emulator::run()
 {
     cpu.run();
-    int curr_cycle = cpu.get_cycles();
+    int curr_cycle = cpu.cycles();
     int cycle_diff = curr_cycle - cycle;
     // run 3 ppu cycles for 1 cpu cycle
     for (int i = 0; i < cycle_diff*3; i++)
@@ -21,8 +21,6 @@ void Emulator::run()
 
 void Emulator::run_frame()
 {
-    if (debugger_has_quit())
-        return;
     while (!nmi)
         run();
     nmi = false;
