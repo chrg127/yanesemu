@@ -40,10 +40,10 @@ class CliDebugger {
 
 public:
     explicit CliDebugger(Core::Emulator *emu);
-
-    void repl();
+    void enter();
 
 private:
+    void repl();
     void eval();
     void report_event(Debugger::Event &&ev);
     void print_instr();

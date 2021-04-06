@@ -55,7 +55,7 @@ int debugger_interface()
     emu.power();
     fmt::print("{}\n", emu.rominfo());
     Debugger::CliDebugger clidbg{&emu};
-    clidbg.repl();
+    clidbg.enter();
     return 0;
 }
 

@@ -61,7 +61,6 @@ void CPU::run()
         interrupt();
         return;
     }
-    execute(fetch());
 }
 
 void CPU::fire_irq()

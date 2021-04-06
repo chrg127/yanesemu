@@ -104,6 +104,12 @@ CliDebugger::CliDebugger(Core::Emulator *emu)
     dbg.on_report([this](Debugger::Event &&ev) { report_event(std::move(ev)); });
 }
 
+void CliDebugger::enter()
+{
+    print_instr();
+    repl();
+}
+
 void CliDebugger::repl()
 {
     Util::File input{stdin};
@@ -162,7 +168,7 @@ void CliDebugger::eval()
         }
         auto start = Util::strconv<uint16>(args[1], 16);
         auto end = args.size() > 2 ? Util::strconv<uint16>(args[2], 16) : start;
-        if (!start || !end || end.value() <= start.value()) {
+        if (!start || !end || end.value() < start.value()) {
             fmt::print("Invalid range.\n");
             break;
         }

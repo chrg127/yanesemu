@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <emu/core/emulator.hpp>
+#include <emu/core/instrinfo.hpp>
 #include <emu/util/file.hpp>
 #include <emu/util/debug.hpp>
 
@@ -16,6 +17,12 @@ Debugger::Debugger(Core::Emulator *e)
 
 void Debugger::run()
 {
+    const auto report_break = [this]() {
+        Event ev;
+        ev.tag = Event::Tag::BREAK;
+        ev.bp_index = break_hit;
+        report_callback(std::move(ev));
+    };
     const auto report_step = [this]() {
         Event ev;
         ev.tag = Event::Tag::STEP;
@@ -23,22 +30,37 @@ void Debugger::run()
         steptype = Step::NONE;
     };
 
+    CPUDebugger::Instruction last_instr = cpudbg.curr_instr();
+    uint16 last_pc = cpudbg.getreg(CPUDebugger::Reg::PC);
+
     for (;;) {
         emu->run();
         if (break_hit != -1) {
             break_hit = -1;
+            report_break();
             return;
         }
         switch (steptype) {
         case Step::STEP:
             report_step();
             return;
+        // Not a very good implementation of a next command, I admit.
+        // But a perfect one is quite complex.
         case Step::NEXT:
-            report_step();
-            return;
-        case Step::FRAME:
-            report_step();
-            return;
+            if (cpudbg.getreg(CPUDebugger::Reg::PC) == last_pc + Core::num_bytes(last_instr.id)) {
+                report_step();
+                return;
+            }
+            break;
+        case Step::FRAME: {
+            // Check if we're at the NMI handler
+            uint16 addr = readmem(Core::NMI_VEC+1) << 8 | readmem(Core::NMI_VEC);
+            if (cpudbg.getreg(CPUDebugger::Reg::PC) == addr) {
+                report_step();
+                return;
+            }
+            break;
+        }
         case Step::NONE:
             break;
         }
@@ -89,20 +111,14 @@ void Debugger::start_tracing(Util::File &&f)
 
 void Debugger::fetch_callback(uint16 addr, char mode)
 {
-    // tracing
     if (mode == 'x' && tracefile)
         trace();
 
-    // check if we've reached a breakpoint
+    // Check if we've reached a breakpoint
     auto it = std::find_if(breakvec.begin(), breakvec.end(),
                   [addr, mode](const Breakpoint &b) { return b.test(addr, mode); });
-    if (it != breakvec.end()) {
+    if (it != breakvec.end())
         break_hit = it - breakvec.begin();
-        Event ev;
-        ev.tag = Event::Tag::BREAK;
-        ev.bp_index = break_hit;
-        report_callback(std::move(ev));
-    }
 }
 
 void Debugger::error_callback(uint8 id, uint16 addr)
