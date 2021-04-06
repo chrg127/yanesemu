@@ -7,3 +7,4 @@ tags
 *.nes
 test/smbdis.asm
 testrom/smbdis.asm
+.idea
