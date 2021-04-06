@@ -1,16 +1,17 @@
 programname := emu
 profile := debug
 _objs_main := \
-	main.o \
-	emulator.o bus.o cartridge.o cpu.o ppu.o debugger.o instrinfo.o clidbg.o \
+	emulator.o bus.o cartridge.o cpu.o ppu.o instrinfo.o \
+	debugger.o clidbg.o cpudebugger.o ppudebugger.o \
 	cmdline.o easyrandom.o file.o stringops.o settings.o \
 	video.o opengl.o \
-	glad.o
+	glad.o \
+	main.o
 _objs_video_test := video_test.o video.o opengl.o glad.o
 _objs_ppu_test := ppu_test.o cpu.o ppu.o bus.o video.o opengl.o glad.o cartridge.o file.o easyrandom.o
 libs := -lm -lSDL2 -lfmt
 
-VPATH := emu:emu/core:emu/util:emu/io:emu/video:tests
+VPATH := emu:emu/core:emu/util:emu/io:emu/video:emu/debugger:tests
 CC := gcc
 CXX := g++
 CFLAGS := -I. -std=c11
