@@ -268,7 +268,7 @@ void CPU::interrupt()
     cycle();
     push(r.pc.high);
     push(r.pc.low);
-    push(r.flags);
+    push((uint8) r.flags);
     // reset this here just in case
     r.flags.breakf = 0;
     r.flags.intdis = 1;

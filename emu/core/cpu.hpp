@@ -46,7 +46,7 @@ class CPU {
         bool ov      = 0;
         bool neg     = 0;
 
-        operator uint8() const
+        explicit operator uint8() const
         {
             return carry  << 0  | zero   << 1  | intdis << 2 | decimal << 3 |
                    breakf << 4  | unused << 5  | ov     << 6 | neg     << 7;

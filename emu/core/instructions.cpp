@@ -495,7 +495,7 @@ void CPU::instr_php()
     // one cycle for reading next instruction and throwing away
     cycle();
     r.flags.breakf = 1;
-    push(r.flags);
+    push((uint8) r.flags);
     r.flags.breakf = 0;
     last_cycle();
 }
