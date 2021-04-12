@@ -14,7 +14,6 @@ uint16 CPUDebugger::getreg(Reg reg) const
     case Reg::Y:     return cpu->r.y;
     case Reg::PC:    return cpu->r.pc.full;
     case Reg::SP:    return cpu->r.sp;
-    case Reg::FLAGS: return (uint16) cpu->r.flags;
     default:    return 0;
     }
 }
@@ -27,7 +26,30 @@ void CPUDebugger::setreg(Reg reg, uint16 value)
     case Reg::Y:     cpu->r.y    = value; break;
     case Reg::PC:    cpu->r.pc   = value; break;
     case Reg::SP:    cpu->r.sp   = value; break;
-    case Reg::FLAGS: cpu->r.flags = value; break;
+    }
+}
+
+bool CPUDebugger::getflag(Flag flag) const
+{
+    switch (flag) {
+    case Flag::CARRY:  return cpu->r.flags.carry;
+    case Flag::ZERO:   return cpu->r.flags.zero;
+    case Flag::INTDIS: return cpu->r.flags.intdis;
+    case Flag::DEC:    return cpu->r.flags.decimal;
+    case Flag::OV:     return cpu->r.flags.ov;
+    case Flag::NEG:    return cpu->r.flags.neg;
+    }
+}
+
+void CPUDebugger::setflag(Flag flag, bool value)
+{
+    switch (flag) {
+    case Flag::CARRY:  cpu->r.flags.carry   = value; break;
+    case Flag::ZERO:   cpu->r.flags.zero    = value; break;
+    case Flag::INTDIS: cpu->r.flags.intdis  = value; break;
+    case Flag::DEC:    cpu->r.flags.decimal = value; break;
+    case Flag::OV:     cpu->r.flags.ov      = value; break;
+    case Flag::NEG:    cpu->r.flags.neg     = value; break;
     }
 }
 
@@ -86,5 +108,5 @@ unsigned long CPUDebugger::cycles()
     return cpu->cycles();
 }
 
-
 } // namespace Core
+
