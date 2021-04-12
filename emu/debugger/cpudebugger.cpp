@@ -38,6 +38,7 @@ bool CPUDebugger::getflag(Flag flag) const
     case Flag::DEC:    return cpu->r.flags.decimal;
     case Flag::OV:     return cpu->r.flags.ov;
     case Flag::NEG:    return cpu->r.flags.neg;
+    default: return 0;
     }
 }
 
@@ -51,6 +52,11 @@ void CPUDebugger::setflag(Flag flag, bool value)
     case Flag::OV:     cpu->r.flags.ov      = value; break;
     case Flag::NEG:    cpu->r.flags.neg     = value; break;
     }
+}
+
+uint16 CPUDebugger::get_vector_addr(uint16 vector)
+{
+    return cpu->bus->read(vector+1) << 8 | cpu->bus->read(vector);
 }
 
 CPUDebugger::Instruction CPUDebugger::curr_instr()

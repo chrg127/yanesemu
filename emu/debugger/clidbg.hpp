@@ -34,8 +34,8 @@ enum Command {
 
 class CliDebugger {
     Debugger dbg;
-    Command cmd;
-    std::vector<std::string> args;
+    Command last_cmd;
+    std::vector<std::string> last_args;
     bool quit = false;
 
 public:
@@ -44,11 +44,12 @@ public:
 
 private:
     void repl();
-    void eval();
+    void eval(Command cmd, std::vector<std::string> args);
     void report_event(Debugger::Event &&ev);
     void print_instr();
     void print_cpu_status();
     void print_ppu_status();
+    std::string format_flags();
 };
 
 } // namespace Debugger

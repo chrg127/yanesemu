@@ -224,7 +224,7 @@ std::string disassemble(const uint8 id, const uint8 oplow, const uint8 ophigh)
 
     const auto disass_impld = [&](const char name[4]) { return std::string(name); };
     modefmt(accum,  "{} A",                 1, name);
-    modefmt(branch, "{} {}",                2, name, (int8_t) oplow);
+    modefmt(branch, "{} {:X}",              2, name, (int8_t) oplow);
     modefmt(imm,    "{} #${:02X}",          2, name, oplow);
     modefmt(zero,   "{} ${:02X}",           2, name, oplow);
     modefmt(zerox,  "{} ${:02X},x",         2, name, oplow);
