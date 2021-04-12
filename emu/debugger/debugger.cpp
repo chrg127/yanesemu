@@ -11,83 +11,97 @@ namespace Debugger {
 Debugger::Debugger(Core::Emulator *e)
     : emu(e), cpudbg(&emu->cpu)
 {
-    emu->cpu.on_fetch([this](uint16 addr, char mode) { fetch_callback(addr, mode); });
+    // emu->cpu.on_fetch([this](uint16 addr, char mode) { fetch_callback(addr, mode); });
     emu->cpu.on_error([this](uint8 id, uint16 addr)  { error_callback(id, addr); });
+}
+
+int Debugger::test_breakpoints()
+{
+    const uint16 pc = cpudbg.getreg(CPUDebugger::Reg::PC);
+    auto it = std::find_if(break_list.begin(), break_list.end(),
+            [pc](const Breakpoint &b)
+            {
+                switch (b.mode) {
+                case 'x': return pc >= b.start && pc <= b.end;
+                default: return false;
+                }
+            });
+    return it == break_list.end() ? -1 : it - break_list.begin();
 }
 
 void Debugger::run()
 {
-    const auto report_break = [this]() {
+    const auto runloop = [&](auto &&check_step)
+    {
         Event ev;
-        ev.tag = Event::Tag::BREAK;
-        ev.bp_index = break_hit;
+        for (;;) {
+            emu->run();
+            trace();
+            int bhit = test_breakpoints();
+            if (bhit != -1) {
+                ev.tag = Event::Tag::BREAK;
+                ev.bp_index = bhit;
+                break;
+            }
+            if (check_step()) {
+                ev.tag = Event::Tag::STEP;
+                break;
+            }
+        }
         report_callback(std::move(ev));
-    };
-    const auto report_step = [this]() {
-        Event ev;
-        ev.tag = Event::Tag::STEP;
-        report_callback(std::move(ev));
-        steptype = Step::NONE;
+        step_type = StepType::NONE;
     };
 
-    CPUDebugger::Instruction last_instr = cpudbg.curr_instr();
-    uint16 last_pc = cpudbg.getreg(CPUDebugger::Reg::PC);
-
-    for (;;) {
-        emu->run();
-        if (break_hit != -1) {
-            break_hit = -1;
-            report_break();
-            return;
-        }
-        switch (steptype) {
-        case Step::STEP:
-            report_step();
-            return;
-        // Not a very good implementation of a next command, I admit.
-        // But a perfect one is quite complex.
-        case Step::NEXT:
-            if (cpudbg.getreg(CPUDebugger::Reg::PC) == last_pc + Core::num_bytes(last_instr.id)) {
-                report_step();
-                return;
-            }
-            break;
-        case Step::FRAME: {
-            // Check if we're at the NMI handler
-            uint16 addr = readmem(Core::NMI_VEC+1) << 8 | readmem(Core::NMI_VEC);
-            if (cpudbg.getreg(CPUDebugger::Reg::PC) == addr) {
-                report_step();
-                return;
-            }
-            break;
-        }
-        case Step::NONE:
-            break;
-        }
+    switch (step_type) {
+    case StepType::STEP:
+        runloop([]() { return true; });
+        break;
+    case StepType::NEXT: {
+        int cont = 0;
+        uint8 id = cpudbg.curr_instr().id;
+        runloop([&]()
+            {
+                switch (id) {
+                case 0x20: cont++; break;
+                case 0x60: cont--; break;
+                }
+                id = cpudbg.curr_instr().id;
+                return cont <= 0;
+            });
+        break;
+    }
+    case StepType::FRAME: {
+        uint16 addr = cpudbg.get_vector_addr(Core::NMI_VEC);
+        runloop([&]() { return cpudbg.getreg(CPUDebugger::Reg::PC) == addr; });
+        break;
+    }
+    case StepType::NONE:
+        runloop([]() { return false; });
+        break;
     }
 }
 
 void Debugger::step()
 {
-    steptype = Step::STEP;
+    step_type = StepType::STEP;
     run();
 }
 
 void Debugger::next()
 {
-    steptype = Step::NEXT;
+    step_type = StepType::NEXT;
     run();
 }
 
-void Debugger::runframe()
+void Debugger::advance()
 {
-    steptype = Step::FRAME;
+    step_type = StepType::NONE;
     run();
 }
 
-void Debugger::continue_exec()
+void Debugger::advance_frame()
 {
-    steptype = Step::NONE;
+    step_type = StepType::FRAME;
     run();
 }
 
@@ -103,22 +117,20 @@ void Debugger::writemem(uint16 addr, uint8 value)
     emu->rambus.write(addr, value);
 }
 
-void Debugger::start_tracing(Util::File &&f)
+unsigned Debugger::set_breakpoint(Breakpoint &&bp)
 {
-    stop_tracing();
-    tracefile = std::move(f);
+    auto it = std::find_if(break_list.begin(), break_list.end(),
+            [](const Breakpoint &b) { return b.mode == 'n'; });
+    if (it != break_list.end()) {
+        *it = bp;
+        return it - break_list.begin();
+    }
+    break_list.push_back(bp);
+    return break_list.size() - 1;
 }
 
 void Debugger::fetch_callback(uint16 addr, char mode)
 {
-    if (mode == 'x' && tracefile)
-        trace();
-
-    // Check if we've reached a breakpoint
-    auto it = std::find_if(breakvec.begin(), breakvec.end(),
-                  [addr, mode](const Breakpoint &b) { return b.test(addr, mode); });
-    if (it != breakvec.end())
-        break_hit = it - breakvec.begin();
 }
 
 void Debugger::error_callback(uint8 id, uint16 addr)
@@ -132,6 +144,8 @@ void Debugger::error_callback(uint8 id, uint16 addr)
 
 void Debugger::trace()
 {
+    if (!tracefile)
+        return;
     fmt::print(tracefile.data(),
         "PC: ${:04X} A: ${:02X} X: ${:02X} Y: ${:02X} SP: ${:02X} {} "
         "V: {:04X}"

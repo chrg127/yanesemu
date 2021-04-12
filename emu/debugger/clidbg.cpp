@@ -2,40 +2,40 @@
 
 #include <unordered_map>
 #include <fmt/core.h>
-#include <emu/util/unsigned.hpp>
+#include <emu/core/const.hpp>
 #include <emu/core/instrinfo.hpp>
-#include <emu/core/cpu.hpp> // CPU::Status
-#include <emu/core/ppu.hpp> // PPU::Status
 #include <emu/debugger/debugger.hpp>
+#include <emu/util/unsigned.hpp>
 #include <emu/util/stringops.hpp>
 #include <emu/util/file.hpp>
+#include <emu/util/stlutil.hpp>
 
 namespace Debugger {
 
-//  name                abbrev  enum           min args    description
+//  name                abbrev  enum           min args max args
 #define O(X) \
-    X("help",           "h",    HELP,          0,          "prints this help text") \
-    X("continue",       "c",    CONTINUE,      0,          "start/continue execution") \
-    X("runframe",       "nmi",  RUNFRAME,      0,          "run entire frame, stop at nmi handler") \
-    X("break",          "b",    BREAK,         2,          "set a breakpoint") \
-    X("listbreaks",     "lb",   LIST_BREAK,    0,          "list breakpoints") \
-    X("deletebreak",    "dlb",  DELBREAK,      1,          "delete a breakpoint") \
-    X("backtrace",      "bt",   BACKTRACE,     0,          "prints the backtrace") \
-    X("next",           "n",    NEXT,          0,          "run next instruction") \
-    X("step",           "s",    STEP,          0,          "step next instruction") \
-    X("status",         "st",   STATUS,        0,          "print current status") \
-    X("read",           "rd",   READ_ADDR,     1,          "read address") \
-    X("write",          "wr",   WRITE_ADDR,    2,          "write address") \
-    X("block",          "bl",   BLOCK,         2,          "read block") \
-    X("disassemble",    "dis",  DISASSEMBLE,   1,          "disassemble the current instruction") \
-    X("disblock",       "disb", DISBLOCK,      2,          "disassemble a given block") \
-    X("trace",          "tr",   TRACE,         1,          "") \
-    X("stoptrace",      "str",  STOP_TRACE,    0,          "") \
-    X("reset",          "res",  RESET,         0,          "reset the machine") \
-    X("quit",           "q",    QUIT,          0,          "quit the emulator") \
+    X("help",           "h",    HELP,          0,       1,          "prints this help text") \
+    X("continue",       "c",    CONTINUE,      0,       0,          "start/continue execution") \
+    X("runframe",       "nmi",  RUNFRAME,      0,       0,          "run entire frame, stop at nmi handler") \
+    X("break",          "b",    BREAK,         2,       3,          "set a breakpoint") \
+    X("listbreaks",     "lb",   LIST_BREAK,    0,       0,          "list breakpoints") \
+    X("deletebreak",    "dlb",  DELBREAK,      1,       1,          "delete a breakpoint") \
+    X("backtrace",      "bt",   BACKTRACE,     0,       0,          "prints the backtrace") \
+    X("next",           "n",    NEXT,          0,       0,          "run next instruction") \
+    X("step",           "s",    STEP,          0,       0,          "step next instruction") \
+    X("status",         "st",   STATUS,        0,       1,          "print current status") \
+    X("read",           "rd",   READ_ADDR,     1,       1,          "read address") \
+    X("write",          "wr",   WRITE_ADDR,    2,       2,          "write address") \
+    X("block",          "bl",   BLOCK,         2,       2,          "read block") \
+    X("disassemble",    "dis",  DISASSEMBLE,   1,       3,          "disassemble the current instruction") \
+    X("disblock",       "disb", DISBLOCK,      2,       2,          "disassemble a given block") \
+    X("trace",          "tr",   TRACE,         1,       1,          "") \
+    X("stoptrace",      "str",  STOP_TRACE,    0,       0,          "") \
+    X("reset",          "res",  RESET,         0,       0,          "reset the machine") \
+    X("quit",           "q",    QUIT,          0,       0,          "quit the emulator") \
 
-#define X(name, abbrev, enumname, minargs, desc) { name, enumname }, { abbrev, enumname },
-static const std::unordered_map<std::string, Command> cmd_strtab = {
+#define X(name, abbrev, enumname, minargs, maxargs, desc) { name, enumname }, { abbrev, enumname },
+static const std::unordered_map<std::string, Command> name_lookup = {
     O(X)
 };
 #undef X
@@ -45,12 +45,13 @@ struct CommandInfo {
     std::string desc;
     std::string abbrev;
     unsigned minargs;
+    unsigned maxargs;
 };
 
-#define X(name, abbrev, enumname, minargs, desc) { enumname, CommandInfo{ name, desc, abbrev, minargs } },
-static std::unordered_map<Command, CommandInfo> cmd_infotab = {
+#define X(name, abbrev, enumname, minargs, maxargs, desc) { enumname, CommandInfo{ name, desc, abbrev, minargs, maxargs } },
+static const std::unordered_map<Command, CommandInfo> info_lookup = {
     O(X)
-    { Command::INVALID, CommandInfo{ "", "", "", 0 } },
+    { Command::INVALID, CommandInfo{ "", "This command is invalid.", "", 0, 0 } },
 };
 #undef X
 
@@ -75,15 +76,14 @@ reset, res:         reset the machine
 quit, q:            quit the emulator
 )";
 
+// Prints a whole block. Start and end are both inclusive (to allow reads of
+// 0000-FFFF).
 static void print_block(uint16 start, uint16 end, auto &&readvalue)
 {
-    for (uint16 i = 0; i < (end - start); ) {
+    for (int i = 0; i <= (end - start); ) {
         fmt::print("{:04X}: ", i + start);
-        for (uint16 j = 0; j < 16 && i + start < end; j++) {
-            uint8 val = readvalue(i + start);
-            fmt::print("{:02X} ", val);
-            i++;
-        }
+        for (int j = 0; j < 16 && i + start <= end; i++, j++)
+            fmt::print("{:02X} ", readvalue(i + start));
         fmt::print("\n");
     }
 }
@@ -92,7 +92,9 @@ static void block_command(const std::vector<std::string> &args, auto &&process)
 {
     auto start = Util::strconv<uint16>(args[0], 16);
     auto end   = Util::strconv<uint16>(args[1], 16);
-    if (!start || !end || end.value() <= start.value())
+    if (!start || !end)
+        fmt::print("Invalid value found while parsing arguments.\n");
+    else if (end.value() <= start.value())
         fmt::print("Invalid range.\n");
     else
         process(start.value(), end.value());
@@ -115,41 +117,50 @@ void CliDebugger::repl()
     Util::File input{stdin};
     std::string cmdstr, argsstr;
 
-    do {
-        fmt::print("> ");
-
-        // parse command
+    while (!quit) {
+        fmt::print("[NESDBG]> ");
         if (!input.getword(cmdstr) || !input.getline(argsstr))
             return;
-        if (!cmdstr.empty()) {
-            auto it = cmd_strtab.find(cmdstr);
-            cmd  = it != cmd_strtab.end() ? it->second : Command::INVALID;
-            args = it != cmd_strtab.end() ? Util::strsplit(argsstr, ' ') : std::vector<std::string>{};
+        if (cmdstr.empty())
+            eval(last_cmd, last_args);
+        else {
+            last_cmd = Util::map_lookup_withdef(name_lookup, cmdstr, Command::INVALID);
+            last_args = last_cmd != Command::INVALID
+                      ? Util::strsplit(argsstr, ' ')
+                      : std::vector<std::string>{};
+            eval(last_cmd, last_args);
         }
-        if (const auto &info = cmd_infotab.find(cmd)->second; args.size() < info.minargs) {
-            fmt::print("Not enough arguments for command {}. Try 'help'.\n", info.name);
-            continue;
-        }
-
-        eval();
-    } while (!quit);
+    }
 }
 
-void CliDebugger::eval()
+void CliDebugger::eval(Command cmd, std::vector<std::string> args)
 {
+    const auto &info = info_lookup.find(cmd)->second;
+    if (args.size() < info.minargs ) {
+        fmt::print("Not enough arguments for command {}. Try 'help'.\n", info.name);
+        return;
+    } else if (args.size() > info.maxargs) {
+        fmt::print("Too many arguments for command {}. Try 'help'.\n", info.name);
+        return;
+    }
+
     switch (cmd) {
 
     case Command::HELP:
-        fmt::print("{}", helpstr);
+        if (args.size() == 1) {
+            Command cmd = Util::map_lookup_withdef(name_lookup, args[0], Command::INVALID);
+            fmt::print("{}\n", info_lookup.find(cmd)->second.desc);
+        } else
+            fmt::print("{}", helpstr);
         break;
 
     case Command::CONTINUE:
         fmt::print("Continuing.\n");
-        dbg.continue_exec();
+        dbg.advance();
         break;
 
     case Command::RUNFRAME:
-        dbg.runframe();
+        dbg.advance_frame();
         break;
 
     case Command::NEXT:
@@ -172,7 +183,7 @@ void CliDebugger::eval()
             fmt::print("Invalid range.\n");
             break;
         }
-        unsigned i = dbg.setbreak({ .start = start.value(), .end = end.value(), .mode = mode });
+        unsigned i = dbg.set_breakpoint({ .start = start.value(), .end = end.value(), .mode = mode });
         fmt::print("Set breakpoint #{} to {:04X}-{:04X}.\n", i, start.value(), end.value());
         break;
     }
@@ -182,7 +193,7 @@ void CliDebugger::eval()
         if (!index || index >= dbg.breakpoints().size())
             fmt::print("Index not valid.\n");
         else {
-            dbg.delbreak(index.value());
+            dbg.delete_breakpoint(index.value());
             fmt::print("Breakpoint #{} deleted.\n", index.value());
         }
         break;
@@ -190,11 +201,12 @@ void CliDebugger::eval()
 
     case Command::LIST_BREAK: {
         const auto &breaks = dbg.breakpoints();
-        if (breaks.empty())
-            fmt::print("No breakpoints set.\n");
-        else
-            for (const auto &x : breaks)
-                fmt::print("#: {:04X}-{:04X}, mode: {}\n", x.start, x.end, x.mode);
+        for (std::size_t i = 0; i < breaks.size(); i++) {
+            if (breaks[i].mode == 'n')
+                continue;
+            fmt::print("#{}: {:04X}-{:04X}, mode: {}\n",
+                    i, breaks[i].start, breaks[i].end, breaks[i].mode);
+        }
         break;
     }
 
@@ -222,7 +234,7 @@ void CliDebugger::eval()
     case Command::READ_ADDR: {
         auto addr = Util::strconv<uint16>(args[0], 16);
         if (!addr)
-            fmt::print("Invalid address: {}.\n", args[0]);
+            fmt::print("Invalid value found while parsing command arguments.\n");
         else
             fmt::print("{:02X}\n", dbg.readmem(addr.value()));
         break;
@@ -247,14 +259,13 @@ void CliDebugger::eval()
         });
         break;
 
-    case Command::DISBLOCK: {
+    case Command::DISBLOCK:
         block_command(args, [&](uint16 start, uint16 end) {
             Core::disassemble_block(start, end,
                               [&](uint16 addr) { return dbg.readmem(addr); },
-                              [] (uint16 addr, std::string &&s) { fmt::print("${:04X}: {}\n", addr, s); });
+                              [ ](uint16 addr, std::string &&s) { fmt::print("${:04X}: {}\n", addr, s); });
         });
         break;
-    }
 
     case Command::TRACE: {
         Util::File f(args[0], Util::Access::WRITE);
@@ -302,9 +313,8 @@ void CliDebugger::report_event(Debugger::Event &&ev)
 
 void CliDebugger::print_instr()
 {
-    fmt::print("${:04X}: {}\n",
-            dbg.cpudbg.getreg(CPUDebugger::Reg::PC),
-            dbg.cpudbg.curr_instr_str());
+    fmt::print("${:04X}: {}\n", dbg.cpudbg.getreg(CPUDebugger::Reg::PC),
+                                dbg.cpudbg.curr_instr_str());
 }
 
 void CliDebugger::print_cpu_status()

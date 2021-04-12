@@ -53,6 +53,11 @@ void CPUDebugger::setflag(Flag flag, bool value)
     }
 }
 
+uint16 CPUDebugger::get_vector_addr(uint16 vector)
+{
+    return cpu->bus->read(vector+1) << 8 | cpu->bus->read(vector);
+}
+
 CPUDebugger::Instruction CPUDebugger::curr_instr()
 {
     return {

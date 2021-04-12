@@ -24,7 +24,11 @@ public:
     { }
 
     enum class Reg {
-        ACC, X, Y, PC, SP, FLAGS,
+        ACC, X, Y, PC, SP,
+    };
+
+    enum class Flag {
+        NEG, OV, DEC, INTDIS, ZERO, CARRY,
     };
 
     struct Instruction {
@@ -32,7 +36,10 @@ public:
     };
 
     uint16 getreg(Reg reg) const;
+    bool getflag(Flag flag) const;
     void setreg(Reg reg, uint16 value);
+    void setflag(Flag flag, bool value);
+    uint16 get_vector_addr(uint16 vector);
     Instruction curr_instr();
     std::string curr_instr_str();
     std::string curr_flags_str();
@@ -44,7 +51,14 @@ class PPUDebugger {
 
 public:
     enum class Reg {
-        CTRL, MASK, STATUS, OAMADDR, OAMDATA, PPUADDR, PPUSCROLL, PPUDATA,
+        CTRL,
+        MASK,
+        STATUS,
+        OAMADDR,
+        OAMDATA,
+        PPUADDR,
+        PPUSCROLL,
+        PPUDATA,
     };
 
     struct Position {
@@ -76,24 +90,24 @@ struct Debugger {
         uint16 end;
         char mode;
 
-        bool operator==(const Breakpoint &b) { return start == b.start && end == b.end && mode == b.mode; };
+        // bool operator==(const Breakpoint &b) { return start == b.start && end == b.end && mode == b.mode; };
         bool test(uint16 addr, char mode) const { return this->mode == mode && addr >= start && addr <= end; };
-    };
-
-    enum class Step {
-        STEP,
-        NEXT,
-        FRAME,
-        NONE,
     };
 
 private:
     Core::Emulator *emu;
-    Step steptype = Step::NONE;
-    std::vector<Breakpoint> breakvec;
+    std::function<void (Event &&)> report_callback;
+
+    enum class StepType {
+        STEP,
+        NEXT,
+        FRAME,
+        NONE,
+    } step_type = StepType::NONE;
+
+    std::vector<Breakpoint> break_list;
     int break_hit = -1;
     Util::File tracefile;
-    std::function<void(Event &&)> report_callback;
 
 public:
     CPUDebugger cpudbg;
@@ -106,23 +120,32 @@ public:
 
     void step();
     void next();
-    void runframe();
-    void continue_exec();
+    void advance();
+    void advance_frame();
 
     uint8 readmem(uint16 addr);
     void writemem(uint16 addr, uint8 value);
 
-    unsigned setbreak(Breakpoint &&p) { breakvec.push_back(p); return breakvec.size() - 1; }
-    void delbreak(unsigned index)     { breakvec.erase(breakvec.begin() + index); }
+    unsigned set_breakpoint(Breakpoint &&p);
+    void delete_breakpoint(unsigned index)
+    {
+        break_list[index].mode = 'n';
+    }
 
-    void start_tracing(Util::File &&f);
+    std::vector<Breakpoint> breakpoints() const { return break_list; }
+
+    void start_tracing(Util::File &&f)
+    {
+        stop_tracing();
+        tracefile = std::move(f);
+    }
+
     void stop_tracing() { tracefile.close(); }
-
-    std::vector<Breakpoint> breakpoints() const { return breakvec; }
 
 private:
     void fetch_callback(uint16 addr, char mode);
     void error_callback(uint8 id, uint16 addr);
+    int test_breakpoints();
     void trace();
 };
 
