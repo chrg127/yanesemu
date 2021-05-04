@@ -12,7 +12,7 @@ class ImageTexture;
 
 struct Context {
     struct Impl {
-        virtual ~Impl() { }
+        virtual ~Impl() = default;
         virtual bool init() = 0;
         virtual void resize(int newwidth, int newheight) = 0;
         // these 3 methods should only be called by Texture

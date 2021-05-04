@@ -31,7 +31,7 @@ int cli_interface()
 
     emu.set_screen(&screen);
     emu.power();
-    fmt::print(stderr, "{}\n", emu.rominfo());
+    fmt::print("{}\n", emu.rominfo());
     while (running) {
         while (SDL_PollEvent(&ev)) {
             switch (ev.type) {

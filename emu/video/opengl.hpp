@@ -17,14 +17,14 @@ class OpenGL : public Context::Impl {
     void create_objects();
 
 public:
-    ~OpenGL();
+    ~OpenGL() override;
 
-    bool init();
-    void resize(int width, int height);
-    unsigned create_texture(std::size_t texw, std::size_t texh, unsigned char *data = nullptr);
-    void update_texture(unsigned id, std::size_t texw, std::size_t texh, unsigned char *data);
-    void use_texture(unsigned id);
-    void draw();
+    bool init() override;
+    void resize(int width, int height) override;
+    unsigned create_texture(std::size_t texw, std::size_t texh, unsigned char *data = nullptr) override;
+    void update_texture(unsigned id, std::size_t texw, std::size_t texh, unsigned char *data) override;
+    void use_texture(unsigned id) override;
+    void draw() override;
 };
 
 } // namespace Video
