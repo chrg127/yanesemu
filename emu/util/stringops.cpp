@@ -1,4 +1,4 @@
-#include <emu/util/stringops.hpp>
+#include "stringops.hpp"
 
 namespace Util {
 
@@ -19,6 +19,38 @@ std::vector<std::string> strsplit(const std::string &s, int delim)
         i = p+1;
     }
     return res;
+}
+
+std::string trim(const std::string &str)
+{
+    auto i = str.begin();
+    auto j = str.end() - 1;
+    while (is_space(*i))
+        i++;
+    while (is_space(*j))
+        j--;
+    return std::string(i, j+1);
+}
+
+std::string ltrim(const std::string &str)
+{
+    auto i = str.begin();
+    while (is_space(*i))
+        i++;
+    return std::string(i, str.end());
+}
+
+std::string rtrim(const std::string &str)
+{
+    auto i = str.end() - 1;
+    while (is_space(*i))
+        i--;
+    return std::string(str.begin(), i+1);
+}
+
+bool check_terminator(std::string_view str)
+{
+    return str.back() == '\0';
 }
 
 } // namespace Util

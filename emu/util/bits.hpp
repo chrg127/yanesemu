@@ -15,7 +15,7 @@ constexpr inline uint64_t get_mask_nbits(uint8_t nbits)
 }
 
 /* Routines for getting/settings bits at once. More readable, and thus
- * preferable, than using naked complicated bit operations. */
+ * preferable, than using naked bit operations. */
 constexpr inline uint64_t getbits(uint64_t num, uint8_t bitno, uint8_t nbits)
 {
     return num >> bitno & nbits;

@@ -1,8 +1,6 @@
-#include <emu/util/file.hpp>
+#include "file.hpp"
 
-#include <cerrno>
-#include <system_error>
-#include <emu/util/debug.hpp>
+#include "debug.hpp"
 
 static FILE *open_file(const char *name, Util::Access access)
 {
@@ -22,31 +20,28 @@ static bool is_space(int c)
 
 namespace Util {
 
-std::string syserr()
-{
-    return std::make_error_code(static_cast<std::errc>(errno)).message();
-}
-
 bool File::open(std::string_view pathname, Access access)
 {
     close();
-    fp = open_file(pathname.data(), access);
+    std::string pathname_copied = std::string(pathname);
+    fp = open_file(pathname_copied.c_str(), access);
     if (!fp)
         return false;
-    filname = std::string(pathname);
+    name = pathname_copied;
     return true;
 }
 
-long File::filesize() const
+void File::reopen(Access access)
 {
-    long curr = std::ftell(fp);
-    std::fseek(fp, 0L, SEEK_END);
-    long size = std::ftell(fp);
-    std::fseek(fp, curr, SEEK_SET);
-    return size;
+    switch (access) {
+    case Util::Access::READ:   fp = freopen(name.c_str(), "rb",  fp); break;
+    case Util::Access::WRITE:  fp = freopen(name.c_str(), "wb",  fp); break;
+    case Util::Access::APPEND: fp = freopen(name.c_str(), "ab",  fp); break;
+    case Util::Access::MODIFY: fp = freopen(name.c_str(), "rb+", fp); break;
+    }
 }
 
-/* getword and getline have different enough semantics that we really
+/* getword() and getline() have different enough semantics that we really
  * should not try to generalize them */
 bool File::getword(std::string &str)
 {

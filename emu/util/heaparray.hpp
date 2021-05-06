@@ -1,6 +1,7 @@
 #ifndef UTIL_HEAPARRAY_HPP_INCLUDED
 #define UTIL_HEAPARRAY_HPP_INCLUDED
 
+#include <cstring>
 #include <iterator>
 
 namespace Util {
@@ -21,10 +22,12 @@ class HeapArray {
     T *arrptr;
 
 public:
-    HeapArray() : len(0), arrptr(nullptr) { }
+    HeapArray()
+        : len(0), arrptr(nullptr)
+    { }
 
-    explicit HeapArray(std::size_t l)
-        : len(l), arrptr(new T[len])
+    explicit HeapArray(std::size_t n)
+        : len(n), arrptr(new T[len])
     { }
 
     HeapArray(std::initializer_list<T> lst)
@@ -35,22 +38,28 @@ public:
             arrptr[i++] = x;
     }
 
+    ~HeapArray()
+    {
+        if (arrptr)
+            delete[] arrptr;
+    }
+
     HeapArray(const HeapArray &a) { operator=(a); }
+    HeapArray(HeapArray &&a) { operator=(std::move(a)); }
 
     HeapArray<T> & operator=(const HeapArray<T> &arr)
     {
-        std::size_t size = arr.size();
-        reset(size);
-        for (std::size_t i = 0; i != size; i++)
+        reset(arr.size());
+        for (std::size_t i = 0; i != arr.size(); i++)
             arrptr[i] = std::move(arr[i]);
         return *this;
     }
 
     HeapArray<T> & operator=(HeapArray<T> &&arr)
     {
-        len = arr.len;
+        len    = arr.len;
         arrptr = arr.arrptr;
-        arr.len = 0;
+        arr.len    = 0;
         arr.arrptr = nullptr;
         return *this;
     }
@@ -59,27 +68,43 @@ public:
 
     bool operator==(const HeapArray<T> &arr)
     {
-        for (std::size_t i = 0; i != arr.size(); i++)
-            if (arrptr[i] != arr[i])
-                return false;
-        return true;
+        if (len != arr.len)
+            return false;
+        return std::memcmp(arrptr, arr.arrptr, len * sizeof(T)) == 0;
     }
 
-    void clear()
+    T & at(std::size_t i) const
     {
-        for (std::size_t i = 0; i < len; i++)
-            arrptr[i] = 0;
+        assert(!clear() && i < len && "index out of bounds for this heaparray.");
+        return operator[](i);
     }
 
-    inline void reset(std::size_t newlen)
+    void reset(std::size_t newlen)
     {
         len = newlen;
+        if (arrptr)
+            delete[] arrptr;
         arrptr = new T[len];
     }
 
+    void shrink(std::size_t newlen)
+    {
+        if (len == newlen)
+            return;
+        T *newarr = new T[newlen];
+        if (arrptr) {
+            for (std::size_t i = 0; i < newlen; i++)
+                newarr[i] = std::move(arrptr[i]);
+            delete[] arrptr;
+        }
+        arrptr = newarr;
+        len    = newlen;
+    }
+
+    void clear()             { std::memset(arrptr, 0, len * sizeof(T)); }
     std::size_t size() const { return len; }
-    bool empty() const       { return len == 0; }
-    inline T *data() const   { return arrptr; }
+    bool empty() const       { return !arrptr || len == 0; }
+    T *data() const          { return arrptr; }
 
     // iterator support
     using value_type      = T;
@@ -120,8 +145,42 @@ public:
         pointer     operator->()                        { return &arr[index]; }
     };
 
+    class const_iterator {
+        const HeapArray *arr;
+        std::size_t index = 0;
+    public:
+        using iterator_category = std::random_access_iterator_tag;
+        using value_type      = T;
+        using const_reference = const T &;
+        using const_pointer   = const T *;
+        using difference_type = std::ptrdiff_t;
+
+        explicit const_iterator(const HeapArray *a)       : arr(a) { }
+        const_iterator(const HeapArray *a, std::size_t i) : arr(a), index(i) { }
+        const_iterator(const const_iterator &i)                 : arr(i.arr), index(i.index) { }
+        const_iterator &  operator= (const iterator &i)       { arr = i.arr; index = i.index; return *this; }
+        const_iterator &  operator++()                        { index++; return *this; }
+        const_iterator &  operator--()                        { index--; return *this; }
+        const_iterator    operator++(int)                     { const_iterator res(*this, index); ++(*this); return res; }
+        const_iterator    operator--(int)                     { const_iterator res(*this, index); --(*this); return res; }
+        const_iterator &  operator+=(std::size_t n)           { index += n; return *this; }
+        const_iterator &  operator-=(std::size_t n)           { index -= n; return *this; }
+        const_iterator    operator+ (std::size_t n) const     { return iterator(arr, index+n); }
+        const_iterator    operator- (std::size_t n) const     { return iterator(arr, index-n); }
+        std::size_t operator+ (const const_iterator &i) const { return index + i.index; }
+        std::size_t operator- (const const_iterator &i) const { return index - i.index; }
+        bool        operator==(const const_iterator &i) const { return arr == i.arr && index == i.index; }
+        bool        operator!=(const const_iterator &i) const { return arr != i.arr || index != i.index; }
+        bool        operator< (const const_iterator &i) const { return index < i.index; }
+        const_reference operator*() const               { return (*arr)[index]; }
+        const_pointer   operator->()                    { return &arr[index]; }
+    };
+
     iterator begin() { return iterator(this, 0); }
     iterator end()   { return iterator(this, len); }
+
+    const_iterator begin() const { return const_iterator(this, 0); }
+    const_iterator end() const   { return const_iterator(this, len); }
 };
 
 } // namespace Util

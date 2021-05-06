@@ -6,8 +6,8 @@
 #include <vector>
 
 /* STL collections utilities.
- * These were made for fixing some dumb problems in standard collections.
- * */
+ * These were made for fixing some dumb problems in standard collections. */
+
 namespace Util {
 
 /* Lookup value for a constant map, returning defval if not found.
@@ -21,6 +21,30 @@ const V &map_lookup_withdef(const std::unordered_map<K, V> &m,
 {
     auto it = m.find(key);
     return it == m.end() ? defval : it->second;
+}
+
+/* Makes a visitor object suitable for std::visit().
+ * Example:
+ *     std::variant<int, std::string> var = "hello world";
+ *     auto visitor = make_visitor(
+ *         [](const std::string &str) { printf("%s\n", str.c_str()); }
+ *         [](int n)                  { printf("%d\n", n); }
+ *     );
+ *     std::visit(visitor, var);
+ */
+
+template <typename... T>
+struct Visitor : T... {
+    using T::operator()...;
+
+    Visitor(const T&... args) : T(args)...
+    { }
+};
+
+template <typename... T>
+Visitor<T...> make_visitor(T... lambdas)
+{
+    return Visitor<T...>(lambdas...);
 }
 
 } // namespace Util
