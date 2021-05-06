@@ -172,10 +172,10 @@ static GLuint create_shader(GLuint progid, GLuint type, const char *code, const 
     if (result == GL_FALSE) {
         GLint len = 0;
         glGetShaderiv(sid, GL_INFO_LOG_LENGTH, &len);
-        char infolog[len + 1];
-        glGetShaderInfoLog(sid, len, &len, infolog);
+        auto infolog = std::make_unique<char[]>(len + 1);
+        glGetShaderInfoLog(sid, len, &len, infolog.get());
         infolog[len] = '\0';
-        error("OpenGL: {} compile error: {}\n", name, infolog);
+        error("OpenGL: {} compile error: {}\n", name, infolog.get());
         return 0;
     }
     glAttachShader(progid, sid);
@@ -193,10 +193,10 @@ void OpenGL::create_program()
     if (result == GL_FALSE) {
         GLint len = 0;
         glGetProgramiv(progid, GL_INFO_LOG_LENGTH, &len);
-        char infolog[len + 1];
-        glGetProgramInfoLog(progid, len, &len, infolog);
+        auto infolog = std::make_unique<char[]>(len + 1);
+        glGetProgramInfoLog(progid, len, &len, infolog.get());
         infolog[len] = '\0';
-        error("OpenGL: program link error: {}\n", infolog);
+        error("OpenGL: program link error: {}\n", infolog.get());
     }
     glDeleteShader(vs);
     glDeleteShader(fs);
