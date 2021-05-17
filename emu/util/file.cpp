@@ -1,44 +1,50 @@
 #include "file.hpp"
 
-#include "debug.hpp"
-
-static FILE *open_file(const char *name, Util::Access access)
-{
-    switch (access) {
-    case Util::Access::READ:   return fopen(name, "rb");
-    case Util::Access::WRITE:  return fopen(name, "wb");
-    case Util::Access::APPEND: return fopen(name, "ab");
-    case Util::Access::MODIFY: return fopen(name, "rb+");
-    }
-    panic("invalid value passed to open_file");
-}
+#include <cassert>
 
 static bool is_space(int c)
 {
     return c == ' ' || c == '\t';
-};
+}
 
 namespace Util {
 
-bool File::open(std::string_view pathname, Access access)
+std::optional<File> File::open(std::string_view pathname, Access access)
 {
-    close();
-    std::string pathname_copied = std::string(pathname);
-    fp = open_file(pathname_copied.c_str(), access);
-    if (!fp)
-        return false;
-    name = pathname_copied;
-    return true;
+    const auto open = [](const char *name, Access access) -> FILE *
+    {
+        switch (access) {
+        case Util::Access::READ:   return fopen(name, "rb");
+        case Util::Access::WRITE:  return fopen(name, "wb");
+        case Util::Access::APPEND: return fopen(name, "ab");
+        case Util::Access::MODIFY: return fopen(name, "rb+");
+        default: return nullptr;
+        }
+    };
+    File file;
+    file.name = std::string(pathname);
+    file.fp = open(file.name.c_str(), access);
+    if (!file.fp)
+        return std::nullopt;
+    return file;
 }
 
-void File::reopen(Access access)
+File File::assoc(FILE *fp)
 {
-    switch (access) {
-    case Util::Access::READ:   fp = freopen(name.c_str(), "rb",  fp); break;
-    case Util::Access::WRITE:  fp = freopen(name.c_str(), "wb",  fp); break;
-    case Util::Access::APPEND: fp = freopen(name.c_str(), "ab",  fp); break;
-    case Util::Access::MODIFY: fp = freopen(name.c_str(), "rb+", fp); break;
-    }
+    assert(fp);
+    File file;
+    file.fp = fp;
+    file.name = "";
+    return file;
+}
+
+File::~File()
+{
+    if (!fp || fp == stdin || fp == stdout || fp == stderr)
+        return;
+    fclose(fp);
+    fp = nullptr;
+    name.erase();
 }
 
 /* getword() and getline() have different enough semantics that we really

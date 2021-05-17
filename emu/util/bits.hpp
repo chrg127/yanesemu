@@ -9,7 +9,7 @@ namespace Util {
 
 /* Returns a mask usable to mask off a given number of bits.
  * For example: 3 -> 0b11; 6 -> 0b111111 */
-constexpr inline uint64_t get_mask_nbits(uint8_t nbits)
+constexpr inline uint64_t bitmask(uint8_t nbits)
 {
     return (1UL << nbits) - 1UL;
 }
@@ -18,7 +18,7 @@ constexpr inline uint64_t get_mask_nbits(uint8_t nbits)
  * preferable, than using naked bit operations. */
 constexpr inline uint64_t getbits(uint64_t num, uint8_t bitno, uint8_t nbits)
 {
-    return num >> bitno & nbits;
+    return num >> bitno & bitmask(nbits);
 }
 
 constexpr inline uint64_t getbit(uint64_t num, uint8_t bitno)
@@ -28,7 +28,7 @@ constexpr inline uint64_t getbit(uint64_t num, uint8_t bitno)
 
 constexpr inline uint64_t setbits(uint64_t num, uint8_t bitno, uint8_t nbits, uint64_t data)
 {
-    const uint64_t mask = get_mask_nbits(nbits);
+    const uint64_t mask = bitmask(nbits);
     return (num & ~(mask << bitno)) | (data & mask) << bitno;
 }
 
@@ -64,7 +64,7 @@ struct BitField {
     // of bugs when copying BitFields with the same exact types.
     BitField & operator=(const BitField<T, Bitno, Nbits> &oth) { data = setbits(data, Bitno, Nbits, oth.data); return *this; }
     BitField & operator=(const T val)                          { data = setbits(data, Bitno, Nbits, val);      return *this; }
-    operator uint64_t() const                                  { return (data >> Bitno) & get_mask_nbits(Nbits); }
+    operator uint64_t() const                                  { return (data >> Bitno) & bitmask(Nbits); }
 
     template <typename U> BitField & operator+= (const U val) { *this = *this + val; return *this; }
     template <typename U> BitField & operator-= (const U val) { *this = *this - val; return *this; }

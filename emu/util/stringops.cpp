@@ -48,9 +48,4 @@ std::string rtrim(const std::string &str)
     return std::string(str.begin(), i+1);
 }
 
-bool check_terminator(std::string_view str)
-{
-    return str.back() == '\0';
-}
-
 } // namespace Util

@@ -48,10 +48,6 @@ std::string trim(const std::string &str);
 std::string ltrim(const std::string &str);
 std::string rtrim(const std::string &str);
 
-/* Check for terminator in a string_view.
- * This is needed since the standard makes no guarantees. */
-bool check_terminator(std::string_view str);
-
 } // namespace Util
 
 #endif
