@@ -1,51 +1,67 @@
-#ifndef CORE_CARTRIDGE_HPP_INCLUDED
-#define CORE_CARTRIDGE_HPP_INCLUDED
+#ifndef CARTRIDGE_HPP_INCLUDED
+#define CARTRIDGE_HPP_INCLUDED
 
-#include <string_view>
+#include <optional>
 #include <emu/core/const.hpp>
-#include <emu/util/unsigned.hpp>
 #include <emu/util/heaparray.hpp>
+#include <emu/util/unsigned.hpp>
 
 namespace Util { class File; }
 
 namespace Core {
 
-class Bus;
+namespace Cartridge {
+    const int HEADER_SIZE = 16;
+    const int TRAINER_SIZE = 512;
 
-class Cartridge {
-    static const int HEADER_LEN = 16;
-    static const int TRAINER_LEN = 512;
+    enum class Format {
+        INES,
+        NES20,
+    };
 
-    std::string name, format;
-    Util::HeapArray<uint8> prgrom;
-    Util::HeapArray<uint8> chrrom;
-    uint8 header[HEADER_LEN];
-    uint8 trainer[TRAINER_LEN];
-    uint16 mapper = 0;
-    uint8 submapper = 0;
-    uint32 prgram_size = 0;
-    uint32 chrram_size = 0;
-    Mirroring nt_mirroring = Mirroring::VERT;
+    enum class Console {
+        NES, VSSYSTEM, PLAYCHOICE, EXTENDED
+    };
 
-    struct {
-        bool prgram  = false;
-        bool chrram  = false;
-        bool battery = false;
-        bool trainer = false;
-    } has;
+    struct Data {
+        std::string filename;
+        Format format;
+        uint8 header[HEADER_SIZE];
+        uint8 trainer[TRAINER_SIZE];
+        Mirroring mirroring;
+        uint32 mapper;
+        uint32 chrram_size;
+        Console console_type;
 
-public:
-    bool parse(Util::File &romfile);
-    uint8 read_prgrom(uint16 addr);
-    uint8 read_chrrom(uint16 addr);
-    void attach_bus(Bus *rambus, Bus *vrambus);
-    std::string getinfo() const;
+        struct {
+            bool battery;
+            bool trainer;
+            bool chrram;
+        } has;
 
-    uint16 mappertype() const   { return mapper; }
-    bool hasprgram() const      { return has.prgram; }
-    bool haschrram() const      { return has.chrram; }
-    Mirroring mirroring() const { return nt_mirroring; }
-};
+        Util::HeapArray<uint8> prgrom;
+        Util::HeapArray<uint8> chrrom;
+
+        struct NES20Data {
+            bool has_prgram;
+            uint32 prgram_size;
+            uint32 submapper;
+            uint32 prg_nvram_size;
+            uint32 chr_nvram_size;
+            uint2 timing_mode;
+            uint4 vs_ppu;
+            uint4 vs_hardware;
+            uint4 extended_console_type;
+            uint2 misc_roms;
+            uint6 default_expansion_device;
+        };
+        std::optional<NES20Data> nes20_data;
+
+        std::string to_string() const;
+    };
+} // namespace Cartridge
+
+std::optional<Cartridge::Data> parse_rom(Util::File &romfile);
 
 } // namespace Core
 

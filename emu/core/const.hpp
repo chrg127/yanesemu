@@ -39,6 +39,7 @@ enum {
 enum class Mirroring {
     VERT,
     HORZ,
+    FOUR_SCREEN,
     OTHER,
 };
 
