@@ -4,6 +4,7 @@
 #include <emu/core/bus.hpp>
 #include <emu/core/cpu.hpp>
 #include <emu/core/ppu.hpp>
+#include <emu/core/cartridge.hpp>
 #include <fmt/core.h>
 
 namespace Util { class File; }
@@ -33,7 +34,7 @@ public:
 
     void run();
     void run_frame();
-    bool insert_rom(Util::File romfile);
+    void insert_rom(Cartridge::Data &&cartdata);
 
     void power()
     {

@@ -1,6 +1,7 @@
 #include <fmt/core.h>
 #include <SDL2/SDL.h>
 #include <emu/version.hpp>
+#include <emu/core/cartridge.hpp>
 #include <emu/core/emulator.hpp>
 #include <emu/debugger/clidbg.hpp>
 #include <emu/util/cmdline.hpp>
@@ -16,10 +17,41 @@ static const Util::ValidArgStruct cmdflags = {
 };
 static Core::Emulator emu;
 
-int cli_interface()
+bool open_rom(std::string_view pathname)
 {
-    Video::Context context;
+    auto opt_file = Util::File::open(pathname, Util::Access::READ);
+    if (!opt_file) {
+        std::perror("error");
+        return false;
+    }
+    auto opt_cart = Core::parse_cartridge(opt_file.value());
+    if (!opt_cart) {
+        error("not a real NES ROM: {}\n", pathname);
+        return false;
+    }
+    fmt::print("{}\n", opt_cart.value().to_string());
+    emu.insert_rom(std::move(opt_cart.value()));
+    return true;
+}
+
+bool open_rom_with_flags(const Util::ArgResult &flags)
+{
+    if (flags.items.empty()) {
+        error("ROM file not specified\n");
+        return false;
+    }
+    if (flags.items.size() > 1)
+        warning("Multiple ROM files specified, only the first will be chosen\n");
+    return open_rom(flags.items[0]);
+}
+
+int cli_interface(const Util::ArgResult &flags)
+{
+    if (!open_rom_with_flags(flags))
+        return 1;
+
     // initialize video subsystem
+    Video::Context context;
     if (!context.init(Video::Context::Type::OPENGL)) {
         error("can't initialize video\n");
         return 1;
@@ -50,8 +82,11 @@ int cli_interface()
     return 0;
 }
 
-int debugger_interface()
+int debugger_interface(const Util::ArgResult &flags)
 {
+    if (!open_rom_with_flags(flags))
+        return 1;
+
     emu.power();
     // fmt::print("{}\n", emu.rominfo());
     Debugger::CliDebugger clidbg{&emu};
@@ -73,33 +108,25 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // parse command line arguments
     Util::ArgResult flags;
     flags = Util::parse(argc, argv, cmdflags);
-    if (flags.has['h']) { Util::print_usage(progname, cmdflags); return 0; }
-    if (flags.has['v']) { Util::print_version(progname, version); return 0; }
-
-    // open rom file
-    if (flags.items.empty()) {
-        error("ROM file not specified\n");
-        return 1;
-    } else if (flags.items.size() > 1)
-        warning("Multiple ROM files specified, only the first will be chosen\n");
-
-    auto romfile = Util::File::open(flags.items[0], Util::Access::READ);
-    if (!romfile) {
-        error("{}: ", flags.items[0]);
-        std::perror("");
-        return 1;
+    if (flags.has['h']) {
+        Util::print_usage(progname, cmdflags);
+        return 0;
     }
-    if (!emu.insert_rom(std::move(romfile.value()))) {
-        error("invalid ROM format\n");
-        return 1;
+    if (flags.has['v']) {
+        Util::print_version(progname, version);
+        return 0;
     }
+
+    if (flags.has['d'])
+        return debugger_interface(flags);
+    return cli_interface(flags);
+
 
     Util::seed();
     if (flags.has['d'])
-        return debugger_interface();
-    return cli_interface();
+        return debugger_interface(flags);
+    return cli_interface(flags);
 }
 

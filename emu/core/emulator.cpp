@@ -2,7 +2,6 @@
 
 #include <string_view>
 #include <fmt/core.h>
-#include <emu/core/cartridge.hpp>
 #include <emu/util/unsigned.hpp>
 #include <emu/util/debug.hpp>
 #include <emu/util/file.hpp>
@@ -26,15 +25,11 @@ void Emulator::run_frame()
     nmi = false;
 }
 
-bool Emulator::insert_rom(Util::File romfile)
+void Emulator::insert_rom(Cartridge::Data &&cartdata)
 {
-    auto opt_data = parse_cartridge(romfile);
-    if (!opt_data)
-        return false;
-    Cartridge::Data &data = opt_data.value();
-    fmt::print("{}\n", data.to_string());
-    prgrom = std::move(data.prgrom);
-    chrrom = std::move(data.chrrom);
+    prgrom = std::move(cartdata.prgrom);
+    chrrom = std::move(cartdata.chrrom);
+    ppu.set_mirroring(cartdata.mirroring);
     rambus.map(CARTRIDGE_START, 0x8000,
             [](uint16 addr) { return 0; },
             [](uint16 addr, uint8 data) { /***********/ });
@@ -50,7 +45,5 @@ bool Emulator::insert_rom(Util::File romfile)
     vrambus.map(PT_START, NT_START,
             [this](uint16 addr) { return chrrom[addr]; },
             [](uint16 addr, uint8 data) { /***********/ });
-    ppu.set_mirroring(data.mirroring);
-    return true;
 }
 
