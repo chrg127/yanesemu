@@ -61,7 +61,7 @@ namespace Cartridge {
     };
 } // namespace Cartridge
 
-std::optional<Cartridge::Data> parse_rom(Util::File &romfile);
+std::optional<Cartridge::Data> parse_cartridge(Util::File &romfile);
 
 } // namespace Core
 

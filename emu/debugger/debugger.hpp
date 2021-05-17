@@ -102,7 +102,7 @@ private:
     Core::Emulator *emu;
     std::function<void (Event &&)> report_callback;
     std::vector<Breakpoint> break_list;
-    Util::File tracefile;
+    std::optional<Util::File> tracefile;
     bool got_error = false;
 
 public:
@@ -129,13 +129,14 @@ public:
         break_list[index].mode = 'n';
     }
 
-    void start_tracing(Util::File &&f)
+    bool start_tracing(std::string_view pathname)
     {
         stop_tracing();
-        tracefile = std::move(f);
+        tracefile = Util::File::open(pathname, Util::Access::WRITE);
+        return !!tracefile;
     }
 
-    void stop_tracing() { tracefile.close(); }
+    void stop_tracing() { tracefile = std::nullopt; }
 
 private:
     void fetch_callback(uint16 addr, char mode);

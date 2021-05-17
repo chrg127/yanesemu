@@ -21,19 +21,16 @@ std::string Cartridge::Data::to_string() const
         header[4],
         header[5],
         has.chrram ? chrram_size : 0,
-        mirroring == Mirroring::HORZ ? 'H' : 'V',
+        mirroring == Mirroring::HORZ ? 'H' : mirroring == Mirroring::VERT ? 'V' : 'O',
         has.battery ? ", contains SRAM" : "",
         has.trainer ? ", contains Trainer" : ""
     );
 }
 
-std::optional<Cartridge::Data> parse_rom(Util::File &romfile)
+std::optional<Cartridge::Data> parse_cartridge(Util::File &romfile)
 {
     static const uint8 constants[] = { 'N', 'E', 'S', 0x1A };
     static_assert(sizeof(constants) == 4);
-
-    if (!romfile)
-        return std::nullopt;
 
     Cartridge::Data cart;
     romfile.bread(cart.header, Cartridge::HEADER_SIZE);
@@ -45,12 +42,12 @@ std::optional<Cartridge::Data> parse_rom(Util::File &romfile)
                 : Cartridge::Format::INES;
     uint32 prgrom_size = cart.header[4];
     uint32 chrrom_size = cart.header[5];
-    cart.mirroring = (cart.header[6] & bitmask(3)) ? Mirroring::FOUR_SCREEN
-                   : (cart.header[6] & bitmask(0)) ? Mirroring::VERT
-                   :                         Mirroring::HORZ;
-    cart.mapper = (cart.header[6] >> 4 & 4) | (cart.header[7] & 0xF0);
-    cart.has.battery = cart.header[6] & bitmask(1);
-    cart.has.trainer = cart.header[6] & bitmask(2);
+    cart.mirroring = getbit(cart.header[6], 3) ? Mirroring::FOUR_SCREEN
+                   : getbit(cart.header[6], 0) ? Mirroring::VERT
+                   :                             Mirroring::HORZ;
+    cart.mapper = (cart.header[7] & 0b11110000) | getbits(cart.header[6], 4, 4);
+    cart.has.battery = getbit(cart.header[6], 1);
+    cart.has.trainer = getbit(cart.header[6], 2);
     cart.has.chrram = cart.header[5] == 0;
 
     const auto detect_console = [](uint2 bits)

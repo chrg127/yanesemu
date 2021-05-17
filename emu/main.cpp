@@ -31,7 +31,7 @@ int cli_interface()
 
     emu.set_screen(&screen);
     emu.power();
-    fmt::print("{}\n", emu.rominfo());
+    // fmt::print("{}\n", emu.rominfo());
     while (running) {
         while (SDL_PollEvent(&ev)) {
             switch (ev.type) {
@@ -53,7 +53,7 @@ int cli_interface()
 int debugger_interface()
 {
     emu.power();
-    fmt::print("{}\n", emu.rominfo());
+    // fmt::print("{}\n", emu.rominfo());
     Debugger::CliDebugger clidbg{&emu};
     clidbg.enter();
     return 0;
@@ -86,17 +86,16 @@ int main(int argc, char *argv[])
     } else if (flags.items.size() > 1)
         warning("Multiple ROM files specified, only the first will be chosen\n");
 
-    Util::File romfile{flags.items[0], Util::Access::READ};
+    auto romfile = Util::File::open(flags.items[0], Util::Access::READ);
     if (!romfile) {
         error("{}: ", flags.items[0]);
         std::perror("");
         return 1;
     }
-    if (!emu.insert_rom(romfile)) {
+    if (!emu.insert_rom(std::move(romfile.value()))) {
         error("invalid ROM format\n");
         return 1;
     }
-    romfile.close();
 
     Util::seed();
     if (flags.has['d'])

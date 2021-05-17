@@ -114,7 +114,7 @@ void CliDebugger::enter()
 
 void CliDebugger::repl()
 {
-    Util::File input{stdin};
+    Util::File input = Util::File::assoc(stdin);
     std::string cmdstr, argsstr;
 
     while (!quit) {
@@ -268,12 +268,8 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
         break;
 
     case Command::TRACE: {
-        Util::File f(args[0], Util::Access::WRITE);
-        if (!f) {
-            fmt::print("error: ");
-            std::perror("");
-        } else
-            dbg.start_tracing(std::move(f));
+        if (!dbg.start_tracing(args[0]))
+            std::perror("error");
         break;
     }
 
