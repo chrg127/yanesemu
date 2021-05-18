@@ -113,6 +113,8 @@ void PPU::cycle_outputpixel()
 template <unsigned Cycle>
 void PPU::background_cycle()
 {
+    if (!io.bg_show)
+        return;
     if constexpr(Cycle == 1) cycle_fetchnt(0);
     if constexpr(Cycle == 2) cycle_fetchnt(1);
     if constexpr(Cycle == 3) cycle_fetchattr(0);

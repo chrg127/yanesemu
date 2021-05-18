@@ -440,6 +440,8 @@ void PPU::fetch_highbg(bool dofetch)
 
 void PPU::shift_run()
 {
+    if (!io.bg_show)
+        return;
     shift.tlow  >>= 1;
     shift.thigh >>= 1;
     shift.ahigh >>= 1;
@@ -450,6 +452,8 @@ void PPU::shift_run()
 
 void PPU::shift_fill()
 {
+    if (!io.bg_show)
+        return;
     shift.tlow  = Util::setbits(shift.tlow,  8, 8, tile.low);
     shift.thigh = Util::setbits(shift.thigh, 8, 8, tile.high);
     // TODO: this is definitely fucking wrong
@@ -461,6 +465,8 @@ void PPU::shift_fill()
 
 uint8 PPU::bg_output()
 {
+    if (!io.bg_show)
+        return 0;
     uint8 mask      = 1UL << vram.fine_x;
     bool lowbit     = shift.tlow  & mask;
     bool hibit      = shift.thigh & mask;
