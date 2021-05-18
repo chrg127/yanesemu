@@ -51,13 +51,13 @@ int cli_interface(const Util::ArgResult &flags)
         return 1;
 
     // initialize video subsystem
-    Video::Context context;
-    if (!context.init(Video::Context::Type::OPENGL)) {
+    auto context = Video::Context::create(Video::Context::Type::OPENGL, "Window");
+    if (!context) {
         error("can't initialize video\n");
         return 1;
     }
 
-    Video::Canvas screen { context, Core::SCREEN_WIDTH, Core::SCREEN_HEIGHT };
+    Video::Canvas screen = context->create_canvas(Core::SCREEN_WIDTH, Core::SCREEN_HEIGHT);
     bool running = true;
     SDL_Event ev;
 
@@ -72,12 +72,13 @@ int cli_interface(const Util::ArgResult &flags)
                 break;
             case SDL_WINDOWEVENT:
                 if (ev.window.event == SDL_WINDOWEVENT_RESIZED)
-                    context.resize(ev.window.data1, ev.window.data2);
+                    context->resize(ev.window.data1, ev.window.data2);
             }
         }
         emu.run_frame();
-        screen.update();
-        context.draw();
+        context->update_canvas(screen);
+        context->use_texture(screen);
+        context->draw();
     }
     return 0;
 }
@@ -88,7 +89,6 @@ int debugger_interface(const Util::ArgResult &flags)
         return 1;
 
     emu.power();
-    // fmt::print("{}\n", emu.rominfo());
     Debugger::CliDebugger clidbg{&emu};
     clidbg.enter();
     return 0;

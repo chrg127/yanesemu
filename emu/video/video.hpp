@@ -4,18 +4,65 @@
 #include <cstdint>
 #include <memory>
 #include <string_view>
+#include <optional>
 
 namespace Video {
 
-class Canvas;
-class ImageTexture;
+class Texture {
+protected:
+    unsigned id;
+    std::size_t tw, th;
+public:
+    unsigned tid()       { return id; }
+    std::size_t width()  { return tw; }
+    std::size_t height() { return th; }
+    friend class Context;
+};
+
+class Canvas : public Texture {
+    unsigned char *frame;
+public:
+    Canvas(std::size_t width, std::size_t height)
+        : frame(new unsigned char[width*height*4])
+    {
+        tw = width;
+        th = height;
+    }
+
+    ~Canvas()
+    {
+        if (frame)
+            delete[] frame;
+    }
+
+    Canvas(const Canvas &) = delete;
+    Canvas(Canvas &&) = default;
+    Canvas & operator=(const Canvas &) = delete;
+    Canvas & operator=(Canvas &&) = default;
+
+    void drawpixel(std::size_t x, std::size_t y, uint32_t color);
+
+    friend class Context;
+};
+
+class ImageTexture : public Texture {
+    unsigned char *data;
+public:
+    ImageTexture(const char *pathname);
+    ~ImageTexture();
+    ImageTexture(const ImageTexture &) = delete;
+    ImageTexture(ImageTexture &&) = default;
+    ImageTexture & operator=(const ImageTexture &) = delete;
+    ImageTexture & operator=(ImageTexture &&) = default;
+
+    friend class Context;
+};
 
 struct Context {
     struct Impl {
         virtual ~Impl() = default;
         virtual bool init() = 0;
         virtual void resize(int newwidth, int newheight) = 0;
-        // these 3 methods should only be called by Texture
         virtual unsigned create_texture(std::size_t texw, std::size_t texh, unsigned char *data = nullptr) = 0;
         virtual void update_texture(unsigned id, std::size_t texw, std::size_t texh, unsigned char *data) = 0;
         virtual void use_texture(unsigned id) = 0;
@@ -32,7 +79,8 @@ struct Context {
 private:
     std::unique_ptr<Impl> ptr = nullptr;
     unsigned wnd_width = DEF_WIDTH, wnd_height = DEF_HEIGTH;
-    // bool initialized = false;
+
+    void update_texture(const Texture &tex, unsigned char *data) { ptr->update_texture(tex.id, tex.tw, tex.th, data); }
 
 public:
     Context() = default;
@@ -41,98 +89,34 @@ public:
     Context & operator=(const Context &) = delete;
     Context & operator=(Context &&) = default;
 
-    // explicit operator bool() const { return initialized; }
+    static std::optional<Context> create(Type type, std::string_view window_name);
 
-    bool init(Type type);
+    unsigned window_width() const            { return wnd_width; }
+    unsigned window_height() const           { return wnd_height; }
+    void use_texture(const Texture &tex)     { ptr->use_texture(tex.id); }
+    void update_canvas(const Canvas &canvas) { update_texture(canvas, canvas.frame); }
+    void draw()                              { ptr->draw(); }
 
-    void reset();
     void resize(int newwidth, int newheight)
     {
         wnd_width = newwidth;
         wnd_height = newheight;
         ptr->resize(newwidth, newheight);
     }
-    void draw()                        { ptr->draw(); }
-    unsigned window_width() const      { return wnd_width; }
-    unsigned window_height() const     { return wnd_height; }
 
-    friend class Texture;
-};
-
-class Texture {
-    Context *ctx = nullptr;
-    unsigned id = 0;
-    std::size_t tw = 0, th = 0;
-public:
-    Texture() = default;
-    Texture(Context &c, std::size_t width, std::size_t height, unsigned char *data = nullptr)
-        : ctx(&c), tw(width), th(height)
+    Canvas create_canvas(std::size_t width, std::size_t height)
     {
-        id = ctx->ptr->create_texture(tw, th, data);
+        Canvas canvas{width, height};
+        canvas.id = ptr->create_texture(width, height, canvas.frame);
+        return canvas;
     }
 
-    void reset(Context &c, unsigned char *data = nullptr)
+    ImageTexture create_image(std::string_view pathname)
     {
-        ctx = &c;
-        id = ctx->ptr->create_texture(tw, th, data);
+        ImageTexture image(pathname.data());
+        image.id = ptr->create_texture(image.tw, image.th, image.data);
+        return image;
     }
-    unsigned tid() const             { return id; }
-    unsigned width() const           { return tw; }
-    unsigned height() const          { return th; }
-    void update(unsigned char *data) { ctx->ptr->update_texture(id, tw, th, data); }
-    void update(std::size_t width, std::size_t height, unsigned char *data)
-    {
-        tw = width;
-        th = height;
-        update(data);
-    }
-    void use()                       { ctx->ptr->use_texture(id); }
-};
-
-class Canvas {
-    Texture tex;
-    unsigned char *frame;
-public:
-    Canvas(Context &ctx, std::size_t width, std::size_t height)
-        : tex(ctx, width, height), frame(new unsigned char[width*height*4])
-    { }
-
-    ~Canvas()
-    {
-        if (frame)
-            delete[] frame;
-    }
-
-    Canvas(const Canvas &) = delete;
-    Canvas(Canvas &&) = default;
-    Canvas & operator=(const Canvas &) = delete;
-    Canvas & operator=(Canvas &&) = default;
-
-    void drawpixel(std::size_t x, std::size_t y, uint32_t color);
-
-    unsigned width() const  { return tex.width(); }
-    unsigned height() const { return tex.height(); }
-    void update()           { tex.update(frame); }
-    void reset(Context &c)  { tex.reset(c); }
-};
-
-class ImageTexture {
-    Texture tex;
-    unsigned char *data;
-public:
-    ImageTexture(const char *pathname, Context &ctx);
-    ~ImageTexture();
-    ImageTexture(const ImageTexture &) = delete;
-    ImageTexture(ImageTexture &&) = default;
-    ImageTexture & operator=(const ImageTexture &) = delete;
-    ImageTexture & operator=(ImageTexture &&) = default;
-
-    void reload(const char *pathname);
-    void reset(Context &c);
-
-    unsigned width() const  { return tex.width(); }
-    unsigned height() const { return tex.height(); }
-    void use()              { tex.use(); }
 };
 
 } // namespace Video

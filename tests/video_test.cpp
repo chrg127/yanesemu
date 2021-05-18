@@ -3,11 +3,12 @@
 
 void test_images()
 {
-    Video::Context ctx;
-    ctx.init(Video::Context::Type::OPENGL);
+    auto ctx = Video::Context::create(Video::Context::Type::OPENGL, "image test");
+    if (!ctx)
+        return;
 
-    Video::ImageTexture imtex { "someimage.png", ctx };
-    Video::ImageTexture im2 { "funnyimage.png", ctx };
+    Video::ImageTexture imtex = ctx->create_image("someimage.png");
+    Video::ImageTexture im2 = ctx->create_image("funnyimage.png");
     bool running = true;
     bool whichtex = 0;
     SDL_Event event;
@@ -23,24 +24,25 @@ void test_images()
                 break;
             case SDL_WINDOWEVENT:
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED)
-                    ctx.resize(event.window.data1, event.window.data2);
+                    ctx->resize(event.window.data1, event.window.data2);
                 break;
             }
         }
         if (whichtex)
-            imtex.use();
+            ctx->use_texture(imtex);
         else
-            im2.use();
-        ctx.draw();
+            ctx->use_texture(im2);
+        ctx->draw();
     }
 }
 
 void test_canvas()
 {
-    Video::Context ctx;
-    ctx.init(Video::Context::Type::OPENGL);
+    auto ctx = Video::Context::create(Video::Context::Type::OPENGL, "canvas test");
+    if (!ctx)
+        return;
 
-    Video::Canvas canv { ctx, ctx.window_width(), ctx.window_height() };
+    Video::Canvas canv = ctx->create_canvas(ctx->window_width(), ctx->window_height());
     bool running = true;
     SDL_Event event;
     unsigned int x = 0, y = 0;
@@ -58,11 +60,12 @@ void test_canvas()
                 break;
             case SDL_WINDOWEVENT:
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED)
-                    ctx.resize(event.window.data1, event.window.data2);
+                    ctx->resize(event.window.data1, event.window.data2);
                 break;
             }
         }
-        for (int i = 0; i < 3; i++) {
+        const int NUM_PIXELS = ctx->window_width();
+        for (int i = 0; i < NUM_PIXELS; i++) {
             canv.drawpixel(x, y, 0xFFFFFFFF);
             x++;
             if (x == canv.width()) {
@@ -74,8 +77,9 @@ void test_canvas()
                 break;
             }
         }
-        canv.update();
-        ctx.draw();
+        ctx->update_canvas(canv);
+        ctx->use_texture(canv);
+        ctx->draw();
     }
 }
 

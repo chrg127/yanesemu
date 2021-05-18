@@ -15,23 +15,30 @@
 
 namespace Video {
 
-bool Context::init(Type type)
+std::optional<Context> Context::create(Type type, std::string_view window_name)
 {
-    switch (type) {
-    case Type::OPENGL: ptr = std::make_unique<Video::OpenGL>(); break;
-    default:           error("unknown type\n");     break;
-    }
-    return ptr->init();
-        // initialized = true;
+    const auto create_ptr = [](Type type)
+    {
+        switch (type) {
+        case Type::OPENGL: return std::make_unique<Video::OpenGL>(); break;
+        default:
+           panic("unknown type supplied to create_context()\n");
+           break;
+        }
+    };
+    auto p = create_ptr(type);
+    if (!p->init())
+        return std::nullopt;
+    Context context;
+    context.ptr = std::move(p);
+    return context;
 }
-
-void Context::reset() { }
 
 void Canvas::drawpixel(std::size_t x, std::size_t y, uint32_t color)
 {
-    auto real_y = tex.height()-1 - y;
-    auto pos = (real_y * tex.width() + x) * 4;
-    assert(pos > 0 && pos < tex.width() * tex.height() * 4);
+    auto real_y = th-1 - y;
+    auto pos = (real_y * tw + x) * 4;
+    assert(pos > 0 && pos < tw * th * 4);
     // this code is probably affected by endianness.
     frame[pos  ] = color >> 24 & 0xFF;
     frame[pos+1] = color >> 16 & 0xFF;
@@ -39,31 +46,18 @@ void Canvas::drawpixel(std::size_t x, std::size_t y, uint32_t color)
     frame[pos+3] = color       & 0xFF;
 }
 
-ImageTexture::ImageTexture(const char *pathname, Context &ctx)
+ImageTexture::ImageTexture(const char *pathname)
 {
     int width, height, channels;
     data = stbi_load(pathname, &width, &height, &channels, 0);
     assert(data != nullptr && channels == 4);
-    tex = Texture(ctx, width, height, data);
+    tw = width;
+    th = height;
 }
 
 ImageTexture::~ImageTexture()
 {
     stbi_image_free(data);
-}
-
-void ImageTexture::reload(const char *pathname)
-{
-    int width, height, channels;
-    data = stbi_load(pathname, &width, &height, &channels, 0);
-    assert(data != nullptr && channels == 4);
-    tex.update(width, height, data);
-    // tex.reset(
-}
-
-void ImageTexture::reset(Context &c)
-{
-    tex.reset(c, data);
 }
 
 } // namespace Video
