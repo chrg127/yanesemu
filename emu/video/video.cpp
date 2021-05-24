@@ -15,7 +15,7 @@
 
 namespace Video {
 
-std::optional<Context> Context::create(Type type, std::string_view window_name)
+std::optional<Context> Context::create(Type type)
 {
     const auto create_ptr = [](Type type)
     {

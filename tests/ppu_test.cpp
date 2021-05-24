@@ -7,47 +7,37 @@
 #include <emu/util/unsigned.hpp>
 #include <emu/util/file.hpp>
 
-namespace Core {
-void dump(Util::File &dumpfile, Bus &bus)
-{
-    if (!dumpfile)
-        return;
-    auto dump_mem = [&](Bus &bus) {
-        for (std::size_t i = 0; i < bus.size(); ) {
-            dumpfile.print("{:04X}: ", i);
-            for (std::size_t j = 0; j < 16; j++) {
-                dumpfile.print("{:02X} ", bus.read(i));
-                i++;
-            }
-            dumpfile.putc('\n');
-        }
-        dumpfile.putc('\n');
-    };
-    dump_mem(bus);
-}
-}
-
 using Util::File;
 
 int main()
 {
-    Core::CPU cpu;
-    Core::PPU ppu;
     Core::Bus cpu_bus = Core::Bus(0x10000);
     Core::Bus ppu_bus = Core::Bus(0x4000);
-    Core::Cartridge cart;
-    File f;
-    File romfile("testrom/test.nes", File::Mode::READ);
+    Core::CPU cpu{&cpu_bus};
+    Core::PPU ppu{&cpu_bus, &ppu_bus};
+    File out = File::assoc(stdout);
+    auto romfile = File::open("testrom/test.nes", Util::Access::READ);
+    auto cart = Core::parse_cartridge(*romfile);
 
-    f.assoc(stdout);
-    cpu.attach_bus(&cpu_bus);
-    ppu.attach_bus(&ppu_bus, &cpu_bus);
-    cart.parse(romfile);
-    cart.attach_bus(&cpu_bus, &ppu_bus);
+    ppu.set_mirroring(cart->mirroring);
+    cpu_bus.map(Core::CARTRIDGE_START, 0x8000,
+            [&](uint16 addr) { return 0; },
+            [&](uint16 addr, uint8 data) { /***********/ });
+    cpu_bus.map(0x8000, Core::CPUBUS_SIZE,
+            [&](uint16 addr)
+            {
+                uint16 offset = addr - 0x8000;
+                uint16 start = cart->prgrom.size() - 0x8000;
+                uint16 eff_addr = start + offset;
+                return cart->prgrom[eff_addr];
+            },
+            [&](uint16 addr, uint8 data) { /***********/ });
+    ppu_bus.map(Core::PT_START, Core::NT_START,
+            [&](uint16 addr) { return cart->chrrom[addr]; },
+            [&](uint16 addr, uint8 data) { /***********/ });
     cpu.power();
     ppu.power();
-    ppu.set_nmi_callback([]() { fmt::print("got nmi\n"); });
-    ppu.set_mirroring(Core::Mirroring::HORZ);
+    ppu.on_nmi([]() { fmt::print("got nmi\n"); });
 
     cpu_bus.write(0x2000, 0);
     cpu_bus.write(0x2001, 0);
@@ -78,8 +68,8 @@ int main()
     cpu_bus.write(0x2006, 0x01);
     cpu_bus.write(0x2006, 0xEC);
     cpu_bus.write(0x2001, 0b00001010);
+    // dump(f, ppu_bus);
 /*
-    dump(f, ppu_bus);
     ppu.inc_v_vertpos();
     for (int i = 0; i < 8; i++) {
         ppu.fetch_nt(1);

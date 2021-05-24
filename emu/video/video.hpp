@@ -89,7 +89,7 @@ public:
     Context & operator=(const Context &) = delete;
     Context & operator=(Context &&) = default;
 
-    static std::optional<Context> create(Type type, std::string_view window_name);
+    static std::optional<Context> create(Type type);
 
     unsigned window_width() const            { return wnd_width; }
     unsigned window_height() const           { return wnd_height; }

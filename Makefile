@@ -1,5 +1,8 @@
 programname := emu
+
+# can be: debug, release
 profile := debug
+
 _objs_main := \
 	emulator.o bus.o cartridge.o cpu.o ppu.o instrinfo.o \
 	debugger.o clidbg.o cpudebugger.o ppudebugger.o \

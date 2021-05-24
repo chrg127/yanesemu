@@ -37,17 +37,6 @@ constexpr inline uint64_t setbit(uint64_t num, uint8_t bitno, bool data)
     return setbits(num, bitno, 1, data);
 }
 
-/* Rotation routines. These do usually convert to a single ROL/ROR instruction. */
-constexpr inline uint32_t rotl32(const uint32_t x, const int k)
-{
-    return (x << k) | (x >> (32 - k));
-}
-
-constexpr inline uint32_t rotr32(const uint32_t x, const int k)
-{
-    return (x >> k) | (x << (32 - k));
-}
-
 /* A struct for portable bit-fields. Use it like so:
  * union {
  *     uint16_t full

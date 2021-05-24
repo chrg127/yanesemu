@@ -94,13 +94,13 @@ bool OpenGL::init()
         error("can't initialize video, SDL2 error: {}\n", SDL_GetError());
         return false;
     }
+    window = SDL_CreateWindow("Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                              Context::DEF_WIDTH, Context::DEF_HEIGTH,
+                              SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-    window = SDL_CreateWindow("Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                              Context::DEF_WIDTH, Context::DEF_HEIGTH,
-                              SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     context = SDL_GL_CreateContext(window);
     if (!gladLoadGLLoader((GLADloadproc) SDL_GL_GetProcAddress)) {
         error("can't initialize video: GLAD error\n");

@@ -51,7 +51,7 @@ int cli_interface(const Util::ArgResult &flags)
         return 1;
 
     // initialize video subsystem
-    auto context = Video::Context::create(Video::Context::Type::OPENGL, "Window");
+    auto context = Video::Context::create(Video::Context::Type::OPENGL);
     if (!context) {
         error("can't initialize video\n");
         return 1;
@@ -79,6 +79,7 @@ int cli_interface(const Util::ArgResult &flags)
         context->update_canvas(screen);
         context->use_texture(screen);
         context->draw();
+        SDL_Delay(1000 / 60);
     }
     return 0;
 }

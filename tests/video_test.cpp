@@ -3,7 +3,7 @@
 
 void test_images()
 {
-    auto ctx = Video::Context::create(Video::Context::Type::OPENGL, "image test");
+    auto ctx = Video::Context::create(Video::Context::Type::OPENGL);
     if (!ctx)
         return;
 
@@ -38,7 +38,7 @@ void test_images()
 
 void test_canvas()
 {
-    auto ctx = Video::Context::create(Video::Context::Type::OPENGL, "canvas test");
+    auto ctx = Video::Context::create(Video::Context::Type::OPENGL);
     if (!ctx)
         return;
 
