@@ -84,6 +84,7 @@ $(outdir)/%.o: %.cpp
 	@$(CXX) $(CXXFLAGS) $(flags_deps) -c $< -o $@
 
 $(outdir)/glad.o: external/glad/glad.c
+	$(info Compiling $< ...)
 	@$(CC) $(CFLAGS) $(flags_deps) -c $< -o $@
 
 $(outdir):

@@ -58,14 +58,12 @@ int cli_interface(const Util::ArgResult &flags)
     }
 
     Video::Canvas screen = context->create_canvas(Core::SCREEN_WIDTH, Core::SCREEN_HEIGHT);
-    bool running = true;
-    SDL_Event ev;
 
     emu.set_screen(&screen);
     emu.power();
     // fmt::print("{}\n", emu.rominfo());
-    while (running) {
-        while (SDL_PollEvent(&ev)) {
+    for (bool running = true; running; ) {
+        for (SDL_Event ev; SDL_PollEvent(&ev); ) {
             switch (ev.type) {
             case SDL_QUIT:
                 running = false;
