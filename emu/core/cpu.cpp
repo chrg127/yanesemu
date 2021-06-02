@@ -10,20 +10,8 @@ namespace Core {
 #include <emu/core/instructions.cpp>
 #undef INSIDE_CPU_CPP
 
-CPU::CPU(Bus *b)
-    : bus(b)
-{
-    std::memset(rammem, 0, sizeof(rammem));
-}
-
 void CPU::power(bool reset)
 {
-    bus->map(RAM_START, PPUREG_START,
-             [this](uint16 addr)             { return rammem[addr & 0x7FF]; },
-             [this](uint16 addr, uint8 data) { rammem[addr & 0x7FF] = data; });
-    bus->map(APU_START, CARTRIDGE_START,
-             [this](uint16 addr)             { return read_apu_reg(addr); },
-             [this](uint16 addr, uint8 data) { write_apu_reg(addr, data); });
     if (!reset) {
         r.acc = 0;
         r.x = 0;
@@ -43,6 +31,13 @@ void CPU::power(bool reset)
     // an interrupt is performed during 6502 start up. this is why SP = $FD.
     signal.resetpending = true;
     interrupt();
+}
+
+void CPU::bus_map(Bus<CPUBUS_SIZE> &rambus)
+{
+    rambus.map(APU_START, CARTRIDGE_START,
+             [this](uint16 addr)             { return read_apu_reg(addr); },
+             [this](uint16 addr, uint8 data) { write_apu_reg(addr, data); });
 }
 
 void CPU::run()

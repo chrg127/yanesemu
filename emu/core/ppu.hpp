@@ -6,6 +6,7 @@
 #include <emu/core/const.hpp>
 #include <emu/util/unsigned.hpp>
 #include <emu/util/bits.hpp>
+#include <emu/core/bus.hpp>
 
 namespace Video { class Canvas; }
 namespace Debugger {
@@ -15,14 +16,9 @@ namespace Debugger {
 
 namespace Core {
 
-class Bus;
-
 class PPU {
-    Bus *bus;
+    Bus<PPUBUS_SIZE> *bus;
     Video::Canvas *screen;
-    uint8 vrammem[VRAM_SIZE];
-    uint8 oammem[OAM_SIZE];
-    uint8 palmem[PAL_SIZE];
     unsigned long cycles = 0;
     unsigned long lines  = 0;
     std::function<void(void)> nmi_callback;
@@ -109,21 +105,17 @@ class PPU {
     } oam;
 
 public:
-    PPU(Bus *rambus, Bus *vrambus)
-    {
-        attach_bus(vrambus, rambus);
-    }
+    PPU(Bus<PPUBUS_SIZE> *vrambus)
+        : bus(vrambus)
+    { }
 
-    void power();
-    void reset();
-    void attach_bus(Bus *vrambus, Bus *rambus);
-    void set_mirroring(Mirroring m);
+    void power(bool reset);
+    void bus_map(Bus<CPUBUS_SIZE> &bus);
+    void set_screen(Video::Canvas *canvas) { screen = canvas; }
+    void on_nmi(auto &&callback)           { nmi_callback = callback; }
 
     // ppumain.cpp
     void run();
-
-    void set_screen(Video::Canvas *canvas) { screen = canvas; }
-    void on_nmi(auto &&callback) { nmi_callback = callback; }
 
     // these shouldn't be called outside ppumain.cpp
     template <unsigned int Cycle> void ccycle();

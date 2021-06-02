@@ -15,105 +15,55 @@ namespace Core {
 #include "ppumain.cpp"
 #undef INSIDE_PPU_CPP
 
-void PPU::power()
+void PPU::power(bool reset)
 {
-    vram.addr = 0;
-    vram.tmp = 0;
     // PPUCTRL
-    io.vram_inc = 0;
-    io.sp_pt_addr = 0;
-    io.bg_pt_addr = 0;
-    io.sp_size = 0;
-    io.ext_bus_dir = 0;
-    io.nmi_enabled = 0;
+    io.vram_inc     = 0;
+    io.sp_pt_addr   = 0;
+    io.bg_pt_addr   = 0;
+    io.sp_size      = 0;
+    io.ext_bus_dir  = 0;
+    io.nmi_enabled  = 0;
     // PPUMASK
-    io.grey = 0;
+    io.grey         = 0;
     io.bg_show_left = 0;
     io.sp_show_left = 0;
-    io.bg_show = 0;
-    io.sp_show = 0;
-    io.red = 0;
-    io.green = 0;
-    io.blue = 0;
+    io.bg_show      = 0;
+    io.sp_show      = 0;
+    io.red          = 0;
+    io.green        = 0;
+    io.blue         = 0;
     // PPUSTATUS
-    io.sp_overflow = 1;
-    io.sp_zero_hit = 0;
-    io.vblank = 1;
+    if (!reset) {
+        io.sp_overflow = 1;
+        io.sp_zero_hit = 0;
+        io.vblank = 1;
+    } else {
+        io.sp_overflow = 0; // Util::random_between(0, 1);
+        io.sp_zero_hit = 0; // Util::random_between(0, 1);
+    }
     // OAMADDR
     io.oam_addr = 0;
     // PPUSCROLL and PPUADDR
+    if (!reset)
+        vram.tmp = 0;
+    vram.fine_x = 0;
+    io.scroll_latch = 0;
+    // PPUDATA
+    io.data_buf = 0;
+    // other
+    odd_frame = 0;
+    lines = cycles = 0;
+    // i have no idea
+    vram.addr = 0;
     vram.tmp = 0;
-    vram.fine_x = 0;
-    io.scroll_latch = 0;
-    // PPUDATA
-    io.data_buf = 0;
-    // other
-    odd_frame = 0;
-    lines = cycles = 0;
-    for (unsigned i = 0; i < VRAM_SIZE; i++)
-        vrammem[i] = 0;
-    for (unsigned i = 0; i < OAM_SIZE; i++)
-        oammem[i] = 0;
-    for (unsigned i = 0; i < PAL_SIZE; i++)
-        palmem[i] = 0;
-    // randomize memory
-    // for (auto &cell : oammem)
-    //     cell = Util::random8();
-    // for (uint16 i = PAL_START; i < 0x3F20; i++)
-    //     bus->write(i, Util::random8());
-    // for (uint16 i = NT_START; i < 0x3000; i++)
-    //     bus->write(i, Util::random8());
-    // we should also randomize chr-ram
 }
 
-void PPU::reset()
+void PPU::bus_map(Bus<CPUBUS_SIZE> &rambus)
 {
-    // PPUCTRL
-    io.vram_inc = 0;
-    io.sp_pt_addr = 0;
-    io.bg_pt_addr = 0;
-    io.sp_size = 0;
-    io.ext_bus_dir = 0;
-    io.nmi_enabled = 0;
-    // PPUMASK
-    io.grey = 0;
-    io.bg_show_left = 0;
-    io.sp_show_left = 0;
-    io.bg_show = 0;
-    io.sp_show = 0;
-    io.red = 0;
-    io.green = 0;
-    io.blue = 0;
-    // PPUSTATUS
-    io.sp_overflow = 0; // Util::random_between(0, 1);
-    io.sp_zero_hit = 0; // Util::random_between(0, 1);
-    // PPUSCROLL and PPUADDR
-    io.scroll_latch = 0;
-    vram.fine_x = 0;
-    // PPUDATA
-    io.data_buf = 0;
-    // other
-    odd_frame = 0;
-    lines = cycles = 0;
-    for (unsigned i = 0; i < OAM_SIZE; i++)
-        oammem[i] = 0;
-}
-
-void PPU::attach_bus(Bus *vrambus, Bus *rambus)
-{
-    bus = vrambus;
-    rambus->map(PPUREG_START, APU_START,
+    rambus.map(PPUREG_START, APU_START,
             [this](uint16 addr)             { return readreg(0x2000 + (addr & 0x7)); },
             [this](uint16 addr, uint8 data) { writereg(0x2000 + (addr & 0x7), data); });
-    bus->map(PAL_START, 0x4000,
-            [this](uint16 addr)             {
-                assert((addr & 0x1F) < PAL_SIZE);
-                return palmem[addr & 0x1F];
-            },
-            [this](uint16 addr, uint8 data) { assert((addr & 0x1F) < PAL_SIZE); palmem[addr & 0x1F] = data; });
-    bus->map(NT_START, PAL_START,
-            [this](uint16 addr)             { return 0; },
-            [this](uint16 addr, uint8 data) { /*******/ });
 }
 
 uint8 PPU::readreg(const uint16 which)
@@ -298,37 +248,6 @@ uint8 PPU::getcolor(bool select, uint8 pal, uint8 palind)
     // this is a 5 bit number
     uint8 n = select << 4 | pal << 2 | palind;
     return bus->read(0x3F00 + n);
-}
-
-void PPU::set_mirroring(Mirroring mirroring)
-{
-    std::function<uint16(uint16)> decode;
-
-    switch (mirroring) {
-    case Mirroring::HORZ:
-        decode = [](uint16 addr) {
-            auto tmp = addr & 0xFFF;
-            auto bits = Util::getbits(tmp, 10, 2) >> 1;
-            return Util::setbits(tmp, 10, 2, bits);
-        };
-        break;
-    case Mirroring::VERT:
-        decode = [](uint16 addr) { return addr & 0x7FF; };
-        break;
-    default:
-        assert(false);
-    }
-    bus->remap(NT_START, PAL_START,
-            [=, this](uint16 addr)             {
-                addr = decode(addr);
-                assert(addr < VRAM_SIZE);
-                return vrammem[addr];
-            },
-            [=, this](uint16 addr, uint8 data) {
-                addr = decode(addr);
-                assert(addr < VRAM_SIZE);
-                vrammem[addr] = data;
-            });
 }
 
 /* The VRAM address has the following components:

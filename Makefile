@@ -4,7 +4,7 @@ programname := emu
 profile := debug
 
 _objs_main := \
-	emulator.o bus.o cartridge.o cpu.o ppu.o instrinfo.o \
+	emulator.o cartridge.o cpu.o ppu.o instrinfo.o memory.o \
 	debugger.o clidbg.o cpudebugger.o ppudebugger.o \
 	cmdline.o easyrandom.o file.o stringops.o \
 	video.o opengl.o \

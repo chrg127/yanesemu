@@ -90,15 +90,18 @@ class CPU {
         bool execirq    = false;
     } signal;
 
-    Bus *bus = nullptr;
-    Reg16 opargs    = 0;
-    uint8 rammem[RAM_SIZE];
+    Bus<CPUBUS_SIZE> *bus = nullptr;
+    Reg16 opargs = 0;
     std::function<void(uint16, char)> fetch_callback;
     std::function<void(uint8, uint16)> error_callback;
 
 public:
-    explicit CPU(Bus *b);
+    explicit CPU(Bus<CPUBUS_SIZE> *rambus)
+        : bus(rambus)
+    { }
+
     void power(bool reset = false);
+    void bus_map(Bus<CPUBUS_SIZE> &rambus);
     void run();
     void fire_irq();
     void fire_nmi();
@@ -111,7 +114,6 @@ public:
     friend class Debugger::CPUDebugger;
 
 private:
-    void attach_bus(Bus *rambus);
     uint8 fetch();
     uint8 fetchop();
     void execute(uint8 instr);

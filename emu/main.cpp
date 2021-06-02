@@ -61,7 +61,6 @@ int cli_interface(const Util::ArgResult &flags)
 
     emu.set_screen(&screen);
     emu.power();
-    // fmt::print("{}\n", emu.rominfo());
     for (bool running = true; running; ) {
         for (SDL_Event ev; SDL_PollEvent(&ev); ) {
             switch (ev.type) {

@@ -1,38 +1,55 @@
-#ifndef CORE_BUS_HPP_INCLUDED
-#define CORE_BUS_HPP_INCLUDED
+#ifndef BUS_HPP_INCLUDED
+#define BUS_HPP_INCLUDED
 
+#include <concepts>
 #include <functional>
+#include <array>
 #include <emu/util/unsigned.hpp>
-#include <emu/util/heaparray.hpp>
+#include <emu/util/debug.hpp>
 
 namespace Core {
 
+template <std::size_t BusSize>
 class Bus {
-    static const int TABSIZ = 16;
+    static const int TABSIZE = 16;
     using Reader = std::function<uint8(uint16)>;
     using Writer = std::function<void(uint16, uint8)>;
 
-    Util::HeapArray<unsigned> lookup;
-    Reader readtab[TABSIZ];
-    Writer writetab[TABSIZ];
-    bool assigned[TABSIZ];
+    std::array<unsigned, BusSize> lookup;
+    Reader readtab[TABSIZE];
+    Writer writetab[TABSIZE];
+    bool assigned[TABSIZE];
 
 public:
     Bus() = default;
-    explicit Bus(const uint32 size) { reset(size); }
+    Bus(const Bus<BusSize> &) = delete;
+    Bus<BusSize> operator=(const Bus<BusSize> &) = delete;
 
-    Bus(const Bus &) = delete;
-    Bus(Bus &&b) { operator=(std::move(b)); }
-    Bus & operator=(const Bus &) = delete;
-    Bus & operator=(Bus &&b);
+    void map(uint32 start, uint32 end, auto &&reader, auto &&writer)
+    {
+        int id = 0;
 
-    void map(uint16 start, uint32 end, Reader reader, Writer writer);
-    void remap(uint16 start, uint32 end, Reader reader, Writer writer);
-    void reset(const std::size_t newsize);
+        // search for a new id
+        while (assigned[id]) {
+            if (++id > TABSIZE) {
+                error("mapping exhausted\n");
+                return;
+            }
+        }
+        assigned[id] = true;
+        readtab[id] = reader;
+        writetab[id] = writer;
+        std::fill(lookup.begin() + start, lookup.begin() + end, id);
+    }
 
-    uint8 read(const uint16 addr) const             { return readtab[lookup[addr]](addr); }
-    void write(const uint16 addr, const uint8 data) { writetab[lookup[addr]](addr, data); }
-    std::size_t size() const                        { return lookup.size(); }
+    void reset()
+    {
+        std::fill(std::begin(assigned), std::end(assigned), false);
+        std::fill(lookup.begin(), lookup.end(), 0);
+    }
+
+    uint8 read(uint16 addr) const { return readtab[lookup[addr]](addr); }
+    void write(uint16 addr, uint8 data) { writetab[lookup[addr]](addr, data); }
 };
 
 } // namespace Core

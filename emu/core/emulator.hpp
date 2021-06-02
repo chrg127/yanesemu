@@ -13,19 +13,20 @@ namespace Debugger { class Debugger; }
 namespace Core {
 
 class Emulator {
-    Bus rambus { CPUBUS_SIZE };
-    Bus vrambus { PPUBUS_SIZE };
+    Bus<CPUBUS_SIZE> rambus;
+    Bus<PPUBUS_SIZE> vrambus;
     Util::HeapArray<uint8> prgrom;
     Util::HeapArray<uint8> chrrom;
     CPU cpu{&rambus};
-    PPU ppu{&rambus, &vrambus};
+    PPU ppu{&vrambus};
     // this is internal to the emulator only and doesn't affect the cpu and ppu
     bool nmi = false;
+
+    void bus_map(Mirroring mirroring);
 
 public:
     Emulator()
     {
-        ppu.attach_bus(&vrambus, &rambus);
         ppu.on_nmi([this]() {
             nmi = true;
             cpu.fire_nmi();
@@ -36,20 +37,13 @@ public:
     void run_frame();
     void insert_rom(Cartridge::Data &&cartdata);
 
-    void power()
+    void power(bool reset = false)
     {
-        cpu.power();
-        ppu.power();
-    }
-
-    void reset()
-    {
-        cpu.power(true);
-        ppu.reset();
+        cpu.power(reset);
+        ppu.power(reset);
     }
 
     void set_screen(Video::Canvas *canvas) { ppu.set_screen(canvas); }
-    // std::string rominfo()                  { return cartridge.getinfo(); }
 
     friend class Debugger::Debugger;
 };

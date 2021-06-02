@@ -5,6 +5,7 @@
 #include <emu/util/unsigned.hpp>
 #include <emu/util/debug.hpp>
 #include <emu/util/file.hpp>
+#include <emu/core/memory.hpp>
 
 using namespace Core;
 
@@ -25,11 +26,10 @@ void Emulator::run_frame()
     nmi = false;
 }
 
-void Emulator::insert_rom(Cartridge::Data &&cartdata)
+void Emulator::bus_map(Mirroring mirroring)
 {
-    prgrom = std::move(cartdata.prgrom);
-    chrrom = std::move(cartdata.chrrom);
-    ppu.set_mirroring(cartdata.mirroring);
+    cpu.bus_map(rambus);
+    ppu.bus_map(rambus);
     rambus.map(CARTRIDGE_START, 0x8000,
             [](uint16 addr) { return 0; },
             [](uint16 addr, uint8 data) { /***********/ });
@@ -45,5 +45,13 @@ void Emulator::insert_rom(Cartridge::Data &&cartdata)
     vrambus.map(PT_START, NT_START,
             [this](uint16 addr) { return chrrom[addr]; },
             [](uint16 addr, uint8 data) { /***********/ });
+    memory_bus_map(rambus, vrambus, mirroring);
+}
+
+void Emulator::insert_rom(Cartridge::Data &&cartdata)
+{
+    prgrom = std::move(cartdata.prgrom);
+    chrrom = std::move(cartdata.chrrom);
+    bus_map(cartdata.mirroring);
 }
 
