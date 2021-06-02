@@ -73,6 +73,64 @@ static GLenum glCheckError(const char *file, int line)
 #endif
 }
 
+static GLuint create_shader(GLuint progid, GLuint type, const char *code, const char *name)
+{
+    GLuint sid = glCreateShader(type);
+    glShaderSource(sid, 1, &code, nullptr);
+    glCompileShader(sid);
+    GLint result = GL_FALSE;
+    glGetShaderiv(sid, GL_COMPILE_STATUS, &result);
+    if (result == GL_FALSE) {
+        GLint len = 0;
+        glGetShaderiv(sid, GL_INFO_LOG_LENGTH, &len);
+        auto infolog = std::make_unique<char[]>(len + 1);
+        glGetShaderInfoLog(sid, len, &len, infolog.get());
+        infolog[len] = '\0';
+        error("OpenGL: {} compile error: {}\n", name, infolog.get());
+        return 0;
+    }
+    glAttachShader(progid, sid);
+    return sid;
+}
+
+static unsigned create_program()
+{
+    unsigned progid = glCreateProgram();
+    auto vs = create_shader(progid, GL_VERTEX_SHADER, vertcode, "vertex shader");
+    auto fs = create_shader(progid, GL_FRAGMENT_SHADER, fragcode, "fragment shader");
+    glLinkProgram(progid);
+    GLint result;
+    glGetProgramiv(progid, GL_LINK_STATUS, &result);
+    if (result == GL_FALSE) {
+        GLint len = 0;
+        glGetProgramiv(progid, GL_INFO_LOG_LENGTH, &len);
+        auto infolog = std::make_unique<char[]>(len + 1);
+        glGetProgramInfoLog(progid, len, &len, infolog.get());
+        infolog[len] = '\0';
+        error("OpenGL: program link error: {}\n", infolog.get());
+    }
+    glDeleteShader(vs);
+    glDeleteShader(fs);
+    return progid;
+}
+
+static void create_objects(unsigned &vao, unsigned &vbo, unsigned &ebo)
+{
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+    glGenBuffers(1, &ebo);
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+}
+
+
 namespace Video {
 
 OpenGL::~OpenGL()
@@ -111,8 +169,8 @@ bool OpenGL::init()
     }
     SDL_GL_SetSwapInterval(1);
 
-    create_program();
-    create_objects();
+    progid = create_program();
+    create_objects(vao, vbo, ebo);
     glClearColor(0.0f, 0.0f, 0.4f, 1.0f);
     glUseProgram(progid);
     glUniform1i(glGetUniformLocation(progid, "tex"), 0);
@@ -160,62 +218,6 @@ void OpenGL::draw()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     SDL_GL_SwapWindow(window);
-}
-
-static GLuint create_shader(GLuint progid, GLuint type, const char *code, const char *name)
-{
-    GLuint sid = glCreateShader(type);
-    glShaderSource(sid, 1, &code, nullptr);
-    glCompileShader(sid);
-    GLint result = GL_FALSE;
-    glGetShaderiv(sid, GL_COMPILE_STATUS, &result);
-    if (result == GL_FALSE) {
-        GLint len = 0;
-        glGetShaderiv(sid, GL_INFO_LOG_LENGTH, &len);
-        auto infolog = std::make_unique<char[]>(len + 1);
-        glGetShaderInfoLog(sid, len, &len, infolog.get());
-        infolog[len] = '\0';
-        error("OpenGL: {} compile error: {}\n", name, infolog.get());
-        return 0;
-    }
-    glAttachShader(progid, sid);
-    return sid;
-}
-
-void OpenGL::create_program()
-{
-    progid = glCreateProgram();
-    auto vs = create_shader(progid, GL_VERTEX_SHADER, vertcode, "vertex shader");
-    auto fs = create_shader(progid, GL_FRAGMENT_SHADER, fragcode, "fragment shader");
-    glLinkProgram(progid);
-    GLint result;
-    glGetProgramiv(progid, GL_LINK_STATUS, &result);
-    if (result == GL_FALSE) {
-        GLint len = 0;
-        glGetProgramiv(progid, GL_INFO_LOG_LENGTH, &len);
-        auto infolog = std::make_unique<char[]>(len + 1);
-        glGetProgramInfoLog(progid, len, &len, infolog.get());
-        infolog[len] = '\0';
-        error("OpenGL: program link error: {}\n", infolog.get());
-    }
-    glDeleteShader(vs);
-    glDeleteShader(fs);
-}
-
-void OpenGL::create_objects()
-{
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-    glGenBuffers(1, &ebo);
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
 }
 
 } // namespace Video

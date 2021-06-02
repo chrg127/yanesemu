@@ -13,9 +13,6 @@ class OpenGL : public Context::Impl {
     unsigned progid;
     unsigned vbo, vao, ebo;
 
-    void create_program();
-    void create_objects();
-
 public:
     ~OpenGL() override;
 
