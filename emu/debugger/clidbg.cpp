@@ -12,7 +12,7 @@
 
 namespace Debugger {
 
-//  name                abbrev  enum           min args max args
+//  name                abbrev  enum           min args max args    description
 #define O(X) \
     X("help",           "h",    HELP,          0,       1,          "prints this help text") \
     X("continue",       "c",    CONTINUE,      0,       0,          "start/continue execution") \
@@ -51,7 +51,6 @@ struct CommandInfo {
 #define X(name, abbrev, enumname, minargs, maxargs, desc) { enumname, CommandInfo{ name, desc, abbrev, minargs, maxargs } },
 static const std::unordered_map<Command, CommandInfo> info_lookup = {
     O(X)
-    { Command::INVALID, CommandInfo{ "", "This command is invalid.", "", 0, 0 } },
 };
 #undef X
 
@@ -123,13 +122,12 @@ void CliDebugger::repl()
             return;
         if (cmdstr.empty())
             eval(last_cmd, last_args);
-        else {
-            last_cmd = Util::map_lookup_withdef(name_lookup, cmdstr, Command::INVALID);
-            last_args = last_cmd != Command::INVALID
-                      ? Util::strsplit(argsstr, ' ')
-                      : std::vector<std::string>{};
+        else if (auto optcmd = Util::map_lookup(name_lookup, cmdstr); optcmd) {
+            last_cmd  = optcmd.value();
+            last_args = Util::strsplit(argsstr, ' ');
             eval(last_cmd, last_args);
-        }
+        } else
+            fmt::print("Invalid command. Try 'help'.\n");
     }
 }
 
@@ -148,8 +146,8 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
 
     case Command::HELP:
         if (args.size() == 1) {
-            Command cmd = Util::map_lookup_withdef(name_lookup, args[0], Command::INVALID);
-            fmt::print("{}\n", info_lookup.find(cmd)->second.desc);
+            auto cmd = Util::map_lookup(name_lookup, args[0]);
+            fmt::print("{}\n", info_lookup.find(cmd.value())->second.desc);
         } else
             fmt::print("{}", helpstr);
         break;
@@ -282,10 +280,6 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
 
     case Command::QUIT:
         quit = true;
-        break;
-
-    case Command::INVALID:
-        fmt::print("Invalid command. Try 'help'.\n");
         break;
     }
 }

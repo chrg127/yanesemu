@@ -23,6 +23,15 @@ const V &map_lookup_withdef(const std::unordered_map<K, V> &m,
     return it == m.end() ? defval : it->second;
 }
 
+template <typename K, typename V>
+std::optional<V> map_lookup(const std::unordered_map<K, V> &m, const K &key)
+{
+    auto it = m.find(key);
+    if (it == m.end())
+       return std::nullopt;
+    return it->second;
+}
+
 /* Makes a visitor object suitable for std::visit().
  * Example:
  *     std::variant<int, std::string> var = "hello world";

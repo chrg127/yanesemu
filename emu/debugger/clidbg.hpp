@@ -29,7 +29,6 @@ enum Command {
     STOP_TRACE,
     RESET,
     QUIT,
-    INVALID,
 };
 
 class CliDebugger {
