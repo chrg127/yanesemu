@@ -9,6 +9,13 @@
 
 using namespace Core;
 
+void Emulator::power(bool reset)
+{
+    cpu.power(reset);
+    ppu.power(reset);
+    Memory::power(reset);
+}
+
 void Emulator::run()
 {
     unsigned long old_cycle = cpu.cycles();
@@ -28,10 +35,13 @@ void Emulator::run_frame()
 
 void Emulator::bus_map(Mirroring mirroring)
 {
+    rambus.reset();
+    vrambus.reset();
     cpu.bus_map(rambus);
     ppu.bus_map(rambus);
+    Memory::bus_map(rambus, vrambus, mirroring);
     rambus.map(CARTRIDGE_START, 0x8000,
-            [](uint16 addr) { return 0; },
+            [](uint16 addr)             { return 0; },
             [](uint16 addr, uint8 data) { /***********/ });
     rambus.map(0x8000, CPUBUS_SIZE,
             [this](uint16 addr)
@@ -43,9 +53,8 @@ void Emulator::bus_map(Mirroring mirroring)
             },
             [](uint16 addr, uint8 data) { /***********/ });
     vrambus.map(PT_START, NT_START,
-            [this](uint16 addr) { return chrrom[addr]; },
+            [this](uint16 addr)         { return chrrom[addr]; },
             [](uint16 addr, uint8 data) { /***********/ });
-    memory_bus_map(rambus, vrambus, mirroring);
 }
 
 void Emulator::insert_rom(Cartridge::Data &&cartdata)

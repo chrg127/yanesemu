@@ -33,15 +33,10 @@ public:
         });
     }
 
+    void power(bool reset = false);
     void run();
     void run_frame();
     void insert_rom(Cartridge::Data &&cartdata);
-
-    void power(bool reset = false)
-    {
-        cpu.power(reset);
-        ppu.power(reset);
-    }
 
     void set_screen(Video::Canvas *canvas) { ppu.set_screen(canvas); }
 

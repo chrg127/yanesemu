@@ -8,29 +8,32 @@
 
 namespace Core {
 
-std::array<uint8, Core::RAM_SIZE> rammem;
-std::array<uint8, Core::VRAM_SIZE> vrammem;
-std::array<uint8, Core::PAL_SIZE> palmem;
-std::array<uint8, Core::OAM_SIZE> oammem;
+namespace Memory {
 
-static std::function<uint16(uint16)> get_decode(Mirroring mirroring)
+static std::array<uint8, Core::RAM_SIZE> rammem;
+static std::array<uint8, Core::VRAM_SIZE> vrammem;
+static std::array<uint8, Core::PAL_SIZE> palmem;
+static std::array<uint8, Core::OAM_SIZE> oammem;
+
+using DecodeFn = uint16 (*)(uint16);
+static DecodeFn get_decode(Mirroring mirroring)
 {
     switch (mirroring) {
     case Mirroring::HORZ:
-        return [](uint16 addr)
+        return [] (uint16 addr) -> uint16
         {
             auto tmp = addr & 0xFFF;
             auto bits = Util::getbits(tmp, 10, 2) >> 1;
             return Util::setbits(tmp, 10, 2, bits);
         };
     case Mirroring::VERT:
-        return [](uint16 addr) { return addr & 0x7FF; };
+        return [](uint16 addr) -> uint16 { return addr & 0x7FF; };
     default:
-        assert(false);
+        panic("invalid value passed to get_decode\n");
     }
 }
 
-void memory_bus_map(Bus<CPUBUS_SIZE> &rambus, Bus<PPUBUS_SIZE> &vrambus, Mirroring mirroring)
+void bus_map(Bus<CPUBUS_SIZE> &rambus, Bus<PPUBUS_SIZE> &vrambus, Mirroring mirroring)
 {
     rambus.map(RAM_START, PPUREG_START,
              [](uint16 addr)             { return rammem[addr & 0x7FF]; },
@@ -62,7 +65,7 @@ void memory_bus_map(Bus<CPUBUS_SIZE> &rambus, Bus<PPUBUS_SIZE> &vrambus, Mirrori
             });
 }
 
-void memory_power(bool reset, char fillval)
+void power(bool reset, char fillval)
 {
     std::fill(rammem.begin(), rammem.end(), fillval);
     if (!reset) {
@@ -71,5 +74,7 @@ void memory_power(bool reset, char fillval)
     }
     std::fill(oammem.begin(), oammem.end(), fillval);
 }
+
+} // namespace Memory
 
 } // namespace Core
