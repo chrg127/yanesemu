@@ -227,8 +227,8 @@ void PPU::output()
     uint32 color = 0;
     if (bgpixel == 0x30)
         color = 0xFFFFFFFF;
-    const auto x = cycles % 341;
-    const auto y = lines % 262;
+    const auto x = cycles % PPU_MAX_LCYCLE;
+    const auto y = lines % PPU_MAX_LINES;
     assert((y <= 239 || y == 261) && x <= 256);
     // is there any fucking document that says when i have to output pixels
     // and doesn't have a shitty explanation?

@@ -12,7 +12,9 @@ void PPU::cycle_idle()
 // called at (340, 261)
 void PPU::begin_frame()
 {
-    assert(lines%262 == 261 && cycles%341 == 340);
+    assert(lines%PPU_MAX_LINES == PPU_MAX_LINES-1
+        && cycles%PPU_MAX_LCYCLE == PPU_MAX_LCYCLE-1
+        && "begin_frame() called when not at the beginning of a frame");
     if (odd_frame) {
         lines = 0;
         cycles = 0;
@@ -148,7 +150,7 @@ using LineFunc  = void (PPU::*)(unsigned);
 
 #define CCYCLE &PPU::ccycle
 #define IDLE &PPU::cycle_idle
-static constexpr std::array<CycleFunc, 341> cycletab = {
+static constexpr std::array<CycleFunc, PPU_MAX_LCYCLE> cycletab = {
     IDLE,        CCYCLE<1>,   CCYCLE<2>,   CCYCLE<3>,   CCYCLE<4>,   CCYCLE<5>,   CCYCLE<6>,   CCYCLE<7>,
     CCYCLE<8>,   CCYCLE<9>,   CCYCLE<10>,  CCYCLE<11>,  CCYCLE<12>,  CCYCLE<13>,  CCYCLE<14>,  CCYCLE<15>,
     CCYCLE<16>,  CCYCLE<17>,  CCYCLE<18>,  CCYCLE<19>,  CCYCLE<20>,  CCYCLE<21>,  CCYCLE<22>,  CCYCLE<23>,
@@ -222,7 +224,7 @@ void PPU::lcycle(unsigned int cycle)
 }
 
 #define LCYCLE &PPU::lcycle
-static constexpr std::array<LineFunc, 262> linetab = {
+static constexpr std::array<LineFunc, PPU_MAX_LINES> linetab = {
     LCYCLE<0>,   LCYCLE<1>,   LCYCLE<2>,   LCYCLE<3>,   LCYCLE<4>,   LCYCLE<5>,   LCYCLE<6>,   LCYCLE<7>,
     LCYCLE<8>,   LCYCLE<9>,   LCYCLE<10>,  LCYCLE<11>,  LCYCLE<12>,  LCYCLE<13>,  LCYCLE<14>,  LCYCLE<15>,
     LCYCLE<16>,  LCYCLE<17>,  LCYCLE<18>,  LCYCLE<19>,  LCYCLE<20>,  LCYCLE<21>,  LCYCLE<22>,  LCYCLE<23>,
@@ -261,9 +263,9 @@ static constexpr std::array<LineFunc, 262> linetab = {
 
 void PPU::run()
 {
-    const auto linefunc = linetab[lines % 262];
-    (this->*linefunc)(cycles % 341);
+    const auto linefunc = linetab[lines % PPU_MAX_LINES];
+    (this->*linefunc)(cycles % PPU_MAX_LCYCLE);
     cycles++;
-    lines += (cycles % 341 == 0);
+    lines += (cycles % PPU_MAX_LCYCLE == 0);
 }
 
