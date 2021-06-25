@@ -31,8 +31,8 @@ enum {
     // Screen contants, used by the PPU.
     SCREEN_WIDTH    = 256,
     SCREEN_HEIGHT   = 240,
-    LINE_MAX        = 262,
-    CYCLE_MAX       = 341,
+    PPU_MAX_LINES   = 262,
+    PPU_MAX_LCYCLE   = 341,
 };
 
 // OTHER is usually mapper defined.
