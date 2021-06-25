@@ -47,14 +47,15 @@ static float vertices[] = {
     -1.0f, -1.0f, 0.0f,  0.0f, 0.0f, // bottom left
 };
 
+/* two triangles to form a square. */
 unsigned indices[] = {
     0, 1, 2,
     1, 2, 3,
 };
 
+#ifdef DEBUG
 static GLenum glCheckError(const char *file, int line)
 {
-#ifdef DEBUG
     GLenum err;
     while (err = glGetError(), err != GL_NO_ERROR) {
         switch (err) {
@@ -68,10 +69,10 @@ static GLenum glCheckError(const char *file, int line)
         }
     }
     return err;
-#else
-    return GL_NO_ERROR;
-#endif
 }
+#else
+#define glCheckError(f, l) GL_NO_ERROR
+#endif
 
 static GLuint create_shader(GLuint progid, GLuint type, const char *code, const char *name)
 {

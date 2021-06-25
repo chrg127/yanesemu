@@ -1,3 +1,6 @@
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 #include <fmt/core.h>
 #include <SDL2/SDL.h>
 #include <emu/version.hpp>
@@ -16,6 +19,10 @@ static const Util::ValidArgStruct cmdflags = {
     { 'd',  "debugger", "Use command-line debugger"     },
 };
 static Core::Emulator emu;
+
+std::mutex frame_mutex;
+std::condition_variable required_cond;
+unsigned frame_pending = 0;
 
 bool open_rom(std::string_view pathname)
 {
@@ -45,6 +52,78 @@ bool open_rom_with_flags(const Util::ArgResult &flags)
     return open_rom(flags.items[0]);
 }
 
+void emulator_thread()
+{
+    while (true) {
+        fmt::print("running for one frame\n");
+        emu.run_frame();
+        // fmt::print("finished running, update\n");
+        std::unique_lock<std::mutex> lock{frame_mutex};
+        // fmt::print("add to frame_pending: {} -> {}\n", frame_pending, frame_pending + 1);
+        frame_pending += 1;
+        do {
+            fmt::print("emulator: waiting on required_cond\n");
+            required_cond.wait(lock);
+            // fmt::print("finished waiting, frame_pending = {}\n", frame_pending);
+        } while (frame_pending != 0);
+        // fmt::print("resuming emulator thread\n");
+        fmt::print("emulator: checking running\n");
+    }
+    fmt::print("emulation finished\n");
+}
+
+
+void end_emulator_thread()
+{
+
+}
+
+void emulator_running()
+{
+
+}
+
+
+void rendering_thread(Video::Context &ctx, Video::Canvas &screen)
+{
+    // return whether there are any new frames.
+    const auto wait_frame_start = []() -> bool
+    {
+        // fmt::print("frame_pending = {}\n", frame_pending);
+        if (frame_pending == 0)
+            return false;
+        frame_pending = 0;
+        return true;
+    };
+
+    while (emulator_running()) {
+        for (SDL_Event ev; SDL_PollEvent(&ev) != 0; ) {
+            switch (ev.type) {
+            case SDL_QUIT:
+                set_running(false);
+                break;
+            case SDL_WINDOWEVENT:
+                if (ev.window.event == SDL_WINDOWEVENT_RESIZED)
+                    ctx.resize(ev.window.data1, ev.window.data2);
+            }
+        }
+
+        {
+            std::unique_lock<std::mutex> lock{frame_mutex};
+            if (wait_frame_start()) {
+                ctx.update_canvas(screen);
+            }
+            required_cond.notify_one();
+        }
+
+        ctx.use_texture(screen);
+        fmt::print("drawing\n");
+        ctx.draw();
+        fmt::print("rendering: checking running\n");
+    }
+    fmt::print("rendering finished\n");
+}
+
 int cli_interface(const Util::ArgResult &flags)
 {
     if (!open_rom_with_flags(flags))
@@ -61,26 +140,20 @@ int cli_interface(const Util::ArgResult &flags)
 
     emu.set_screen(&screen);
     emu.power();
-    for (bool running = true; running; ) {
-        for (SDL_Event ev; SDL_PollEvent(&ev); ) {
-            switch (ev.type) {
-            case SDL_QUIT:
-                running = false;
-                break;
-            case SDL_WINDOWEVENT:
-                if (ev.window.event == SDL_WINDOWEVENT_RESIZED)
-                    context->resize(ev.window.data1, ev.window.data2);
-            }
-        }
-        emu.run_frame();
-        context->update_canvas(screen);
-        context->use_texture(screen);
-        context->draw();
-        SDL_Delay(1000 / 60);
-    }
+
+    /* run emulator and rendering in two separate threads */
+    std::thread emuthread{emulator_thread};
+
+    /* note that we must run everything related to rendering in
+     * the same thread where we created the context */
+    rendering_thread(*context, screen);
+
+    emuthread.join();
+
     return 0;
 }
 
+/*
 int debugger_interface(const Util::ArgResult &flags)
 {
     if (!open_rom_with_flags(flags))
@@ -91,6 +164,7 @@ int debugger_interface(const Util::ArgResult &flags)
     clidbg.enter();
     return 0;
 }
+*/
 
 int main(int argc, char *argv[])
 {
@@ -117,14 +191,9 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if (flags.has['d'])
-        return debugger_interface(flags);
-    return cli_interface(flags);
-
-
     Util::seed();
-    if (flags.has['d'])
-        return debugger_interface(flags);
+    // if (flags.has['d'])
+    //     return debugger_interface(flags);
     return cli_interface(flags);
 }
 
