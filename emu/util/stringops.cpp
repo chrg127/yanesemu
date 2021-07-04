@@ -21,31 +21,4 @@ std::vector<std::string> strsplit(const std::string &s, int delim)
     return res;
 }
 
-std::string trim(const std::string &str)
-{
-    auto i = str.begin();
-    auto j = str.end() - 1;
-    while (is_space(*i))
-        i++;
-    while (is_space(*j))
-        j--;
-    return std::string(i, j+1);
-}
-
-std::string ltrim(const std::string &str)
-{
-    auto i = str.begin();
-    while (is_space(*i))
-        i++;
-    return std::string(i, str.end());
-}
-
-std::string rtrim(const std::string &str)
-{
-    auto i = str.end() - 1;
-    while (is_space(*i))
-        i--;
-    return std::string(str.begin(), i+1);
-}
-
 } // namespace Util

@@ -43,11 +43,6 @@ inline bool is_space(int c)
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
-// Trim string, return new string.
-std::string trim(const std::string &str);
-std::string ltrim(const std::string &str);
-std::string rtrim(const std::string &str);
-
 } // namespace Util
 
 #endif

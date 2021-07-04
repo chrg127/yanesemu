@@ -6,13 +6,11 @@
  *
  * - error(): prints a message to stderr with leading 'error: '.
  * - warning(): same as above but with warning instead.
- * - panic(): same as above, but with panic instead, and immediately exits. This
- *   may leak resources.
+ * - panic(): same as above, but with panic instead, and immediately exits.
  * - dbgprint(): same as above but with leading file and line instead. The
  *   message is seen only with DEBUG defined.
  */
 
-#include <cstdlib>
 #include <fmt/core.h>
 
 template <typename... T>
@@ -30,10 +28,7 @@ inline void warning(std::string &&fmt, T&&... args)
 }
 
 template <typename... T>
-#if defined(__GNUC__) || defined(__GNUG__)
-__attribute__((noreturn))
-#endif
-inline void panic(std::string &&fmt, T&&... args)
+[[noreturn]] inline void panic(std::string &&fmt, T&&... args)
 {
     fmt::print(stderr, "panic: ");
     fmt::print(stderr, fmt, args...);
@@ -43,7 +38,7 @@ inline void panic(std::string &&fmt, T&&... args)
 #ifdef DEBUG
 
 template <typename... T>
-inline void dbgprint_detail(const char *file, int line, std::string &&fmt, T&&... args)
+inline void _dbgprint_detail(const char *file, int line, std::string &&fmt, T&&... args)
 {
     fmt::print(stderr, "{}:{} ", file, line);
     fmt::print(stderr, fmt, args...);
