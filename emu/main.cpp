@@ -23,6 +23,9 @@ static Core::Emulator emu;
 std::mutex frame_mutex;
 std::condition_variable required_cond;
 unsigned frame_pending = 0;
+bool thread_running = true;
+bool wait_for_frame_update = true;
+std::mutex running_mutex;
 
 bool open_rom(std::string_view pathname)
 {
@@ -52,36 +55,45 @@ bool open_rom_with_flags(const Util::ArgResult &flags)
     return open_rom(flags.items[0]);
 }
 
+void end_emulator_thread()
+{
+    std::lock_guard<std::mutex> lock(running_mutex);
+    std::lock_guard<std::mutex> lock2(frame_mutex);
+    if (!thread_running)
+        return;
+    thread_running = false;
+    wait_for_frame_update = false;
+    frame_pending = 0;
+    required_cond.notify_one();
+}
+
+bool emulator_running()
+{
+    std::lock_guard<std::mutex> lock(running_mutex);
+    return thread_running;
+}
+
 void emulator_thread()
 {
-    while (true) {
-        fmt::print("running for one frame\n");
+    while (emulator_running()) {
+        // fmt::print("running for one frame\n");
         emu.run_frame();
         // fmt::print("finished running, update\n");
         std::unique_lock<std::mutex> lock{frame_mutex};
         // fmt::print("add to frame_pending: {} -> {}\n", frame_pending, frame_pending + 1);
         frame_pending += 1;
         do {
-            fmt::print("emulator: waiting on required_cond\n");
-            required_cond.wait(lock);
+            // fmt::print("emulator: waiting on required_cond\n");
+            if (wait_for_frame_update)
+                required_cond.wait(lock);
             // fmt::print("finished waiting, frame_pending = {}\n", frame_pending);
-        } while (frame_pending != 0);
-        // fmt::print("resuming emulator thread\n");
-        fmt::print("emulator: checking running\n");
+        } while (frame_pending != 0 && wait_for_frame_update);
+        // fmt::print("emulator: resuming\n");
+        // fmt::print("emulator: checking running\n");
     }
-    fmt::print("emulation finished\n");
+    // fmt::print("emulation finished\n");
 }
 
-
-void end_emulator_thread()
-{
-
-}
-
-void emulator_running()
-{
-
-}
 
 
 void rendering_thread(Video::Context &ctx, Video::Canvas &screen)
@@ -100,7 +112,7 @@ void rendering_thread(Video::Context &ctx, Video::Canvas &screen)
         for (SDL_Event ev; SDL_PollEvent(&ev) != 0; ) {
             switch (ev.type) {
             case SDL_QUIT:
-                set_running(false);
+                end_emulator_thread();
                 break;
             case SDL_WINDOWEVENT:
                 if (ev.window.event == SDL_WINDOWEVENT_RESIZED)
@@ -117,11 +129,8 @@ void rendering_thread(Video::Context &ctx, Video::Canvas &screen)
         }
 
         ctx.use_texture(screen);
-        fmt::print("drawing\n");
         ctx.draw();
-        fmt::print("rendering: checking running\n");
     }
-    fmt::print("rendering finished\n");
 }
 
 int cli_interface(const Util::ArgResult &flags)
@@ -141,7 +150,7 @@ int cli_interface(const Util::ArgResult &flags)
     emu.set_screen(&screen);
     emu.power();
 
-    /* run emulator and rendering in two separate threads */
+    // run emulator and rendering in two separate threads
     std::thread emuthread{emulator_thread};
 
     /* note that we must run everything related to rendering in

@@ -1,6 +1,7 @@
 #ifndef VIDEO_HPP_INCLUDED
 #define VIDEO_HPP_INCLUDED
 
+#include <cstring>
 #include <cstdint>
 #include <memory>
 #include <string_view>
@@ -25,6 +26,7 @@ public:
     Canvas(std::size_t width, std::size_t height)
         : frame(new unsigned char[width*height*4])
     {
+        std::memset(frame, 0, width*height*4);
         tw = width;
         th = height;
     }
