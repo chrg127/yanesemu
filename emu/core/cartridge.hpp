@@ -3,7 +3,7 @@
 
 #include <optional>
 #include <emu/core/const.hpp>
-#include <emu/util/heaparray.hpp>
+#include <emu/util/array.hpp>
 #include <emu/util/unsigned.hpp>
 
 namespace Util { class File; }
