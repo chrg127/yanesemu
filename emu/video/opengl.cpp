@@ -1,15 +1,8 @@
 #include <emu/video/opengl.hpp>
 
-#include <exception>
 #include <fmt/core.h>
 #include <external/glad/glad.h>
 #include <emu/util/debug.hpp>
-#include <cstdlib>
-#include <cstdio>
-/*
-#define STB_IMAGE_IMPLEMENTATION
-#include <external/stb_image.h>
-*/
 
 static char vertcode[] = R"(
     #version 330 core
@@ -40,21 +33,27 @@ static char fragcode[] = R"(
     }
 )";
 
+//   vertices            texture coordinates
+//   texture coordinates are flipped (top should be 1.0f, but is 0.0f).
+//   this has to do with OpenGL's coordinate system, wherein an image
+//   that expected the origin to be top left instead has its origin at the
+//   bottom left, and results flipped.
 static float vertices[] = {
-     1.0f,  1.0f, 0.0f,  1.0f, 1.0f, // top right
-     1.0f, -1.0f, 0.0f,  1.0f, 0.0f, // bottom right
-    -1.0f,  1.0f, 0.0f,  0.0f, 1.0f, // top left
-    -1.0f, -1.0f, 0.0f,  0.0f, 0.0f, // bottom left
+     1.0f,  1.0f, 0.0f,  1.0f, 0.0f, // top right
+     1.0f, -1.0f, 0.0f,  1.0f, 1.0f, // bottom right
+    -1.0f,  1.0f, 0.0f,  0.0f, 0.0f, // top left
+    -1.0f, -1.0f, 0.0f,  0.0f, 1.0f, // bottom left
 };
 
+/* two triangles to form a square. */
 unsigned indices[] = {
     0, 1, 2,
     1, 2, 3,
 };
 
+#ifdef DEBUG
 static GLenum glCheckError(const char *file, int line)
 {
-#ifdef DEBUG
     GLenum err;
     while (err = glGetError(), err != GL_NO_ERROR) {
         switch (err) {
@@ -68,10 +67,10 @@ static GLenum glCheckError(const char *file, int line)
         }
     }
     return err;
-#else
-    return GL_NO_ERROR;
-#endif
 }
+#else
+#define glCheckError(f, l) GL_NO_ERROR
+#endif
 
 static GLuint create_shader(GLuint progid, GLuint type, const char *code, const char *name)
 {
@@ -184,7 +183,7 @@ void OpenGL::resize(int newwidth, int newheight)
     glViewport(0, 0, newwidth, newheight);
 }
 
-unsigned OpenGL::create_texture(std::size_t texw, std::size_t texh, unsigned char *data)
+unsigned OpenGL::create_texture(std::size_t texw, std::size_t texh, const void *data)
 {
     unsigned id;
     glActiveTexture(GL_TEXTURE0);
@@ -198,7 +197,7 @@ unsigned OpenGL::create_texture(std::size_t texw, std::size_t texh, unsigned cha
     return id;
 }
 
-void OpenGL::update_texture(unsigned id, std::size_t texw, std::size_t texh, unsigned char *data)
+void OpenGL::update_texture(unsigned id, std::size_t texw, std::size_t texh, const void *data)
 {
     use_texture(id);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texw, texh, GL_RGBA, GL_UNSIGNED_BYTE, data);

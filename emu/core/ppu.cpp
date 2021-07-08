@@ -7,7 +7,6 @@
 #include <emu/core/bus.hpp>
 #include <emu/util/easyrandom.hpp>
 #include <emu/util/debug.hpp>
-#include <emu/video/video.hpp>
 
 namespace Core {
 
@@ -221,14 +220,12 @@ uint8 PPU::readreg_no_sideeff(const uint16 which) const
 
 void PPU::output()
 {
-    if (screen == nullptr)
-        return;
-    const uint8 bgpixel = bg_output();
+    uint8 bgpixel = bg_output();
     uint32 color = 0;
     if (bgpixel == 0x30)
         color = 0xFFFFFFFF;
-    const auto x = cycles % PPU_MAX_LCYCLE;
-    const auto y = lines % PPU_MAX_LINES;
+    auto x = cycles % PPU_MAX_LCYCLE;
+    auto y = lines % PPU_MAX_LINES;
     assert((y <= 239 || y == 261) && x <= 256);
     // is there any fucking document that says when i have to output pixels
     // and doesn't have a shitty explanation?
@@ -236,7 +233,7 @@ void PPU::output()
         return;
     if (y == 261)
         return;
-    screen->drawpixel(x, y, color);
+    screen[y][x] = color;
 }
 
 // palette: 0-3, one of the 4 defined palettes for this frame

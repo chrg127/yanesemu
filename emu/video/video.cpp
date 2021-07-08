@@ -34,18 +34,6 @@ std::optional<Context> Context::create(Type type)
     return context;
 }
 
-void Canvas::drawpixel(std::size_t x, std::size_t y, uint32_t color)
-{
-    auto real_y = th-1 - y;
-    auto pos = (real_y * tw + x) * 4;
-    assert(pos > 0 && pos < tw * th * 4);
-    // this code is probably affected by endianness.
-    frame[pos  ] = color >> 24 & 0xFF;
-    frame[pos+1] = color >> 16 & 0xFF;
-    frame[pos+2] = color >> 8  & 0xFF;
-    frame[pos+3] = color       & 0xFF;
-}
-
 ImageTexture::ImageTexture(const char *pathname)
 {
     int width, height, channels;

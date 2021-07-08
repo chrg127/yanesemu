@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <string>
 #include <optional>
-#include "heaparray.hpp"
+#include "array.hpp"
 #include "unsigned.hpp"
 
 namespace Util {

@@ -18,8 +18,8 @@ public:
 
     bool init() override;
     void resize(int width, int height) override;
-    unsigned create_texture(std::size_t texw, std::size_t texh, unsigned char *data = nullptr) override;
-    void update_texture(unsigned id, std::size_t texw, std::size_t texh, unsigned char *data) override;
+    unsigned create_texture(std::size_t texw, std::size_t texh, const void *data = nullptr) override;
+    void update_texture(unsigned id, std::size_t texw, std::size_t texh, const void *data) override;
     void use_texture(unsigned id) override;
     void draw() override;
 };

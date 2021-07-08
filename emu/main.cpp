@@ -1,3 +1,6 @@
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 #include <fmt/core.h>
 #include <SDL2/SDL.h>
 #include <emu/version.hpp>
@@ -16,6 +19,72 @@ static const Util::ValidArgStruct cmdflags = {
     { 'd',  "debugger", "Use command-line debugger"     },
 };
 static Core::Emulator emu;
+
+std::mutex frame_mutex;
+std::mutex running_mutex;
+std::condition_variable required_cond;
+unsigned frame_pending = 0;
+bool wait_for_frame_update = true;
+
+class MainThread {
+    enum State {
+        RUNNING,
+        EXITING,
+    } state = State::RUNNING;
+
+    std::thread th;
+    std::mutex frame_mutex;
+    std::mutex running_mutex;
+    std::condition_variable required_cond;
+    unsigned frame_pending = 0;
+    bool wait_for_frame_update = true;
+
+public:
+    void run(auto &&fn)
+    {
+        th = std::thread(fn);
+    }
+
+    bool running()
+    {
+        std::lock_guard<std::mutex> lock(running_mutex);
+        return state == State::RUNNING;
+    }
+
+    void new_frame()
+    {
+        std::unique_lock<std::mutex> lock{frame_mutex};
+        frame_pending += 1;
+        do {
+            if (wait_for_frame_update)
+                required_cond.wait(lock);
+        } while (frame_pending != 0 && wait_for_frame_update);
+    }
+
+    void end()
+    {
+        std::lock_guard<std::mutex> lock(running_mutex);
+        std::lock_guard<std::mutex> lock2(frame_mutex);
+        if (state != State::RUNNING)
+            return;
+        state = State::EXITING;
+        wait_for_frame_update = false;
+        frame_pending = 0;
+        required_cond.notify_one();
+    }
+
+    void run_on_frame_pending(auto &&fn)
+    {
+        std::unique_lock<std::mutex> lock{frame_mutex};
+        if (frame_pending != 0) {
+            frame_pending = 0;
+            fn();
+        }
+        required_cond.notify_one();
+    }
+
+    void join() { th.join(); }
+};
 
 bool open_rom(std::string_view pathname)
 {
@@ -45,50 +114,68 @@ bool open_rom_with_flags(const Util::ArgResult &flags)
     return open_rom(flags.items[0]);
 }
 
-int cli_interface(const Util::ArgResult &flags)
+void rendering_thread(MainThread &mainthread, Video::Context &ctx, Video::Texture &screen)
+{
+    while (mainthread.running()) {
+        for (SDL_Event ev; SDL_PollEvent(&ev) != 0; ) {
+            switch (ev.type) {
+            case SDL_QUIT:
+                mainthread.end();
+                break;
+            case SDL_WINDOWEVENT:
+                if (ev.window.event == SDL_WINDOWEVENT_RESIZED)
+                    ctx.resize(ev.window.data1, ev.window.data2);
+            }
+        }
+
+        mainthread.run_on_frame_pending([&]() {
+            ctx.update_texture(screen, emu.get_screen());
+        });
+
+        ctx.use_texture(screen);
+        ctx.draw();
+    }
+}
+
+int cli_interface(Util::ArgResult &flags)
 {
     if (!open_rom_with_flags(flags))
         return 1;
 
-    // initialize video subsystem
     auto context = Video::Context::create(Video::Context::Type::OPENGL);
     if (!context) {
         error("can't initialize video\n");
         return 1;
     }
+    Video::Texture tex = context->create_texture(Core::SCREEN_WIDTH, Core::SCREEN_HEIGHT);
 
-    Video::Canvas screen = context->create_canvas(Core::SCREEN_WIDTH, Core::SCREEN_HEIGHT);
+    MainThread mainthread;
 
-    emu.set_screen(&screen);
-    emu.power();
-    for (bool running = true; running; ) {
-        for (SDL_Event ev; SDL_PollEvent(&ev); ) {
-            switch (ev.type) {
-            case SDL_QUIT:
-                running = false;
-                break;
-            case SDL_WINDOWEVENT:
-                if (ev.window.event == SDL_WINDOWEVENT_RESIZED)
-                    context->resize(ev.window.data1, ev.window.data2);
+    if (!flags.has['d']) {
+        mainthread.run([&]()
+        {
+            emu.power();
+            while (mainthread.running()) {
+                emu.run_frame();
+                mainthread.new_frame();
             }
-        }
-        emu.run_frame();
-        context->update_canvas(screen);
-        context->use_texture(screen);
-        context->draw();
-        SDL_Delay(1000 / 60);
+        });
+    } else {
+        mainthread.run([&]()
+        {
+            Debugger::CliDebugger clidbg{&emu};
+            bool quit = false;
+            clidbg.print_instr();
+            while (!quit && mainthread.running())
+                quit = clidbg.repl();
+            mainthread.end();
+        });
     }
-    return 0;
-}
 
-int debugger_interface(const Util::ArgResult &flags)
-{
-    if (!open_rom_with_flags(flags))
-        return 1;
+    rendering_thread(mainthread, context.value(), tex);
 
-    emu.power();
-    Debugger::CliDebugger clidbg{&emu};
-    clidbg.enter();
+    mainthread.join();
+
     return 0;
 }
 
@@ -117,14 +204,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if (flags.has['d'])
-        return debugger_interface(flags);
-    return cli_interface(flags);
-
-
     Util::seed();
-    if (flags.has['d'])
-        return debugger_interface(flags);
     return cli_interface(flags);
 }
 
