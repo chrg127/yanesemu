@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstring>
+#include <cassert>
 #include <array>
 #include <span>
 #include <memory>
@@ -45,7 +46,7 @@ class Array2D {
 public:
     std::span<T> operator[](std::size_t pos)
     {
-        return std::span{ arr+pos*Height, Width };
+        return std::span{ arr+pos*Width, Width };
     }
 
     T *data() { return arr; }
