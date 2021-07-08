@@ -21,11 +21,73 @@ static const Util::ValidArgStruct cmdflags = {
 static Core::Emulator emu;
 
 std::mutex frame_mutex;
+std::mutex running_mutex;
 std::condition_variable required_cond;
 unsigned frame_pending = 0;
-bool thread_running = true;
 bool wait_for_frame_update = true;
-std::mutex running_mutex;
+
+class MainThread {
+    enum State {
+        RUNNING,
+        EXITING,
+    } state = State::RUNNING;
+
+    std::thread th;
+    std::mutex frame_mutex;
+    std::mutex running_mutex;
+    std::condition_variable required_cond;
+    unsigned frame_pending = 0;
+    bool wait_for_frame_update = true;
+
+public:
+    void run(auto &&fn)
+    {
+        th = std::thread(fn);
+    }
+
+    bool running()
+    {
+        std::lock_guard<std::mutex> lock(running_mutex);
+        return state == State::RUNNING;
+    }
+
+    void new_frame()
+    {
+        std::unique_lock<std::mutex> lock{frame_mutex};
+        frame_pending += 1;
+        do {
+            if (wait_for_frame_update)
+                required_cond.wait(lock);
+        } while (frame_pending != 0 && wait_for_frame_update);
+    }
+
+    void end()
+    {
+        std::lock_guard<std::mutex> lock(running_mutex);
+        std::lock_guard<std::mutex> lock2(frame_mutex);
+        if (state != State::RUNNING)
+            return;
+        state = State::EXITING;
+        wait_for_frame_update = false;
+        frame_pending = 0;
+        required_cond.notify_one();
+    }
+
+    void run_on_frame_pending(auto &&fn)
+    {
+        std::unique_lock<std::mutex> lock{frame_mutex};
+        if (frame_pending != 0) {
+            frame_pending = 0;
+            fn();
+        }
+        required_cond.notify_one();
+    }
+
+    void join()
+    {
+        th.join();
+    }
+};
 
 bool open_rom(std::string_view pathname)
 {
@@ -55,64 +117,13 @@ bool open_rom_with_flags(const Util::ArgResult &flags)
     return open_rom(flags.items[0]);
 }
 
-void end_emulator_thread()
+void rendering_thread(MainThread &mainthread, Video::Context &ctx, Video::Texture &screen)
 {
-    std::lock_guard<std::mutex> lock(running_mutex);
-    std::lock_guard<std::mutex> lock2(frame_mutex);
-    if (!thread_running)
-        return;
-    thread_running = false;
-    wait_for_frame_update = false;
-    frame_pending = 0;
-    required_cond.notify_one();
-}
-
-bool emulator_running()
-{
-    std::lock_guard<std::mutex> lock(running_mutex);
-    return thread_running;
-}
-
-void emulator_thread()
-{
-    while (emulator_running()) {
-        // fmt::print("running for one frame\n");
-        emu.run_frame();
-        // fmt::print("finished running, update\n");
-        std::unique_lock<std::mutex> lock{frame_mutex};
-        // fmt::print("add to frame_pending: {} -> {}\n", frame_pending, frame_pending + 1);
-        frame_pending += 1;
-        do {
-            // fmt::print("emulator: waiting on required_cond\n");
-            if (wait_for_frame_update)
-                required_cond.wait(lock);
-            // fmt::print("finished waiting, frame_pending = {}\n", frame_pending);
-        } while (frame_pending != 0 && wait_for_frame_update);
-        // fmt::print("emulator: resuming\n");
-        // fmt::print("emulator: checking running\n");
-    }
-    // fmt::print("emulation finished\n");
-}
-
-
-
-void rendering_thread(Video::Context &ctx, Video::Texture &screen)
-{
-    // return whether there are any new frames.
-    const auto wait_frame_start = []() -> bool
-    {
-        // fmt::print("frame_pending = {}\n", frame_pending);
-        if (frame_pending == 0)
-            return false;
-        frame_pending = 0;
-        return true;
-    };
-
-    while (emulator_running()) {
+    while (mainthread.running()) {
         for (SDL_Event ev; SDL_PollEvent(&ev) != 0; ) {
             switch (ev.type) {
             case SDL_QUIT:
-                end_emulator_thread();
+                mainthread.end();
                 break;
             case SDL_WINDOWEVENT:
                 if (ev.window.event == SDL_WINDOWEVENT_RESIZED)
@@ -120,15 +131,10 @@ void rendering_thread(Video::Context &ctx, Video::Texture &screen)
             }
         }
 
-        {
-            std::unique_lock<std::mutex> lock{frame_mutex};
-            if (wait_frame_start()) {
-                ctx.update_texture(screen, emu.get_screen());
-            }
-            required_cond.notify_one();
-        }
+        mainthread.run_on_frame_pending([&]() {
+            ctx.update_texture(screen, emu.get_screen());
+        });
 
-        ctx.update_texture(screen, emu.get_screen());
         ctx.use_texture(screen);
         ctx.draw();
     }
@@ -151,13 +157,18 @@ int cli_interface(const Util::ArgResult &flags)
     emu.power();
 
     // run emulator and rendering in two separate threads
-    std::thread emuthread{emulator_thread};
+    MainThread mainthread;
+    mainthread.run([&]()
+    {
+        while (mainthread.running()) {
+            emu.run_frame();
+            mainthread.new_frame();
+        }
+    });
 
-    /* note that we must run everything related to rendering in
-     * the same thread where we created the context */
-    rendering_thread(*context, tex);
+    rendering_thread(mainthread, context.value(), tex);
 
-    emuthread.join();
+    mainthread.join();
 
     return 0;
 }
