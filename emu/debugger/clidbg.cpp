@@ -105,30 +105,30 @@ CliDebugger::CliDebugger(Core::Emulator *emu)
     dbg.on_report([this](Debugger::Event &&ev) { report_event(std::move(ev)); });
 }
 
-void CliDebugger::enter()
-{
-    print_instr();
-    repl();
-}
+// void CliDebugger::enter()
+// {
+//     print_instr();
+//     repl();
+// }
 
-void CliDebugger::repl()
+bool CliDebugger::repl()
 {
     Util::File input = Util::File::assoc(stdin);
     std::string cmdstr, argsstr;
 
-    while (!quit) {
-        fmt::print("[NESDBG]> ");
-        if (!input.getword(cmdstr) || !input.getline(argsstr))
-            return;
-        if (cmdstr.empty())
-            eval(last_cmd, last_args);
-        else if (auto optcmd = Util::map_lookup(name_lookup, cmdstr); optcmd) {
-            last_cmd  = optcmd.value();
-            last_args = Util::strsplit(argsstr, ' ');
-            eval(last_cmd, last_args);
-        } else
-            fmt::print("Invalid command. Try 'help'.\n");
-    }
+    fmt::print("[NESDBG]> ");
+    if (!input.getword(cmdstr) || !input.getline(argsstr))
+        return quit;
+    if (cmdstr.empty())
+        eval(last_cmd, last_args);
+    else if (auto optcmd = Util::map_lookup(name_lookup, cmdstr); optcmd) {
+        last_cmd  = optcmd.value();
+        last_args = Util::strsplit(argsstr, ' ');
+        eval(last_cmd, last_args);
+    } else
+        fmt::print("Invalid command. Try 'help'.\n");
+
+    return quit;
 }
 
 void CliDebugger::eval(Command cmd, std::vector<std::string> args)

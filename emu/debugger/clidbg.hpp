@@ -39,13 +39,12 @@ class CliDebugger {
 
 public:
     explicit CliDebugger(Core::Emulator *emu);
-    void enter();
+    bool repl();
+    void print_instr();
 
 private:
-    void repl();
     void eval(Command cmd, std::vector<std::string> args);
     void report_event(Debugger::Event &&ev);
-    void print_instr();
     void print_cpu_status();
     void print_ppu_status();
     std::string format_flags();

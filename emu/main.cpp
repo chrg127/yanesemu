@@ -145,7 +145,6 @@ int cli_interface(const Util::ArgResult &flags)
     if (!open_rom_with_flags(flags))
         return 1;
 
-    // initialize video subsystem
     auto context = Video::Context::create(Video::Context::Type::OPENGL);
     if (!context) {
         error("can't initialize video\n");
@@ -156,7 +155,6 @@ int cli_interface(const Util::ArgResult &flags)
 
     emu.power();
 
-    // run emulator and rendering in two separate threads
     MainThread mainthread;
     mainthread.run([&]()
     {
@@ -173,18 +171,39 @@ int cli_interface(const Util::ArgResult &flags)
     return 0;
 }
 
-/*
 int debugger_interface(const Util::ArgResult &flags)
 {
     if (!open_rom_with_flags(flags))
         return 1;
 
+    auto context = Video::Context::create(Video::Context::Type::OPENGL);
+    if (!context) {
+        error("can't initialize video\n");
+        return 1;
+    }
+
+    Video::Texture tex = context->create_texture(Core::SCREEN_WIDTH, Core::SCREEN_HEIGHT);
+
     emu.power();
+
+    MainThread mainthread;
     Debugger::CliDebugger clidbg{&emu};
-    clidbg.enter();
+
+    mainthread.run([&]()
+    {
+        bool quit = false;
+
+        clidbg.print_instr();
+        while (!quit && mainthread.running())
+            quit = clidbg.repl();
+        mainthread.end();
+    });
+    rendering_thread(mainthread, context.value(), tex);
+
+    mainthread.join();
+
     return 0;
 }
-*/
 
 int main(int argc, char *argv[])
 {
@@ -212,8 +231,8 @@ int main(int argc, char *argv[])
     }
 
     Util::seed();
-    // if (flags.has['d'])
-    //     return debugger_interface(flags);
+    if (flags.has['d'])
+        return debugger_interface(flags);
     return cli_interface(flags);
 }
 
