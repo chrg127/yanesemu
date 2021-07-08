@@ -1,15 +1,8 @@
 #include <emu/video/opengl.hpp>
 
-#include <exception>
 #include <fmt/core.h>
 #include <external/glad/glad.h>
 #include <emu/util/debug.hpp>
-#include <cstdlib>
-#include <cstdio>
-/*
-#define STB_IMAGE_IMPLEMENTATION
-#include <external/stb_image.h>
-*/
 
 static char vertcode[] = R"(
     #version 330 core
@@ -40,11 +33,16 @@ static char fragcode[] = R"(
     }
 )";
 
+//   vertices            texture coordinates
+//   texture coordinates are flipped (top should be 1.0f, but is 0.0f).
+//   this has to do with OpenGL's coordinate system, wherein an image
+//   that expected the origin to be top left instead has its origin at the
+//   bottom left, and results flipped.
 static float vertices[] = {
-     1.0f,  1.0f, 0.0f,  1.0f, 1.0f, // top right
-     1.0f, -1.0f, 0.0f,  1.0f, 0.0f, // bottom right
-    -1.0f,  1.0f, 0.0f,  0.0f, 1.0f, // top left
-    -1.0f, -1.0f, 0.0f,  0.0f, 0.0f, // bottom left
+     1.0f,  1.0f, 0.0f,  1.0f, 0.0f, // top right
+     1.0f, -1.0f, 0.0f,  1.0f, 1.0f, // bottom right
+    -1.0f,  1.0f, 0.0f,  0.0f, 0.0f, // top left
+    -1.0f, -1.0f, 0.0f,  0.0f, 1.0f, // bottom left
 };
 
 /* two triangles to form a square. */
