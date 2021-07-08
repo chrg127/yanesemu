@@ -83,10 +83,7 @@ public:
         required_cond.notify_one();
     }
 
-    void join()
-    {
-        th.join();
-    }
+    void join() { th.join(); }
 };
 
 bool open_rom(std::string_view pathname)
@@ -140,7 +137,7 @@ void rendering_thread(MainThread &mainthread, Video::Context &ctx, Video::Textur
     }
 }
 
-int cli_interface(const Util::ArgResult &flags)
+int cli_interface(Util::ArgResult &flags)
 {
     if (!open_rom_with_flags(flags))
         return 1;
@@ -150,54 +147,31 @@ int cli_interface(const Util::ArgResult &flags)
         error("can't initialize video\n");
         return 1;
     }
-
     Video::Texture tex = context->create_texture(Core::SCREEN_WIDTH, Core::SCREEN_HEIGHT);
 
-    emu.power();
-
     MainThread mainthread;
-    mainthread.run([&]()
-    {
-        while (mainthread.running()) {
-            emu.run_frame();
-            mainthread.new_frame();
-        }
-    });
 
-    rendering_thread(mainthread, context.value(), tex);
-
-    mainthread.join();
-
-    return 0;
-}
-
-int debugger_interface(const Util::ArgResult &flags)
-{
-    if (!open_rom_with_flags(flags))
-        return 1;
-
-    auto context = Video::Context::create(Video::Context::Type::OPENGL);
-    if (!context) {
-        error("can't initialize video\n");
-        return 1;
+    if (!flags.has['d']) {
+        mainthread.run([&]()
+        {
+            emu.power();
+            while (mainthread.running()) {
+                emu.run_frame();
+                mainthread.new_frame();
+            }
+        });
+    } else {
+        mainthread.run([&]()
+        {
+            Debugger::CliDebugger clidbg{&emu};
+            bool quit = false;
+            clidbg.print_instr();
+            while (!quit && mainthread.running())
+                quit = clidbg.repl();
+            mainthread.end();
+        });
     }
 
-    Video::Texture tex = context->create_texture(Core::SCREEN_WIDTH, Core::SCREEN_HEIGHT);
-
-    emu.power();
-
-    MainThread mainthread;
-    Debugger::CliDebugger clidbg{&emu};
-
-    mainthread.run([&]()
-    {
-        bool quit = false;
-
-        clidbg.print_instr();
-        while (!quit && mainthread.running())
-            quit = clidbg.repl();
-        mainthread.end();
-    });
     rendering_thread(mainthread, context.value(), tex);
 
     mainthread.join();
@@ -231,8 +205,6 @@ int main(int argc, char *argv[])
     }
 
     Util::seed();
-    if (flags.has['d'])
-        return debugger_interface(flags);
     return cli_interface(flags);
 }
 
