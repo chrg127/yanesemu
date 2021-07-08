@@ -9,7 +9,7 @@ namespace Util {
 
 /* Returns an iterator inside of valid_args */
 template <typename T>
-static auto is_valid(const T arg, const ValidArgStruct &valid_args)
+static auto find_arg(const T arg, const ValidArgStruct &valid_args)
 {
     static_assert(std::is_same<T, char>::value || std::is_same<T, std::string_view>::value,
             "T must be std::string_view, const char * or char");
@@ -27,7 +27,10 @@ bool default_validator(std::string_view)
     return true;
 }
 
-ArgResult parse(int argc, char *argv[], const ValidArgStruct &valid_args)
+std::optional<ArgResult> argparse(std::vector<std::string_view> args,
+                const std::vector<Argument> &valid_args,
+                ParseErrorFn errorfn,
+                int num_items)
 {
     ArgResult res;
 
@@ -36,43 +39,55 @@ ArgResult parse(int argc, char *argv[], const ValidArgStruct &valid_args)
         res.params[arg.short_opt] = "";
     }
 
-    while (++argv, --argc > 0) {
-        std::string_view currarg = argv[0];
-        const char *nextarg      = argv[1];
+    for (auto it = args.begin()+1, it2 = args.begin()+2; it != args.end(); ++it, ++it2) {
+        std::string_view curr = *it;
+        std::string_view next = it2 >= args.end() ? "" : *it2;
+
         // is currarg a real arg?
-        if (currarg[0] != '-') {
-            res.items.push_back(currarg);
+        if (curr[0] != '-') {
+            res.items.push_back(curr);
             continue;
         }
+
         // is currarg a valid argument according to valid_args?
-        auto argp = currarg[1] != '-' && currarg.size() == 2
-                        ? is_valid(currarg[1], valid_args)
-                        : is_valid(*(currarg.begin() + 2), valid_args);
+        auto argp = curr[1] != '-' && curr.size() == 2
+                  ? find_arg(curr[1], valid_args)
+                  : find_arg(*(curr.begin() + 2), valid_args);
         if (argp == valid_args.end()) {
-            warning("%s: not a valid argument\n", currarg.data());
+            errorfn(CmdParseError::INVALID_ARG, curr, "");
             continue;
         }
         auto arg = *argp;
-        if (arg.ptype == ParamType::MUST_HAVE && (!nextarg || nextarg[0] == '-')) {
-            warning("{} must have a parameter\n", currarg.data());
+
+        if (arg.ptype == ParamType::MUST_HAVE && (next == "" || next[0] == '-')) {
+            errorfn(CmdParseError::NO_PARAM, curr, next);
+            // warning("{} must have a parameter\n", currarg.data());
             continue;
-        } else if (res.has[arg.short_opt]) {
-            warning("{} specified multiple times\n", currarg.data());
+        }
+        if (res.has[arg.short_opt]) {
+            errorfn(CmdParseError::MULTIPLE_ARG, curr, next);
+            // warning("{} specified multiple times\n", currarg.data());
             continue;
         }
         res.has[arg.short_opt] = true;
-        // check for a parameter and validate and collect it
-        if (arg.ptype != ParamType::NONE && nextarg && nextarg[0] != '-') {
-            if (!arg.validator(nextarg)) {
-                warning("{}: {} is not a valid parameter\n", currarg.data(), nextarg);
+
+        // argument parameter handling
+        if (arg.ptype != ParamType::NONE && next != "" && next[0] != '-') {
+            if (!arg.validator(next)) {
+                errorfn(CmdParseError::INVALID_PARAM, curr, next);
+                // warning("{}: {} is not a valid parameter\n", currarg.data(), nextarg);
                 continue;
             }
-            res.params[arg.short_opt] = std::string_view(nextarg);
-            // and advance to the next argument
-            argv++;
-            argc--;
+            res.params[arg.short_opt] = next;
         }
     }
+
+    if (num_items != -1 && res.items.size() < num_items) {
+        errorfn(CmdParseError::NO_ITEMS, "", "");
+        return std::nullopt;
+    } else if (num_items != -1 && res.items.size() != num_items)
+        errorfn(CmdParseError::NUM_ITEMS, "", "");
+
     return res;
 }
 

@@ -5,6 +5,8 @@
 #include <string_view>
 #include <unordered_map>
 #include <vector>
+#include <functional>
+#include <optional>
 
 namespace Util {
 
@@ -44,8 +46,32 @@ struct ArgResult {
     std::vector<std::string_view>              items;
 };
 
-ArgResult parse(int argc, char *argv[], const ValidArgStruct &valid_args);
-void print_usage(std::string_view progname, const ValidArgStruct &valid_args);
+enum class CmdParseError {
+    INVALID_ARG,
+    MULTIPLE_ARG,
+    NO_PARAM,
+    INVALID_PARAM,
+    NO_ITEMS,
+    NUM_ITEMS,
+};
+using ParseErrorFn = std::function<void(CmdParseError, std::string_view, std::string_view)>;
+
+inline void def_parse_error_fn(CmdParseError, std::string_view, std::string_view) { }
+
+std::optional<ArgResult> argparse(std::vector<std::string_view> args,
+                const std::vector<Argument> &valid_args,
+                ParseErrorFn errorfn = def_parse_error_fn,
+                int num_items = 0);
+
+inline std::optional<ArgResult> argparse(int argc, char **argv,
+                       const std::vector<Argument> &valid_args,
+                       ParseErrorFn errorfn = def_parse_error_fn,
+                       int num_items = -1)
+{
+    return argparse(std::vector<std::string_view>(argv, argv + argc), valid_args, errorfn, num_items);
+}
+
+void print_usage(std::string_view progname, const std::vector<Argument> &valid_args);
 void print_version(std::string_view progname, std::string_view version);
 
 } // namespace Util

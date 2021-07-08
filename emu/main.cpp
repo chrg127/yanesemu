@@ -20,12 +20,6 @@ static const Util::ValidArgStruct cmdflags = {
 };
 static Core::Emulator emu;
 
-std::mutex frame_mutex;
-std::mutex running_mutex;
-std::condition_variable required_cond;
-unsigned frame_pending = 0;
-bool wait_for_frame_update = true;
-
 class MainThread {
     enum State {
         RUNNING,
@@ -90,7 +84,7 @@ bool open_rom(std::string_view pathname)
 {
     auto opt_file = Util::File::open(pathname, Util::Access::READ);
     if (!opt_file) {
-        std::perror("error");
+        std::perror(fmt::format("error: {}", pathname).c_str());
         return false;
     }
     auto opt_cart = Core::parse_cartridge(opt_file.value());
@@ -101,17 +95,6 @@ bool open_rom(std::string_view pathname)
     fmt::print("{}\n", opt_cart.value().to_string());
     emu.insert_rom(std::move(opt_cart.value()));
     return true;
-}
-
-bool open_rom_with_flags(const Util::ArgResult &flags)
-{
-    if (flags.items.empty()) {
-        error("ROM file not specified\n");
-        return false;
-    }
-    if (flags.items.size() > 1)
-        warning("Multiple ROM files specified, only the first will be chosen\n");
-    return open_rom(flags.items[0]);
 }
 
 void rendering_thread(MainThread &mainthread, Video::Context &ctx, Video::Texture &screen)
@@ -139,7 +122,7 @@ void rendering_thread(MainThread &mainthread, Video::Context &ctx, Video::Textur
 
 int cli_interface(Util::ArgResult &flags)
 {
-    if (!open_rom_with_flags(flags))
+    if (!open_rom(flags.items[0]))
         return 1;
 
     auto context = Video::Context::create(Video::Context::Type::OPENGL);
@@ -179,6 +162,18 @@ int cli_interface(Util::ArgResult &flags)
     return 0;
 }
 
+void print_arg_error(Util::CmdParseError err, std::string_view arg, std::string_view next)
+{
+    switch (err) {
+    case Util::CmdParseError::INVALID_ARG:    warning("invalid argument: {}\n", arg); break;
+    case Util::CmdParseError::MULTIPLE_ARG:   warning("argument {} was specified multiple times\n", arg); break;
+    case Util::CmdParseError::NO_PARAM:       warning("argument {} must have a parameter\n", arg); break;
+    case Util::CmdParseError::INVALID_PARAM:  warning("invalid parameter {} for argument {}\n", next, arg); break;
+    case Util::CmdParseError::NO_ITEMS:       error("ROM file not specified\n"); break;
+    case Util::CmdParseError::NUM_ITEMS:      warning("multiple ROM files specified, first found will be used\n"); break;
+    }
+}
+
 int main(int argc, char *argv[])
 {
 #ifdef _WIN32
@@ -193,8 +188,10 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    Util::ArgResult flags;
-    flags = Util::parse(argc, argv, cmdflags);
+    auto optflags = Util::argparse(argc, argv, cmdflags, print_arg_error, 1);
+    if (!optflags)
+        return 1;
+    Util::ArgResult flags = optflags.value();
     if (flags.has['h']) {
         Util::print_usage(progname, cmdflags);
         return 0;
