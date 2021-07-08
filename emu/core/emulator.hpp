@@ -38,7 +38,7 @@ public:
     void run_frame();
     void insert_rom(Cartridge::Data &&cartdata);
 
-    void set_screen(Video::Canvas *canvas) { ppu.set_screen(canvas); }
+    uint32 *get_screen() { return ppu.get_screen(); }
 
     friend class Debugger::Debugger;
 };

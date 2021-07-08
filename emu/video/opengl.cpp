@@ -183,7 +183,7 @@ void OpenGL::resize(int newwidth, int newheight)
     glViewport(0, 0, newwidth, newheight);
 }
 
-unsigned OpenGL::create_texture(std::size_t texw, std::size_t texh, unsigned char *data)
+unsigned OpenGL::create_texture(std::size_t texw, std::size_t texh, const void *data)
 {
     unsigned id;
     glActiveTexture(GL_TEXTURE0);
@@ -197,7 +197,7 @@ unsigned OpenGL::create_texture(std::size_t texw, std::size_t texh, unsigned cha
     return id;
 }
 
-void OpenGL::update_texture(unsigned id, std::size_t texw, std::size_t texh, unsigned char *data)
+void OpenGL::update_texture(unsigned id, std::size_t texw, std::size_t texh, const void *data)
 {
     use_texture(id);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texw, texh, GL_RGBA, GL_UNSIGNED_BYTE, data);

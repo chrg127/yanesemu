@@ -3,12 +3,12 @@
 
 #include <functional>
 #include <string>
+#include <emu/core/bus.hpp>
 #include <emu/core/const.hpp>
+#include <emu/util/array.hpp>
 #include <emu/util/unsigned.hpp>
 #include <emu/util/bits.hpp>
-#include <emu/core/bus.hpp>
 
-namespace Video { class Canvas; }
 namespace Debugger {
     class Debugger;
     class PPUDebugger;
@@ -17,8 +17,8 @@ namespace Debugger {
 namespace Core {
 
 class PPU {
+    Util::Array2D<uint32, SCREEN_WIDTH, SCREEN_HEIGHT> screen;
     Bus<PPUBUS_SIZE> *bus;
-    Video::Canvas *screen;
     unsigned long cycles = 0;
     unsigned long lines  = 0;
     std::function<void(void)> nmi_callback;
@@ -111,8 +111,8 @@ public:
 
     void power(bool reset);
     void bus_map(Bus<CPUBUS_SIZE> &bus);
-    void set_screen(Video::Canvas *canvas) { screen = canvas; }
     void on_nmi(auto &&callback)           { nmi_callback = callback; }
+    uint32 *get_screen() { return screen.data(); }
 
     // ppumain.cpp
     void run();

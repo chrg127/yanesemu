@@ -96,7 +96,7 @@ void emulator_thread()
 
 
 
-void rendering_thread(Video::Context &ctx, Video::Canvas &screen)
+void rendering_thread(Video::Context &ctx, Video::Texture &screen)
 {
     // return whether there are any new frames.
     const auto wait_frame_start = []() -> bool
@@ -123,11 +123,12 @@ void rendering_thread(Video::Context &ctx, Video::Canvas &screen)
         {
             std::unique_lock<std::mutex> lock{frame_mutex};
             if (wait_frame_start()) {
-                ctx.update_canvas(screen);
+                ctx.update_texture(screen, emu.get_screen());
             }
             required_cond.notify_one();
         }
 
+        ctx.update_texture(screen, emu.get_screen());
         ctx.use_texture(screen);
         ctx.draw();
     }
@@ -145,9 +146,8 @@ int cli_interface(const Util::ArgResult &flags)
         return 1;
     }
 
-    Video::Canvas screen = context->create_canvas(Core::SCREEN_WIDTH, Core::SCREEN_HEIGHT);
+    Video::Texture tex = context->create_texture(Core::SCREEN_WIDTH, Core::SCREEN_HEIGHT);
 
-    emu.set_screen(&screen);
     emu.power();
 
     // run emulator and rendering in two separate threads
@@ -155,7 +155,7 @@ int cli_interface(const Util::ArgResult &flags)
 
     /* note that we must run everything related to rendering in
      * the same thread where we created the context */
-    rendering_thread(*context, screen);
+    rendering_thread(*context, tex);
 
     emuthread.join();
 
