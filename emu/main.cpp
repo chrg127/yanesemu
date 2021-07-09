@@ -13,11 +13,6 @@
 #include <emu/util/file.hpp>
 #include <emu/video/video.hpp>
 
-static const Util::ValidArgStruct cmdflags = {
-    { 'h',  "help",     "Print this help text and quit" },
-    { 'v',  "version",  "Shows the program's version"   },
-    { 'd',  "debugger", "Use command-line debugger"     },
-};
 static Core::Emulator emu;
 
 class MainThread {
@@ -120,8 +115,22 @@ void rendering_thread(MainThread &mainthread, Video::Context &ctx, Video::Textur
     }
 }
 
+
+
+static const std::vector<Util::Argument> cmdflags = {
+    { 'h', "help",     "Print this help text and quit" },
+    { 'v', "version",  "Shows the program's version"   },
+    { 'd', "debugger", "Use command-line debugger"     },
+};
+
 int cli_interface(Util::ArgResult &flags)
 {
+    if (flags.items.size() < 1) {
+        error("ROM file not specified\n");
+        return 1;
+    } else if (flags.items.size() == 1)
+        warning("multiple ROM files specified, first found will be used\n");
+
     if (!open_rom(flags.items[0]))
         return 1;
 
@@ -162,18 +171,6 @@ int cli_interface(Util::ArgResult &flags)
     return 0;
 }
 
-void print_arg_error(Util::CmdParseError err, std::string_view arg, std::string_view next)
-{
-    switch (err) {
-    case Util::CmdParseError::INVALID_ARG:    warning("invalid argument: {}\n", arg); break;
-    case Util::CmdParseError::MULTIPLE_ARG:   warning("argument {} was specified multiple times\n", arg); break;
-    case Util::CmdParseError::NO_PARAM:       warning("argument {} must have a parameter\n", arg); break;
-    case Util::CmdParseError::INVALID_PARAM:  warning("invalid parameter {} for argument {}\n", next, arg); break;
-    case Util::CmdParseError::NO_ITEMS:       error("ROM file not specified\n"); break;
-    case Util::CmdParseError::NUM_ITEMS:      warning("multiple ROM files specified, first found will be used\n"); break;
-    }
-}
-
 int main(int argc, char *argv[])
 {
 #ifdef _WIN32
@@ -184,24 +181,24 @@ int main(int argc, char *argv[])
 #endif
 
     if (argc < 2) {
-        Util::print_usage(progname, cmdflags);
+        fmt::print("Usage: {} [args...] romfile\n", progname);
+        Util::print_args(cmdflags);
         return 1;
     }
 
-    auto optflags = Util::argparse(argc, argv, cmdflags, print_arg_error, 1);
-    if (!optflags)
-        return 1;
-    Util::ArgResult flags = optflags.value();
+    Util::ArgResult flags = Util::argparse(argc, argv, cmdflags);
     if (flags.has['h']) {
-        Util::print_usage(progname, cmdflags);
+        fmt::print("Usage: {} [args...] romfile\n", progname);
+        Util::print_args(cmdflags);
         return 0;
     }
     if (flags.has['v']) {
-        Util::print_version(progname, version);
+        fmt::print("{} version: {}\n", progname, version);
         return 0;
     }
 
     Util::seed();
+
     return cli_interface(flags);
 }
 
