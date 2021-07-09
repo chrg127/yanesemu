@@ -130,6 +130,7 @@ private:
 
     void output();
     uint8 getcolor(bool select, uint8 pal, uint8 palind);
+    uint32 getpalcolor(uint6 index);
 
     void inc_v_horzpos();
     void inc_v_vertpos();

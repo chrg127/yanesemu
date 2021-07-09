@@ -1,4 +1,4 @@
-#include <emu/core/ppu.hpp>
+#include "ppu.hpp"
 
 #include <cstdio>
 #include <cassert>
@@ -12,6 +12,7 @@ namespace Core {
 
 #define INSIDE_PPU_CPP
 #include "ppumain.cpp"
+#include "palette.cpp"
 #undef INSIDE_PPU_CPP
 
 void PPU::power(bool reset)
@@ -221,9 +222,10 @@ uint8 PPU::readreg_no_sideeff(const uint16 which) const
 void PPU::output()
 {
     uint8 bgpixel = bg_output();
-    uint32 color = 0;
-    if (bgpixel == 0x30)
-        color = 0xFFFFFFFF;
+    uint32 color = getpalcolor(bgpixel);
+    // uint32 color = 0;
+    // if (bgpixel == 0x30)
+    //     color = 0xFFFFFFFF;
     auto x = cycles % PPU_MAX_LCYCLE;
     auto y = lines % PPU_MAX_LINES;
     assert((y <= 239 || y == 261) && x <= 256);
