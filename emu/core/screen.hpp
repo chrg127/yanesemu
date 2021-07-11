@@ -23,7 +23,7 @@ class Screen {
 
 public:
     enum class Palette {
-        PAL2C02,
+        PAL2C02, PAL2C03, RC2C03B,
     };
 
     Screen();
