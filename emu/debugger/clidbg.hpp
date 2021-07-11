@@ -1,5 +1,4 @@
-#ifndef CORE_CLIDBG_HPP_INCLUDED
-#define CORE_CLIDBG_HPP_INCLUDED
+#pragma once
 
 #include <vector>
 #include <string>
@@ -51,6 +50,3 @@ private:
 };
 
 } // namespace Debugger
-
-#endif
-

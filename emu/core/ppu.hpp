@@ -1,5 +1,4 @@
-#ifndef CORE_PPU_HPP_INCLUDED
-#define CORE_PPU_HPP_INCLUDED
+#pragma once
 
 #include <functional>
 #include <string>
@@ -167,5 +166,3 @@ private:
 };
 
 } // namespace Core
-
-#endif

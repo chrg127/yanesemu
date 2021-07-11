@@ -1,5 +1,4 @@
-#ifndef CORE_EMULATOR_HPP_INCLUDED
-#define CORE_EMULATOR_HPP_INCLUDED
+#pragma once
 
 #include <emu/core/bus.hpp>
 #include <emu/core/cpu.hpp>
@@ -46,5 +45,3 @@ public:
 };
 
 } // namespace Core
-
-#endif

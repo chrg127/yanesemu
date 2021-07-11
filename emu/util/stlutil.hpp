@@ -1,5 +1,4 @@
-#ifndef UTIL_STLUTIL_HPP_INCLUDED
-#define UTIL_STLUTIL_HPP_INCLUDED
+#pragma once
 
 #include <optional>
 #include <unordered_map>
@@ -57,5 +56,3 @@ Visitor<T...> make_visitor(T... lambdas)
 }
 
 } // namespace Util
-
-#endif

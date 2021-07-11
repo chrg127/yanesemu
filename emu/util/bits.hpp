@@ -1,5 +1,4 @@
-#ifndef UTIL_BITS_HPP_INCLUDED
-#define UTIL_BITS_HPP_INCLUDED
+#pragma once
 
 /* Bit manipulation library. */
 
@@ -86,6 +85,3 @@ inline constexpr unsigned long long to_gibit(unsigned long long bytes) { return 
 inline constexpr unsigned long long to_tibit(unsigned long long bytes) { return bytes*1024*1024*1024*1024/8; }
 
 } // namespace Util
-
-#endif
-

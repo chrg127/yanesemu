@@ -1,5 +1,4 @@
-#ifndef CORE_DEBUGGER_HPP_INCLUDED
-#define CORE_DEBUGGER_HPP_INCLUDED
+#pragma once
 
 #include <functional>
 #include <optional>
@@ -150,5 +149,3 @@ private:
 };
 
 } // namespace Core
-
-#endif

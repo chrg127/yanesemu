@@ -1,5 +1,4 @@
-#ifndef UTIL_CMDLINE_HPP_INCLUDED
-#define UTIL_CMDLINE_HPP_INCLUDED
+#pragma once
 
 #include <string>
 #include <string_view>
@@ -55,5 +54,3 @@ inline ArgResult argparse(int argc, char **argv, const std::vector<Argument> &va
 void print_args(const std::vector<Argument> &valid_args);
 
 } // namespace Util
-
-#endif

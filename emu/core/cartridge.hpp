@@ -1,5 +1,4 @@
-#ifndef CARTRIDGE_HPP_INCLUDED
-#define CARTRIDGE_HPP_INCLUDED
+#pragma once
 
 #include <optional>
 #include <emu/core/const.hpp>
@@ -64,5 +63,3 @@ namespace Cartridge {
 std::optional<Cartridge::Data> parse_cartridge(Util::File &romfile);
 
 } // namespace Core
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef UTIL_FILE_HPP_INCLUDED
-#define UTIL_FILE_HPP_INCLUDED
+#pragma once
 
 /* A File class. Internally uses the C FILE * type. */
 
@@ -100,5 +99,3 @@ public:
 std::optional<File> open_file(Access access);
 
 } // namespace Util
-
-#endif

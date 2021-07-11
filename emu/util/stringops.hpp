@@ -1,5 +1,4 @@
-#ifndef UTILS_STRINGOPS_HPP_INCLUDED
-#define UTILS_STRINGOPS_HPP_INCLUDED
+#pragma once
 
 /* Common string routines. */
 
@@ -44,5 +43,3 @@ inline bool is_space(int c)
 }
 
 } // namespace Util
-
-#endif

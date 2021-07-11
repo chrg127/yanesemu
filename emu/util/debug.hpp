@@ -1,5 +1,4 @@
-#ifndef UTIL_DEBUG_HPP_INCLUDED
-#define UTIL_DEBUG_HPP_INCLUDED
+#pragma once
 
 /* This is a collection of macros and inline functions to be used for debugging and error messages.
  * #define DEBUG to use the macros. Error message functions need not to define it.
@@ -47,6 +46,4 @@ inline void _dbgprint_detail(const char *file, int line, std::string &&fmt, T&&.
 
 #else
 #define dbgprint(...) ;
-#endif
-
 #endif

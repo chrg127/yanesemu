@@ -1,5 +1,4 @@
-#ifndef UTIL_UNSIGNED_HPP_INCLUDED
-#define UTIL_UNSIGNED_HPP_INCLUDED
+#pragma once
 
 /* This library provides uint* types. This includes the usual
  * uint8, uint16, uint32, uint64, but also anything in-between,

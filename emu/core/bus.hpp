@@ -1,5 +1,4 @@
-#ifndef BUS_HPP_INCLUDED
-#define BUS_HPP_INCLUDED
+#pragma once
 
 #include <concepts>
 #include <functional>
@@ -53,5 +52,3 @@ public:
 };
 
 } // namespace Core
-
-#endif

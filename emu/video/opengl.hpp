@@ -1,5 +1,4 @@
-#ifndef VIDEO_OPENGL_HPP_INCLUDED
-#define VIDEO_OPENGL_HPP_INCLUDED
+#pragma once
 
 #include <SDL2/SDL.h>
 #include <emu/video/video.hpp>
@@ -25,5 +24,3 @@ public:
 };
 
 } // namespace Video
-
-#endif

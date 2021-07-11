@@ -1,5 +1,4 @@
-#ifndef CORE_CONST_HPP_INCLUDED
-#define CORE_CONST_HPP_INCLUDED
+#pragma once
 
 namespace Core {
 
@@ -44,5 +43,3 @@ enum class Mirroring {
 };
 
 } // namespace Core
-
-#endif

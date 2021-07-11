@@ -1,5 +1,4 @@
-#ifndef CORE_INSTRINFO_HPP_INCLUDED
-#define CORE_INSTRINFO_HPP_INCLUDED
+#pragma once
 
 #include <string>
 #include <emu/util/unsigned.hpp>
@@ -48,5 +47,3 @@ constexpr inline bool is_jump(const uint8 id)
 }
 
 } // namespace Core
-
-#endif

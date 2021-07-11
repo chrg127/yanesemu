@@ -1,5 +1,4 @@
-#ifndef VIDEO_HPP_INCLUDED
-#define VIDEO_HPP_INCLUDED
+#pragma once
 
 #include <cstring>
 #include <memory>
@@ -100,5 +99,3 @@ public:
 };
 
 } // namespace Video
-
-#endif

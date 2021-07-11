@@ -1,5 +1,4 @@
-#ifndef MEMORY_HPP_INCLUDED
-#define MEMORY_HPP_INCLUDED
+#pragma once
 
 #include <emu/core/const.hpp>
 #include <emu/core/bus.hpp>
@@ -12,5 +11,3 @@ void power(bool reset, char fillval = 0);
 
 } // namespace Memory
 } // namespace Core
-
-#endif
