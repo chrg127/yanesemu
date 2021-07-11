@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <array>
+#include <fmt/core.h>
 #include <emu/util/bits.hpp>
 #include <emu/util/unsigned.hpp>
 #include <emu/core/const.hpp>
@@ -44,7 +45,11 @@ void bus_map(Bus<CPUBUS_SIZE> &rambus, Bus<PPUBUS_SIZE> &vrambus, Mirroring mirr
                 assert((addr & 0x1F) < PAL_SIZE);
                 return palmem[addr & 0x1F];
             },
-            [](uint16 addr, uint8 data) { assert((addr & 0x1F) < PAL_SIZE); palmem[addr & 0x1F] = data; });
+            [](uint16 addr, uint8 data)
+            {
+                assert((addr & 0x1F) < PAL_SIZE);
+                palmem[addr & 0x1F] = data;
+            });
     vrambus.map(NT_START, PAL_START,
             [](uint16 addr)             { return 0; },
             [](uint16 addr, uint8 data) { /*******/ });

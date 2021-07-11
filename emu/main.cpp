@@ -155,6 +155,7 @@ int cli_interface(Util::ArgResult &flags)
     } else {
         mainthread.run([&]()
         {
+            emu.power();
             Debugger::CliDebugger clidbg{&emu};
             bool quit = false;
             clidbg.print_instr();

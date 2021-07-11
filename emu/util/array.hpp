@@ -59,6 +59,8 @@ public:
     }
 
     T *data() { return arr; }
+    std::size_t width()  const { return Width; }
+    std::size_t height() const { return Height; }
 };
 
 } // namespace Util

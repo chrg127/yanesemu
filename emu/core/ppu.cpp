@@ -12,7 +12,6 @@ namespace Core {
 
 #define INSIDE_PPU_CPP
 #include "ppumain.cpp"
-#include "palette.cpp"
 #undef INSIDE_PPU_CPP
 
 void PPU::power(bool reset)
@@ -222,10 +221,6 @@ uint8 PPU::readreg_no_sideeff(const uint16 which) const
 void PPU::output()
 {
     uint8 bgpixel = bg_output();
-    uint32 color = getpalcolor(bgpixel);
-    // uint32 color = 0;
-    // if (bgpixel == 0x30)
-    //     color = 0xFFFFFFFF;
     auto x = cycles % PPU_MAX_LCYCLE;
     auto y = lines % PPU_MAX_LINES;
     assert((y <= 239 || y == 261) && x <= 256);
@@ -235,18 +230,7 @@ void PPU::output()
         return;
     if (y == 261)
         return;
-    screen[y][x] = color;
-}
-
-// palette: 0-3, one of the 4 defined palettes for this frame
-// color_index: which color of the palette
-// bg_or_sp: select if it's a background palette or a sprite palette
-// first 2 values are 2 bits big, not 8
-uint8 PPU::getcolor(bool select, uint8 pal, uint8 palind)
-{
-    // this is a 5 bit number
-    uint8 n = select << 4 | pal << 2 | palind;
-    return bus->read(0x3F00 + n);
+    screen->output(x, y, bgpixel);
 }
 
 /* The VRAM address has the following components:
@@ -374,11 +358,22 @@ void PPU::shift_fill()
         return;
     shift.tlow  = Util::setbits(shift.tlow,  8, 8, tile.low);
     shift.thigh = Util::setbits(shift.thigh, 8, 8, tile.high);
-    // TODO: this is definitely fucking wrong
+    // TODO: this is definitely wrong
     uint16 v = vram.addr;
     uint8 attr_mask = 0b11 << (~((v >> 1 & 1) | (v >> 6 & 1)))*2;
     shift.feed_high = tile.attr & attr_mask;
     shift.feed_low  = tile.attr & attr_mask;
+}
+
+// pal: 0-3, one of the 4 defined palettes for this frame
+// palind: which color of the palette
+// select: select if it's a background palette or a sprite palette
+// first 2 values are 2 bits big, not 8
+uint8 PPU::getcolor(uint8 pal, uint8 palind, bool select)
+{
+    // this is a 5 bit number
+    uint8 n = select << 4 | pal << 2 | palind;
+    return bus->read(0x3F00 + n);
 }
 
 uint8 PPU::bg_output()
@@ -392,7 +387,7 @@ uint8 PPU::bg_output()
     bool at2        = shift.alow  & mask;
     uint8 pal       = at1   << 1 | at2;
     uint8 palind    = hibit << 1 | lowbit;
-    return getcolor(0, pal, palind);
+    return getcolor(pal, palind, 0);
 }
 
 } // namespace Core

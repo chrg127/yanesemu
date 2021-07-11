@@ -3,12 +3,15 @@
 
 #include <functional>
 #include <string>
+#include <emu/core/screen.hpp>
 #include <emu/core/bus.hpp>
 #include <emu/core/const.hpp>
 #include <emu/util/array.hpp>
 #include <emu/util/unsigned.hpp>
 #include <emu/util/bits.hpp>
 
+class Screen;
+template <std::size_t Size> class Bus;
 namespace Debugger {
     class Debugger;
     class PPUDebugger;
@@ -17,8 +20,8 @@ namespace Debugger {
 namespace Core {
 
 class PPU {
-    Util::Array2D<uint32, SCREEN_WIDTH, SCREEN_HEIGHT> screen;
     Bus<PPUBUS_SIZE> *bus;
+    Screen *screen;
     unsigned long cycles = 0;
     unsigned long lines  = 0;
     std::function<void(void)> nmi_callback;
@@ -105,14 +108,13 @@ class PPU {
     } oam;
 
 public:
-    PPU(Bus<PPUBUS_SIZE> *vrambus)
-        : bus(vrambus)
+    PPU(Bus<PPUBUS_SIZE> *vrambus, Screen *scr)
+        : bus(vrambus), screen(scr)
     { }
 
     void power(bool reset);
     void bus_map(Bus<CPUBUS_SIZE> &bus);
     void on_nmi(auto &&callback)           { nmi_callback = callback; }
-    uint32 *get_screen() { return screen.data(); }
 
     // ppumain.cpp
     void run();
@@ -129,8 +131,7 @@ private:
     uint8 readreg_no_sideeff(const uint16 which) const;
 
     void output();
-    uint8 getcolor(bool select, uint8 pal, uint8 palind);
-    uint32 getpalcolor(uint6 index);
+    uint8 getcolor(uint8 pal, uint8 palind, bool select);
 
     void inc_v_horzpos();
     void inc_v_vertpos();

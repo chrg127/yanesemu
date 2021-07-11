@@ -5,6 +5,7 @@
 #include <emu/core/cpu.hpp>
 #include <emu/core/ppu.hpp>
 #include <emu/core/cartridge.hpp>
+#include <emu/core/screen.hpp>
 #include <fmt/core.h>
 
 namespace Util { class File; }
@@ -15,10 +16,11 @@ namespace Core {
 class Emulator {
     Bus<CPUBUS_SIZE> rambus;
     Bus<PPUBUS_SIZE> vrambus;
+    Screen screen;
     Util::HeapArray<uint8> prgrom;
     Util::HeapArray<uint8> chrrom;
     CPU cpu{&rambus};
-    PPU ppu{&vrambus};
+    PPU ppu{&vrambus, &screen};
     // this is internal to the emulator only and doesn't affect the cpu and ppu
     bool nmi = false;
 
@@ -38,7 +40,7 @@ public:
     void run_frame();
     void insert_rom(Cartridge::Data &&cartdata);
 
-    uint32 *get_screen() { return ppu.get_screen(); }
+    uint32 *get_screen() { return screen.data(); }
 
     friend class Debugger::Debugger;
 };

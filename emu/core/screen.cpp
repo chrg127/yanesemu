@@ -1,9 +1,6 @@
-#ifndef INSIDE_PPU_CPP
-#error "This file can only be #include'd by ppu.cpp."
-#else
+#include "screen.hpp"
 
-// each box corresponds to one row of the palette.
-static uint32 colors[] = {
+static uint32 pal2C02[] = {
     0x545454FF, 0x001E74FF, 0x081090FF, 0x300088FF,
     0x440064FF, 0x5C0030FF, 0x540400FF, 0x3C1800FF,
     0x202A00FF, 0x083A00FF, 0x004000FF, 0x003C00FF,
@@ -25,4 +22,28 @@ static uint32 colors[] = {
     0xA0D6E4FF, 0xA0A2A0FF, 0x000000FF, 0x000000FF,
 };
 
-#endif
+Screen::Screen()
+{
+    for (std::size_t x = 0; x < buf.width(); x++)
+        for (std::size_t y = 0; y < buf.height(); y++)
+            buf[y][x] = 0;
+    pal = pal2C02;
+}
+
+void Screen::output(unsigned x, unsigned y, uint6 value)
+{
+    buf[y][x] = pal[value];
+}
+
+void Screen::set_palette(Palette palette)
+{
+    auto getpal = [](Palette palette)
+    {
+        switch (palette) {
+        case Palette::PAL2C02: return pal2C02;
+        default: return pal2C02;
+        }
+    };
+    pal = getpal(palette);
+}
+
