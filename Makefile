@@ -1,12 +1,12 @@
 programname := emu
 
 # can be: debug, release
-profile := release
+profile := debug
 
 _objs_main := \
 	emulator.o cartridge.o cpu.o ppu.o instrinfo.o memory.o screen.o \
 	debugger.o clidbg.o cpudebugger.o ppudebugger.o \
-	cmdline.o easyrandom.o file.o stringops.o \
+	cmdline.o easyrandom.o file.o stringops.o mappedfile.o \
 	video.o opengl.o \
 	glad.o \
 	main.o

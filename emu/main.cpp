@@ -128,7 +128,7 @@ int cli_interface(Util::ArgResult &flags)
     if (flags.items.size() < 1) {
         error("ROM file not specified\n");
         return 1;
-    } else if (flags.items.size() == 1)
+    } else if (flags.items.size() > 1)
         warning("multiple ROM files specified, first found will be used\n");
 
     if (!open_rom(flags.items[0]))
