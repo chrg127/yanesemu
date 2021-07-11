@@ -26,7 +26,7 @@ namespace Debugger {
     X("status",         "st",   STATUS,        0,       1,          "print current status") \
     X("read",           "rd",   READ_ADDR,     1,       1,          "read address") \
     X("write",          "wr",   WRITE_ADDR,    2,       2,          "write address") \
-    X("block",          "bl",   BLOCK,         2,       2,          "read block") \
+    X("block",          "bl",   BLOCK,         2,       3,          "read block") \
     X("disassemble",    "dis",  DISASSEMBLE,   1,       3,          "disassemble the current instruction") \
     X("disblock",       "disb", DISBLOCK,      2,       2,          "disassemble a given block") \
     X("trace",          "tr",   TRACE,         1,       1,          "") \
@@ -89,14 +89,23 @@ static void print_block(uint16 start, uint16 end, auto &&readvalue)
 
 static void block_command(const std::vector<std::string> &args, auto &&process)
 {
+    auto getloc = [](const std::string &arg) -> Debugger::Loc
+    {
+        if (arg == "cpu") return Debugger::Loc::RAM;
+        if (arg == "ppu") return Debugger::Loc::VRAM;
+        fmt::print("Unrecognized location: {}\n", arg);
+        return Debugger::Loc::RAM;
+    };
+
     auto start = Util::strconv<uint16>(args[0], 16);
     auto end   = Util::strconv<uint16>(args[1], 16);
+    Debugger::Loc loc = args.size() == 3 ? getloc(args[2]) : Debugger::Loc::RAM;
     if (!start || !end)
         fmt::print("Invalid value found while parsing arguments.\n");
     else if (end.value() <= start.value())
         fmt::print("Invalid range.\n");
     else
-        process(start.value(), end.value());
+        process(start.value(), end.value(), loc);
 }
 
 CliDebugger::CliDebugger(Core::Emulator *emu)
@@ -234,7 +243,7 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
         if (!addr)
             fmt::print("Invalid value found while parsing command arguments.\n");
         else
-            fmt::print("{:02X}\n", dbg.readmem(addr.value()));
+            fmt::print("{:02X}\n", dbg.readmem(addr.value(), Debugger::Loc::RAM));
         break;
     }
 
@@ -246,21 +255,21 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
         else {
             if (addr.value() >= Core::CARTRIDGE_START)
                 fmt::print("Warning: writes to ROM have no effects\n");
-            dbg.writemem(addr.value(), val.value());
+            dbg.writemem(addr.value(), val.value(), Debugger::Loc::RAM);
         }
         break;
     }
 
     case Command::BLOCK:
-        block_command(args, [&](uint16 start, uint16 end) {
-            print_block(start, end, [&](uint16 addr) { return dbg.readmem(addr); });
+        block_command(args, [&](uint16 start, uint16 end, Debugger::Loc loc) {
+            print_block(start, end, [&](uint16 addr) { return dbg.readmem(addr, loc); });
         });
         break;
 
     case Command::DISBLOCK:
-        block_command(args, [&](uint16 start, uint16 end) {
+        block_command(args, [&](uint16 start, uint16 end, Debugger::Loc loc) {
             Core::disassemble_block(start, end,
-                              [&](uint16 addr) { return dbg.readmem(addr); },
+                              [&](uint16 addr) { return dbg.readmem(addr, Debugger::Loc::RAM); },
                               [ ](uint16 addr, std::string &&s) { fmt::print("${:04X}: {}\n", addr, s); });
         });
         break;

@@ -98,6 +98,10 @@ struct Debugger {
         STEP, NEXT, FRAME, NONE,
     };
 
+    enum class Loc {
+        RAM, VRAM
+    };
+
 private:
     Core::Emulator *emu;
     std::function<void (Event &&)> report_callback;
@@ -119,8 +123,8 @@ public:
     void advance();
     void advance_frame();
 
-    uint8 readmem(uint16 addr);
-    void writemem(uint16 addr, uint8 value);
+    uint8 readmem(uint16 addr, Loc loc);
+    void writemem(uint16 addr, uint8 value, Loc loc);
 
     unsigned set_breakpoint(Breakpoint &&p);
     std::vector<Breakpoint> breakpoints() const { return break_list; }

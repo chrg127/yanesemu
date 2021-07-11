@@ -103,14 +103,23 @@ void Debugger::advance_frame()
     run(StepType::FRAME);
 }
 
-uint8 Debugger::readmem(uint16 addr)
+uint8 Debugger::readmem(uint16 addr, Debugger::Loc loc)
 {
-    if (addr >= 0x2000 && addr <= 0x2007)
-        return emu->ppu.readreg_no_sideeff(addr);
-    return emu->rambus.read(addr);
+    switch (loc) {
+    case Debugger::Loc::RAM:
+        if (addr >= 0x2000 && addr <= 0x3FFF)
+            return emu->ppu.readreg_no_sideeff(0x2000 + (addr & 0x7));
+        return emu->rambus.read(addr);
+    case Debugger::Loc::VRAM:
+        if (addr <= 0x3FFF)
+            return emu->vrambus.read(addr);
+        return 0;
+    default:
+        return 0;
+    }
 }
 
-void Debugger::writemem(uint16 addr, uint8 value)
+void Debugger::writemem(uint16 addr, uint8 value, Debugger::Loc loc)
 {
     emu->rambus.write(addr, value);
 }
