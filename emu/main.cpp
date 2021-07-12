@@ -8,9 +8,9 @@
 #include <emu/core/emulator.hpp>
 #include <emu/debugger/clidbg.hpp>
 #include <emu/util/cmdline.hpp>
-#include <emu/util/easyrandom.hpp>
 #include <emu/util/debug.hpp>
 #include <emu/util/file.hpp>
+#include <emu/util/platform.hpp>
 #include <emu/video/video.hpp>
 
 static Core::Emulator emu;
@@ -174,7 +174,7 @@ int cli_interface(Util::ArgResult &flags)
 
 int main(int argc, char *argv[])
 {
-#ifdef _WIN32
+#ifdef PLATFORM_WINDOWS
     // windows doesn't have line buffering, and full buffering is just bad
     // for stdout and stderr, so set no buffering to these two.
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -197,8 +197,6 @@ int main(int argc, char *argv[])
         fmt::print("{} version: {}\n", progname, version);
         return 0;
     }
-
-    Util::seed();
 
     return cli_interface(flags);
 }
