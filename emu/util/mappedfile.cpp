@@ -24,12 +24,11 @@ std::optional<MappedFile> MappedFile::open(std::string_view pathname)
     int err = fstat(fd, &statbuf);
     if (err < 0)
         return std::nullopt;
-    uint8 *ptr = (uint8 *) mmap(NULL, statbuf.st_size, PROT_READ | PROT_WRITE,
-                                  MAP_SHARED, fd, 0);
+    uint8 *ptr = (uint8 *) mmap(NULL, statbuf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (ptr == MAP_FAILED)
         return std::nullopt;
     close(fd);
-    return MappedFile{ptr, static_cast<std::size_t>(statbuf.st_size)};
+    return MappedFile{ptr, static_cast<std::size_t>(statbuf.st_size), pathname};
 }
 
 MappedFile::~MappedFile()

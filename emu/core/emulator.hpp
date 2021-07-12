@@ -1,11 +1,12 @@
 #pragma once
 
+#include <span>
+#include <fmt/core.h>
 #include <emu/core/bus.hpp>
 #include <emu/core/cpu.hpp>
 #include <emu/core/ppu.hpp>
 #include <emu/core/cartridge.hpp>
 #include <emu/core/screen.hpp>
-#include <fmt/core.h>
 
 namespace Util { class File; }
 namespace Debugger { class Debugger; }
@@ -16,8 +17,8 @@ class Emulator {
     Bus<CPUBUS_SIZE> rambus;
     Bus<PPUBUS_SIZE> vrambus;
     Screen screen;
-    Util::HeapArray<uint8> prgrom;
-    Util::HeapArray<uint8> chrrom;
+    std::span<uint8> prgrom;
+    std::span<uint8> chrrom;
     CPU cpu{&rambus};
     PPU ppu{&vrambus, &screen};
     // this is internal to the emulator only and doesn't affect the cpu and ppu

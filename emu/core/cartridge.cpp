@@ -27,14 +27,17 @@ std::string Cartridge::Data::to_string() const
     );
 }
 
-std::optional<Cartridge::Data> parse_cartridge(Util::File &romfile)
+std::optional<Cartridge::Data> parse_cartridge(Util::MappedFile &romfile)
 {
     static const uint8 constants[] = { 'N', 'E', 'S', 0x1A };
     static_assert(sizeof(constants) == 4);
 
     Cartridge::Data cart;
-    romfile.bread(cart.header, Cartridge::HEADER_SIZE);
-    if (std::memcmp(cart.header, constants, sizeof(constants)) != 0)
+    int start = 0;
+    auto read = [&](std::size_t len) { auto tmp = start; start += len; return romfile.slice(tmp, len); };
+
+    cart.header = read(16);
+    if (std::memcmp(cart.header.data(), constants, sizeof(constants)) != 0)
         return std::nullopt;
     cart.filename = romfile.filename();
     cart.format = (getbits(cart.header[7], 2, 2) == 2)
@@ -83,22 +86,22 @@ std::optional<Cartridge::Data> parse_cartridge(Util::File &romfile)
         data.chr_nvram_size = 64 << getbits(cart.header[11], 4, 4);
         data.timing_mode    = getbits(cart.header[12], 0, 2);
         if (cart.console_type == Cartridge::Console::VSSYSTEM) {
-            data.vs_ppu = getbits(cart.header[13], 0, 4);
+            data.vs_ppu      = getbits(cart.header[13], 0, 4);
             data.vs_hardware = getbits(cart.header[13], 4, 4);
         } else if (cart.console_type == Cartridge::Console::VSSYSTEM) {
             data.extended_console_type = getbits(cart.header[13], 0, 4);
         }
-        data.misc_roms = getbits(cart.header[14], 0, 2);
+        data.misc_roms                = getbits(cart.header[14], 0, 2);
         data.default_expansion_device = getbits(cart.header[14], 0, 6);
 
         cart.nes20_data = data;
     }
 
     if (cart.has.trainer)
-        romfile.bread(cart.trainer, Cartridge::TRAINER_SIZE);
-    cart.prgrom = romfile.read_bytes(prgrom_size * Util::to_kib(16));
+        cart.trainer = read(512);
+    cart.prgrom = read(prgrom_size * Util::to_kib(16));
     if (!cart.has.chrram)
-        cart.chrrom = romfile.read_bytes(chrrom_size * Util::to_kib(8));
+        cart.chrrom = read(chrrom_size * Util::to_kib(8));
     return cart;
 }
 

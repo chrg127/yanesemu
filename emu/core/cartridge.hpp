@@ -1,8 +1,10 @@
 #pragma once
 
 #include <optional>
+#include <span>
 #include <emu/core/const.hpp>
 #include <emu/util/array.hpp>
+#include <emu/util/mappedfile.hpp>
 #include <emu/util/unsigned.hpp>
 
 namespace Util { class File; }
@@ -25,21 +27,20 @@ namespace Cartridge {
     struct Data {
         std::string filename;
         Format format;
-        uint8 header[HEADER_SIZE];
-        uint8 trainer[TRAINER_SIZE];
         Mirroring mirroring;
         uint32 mapper;
         uint32 chrram_size;
         Console console_type;
+        std::span<uint8> prgrom;
+        std::span<uint8> chrrom;
+        std::span<uint8> header;
+        std::span<uint8> trainer;
 
         struct {
             bool battery;
             bool trainer;
             bool chrram;
         } has;
-
-        Util::HeapArray<uint8> prgrom;
-        Util::HeapArray<uint8> chrrom;
 
         struct NES20Data {
             bool has_prgram;
@@ -60,6 +61,6 @@ namespace Cartridge {
     };
 } // namespace Cartridge
 
-std::optional<Cartridge::Data> parse_cartridge(Util::File &romfile);
+std::optional<Cartridge::Data> parse_cartridge(Util::MappedFile &romfile);
 
 } // namespace Core

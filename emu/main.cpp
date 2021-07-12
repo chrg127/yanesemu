@@ -9,7 +9,7 @@
 #include <emu/debugger/clidbg.hpp>
 #include <emu/util/cmdline.hpp>
 #include <emu/util/debug.hpp>
-#include <emu/util/file.hpp>
+#include <emu/util/mappedfile.hpp>
 #include <emu/util/platform.hpp>
 #include <emu/video/video.hpp>
 
@@ -75,16 +75,11 @@ public:
     void join() { th.join(); }
 };
 
-bool open_rom(std::string_view pathname)
+bool open_rom(Util::MappedFile &romfile)
 {
-    auto opt_file = Util::File::open(pathname, Util::Access::READ);
-    if (!opt_file) {
-        std::perror(fmt::format("error: {}", pathname).c_str());
-        return false;
-    }
-    auto opt_cart = Core::parse_cartridge(opt_file.value());
+    auto opt_cart = Core::parse_cartridge(romfile);
     if (!opt_cart) {
-        error("not a real NES ROM: {}\n", pathname);
+        error("not a real NES ROM: {}\n", romfile.filename());
         return false;
     }
     fmt::print("{}\n", opt_cart.value().to_string());
@@ -131,8 +126,16 @@ int cli_interface(Util::ArgResult &flags)
     } else if (flags.items.size() > 1)
         warning("multiple ROM files specified, first found will be used\n");
 
-    if (!open_rom(flags.items[0]))
+    // because we map the file in memory, it must be in scope for the entirety
+    // of the emulator's lifetime.
+    auto optfile = Util::MappedFile::open(flags.items[0]);
+    if (optfile) {
+        if (!open_rom(optfile.value()))
+            return 1;
+    } else {
+        std::perror(fmt::format("error: {}", flags.items[0]).c_str());
         return 1;
+    }
 
     auto context = Video::Context::create(Video::Context::Type::OPENGL);
     if (!context) {

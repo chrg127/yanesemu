@@ -126,8 +126,10 @@ bool CliDebugger::repl()
     std::string cmdstr, argsstr;
 
     fmt::print("[NESDBG]> ");
-    if (!input.getword(cmdstr) || !input.getline(argsstr))
+    if (!input.getword(cmdstr) || !input.getline(argsstr)) {
+        quit = true;
         return quit;
+    }
     if (cmdstr.empty())
         eval(last_cmd, last_args);
     else if (auto optcmd = Util::map_lookup(name_lookup, cmdstr); optcmd) {

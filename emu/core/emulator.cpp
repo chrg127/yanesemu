@@ -59,8 +59,8 @@ void Emulator::bus_map(Mirroring mirroring)
 
 void Emulator::insert_rom(Cartridge::Data &&cartdata)
 {
-    prgrom = std::move(cartdata.prgrom);
-    chrrom = std::move(cartdata.chrrom);
+    prgrom = cartdata.prgrom;
+    chrrom = cartdata.chrrom;
     bus_map(cartdata.mirroring);
 }
 
