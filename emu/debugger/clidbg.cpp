@@ -9,6 +9,7 @@
 #include <emu/util/stringops.hpp>
 #include <emu/util/file.hpp>
 #include <emu/util/stlutil.hpp>
+#include <emu/util/debug.hpp>
 
 namespace Debugger {
 
@@ -24,11 +25,11 @@ namespace Debugger {
     X("next",           "n",    NEXT,          0,       0,          "run next instruction") \
     X("step",           "s",    STEP,          0,       0,          "step next instruction") \
     X("status",         "st",   STATUS,        0,       1,          "print current status") \
-    X("read",           "rd",   READ_ADDR,     1,       1,          "read address") \
-    X("write",          "wr",   WRITE_ADDR,    2,       2,          "write address") \
+    X("read",           "rd",   READ_ADDR,     1,       2,          "read address") \
+    X("write",          "wr",   WRITE_ADDR,    2,       3,          "write address") \
     X("block",          "bl",   BLOCK,         2,       3,          "read block") \
     X("disassemble",    "dis",  DISASSEMBLE,   1,       3,          "disassemble the current instruction") \
-    X("disblock",       "disb", DISBLOCK,      2,       2,          "disassemble a given block") \
+    X("disblock",       "db",   DISBLOCK,      2,       2,          "disassemble a given block") \
     X("trace",          "tr",   TRACE,         1,       1,          "") \
     X("stoptrace",      "str",  STOP_TRACE,    0,       0,          "") \
     X("reset",          "res",  RESET,         0,       0,          "reset the machine") \
@@ -75,50 +76,75 @@ reset, res:         reset the machine
 quit, q:            quit the emulator
 )";
 
-// Prints a whole block. Start and end are both inclusive (to allow reads of
-// 0000-FFFF).
-static void print_block(uint16 start, uint16 end, auto &&readvalue)
+static void read_block(Debugger &dbg, uint16 start, uint16 end, Debugger::Loc loc)
 {
+    if (end < start) {
+        fmt::print("Invalid range.");
+        return;
+    }
+    if (loc == Debugger::Loc::VRAM && (start > 0x4000 || end > 0x4000)) {
+        fmt::print("Invalid range for VRAM.\n");
+        return;
+    }
+
+    const std::unordered_map<Debugger::Loc, std::function<uint8(uint16)>> fnmap = {
+        { Debugger::Loc::RAM,  Util::member_fn(&dbg, &Debugger::read_ram)  },
+        { Debugger::Loc::VRAM, Util::member_fn(&dbg, &Debugger::read_vram) },
+    };
+    auto readfn = Util::map_lookup(fnmap, loc).value();
+
     for (int i = 0; i <= (end - start); ) {
-        fmt::print("{:04X}: ", i + start);
+        fmt::print("{:04X}: ", start + i);
         for (int j = 0; j < 16 && i + start <= end; i++, j++)
-            fmt::print("{:02X} ", readvalue(i + start));
+            fmt::print("{:02X} ", readfn(start + i));
         fmt::print("\n");
     }
 }
 
-static void block_command(const std::vector<std::string> &args, auto &&process)
+static void write_block(Debugger &dbg, uint16 start, uint16 end, uint8 data, Debugger::Loc loc)
 {
-    auto getloc = [](const std::string &arg) -> Debugger::Loc
-    {
-        if (arg == "cpu") return Debugger::Loc::RAM;
-        if (arg == "ppu") return Debugger::Loc::VRAM;
-        fmt::print("Unrecognized location: {}\n", arg);
-        return Debugger::Loc::RAM;
+    const std::unordered_map<Debugger::Loc, std::function<void(uint16, uint8)>> fnmap = {
+        { Debugger::Loc::RAM,  Util::member_fn(&dbg, &Debugger::write_ram)  },
+        { Debugger::Loc::VRAM, Util::member_fn(&dbg, &Debugger::write_vram) },
     };
-
-    auto start = Util::strconv<uint16>(args[0], 16);
-    auto end   = Util::strconv<uint16>(args[1], 16);
-    Debugger::Loc loc = args.size() == 3 ? getloc(args[2]) : Debugger::Loc::RAM;
-    if (!start || !end)
-        fmt::print("Invalid value found while parsing arguments.\n");
-    else if (end.value() <= start.value())
-        fmt::print("Invalid range.\n");
-    else
-        process(start.value(), end.value(), loc);
+    auto writefn = Util::map_lookup(fnmap, loc).value();
+    for (uint16 curr = start; curr <= (end-start); curr++)
+        writefn(curr, data);
 }
+
+static std::optional<uint16> parse_addr(const std::string &str)
+{
+    auto addr = Util::strconv<uint16>(str, 16);
+    if (!addr) fmt::print("Invalid address: {}\n", str);
+    return addr;
+}
+
+static std::optional<uint8> parse_data(const std::string &str)
+{
+    auto data = Util::strconv<uint8>(str, 8);
+    if (!data) fmt::print("Invalid value: {}\n", str);
+    return data;
+}
+
+static std::optional<Debugger::Loc> parse_mem_loc(const std::string &arg)
+{
+    std::unordered_map<std::string, Debugger::Loc> locmap = {
+        { "",    Debugger::Loc::RAM },
+        { "cpu", Debugger::Loc::RAM },
+        { "ppu", Debugger::Loc::VRAM },
+    };
+    auto loc = Util::map_lookup(locmap, arg);
+    if (!loc) fmt::print("Unrecognized memory source: {}\n", arg);
+    return loc;
+}
+
+
 
 CliDebugger::CliDebugger(Core::Emulator *emu)
     : dbg(emu)
 {
     dbg.on_report([this](Debugger::Event &&ev) { report_event(std::move(ev)); });
 }
-
-// void CliDebugger::enter()
-// {
-//     print_instr();
-//     repl();
-// }
 
 bool CliDebugger::repl()
 {
@@ -157,8 +183,8 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
 
     case Command::HELP:
         if (args.size() == 1) {
-            auto cmd = Util::map_lookup(name_lookup, args[0]);
-            fmt::print("{}\n", info_lookup.find(cmd.value())->second.desc);
+            auto cmd = Util::map_lookup_withdef(name_lookup, args[0], Command::HELP);
+            fmt::print("{}\n", info_lookup.find(cmd)->second.desc);
         } else
             fmt::print("{}", helpstr);
         break;
@@ -186,21 +212,23 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
             fmt::print("Invalid mode for breakpoint. Try 'help'.\n");
             break;
         }
-        auto start = Util::strconv<uint16>(args[1], 16);
-        auto end = args.size() > 2 ? Util::strconv<uint16>(args[2], 16) : start;
-        if (!start || !end || end.value() < start.value()) {
-            fmt::print("Invalid range.\n");
-            break;
+        auto start = parse_addr(args[1]);
+        auto end = args.size() > 2 ? parse_addr(args[2]) : start;
+        if (start && end) {
+            if (end.value() < start.value())
+                fmt::print("Invalid range.\n");
+            else {
+                unsigned i = dbg.set_breakpoint({ .start = start.value(), .end = end.value(), .mode = mode });
+                fmt::print("Set breakpoint #{} to {:04X}-{:04X}.\n", i, start.value(), end.value());
+            }
         }
-        unsigned i = dbg.set_breakpoint({ .start = start.value(), .end = end.value(), .mode = mode });
-        fmt::print("Set breakpoint #{} to {:04X}-{:04X}.\n", i, start.value(), end.value());
         break;
     }
 
     case Command::DELBREAK: {
-        auto index = Util::strconv<uint16>(args[0], 16);
+        auto index = Util::strconv(args[0]);
         if (!index || index >= dbg.breakpoints().size())
-            fmt::print("Index not valid.\n");
+            fmt::print("Invalid index: {}.\n", args[0]);
         else {
             dbg.delete_breakpoint(index.value());
             fmt::print("Breakpoint #{} deleted.\n", index.value());
@@ -223,12 +251,10 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
     }
 
     case Command::DISASSEMBLE: {
-        auto id = Util::strconv<uint8>(args[0], 16);
-        auto lo = args.size() >= 2 ? Util::strconv<uint16>(args[1], 16) : 0;
-        auto hi = args.size() >= 3 ? Util::strconv<uint16>(args[2], 16) : 0;
-        if (!id || !lo || !hi)
-            fmt::print("Invalid value found while parsing command arguments.\n");
-        else
+        auto id = parse_data(args[0]);
+        auto lo = args.size() >= 2 ? parse_data(args[1]) : 0;
+        auto hi = args.size() >= 3 ? parse_data(args[2]) : 0;
+        if (id && lo && hi)
             fmt::print("{}\n", Core::disassemble(id.value(), lo.value(), hi.value()));
         break;
     }
@@ -241,40 +267,48 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
         break;
 
     case Command::READ_ADDR: {
-        auto addr = Util::strconv<uint16>(args[0], 16);
-        if (!addr)
-            fmt::print("Invalid value found while parsing command arguments.\n");
-        else
-            fmt::print("{:02X}\n", dbg.readmem(addr.value(), Debugger::Loc::RAM));
+        auto addr = parse_addr(args[0]);
+        auto loc = parse_mem_loc(args.size() == 2 ? args[1] : "");
+        if (addr && loc)
+            read_block(dbg, addr.value(), addr.value(), loc.value());
         break;
     }
 
     case Command::WRITE_ADDR: {
-        auto addr = Util::strconv<uint16>(args[0], 16);
-        auto val  = Util::strconv<uint8 >(args[1], 16);
-        if (!addr || !val)
-            fmt::print("Invalid value found while parsing command arguments.\n");
-        else {
-            if (addr.value() >= Core::CARTRIDGE_START)
+        auto addr = parse_addr(args[0]);
+        auto val  = parse_data(args[1]);
+        auto loc  = parse_mem_loc(args.size() == 3 ? args[2] : "");
+        if (addr && val && loc) {
+            if (loc.value() == Debugger::Loc::RAM && addr.value() >= Core::CARTRIDGE_START)
                 fmt::print("Warning: writes to ROM have no effects\n");
-            dbg.writemem(addr.value(), val.value(), Debugger::Loc::RAM);
+            write_block(dbg, addr.value(), addr.value(), val.value(), loc.value());
+            // dbg.write_ram(addr.value(), val.value());
         }
         break;
     }
 
-    case Command::BLOCK:
-        block_command(args, [&](uint16 start, uint16 end, Debugger::Loc loc) {
-            print_block(start, end, [&](uint16 addr) { return dbg.readmem(addr, loc); });
-        });
+    case Command::BLOCK: {
+        auto start = parse_addr(args[0]);
+        auto end = parse_addr(args[1]);
+        auto loc = parse_mem_loc(args.size() == 3 ? args[2] : "");
+        if (start && end && loc)
+            read_block(dbg, start.value(), end.value(), loc.value());
         break;
+    }
 
-    case Command::DISBLOCK:
-        block_command(args, [&](uint16 start, uint16 end, Debugger::Loc loc) {
-            Core::disassemble_block(start, end,
-                              [&](uint16 addr) { return dbg.readmem(addr, Debugger::Loc::RAM); },
-                              [ ](uint16 addr, std::string &&s) { fmt::print("${:04X}: {}\n", addr, s); });
-        });
+    case Command::DISBLOCK: {
+        auto start = parse_addr(args[0]);
+        auto end   = parse_addr(args[1]);
+        if (start && end) {
+            if (end.value() < start.value())
+                fmt::print("Invalid range.\n");
+            else
+                Core::disassemble_block(start.value(), end.value(),
+                    [&](uint16 addr)                  { return dbg.read_ram(addr); },
+                    [ ](uint16 addr, std::string &&str) { fmt::print("${:04X}: {}\n", addr, str); });
+        }
         break;
+    }
 
     case Command::TRACE: {
         if (!dbg.start_tracing(args[0]))

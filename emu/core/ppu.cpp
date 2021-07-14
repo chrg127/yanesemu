@@ -186,38 +186,6 @@ void PPU::writereg(const uint16 which, const uint8 data)
     }
 }
 
-uint8 PPU::readreg_no_sideeff(const uint16 which) const
-{
-    switch (which) {
-    case 0x2000: return vram.tmp.nt
-                      | io.vram_inc    << 2
-                      | io.sp_pt_addr  << 3
-                      | io.bg_pt_addr  << 4
-                      | io.sp_size     << 5
-                      | io.ext_bus_dir << 6
-                      | io.nmi_enabled << 7;
-    case 0x2001: return io.grey
-                      | io.bg_show_left << 1
-                      | io.sp_show_left << 2
-                      | io.bg_show      << 3
-                      | io.sp_show      << 4
-                      | io.red          << 5
-                      | io.green        << 6
-                      | io.blue         << 7;
-    case 0x2002: return io.vblank << 7
-                      | io.sp_zero_hit << 6
-                      | io.sp_overflow << 5;
-    case 0x2003: return io.oam_addr;
-    case 0x2004: return 0;
-    case 0x2005: return !io.scroll_latch ? vram.fine_x     << 5 | vram.tmp.coarse_x
-                                         : vram.tmp.fine_y << 5 | vram.tmp.coarse_y;
-    case 0x2006: return !io.scroll_latch ? vram.tmp & 0xFF : vram.tmp >> 8 & 0xFF;
-    case 0x2007: return vram.addr < 0x3F00 ? io.data_buf
-                                           : bus->read(vram.addr);
-    default: return 0xFF;
-    }
-}
-
 void PPU::output()
 {
     uint8 bgpixel = bg_output();

@@ -11,26 +11,33 @@ namespace Debugger {
 Debugger::Debugger(Core::Emulator *e)
     : emu(e), cpudbg(&emu->cpu)
 {
-    // emu->cpu.on_fetch([this](uint16 addr, char mode) { fetch_callback(addr, mode); });
-    emu->cpu.on_error([this](uint8 id, uint16 addr)  { error_callback(id, addr); });
-}
-
-int Debugger::test_breakpoints()
-{
-    const uint16 pc = cpudbg.getreg(CPUDebugger::Reg::PC);
-    auto it = std::find_if(break_list.begin(), break_list.end(),
-            [pc](const Breakpoint &b)
-            {
-                switch (b.mode) {
-                case 'x': return pc >= b.start && pc <= b.end;
-                default: return false;
-                }
-            });
-    return it == break_list.end() ? -1 : it - break_list.begin();
+    emu->cpu.on_error([this](uint8 id, uint16 addr)
+    {
+        got_error = true;
+        Event ev;
+        ev.tag = Event::Tag::INV_INSTR;
+        ev.inv.id = id;
+        ev.inv.addr = addr;
+        report_callback(std::move(ev));
+    });
 }
 
 void Debugger::run(StepType step_type)
 {
+    const auto test_breakpoints = [this]()
+    {
+        const uint16 pc = cpudbg.getreg(CPUDebugger::Reg::PC);
+        auto it = std::find_if(break_list.begin(), break_list.end(),
+                [pc](const Breakpoint &b)
+                {
+                    switch (b.mode) {
+                    case 'x': return pc >= b.start && pc <= b.end;
+                    default: return false;
+                    }
+                });
+        return it == break_list.end() ? -1 : it - break_list.begin();
+    };
+
     const auto runloop = [&](auto &&check_step)
     {
         Event ev;
@@ -83,45 +90,26 @@ void Debugger::run(StepType step_type)
     }
 }
 
-void Debugger::step()
+uint8 Debugger::read_ram(uint16 addr)
 {
-    run(StepType::STEP);
+    if (addr >= 0x2000 && addr <= 0x3FFF)
+        return ppudbg.getreg(0x2000 + (addr & 0x7));
+    return emu->rambus.read(addr);
 }
 
-void Debugger::next()
+void Debugger::write_ram(uint16 addr, uint8 data)
 {
-    run(StepType::NEXT);
+    emu->rambus.write(addr, data);
 }
 
-void Debugger::advance()
+uint8 Debugger::read_vram(uint14 addr)
 {
-    run(StepType::NONE);
+    return emu->vrambus.read(addr);
 }
 
-void Debugger::advance_frame()
+void Debugger::write_vram(uint14 addr, uint8 data)
 {
-    run(StepType::FRAME);
-}
-
-uint8 Debugger::readmem(uint16 addr, Debugger::Loc loc)
-{
-    switch (loc) {
-    case Debugger::Loc::RAM:
-        if (addr >= 0x2000 && addr <= 0x3FFF)
-            return emu->ppu.readreg_no_sideeff(0x2000 + (addr & 0x7));
-        return emu->rambus.read(addr);
-    case Debugger::Loc::VRAM:
-        if (addr <= 0x3FFF)
-            return emu->vrambus.read(addr);
-        return 0;
-    default:
-        return 0;
-    }
-}
-
-void Debugger::writemem(uint16 addr, uint8 value, Debugger::Loc loc)
-{
-    emu->rambus.write(addr, value);
+    return emu->vrambus.write(addr, data);
 }
 
 unsigned Debugger::set_breakpoint(Breakpoint &&bp)
@@ -136,18 +124,9 @@ unsigned Debugger::set_breakpoint(Breakpoint &&bp)
     return break_list.size() - 1;
 }
 
-void Debugger::fetch_callback(uint16 addr, char mode)
+void Debugger::delete_breakpoint(unsigned index)
 {
-}
-
-void Debugger::error_callback(uint8 id, uint16 addr)
-{
-    got_error = true;
-    Event ev;
-    ev.tag = Event::Tag::INV_INSTR;
-    ev.inv.id = id;
-    ev.inv.addr = addr;
-    report_callback(std::move(ev));
+    break_list[index].mode = 'n';
 }
 
 void Debugger::trace()
@@ -167,6 +146,17 @@ void Debugger::trace()
         ppudbg.getreg(PPUDebugger::Reg::PPUADDR),
         cpudbg.curr_instr_str()
     );
+}
+
+bool Debugger::start_tracing(std::string_view pathname)
+{
+    tracefile = Util::File::open(pathname, Util::Access::WRITE);
+    return !!tracefile;
+}
+
+void Debugger::stop_tracing()
+{
+    tracefile = std::nullopt;
 }
 
 } // namespace Debugger

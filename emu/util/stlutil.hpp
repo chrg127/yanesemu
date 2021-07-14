@@ -55,4 +55,17 @@ Visitor<T...> make_visitor(T... lambdas)
     return Visitor<T...>(lambdas...);
 }
 
+/* Makes an std::function from a member function without having
+ * to throw readability away.
+ * Example:
+ *      struct MyStruct { uint8 read(uint16); };
+ *      mymemfn = member_fn(&my_struct_instance, &MyStruct::read);
+ *      uint8 res = mymemfn(0);
+ */
+template <typename T, typename R, typename... Args>
+std::function<R(Args...)> member_fn(T *obj, R (T::*fn)(Args...))
+{
+    return [=](Args&&... args) -> R { return (obj->*fn)(args...); };
+}
+
 } // namespace Util

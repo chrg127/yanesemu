@@ -22,13 +22,8 @@ public:
         : cpu(c)
     { }
 
-    enum class Reg {
-        ACC, X, Y, PC, SP,
-    };
-
-    enum class Flag {
-        NEG, OV, DEC, INTDIS, ZERO, CARRY,
-    };
+    enum class Reg  { ACC, X, Y, PC, SP, };
+    enum class Flag { NEG, OV, DEC, INTDIS, ZERO, CARRY, };
 
     struct Instruction {
         uint8 id, lo, hi;
@@ -61,12 +56,12 @@ public:
     };
 
     struct Position {
-        unsigned long cycle;
-        unsigned long line;
+        unsigned long cycle, line;
     };
 
+    uint16 getreg(uint16 addr) const;
     uint16 getreg(Reg reg) const;
-    void setreg(Reg reg, uint16 value);
+    // void setreg(Reg reg, uint16 value);
     Position pos() const;
 };
 
@@ -116,35 +111,24 @@ public:
 
     void on_report(auto &&f) { report_callback = f; }
     void run(StepType step_type);
-
-    void step();
-    void next();
-    void advance();
-    void advance_frame();
-
-    uint8 readmem(uint16 addr, Loc loc);
-    void writemem(uint16 addr, uint8 value, Loc loc);
-
+    uint8 read_ram(uint16 addr);
+    uint8 read_vram(uint14 addr);
+    void write_ram(uint16 addr, uint8 data);
+    void write_vram(uint14 addr, uint8 data);
     unsigned set_breakpoint(Breakpoint &&p);
+    void delete_breakpoint(unsigned index);
+    void stop_tracing();
+
+    void step()          { run(StepType::STEP); }
+    void next()          { run(StepType::NEXT); }
+    void advance()       { run(StepType::NONE); }
+    void advance_frame() { run(StepType::FRAME); }
+
     std::vector<Breakpoint> breakpoints() const { return break_list; }
-    void delete_breakpoint(unsigned index)
-    {
-        break_list[index].mode = 'n';
-    }
 
-    bool start_tracing(std::string_view pathname)
-    {
-        stop_tracing();
-        tracefile = Util::File::open(pathname, Util::Access::WRITE);
-        return !!tracefile;
-    }
-
-    void stop_tracing() { tracefile = std::nullopt; }
+    bool start_tracing(std::string_view pathname);
 
 private:
-    void fetch_callback(uint16 addr, char mode);
-    void error_callback(uint8 id, uint16 addr);
-    int test_breakpoints();
     void trace();
 };
 

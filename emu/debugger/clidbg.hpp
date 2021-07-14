@@ -9,25 +9,11 @@ namespace Core { class Emulator; }
 namespace Debugger {
 
 enum Command {
-    HELP,
-    CONTINUE,
-    RUNFRAME,
-    NEXT,
-    STEP,
-    BREAK,
-    LIST_BREAK,
-    DELBREAK,
-    BACKTRACE,
-    STATUS,
-    READ_ADDR,
-    WRITE_ADDR,
-    BLOCK,
-    DISASSEMBLE,
-    DISBLOCK,
-    TRACE,
-    STOP_TRACE,
-    RESET,
-    QUIT,
+    HELP,       CONTINUE,       RUNFRAME,   NEXT,
+    STEP,       BREAK,          LIST_BREAK, DELBREAK,
+    BACKTRACE,  STATUS,         READ_ADDR,  WRITE_ADDR,
+    BLOCK,      DISASSEMBLE,    DISBLOCK,   TRACE,
+    STOP_TRACE, RESET,          QUIT,
 };
 
 class CliDebugger {
