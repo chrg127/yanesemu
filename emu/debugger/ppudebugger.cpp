@@ -4,7 +4,7 @@
 
 namespace Debugger {
 
-uint16 PPUDebugger::getreg(uint16 addr) const
+uint8 PPUDebugger::getreg(uint16 addr) const
 {
     switch (addr) {
     case 0x2000: return ppu->vram.tmp.nt
@@ -36,7 +36,7 @@ uint16 PPUDebugger::getreg(uint16 addr) const
     }
 }
 
-uint16 PPUDebugger::getreg(Reg reg) const
+uint8 PPUDebugger::getreg(Reg reg) const
 {
     switch (reg) {
     case PPUDebugger::Reg::CTRL:        return getreg(0x2000); break;
@@ -55,13 +55,34 @@ uint16 PPUDebugger::getreg(Reg reg) const
 // {
 // }
 
-PPUDebugger::Position PPUDebugger::pos() const
+std::pair<unsigned long, unsigned long> PPUDebugger::pos() const
 {
-    Position res = {
-        .cycle = ppu->cycles,
-        .line = ppu->lines,
-    };
-    return res;
+    return { ppu->lines, ppu->cycles };
+}
+
+uint16 PPUDebugger::nt_base_addr() const
+{
+    return 0x2000 + ppu->vram.tmp.nt * 0x400;
+}
+
+uint16 PPUDebugger::vram_addr() const
+{
+    return ppu->vram.addr.value;
+}
+
+uint16 PPUDebugger::tmp_addr() const
+{
+    return ppu->vram.addr.value;
+}
+
+uint8 PPUDebugger::fine_x() const
+{
+    return ppu->vram.fine_x;
+}
+
+std::pair<int, int> PPUDebugger::screen_coords() const
+{
+    return { ppu->vram.vx(), ppu->vram.vy() };
 }
 
 } // namespace Debugger

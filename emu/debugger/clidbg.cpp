@@ -5,6 +5,7 @@
 #include <emu/core/const.hpp>
 #include <emu/core/instrinfo.hpp>
 #include <emu/debugger/debugger.hpp>
+#include <emu/util/bits.hpp>
 #include <emu/util/unsigned.hpp>
 #include <emu/util/stringops.hpp>
 #include <emu/util/file.hpp>
@@ -76,40 +77,38 @@ reset, res:         reset the machine
 quit, q:            quit the emulator
 )";
 
-static void read_block(Debugger &dbg, uint16 start, uint16 end, Debugger::Loc loc)
+static bool check_addr_ranges(uint16 start, uint16 end, Debugger::Loc loc)
 {
     if (end < start) {
-        fmt::print("Invalid range.");
-        return;
-    }
-    if (loc == Debugger::Loc::VRAM && (start > 0x4000 || end > 0x4000)) {
+        fmt::print("Invalid range: {:04X}-{:04X}.", start, end);
+        return false;
+    } else if (loc == Debugger::Loc::VRAM && (start > 0x4000 || end > 0x4000)) {
         fmt::print("Invalid range for VRAM.\n");
-        return;
+        return false;
     }
+    return true;
+}
 
-    const std::unordered_map<Debugger::Loc, std::function<uint8(uint16)>> fnmap = {
-        { Debugger::Loc::RAM,  Util::member_fn(&dbg, &Debugger::read_ram)  },
-        { Debugger::Loc::VRAM, Util::member_fn(&dbg, &Debugger::read_vram) },
-    };
-    auto readfn = Util::map_lookup(fnmap, loc).value();
-
+static void read_block(Debugger &dbg, uint16 start, uint16 end, Debugger::Loc loc)
+{
+    if (!check_addr_ranges(start, end, loc))
+        return;
+    auto readfn = get_read_fn(loc);
     for (int i = 0; i <= (end - start); ) {
-        fmt::print("{:04X}: ", start + i);
+        fmt::print("${:04X}: ", start + i);
         for (int j = 0; j < 16 && i + start <= end; i++, j++)
-            fmt::print("{:02X} ", readfn(start + i));
+            fmt::print("{:02X} ", readfn(&dbg, start + i));
         fmt::print("\n");
     }
 }
 
 static void write_block(Debugger &dbg, uint16 start, uint16 end, uint8 data, Debugger::Loc loc)
 {
-    const std::unordered_map<Debugger::Loc, std::function<void(uint16, uint8)>> fnmap = {
-        { Debugger::Loc::RAM,  Util::member_fn(&dbg, &Debugger::write_ram)  },
-        { Debugger::Loc::VRAM, Util::member_fn(&dbg, &Debugger::write_vram) },
-    };
-    auto writefn = Util::map_lookup(fnmap, loc).value();
+    if (!check_addr_ranges(start, end, loc))
+        return;
+    auto writefn = get_write_fn(loc);
     for (uint16 curr = start; curr <= (end-start); curr++)
-        writefn(curr, data);
+        writefn(&dbg, curr, data);
 }
 
 static std::optional<uint16> parse_addr(const std::string &str)
@@ -126,19 +125,12 @@ static std::optional<uint8> parse_data(const std::string &str)
     return data;
 }
 
-static std::optional<Debugger::Loc> parse_mem_loc(const std::string &arg)
+static std::optional<Debugger::Loc> parse_mem_loc(const std::string &str)
 {
-    std::unordered_map<std::string, Debugger::Loc> locmap = {
-        { "",    Debugger::Loc::RAM },
-        { "cpu", Debugger::Loc::RAM },
-        { "ppu", Debugger::Loc::VRAM },
-    };
-    auto loc = Util::map_lookup(locmap, arg);
-    if (!loc) fmt::print("Unrecognized memory source: {}\n", arg);
+    auto loc = str_to_memsrc(str);
+    if (!loc) fmt::print("Unrecognized memory source: {}\n", str);
     return loc;
 }
-
-
 
 CliDebugger::CliDebugger(Core::Emulator *emu)
     : dbg(emu)
@@ -282,7 +274,6 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
             if (loc.value() == Debugger::Loc::RAM && addr.value() >= Core::CARTRIDGE_START)
                 fmt::print("Warning: writes to ROM have no effects\n");
             write_block(dbg, addr.value(), addr.value(), val.value(), loc.value());
-            // dbg.write_ram(addr.value(), val.value());
         }
         break;
     }
@@ -299,13 +290,10 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
     case Command::DISBLOCK: {
         auto start = parse_addr(args[0]);
         auto end   = parse_addr(args[1]);
-        if (start && end) {
-            if (end.value() < start.value())
-                fmt::print("Invalid range.\n");
-            else
-                Core::disassemble_block(start.value(), end.value(),
-                    [&](uint16 addr)                  { return dbg.read_ram(addr); },
-                    [ ](uint16 addr, std::string &&str) { fmt::print("${:04X}: {}\n", addr, str); });
+        if (start && end && check_addr_ranges(start.value(), end.value(), Debugger::Loc::RAM)) {
+            Core::disassemble_block(start.value(), end.value(),
+                [&](uint16 addr)                  { return dbg.read_ram(addr); },
+                [ ](uint16 addr, std::string &&str) { fmt::print("${:04X}: {}\n", addr, str); });
         }
         break;
     }
@@ -368,8 +356,37 @@ void CliDebugger::print_cpu_status()
 
 void CliDebugger::print_ppu_status()
 {
-    fmt::print("Line: {} Cycle: {}\nVRAM Address: {:04X} TMP Address: {:04X}\n",
-               0, 0, 0, 0);
+    using Util::getbit;
+    auto onoff = [](auto val) { return val ? "ON" : "OFF"; };
+    uint8 ctrl = dbg.ppudbg.getreg(PPUDebugger::Reg::CTRL);
+    fmt::print("PPUCTRL ($2000): {:08b}:\n"
+               "    Base NT address: ${:04X}\n    VRAM address increment: {}\n    Sprite Pattern table address: ${:04X}\n"
+               "    Background pattern table address: ${:04X}\n    Sprite size: {}\n    Master/slave: {}\n    NMI enabled: {}\n",
+               ctrl, dbg.ppudbg.nt_base_addr(), (ctrl & 4) == 0 ? 1 : 32, getbit(ctrl, 4) * 0x1000,
+               getbit(ctrl, 5) * 0x1000, (ctrl & 32) ? "8x16" : "8x8", (ctrl & 64) ? "output color" : "read backdrop",
+               (ctrl & 128) ? "ON" : "OFF");
+    uint8 mask = dbg.ppudbg.getreg(PPUDebugger::Reg::MASK);
+    fmt::print("PPUMASK ($2001): {:08b}:\n"
+               "    Greyscale: {}\n    BG left: {}\n    Sprites left: {}\n    BG: {}\n    Sprites: {}\n"
+               "    Emphasize red: {}\n    Emphasize green: {}\n    Emphasize blue: {}\n",
+               mask, onoff(mask & 1),  onoff(mask & 2),  onoff(mask & 4),  onoff(mask & 8),
+                     onoff(mask & 16), onoff(mask & 32), onoff(mask & 64), onoff(mask & 128));
+    uint8 status = dbg.ppudbg.getreg(PPUDebugger::Reg::STATUS);
+    fmt::print("PPUSTATUS ($2002): {:08b}:\n"
+               "    Sprite overflow: {}\n    Sprite 0 hit: {}\n    Vblank: {}\n",
+               status, onoff(status & 32), onoff(status & 64), onoff(status & 128));
+    fmt::print("OAMADDR ($2003): ${:02X}\n", dbg.ppudbg.getreg(PPUDebugger::Reg::OAMADDR));
+    fmt::print("OAMDATA ($2004): ${:02X}\n", dbg.ppudbg.getreg(PPUDebugger::Reg::OAMDATA));
+    fmt::print("PPUSCROLL ($2005): ${:02X}\n", dbg.ppudbg.getreg(PPUDebugger::Reg::PPUSCROLL));
+    fmt::print("PPUADDR ($2006): ${:02X}\n", dbg.ppudbg.getreg(PPUDebugger::Reg::PPUADDR));
+    fmt::print("PPUDATA ($2007): ${:02X}\n", dbg.ppudbg.getreg(PPUDebugger::Reg::PPUDATA));
+    auto [l, c] = dbg.ppudbg.pos();
+    fmt::print("Line: {}; Cycle: {}\n", l, c);
+    fmt::print("VRAM address: {:04X}\n", dbg.ppudbg.vram_addr());
+    fmt::print("TMP address: {:04X}\n", dbg.ppudbg.tmp_addr());
+    fmt::print("Fine X: {:X}\n", dbg.ppudbg.fine_x());
+    auto [x, y] = dbg.ppudbg.screen_coords();
+    fmt::print("Screen coordinates: X = {}, Y = {}\n", x, y);
 }
 
 } // namespace Debugger

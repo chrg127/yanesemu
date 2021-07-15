@@ -44,25 +44,22 @@ class PPUDebugger {
     Core::PPU *ppu;
 
 public:
+    PPUDebugger(Core::PPU *p) : ppu(p) {}
+
     enum class Reg {
-        CTRL,
-        MASK,
-        STATUS,
-        OAMADDR,
-        OAMDATA,
-        PPUADDR,
-        PPUSCROLL,
-        PPUDATA,
+        CTRL,    MASK,      STATUS,  OAMADDR,
+        OAMDATA, PPUSCROLL, PPUADDR, PPUDATA,
     };
 
-    struct Position {
-        unsigned long cycle, line;
-    };
-
-    uint16 getreg(uint16 addr) const;
-    uint16 getreg(Reg reg) const;
+    uint8 getreg(uint16 addr) const;
+    uint8 getreg(Reg reg) const;
     // void setreg(Reg reg, uint16 value);
-    Position pos() const;
+    std::pair<unsigned long, unsigned long> pos() const;
+    uint16 nt_base_addr() const;
+    uint16 vram_addr() const;
+    uint16 tmp_addr() const;
+    uint8 fine_x() const;
+    std::pair<int, int> screen_coords() const;
 };
 
 struct Debugger {
@@ -131,5 +128,9 @@ public:
 private:
     void trace();
 };
+
+std::function<uint8(Debugger *, uint16)> get_read_fn(Debugger::Loc loc);
+std::function<void(Debugger *, uint16, uint8)> get_write_fn(Debugger::Loc loc);
+std::optional<Debugger::Loc> str_to_memsrc(const std::string &str);
 
 } // namespace Core

@@ -5,13 +5,14 @@
 #include <emu/core/instrinfo.hpp>
 #include <emu/util/file.hpp>
 #include <emu/util/debug.hpp>
+#include <emu/util/stlutil.hpp>
 
 namespace Debugger {
 
 Debugger::Debugger(Core::Emulator *e)
-    : emu(e), cpudbg(&emu->cpu)
+    : emu(e), cpudbg(&emu->cpu), ppudbg(&emu->ppu)
 {
-    emu->cpu.on_error([this](uint8 id, uint16 addr)
+    emu->on_cpu_error([this](uint8 id, uint16 addr)
     {
         got_error = true;
         Event ev;
@@ -157,6 +158,36 @@ bool Debugger::start_tracing(std::string_view pathname)
 void Debugger::stop_tracing()
 {
     tracefile = std::nullopt;
+}
+
+std::function<uint8(Debugger *, uint16)> get_read_fn(Debugger::Loc loc)
+{
+    switch (loc) {
+    case Debugger::Loc::RAM:  return std::mem_fn(&Debugger::read_ram);
+    case Debugger::Loc::VRAM: return std::mem_fn(&Debugger::read_vram);
+    default: panic("get_read_fn");
+    }
+}
+
+std::function<void(Debugger *, uint16, uint8)> get_write_fn(Debugger::Loc loc)
+{
+    switch (loc) {
+    case Debugger::Loc::RAM:  return std::mem_fn(&Debugger::write_ram);
+    case Debugger::Loc::VRAM: return std::mem_fn(&Debugger::write_vram);
+    default: panic("get_write_fn");
+    }
+}
+
+std::optional<Debugger::Loc> str_to_memsrc(const std::string &str)
+{
+    std::unordered_map<std::string, Debugger::Loc> srcmap = {
+        { "",    Debugger::Loc::RAM },
+        { "cpu", Debugger::Loc::RAM },
+        { "ram", Debugger::Loc::RAM },
+        { "ppu", Debugger::Loc::VRAM },
+        { "vram", Debugger::Loc::VRAM },
+    };
+    return Util::map_lookup(srcmap, str);
 }
 
 } // namespace Debugger
