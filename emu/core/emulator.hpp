@@ -40,7 +40,8 @@ public:
     void run_frame();
     void insert_rom(Cartridge::Data &&cartdata);
 
-    uint32 *get_screen() { return screen.data(); }
+    uint32 *get_screen()         { return screen.data(); }
+    void on_cpu_error(auto &&fn) { cpu.on_error(fn); }
 
     friend class Debugger::Debugger;
 };
