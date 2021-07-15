@@ -5,7 +5,6 @@
 // I wish I didn't have to do this...
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-qual"
-#define STB_IMAGE_IMPLEMENTATION
 #include <external/stb/stb_image.h>
 #pragma GCC diagnostic pop
 #include <emu/util/unsigned.hpp>

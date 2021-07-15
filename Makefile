@@ -8,7 +8,7 @@ _objs_main := \
 	debugger.o clidbg.o cpudebugger.o ppudebugger.o \
 	cmdline.o easyrandom.o file.o stringops.o mappedfile.o \
 	video.o opengl.o \
-	glad.o \
+	glad.o stb_image.o \
 	main.o
 _objs_video_test := video_test.o video.o opengl.o glad.o
 _objs_ppu_test := ppu_test.o cpu.o ppu.o bus.o video.o opengl.o glad.o cartridge.o file.o easyrandom.o
@@ -84,6 +84,10 @@ $(outdir)/%.o: %.cpp
 	@$(CXX) $(CXXFLAGS) $(flags_deps) -c $< -o $@
 
 $(outdir)/glad.o: external/glad/glad.c
+	$(info Compiling $< ...)
+	@$(CC) $(CFLAGS) $(flags_deps) -c $< -o $@
+
+$(outdir)/stb_image.o: external/stb/stb_image.c
 	$(info Compiling $< ...)
 	@$(CC) $(CFLAGS) $(flags_deps) -c $< -o $@
 
