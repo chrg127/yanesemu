@@ -15,16 +15,13 @@ void PPU::begin_frame()
     assert(lines%PPU_MAX_LINES == PPU_MAX_LINES-1
         && cycles%PPU_MAX_LCYCLE == PPU_MAX_LCYCLE-1
         && "begin_frame() called when not at the beginning of a frame");
-    if (odd_frame) {
-        lines = 0;
-        cycles = 0;
-        dbgputc('\n');
-    } else {
-        dbgputc('0');
-    }
-    odd_frame^=1;
+    lines = 0;
+    cycles = 0;
+    odd_frame ^= 1;
+    dbgputc(odd_frame ? '\n' : '0');
 }
 
+/*
 void PPU::cycle_fetchnt(bool cycle)
 {
     fetch_nt(cycle);
@@ -48,45 +45,59 @@ void PPU::cycle_fetchhighbg(bool cycle)
     fetch_highbg(cycle);
     dbgputc('h');
 }
+*/
 
 void PPU::cycle_incvhorz()
 {
-    inc_v_horzpos();
+    if (!io.bg_show)
+        return;
+    vram.addr = inc_v_horzpos(vram.addr);
     dbgputc('+');
 }
 
 void PPU::cycle_incvvert()
 {
-    inc_v_vertpos();
+    if (!io.bg_show)
+        return;
+    vram.addr = inc_v_vertpos(vram.addr);
     dbgputc('^');
 }
 
 void PPU::cycle_copyhorz()
 {
+    if (!io.bg_show)
+        return;
     copy_v_horzpos();
     dbgputc('c');
 }
 
 void PPU::cycle_copyvert()
 {
+    if (!io.bg_show)
+        return;
     copy_v_vertpos();
     dbgputc('c');
 }
 
 void PPU::cycle_shift()
 {
+    if (!io.bg_show)
+        return;
     shift_run();
 }
 
 void PPU::cycle_fillshifts()
 {
+    if (!io.bg_show)
+        return;
     shift_fill();
 }
 
 void PPU::vblank_begin()
 {
     io.vblank = 1;
-    nmi_callback();
+    if (io.nmi_enabled)
+        nmi_callback();
     dbgputc('v');
 }
 
@@ -117,14 +128,10 @@ void PPU::background_cycle()
 {
     if (!io.bg_show)
         return;
-    if constexpr(Cycle == 1) cycle_fetchnt(0);
-    if constexpr(Cycle == 2) cycle_fetchnt(1);
-    if constexpr(Cycle == 3) cycle_fetchattr(0);
-    if constexpr(Cycle == 4) cycle_fetchattr(1);
-    if constexpr(Cycle == 5) cycle_fetchlowbg(0);
-    if constexpr(Cycle == 6) cycle_fetchlowbg(1);
-    if constexpr(Cycle == 7) cycle_fetchhighbg(0);
-    if constexpr(Cycle == 0) cycle_fetchhighbg(1);
+    if constexpr(Cycle == 2) tile.nt   = fetch_nt(vram.addr.value);
+    if constexpr(Cycle == 4) tile.attr = fetch_attr(vram.addr.nt, vram.addr.coarse_y, vram.addr.coarse_x);
+    if constexpr(Cycle == 6) tile.low  = fetch_bg(io.bg_pt_addr, tile.nt, 0, uint8(vram.addr.fine_y));
+    if constexpr(Cycle == 0) tile.high = fetch_bg(io.bg_pt_addr, tile.nt, 1, uint8(vram.addr.fine_y));
 }
 
 template <unsigned int Cycle>
@@ -263,7 +270,7 @@ static constexpr std::array<LineFunc, PPU_MAX_LINES> linetab = {
 
 void PPU::run()
 {
-    const auto linefunc = linetab[lines % PPU_MAX_LINES];
+    const auto linefunc = linetab[lines];
     (this->*linefunc)(cycles % PPU_MAX_LCYCLE);
     cycles++;
     lines += (cycles % PPU_MAX_LCYCLE == 0);

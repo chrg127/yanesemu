@@ -10,6 +10,41 @@
 
 namespace Core {
 
+/* The VRAM address has the following components:
+ * FFFNNYYYYYXXXXX
+ * then, depending on how you look at it, you can get the X component
+ * and the Y component.
+ * X : N XXXXX FFF (where N is the first bit of NN and FFF is fine_x)
+ * Y : N YYYYY FFF (where N is the second bit of NN and FFF is fine_y) */
+static PPU::VRAMAddress inc_v_horzpos(PPU::VRAMAddress addr)
+{
+    if (addr.coarse_x == 31) {
+        addr.coarse_x = 0;
+        addr.nt ^= 1;
+    } else
+        ++addr.coarse_x;
+    return addr;
+}
+
+static PPU::VRAMAddress inc_v_vertpos(PPU::VRAMAddress addr)
+{
+    if (addr.fine_y < 7)
+        ++addr.fine_y;
+    else {
+        addr.fine_y = 0;
+        uint16 y = addr.coarse_y;
+        if (y == 29) {
+            y = 0;
+            addr.nt ^= 2;
+        } else if (y == 31)
+            y = 0;
+        else
+            y += 1;
+        addr.coarse_y = y;
+    }
+    return addr;
+}
+
 #define INSIDE_PPU_CPP
 #include "ppumain.cpp"
 #undef INSIDE_PPU_CPP
@@ -188,7 +223,7 @@ void PPU::writereg(const uint16 which, const uint8 data)
 
 void PPU::output()
 {
-    uint8 bgpixel = bg_output();
+    uint8 bgpixel = io.bg_show ? bg_output() : 0;
     auto x = cycles % PPU_MAX_LCYCLE;
     auto y = lines % PPU_MAX_LINES;
     assert((y <= 239 || y == 261) && x <= 256);
@@ -201,117 +236,55 @@ void PPU::output()
     screen->output(x, y, bgpixel);
 }
 
-/* The VRAM address has the following components:
- * FFFNNYYYYYXXXXX
- * then, depending on how you look at it, you can get the X component
- * and the Y component.
- * X : N XXXXX FFF (where N is the first bit of NN and FFF is fine_x)
- * Y : N YYYYY FFF (where N is the second bit of NN and FFF is fine_y) */
-void PPU::inc_v_horzpos()
-{
-    if (!io.bg_show)
-        return;
-    if (vram.addr.coarse_x == 31) {
-        vram.addr.coarse_x = 0;
-        vram.addr.nt ^= 1;
-    } else
-        ++vram.addr.coarse_x;
-}
-
-void PPU::inc_v_vertpos()
-{
-    if (!io.bg_show)
-        return;
-    if (vram.addr.fine_y < 7)
-        ++vram.addr.fine_y;
-    else {
-        vram.addr.fine_y = 0;
-        uint16 y = vram.addr.coarse_y;
-        if (y == 29) {
-            y = 0;
-            vram.addr.nt ^= 2;
-        } else if (y == 31)
-            y = 0;
-        else
-            y += 1;
-        vram.addr.coarse_y = y;
-    }
-}
-
 void PPU::copy_v_horzpos()
 {
-    if (!io.bg_show)
-        return;
     vram.addr.coarse_x = vram.tmp.coarse_x;
     vram.addr.nt = Util::setbit(vram.addr.nt, 0, vram.tmp.nt & 1);
 }
 
 void PPU::copy_v_vertpos()
 {
-    if (!io.bg_show)
-        return;
     vram.addr.coarse_y = vram.tmp.coarse_y;
     vram.addr.fine_y = vram.tmp.fine_y;
     vram.addr.nt = Util::setbit(vram.addr.nt, 1, vram.tmp.nt >> 1 & 1);
 }
 
-void PPU::fetch_nt(bool dofetch)
+/* it's probably worth mentioning here that this mask
+ * takes all bits of the vram address except for the fine y.
+ * this is how the vram address can return to the same tile for 8 lines:
+ * in rendering, you can think of the fine y and the rest of the address
+ * as separate, where fine y of course indicates the row of the tile. */
+uint8 PPU::fetch_nt(uint16 vram_addr)
 {
-    if (!dofetch)
-        return;
-    /* it's probably worth mentioning here that this mask
-     * takes all bits of the vram address except for the fine y.
-     * this is how the vram address can return to the same tile for 8 lines:
-     * in rendering, you can think of the fine y and the rest of the address
-     * as separate, where fine y of course indicates the row of the tile. */
-    tile.nt = bus->read(0x2000 | (vram.addr & 0x0FFF));
+    uint16 addr = 0x2000 | (vram_addr & 0x0FFF);
+    return bus->read(addr);
 }
 
-void PPU::fetch_attr(bool dofetch)
+/* an attribute address can be composed this way:
+ * NN 1111 YYY XXX
+ * where YYY/XXX are the highest bits of coarse x/y. */
+uint8 PPU::fetch_attr(uint16 nt, uint16 coarse_y, uint16 coarse_x)
 {
-    // an attribute address can be composed this way:
-    // NN 1111 YYY XXX
-    // where YYY/XXX are the highest bits of coarse x/y.
-    if (!dofetch)
-        return;
-    tile.attr = bus->read(0x23C0
-                       |  uint16(vram.addr.nt) << 10
-                       | (uint16(vram.addr.coarse_y) & 0x1C) << 1
-                       | (uint16(vram.addr.coarse_x) & 0x1C) >> 2);
+    uint16 addr = 0x23C0 | nt << 10 | (coarse_y & 0x1C) << 1 | (coarse_x & 0x1C) >> 2;
+    return bus->read(addr);
 }
 
 /* A pattern table address is formed this way:
  * 0HRRRRCCCCPTTT
  * H - which table is used, left/right. controlled by io.bg_pt_addr.
  * RRRR CCCC - row, column. controlled by the fetch nt byte.
- * P - bit plane. 0 = get the low byte, 1 = get the high byte.
+ * P - bit plane. 0 = get the low byte, 1 = get the high byte. (it is implicitly
+ * set to 0 here)
  * TTT - fine y, or the current row. fine y is incremented at cycle 256 of each
  * row. */
-void PPU::fetch_lowbg(bool dofetch)
+uint8 PPU::fetch_bg(bool base, uint8 nt, bool bitplane, uint3 fine_y)
 {
-    if (!dofetch)
-        return;
-    uint16 lowbg_addr = (io.bg_pt_addr << 12)
-                      | (tile.nt       << 4)
-                      | vram.addr.fine_y;
-    tile.low = bus->read(lowbg_addr);
-}
-
-void PPU::fetch_highbg(bool dofetch)
-{
-    if (!dofetch)
-        return;
-    uint16 highbg_addr = (io.bg_pt_addr << 12)
-                       | (tile.nt       << 4)
-                       | (1UL           << 3) // or otherwise... add 8
-                       | vram.addr.fine_y;
-    tile.high = bus->read(highbg_addr);
+    uint16 addr = base << 12 | nt << 4 | bitplane << 3 | fine_y;
+    return bus->read(addr);
 }
 
 void PPU::shift_run()
 {
-    if (!io.bg_show)
-        return;
     shift.tlow  >>= 1;
     shift.thigh >>= 1;
     shift.ahigh >>= 1;
@@ -322,8 +295,10 @@ void PPU::shift_run()
 
 void PPU::shift_fill()
 {
-    if (!io.bg_show)
-        return;
+    // reversing the bits here fixes the bug with reversed tiles.
+    // however, i'm pretty sure this is not the solution.
+    // shift.tlow  = Util::setbits(shift.tlow,  8, 8, Util::reverse_bits(tile.low));
+    // shift.thigh = Util::setbits(shift.thigh, 8, 8, Util::reverse_bits(tile.high);
     shift.tlow  = Util::setbits(shift.tlow,  8, 8, tile.low);
     shift.thigh = Util::setbits(shift.thigh, 8, 8, tile.high);
     // TODO: this is definitely wrong
@@ -346,8 +321,6 @@ uint8 PPU::getcolor(uint8 pal, uint8 palind, bool select)
 
 uint8 PPU::bg_output()
 {
-    if (!io.bg_show)
-        return 0;
     uint8 mask      = 1UL << vram.fine_x;
     bool lowbit     = shift.tlow  & mask;
     bool hibit      = shift.thigh & mask;

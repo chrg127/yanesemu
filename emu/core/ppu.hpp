@@ -19,13 +19,7 @@ namespace Debugger {
 namespace Core {
 
 class PPU {
-    Bus<PPUBUS_SIZE> *bus;
-    Screen *screen;
-    unsigned long cycles = 0;
-    unsigned long lines  = 0;
-    std::function<void(void)> nmi_callback;
-    bool odd_frame;
-
+public:
     union VRAMAddress {
         uint16 value = 0;
         Util::BitField<uint16, 12, 3> fine_y;
@@ -35,10 +29,21 @@ class PPU {
 
         VRAMAddress() = default;
         VRAMAddress(uint16 data) : value(data) { }
+        VRAMAddress(const VRAMAddress &addr)             { operator=(addr); }
         VRAMAddress & operator=(const VRAMAddress &addr) { value = addr.value; return *this; }
+
         operator uint16() const                          { return value; }
-        VRAMAddress & operator+=(uint16 n)               { value += n; return *this; }
+        // used for access through PPUDATA ($2007)
+        VRAMAddress & operator+=(uint14 n)               { value += n; return *this; }
     };
+
+private:
+    Bus<PPUBUS_SIZE> *bus;
+    Screen *screen;
+    unsigned long cycles = 0;
+    unsigned long lines  = 0;
+    std::function<void(void)> nmi_callback;
+    bool odd_frame;
 
     struct IO {
         // used as internal buffer with regs I/O
@@ -132,15 +137,18 @@ private:
     void output();
     uint8 getcolor(uint8 pal, uint8 palind, bool select);
 
-    void inc_v_horzpos();
-    void inc_v_vertpos();
     void copy_v_horzpos();
     void copy_v_vertpos();
 
-    void fetch_nt(bool dofetch);
-    void fetch_attr(bool dofetch);
-    void fetch_lowbg(bool dofetch);
-    void fetch_highbg(bool dofetch);
+    // void fetch_nt(bool dofetch);
+    // void fetch_attr(bool dofetch);
+    // void fetch_lowbg(bool dofetch);
+    // void fetch_highbg(bool dofetch);
+
+    uint8 fetch_nt(uint16 vram_addr);
+    uint8 fetch_attr(uint16 nt, uint16 coarse_y, uint16 coarse_x);
+    uint8 fetch_bg(bool base, uint8 nt, bool bitplane, uint3 fine_y);
+
     void shift_run();
     void shift_fill();
     uint8 bg_output();

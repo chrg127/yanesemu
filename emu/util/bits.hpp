@@ -36,6 +36,14 @@ constexpr inline uint64_t setbit(uint64_t num, uint8_t bitno, bool data)
     return setbits(num, bitno, 1, data);
 }
 
+constexpr inline uint8_t reverse_bits(uint8_t n)
+{
+    n = (n & 0xF0) >> 4 |  (n & 0x0F) << 4;
+    n = (n & 0xCC) >> 2 |  (n & 0x33) << 2;
+    n = (n & 0xAA) >> 1 |  (n & 0x55) << 1;
+    return n;
+}
+
 /* A struct for portable bit-fields. Use it like so:
  * union {
  *     uint16_t full
@@ -48,10 +56,12 @@ template <typename T, unsigned Bitno, unsigned Nbits = 1>
 struct BitField {
     T data;
 
+    BitField() = default;
+    BitField(const BitField<T, Bitno, Nbits> &b)               { operator=(b); }
     // this operator= below is ESSENTIAL. before adding it I got a bunch
     // of bugs when copying BitFields with the same exact types.
     BitField & operator=(const BitField<T, Bitno, Nbits> &oth) { data = setbits(data, Bitno, Nbits, oth.data); return *this; }
-    BitField & operator=(const T val)                          { data = setbits(data, Bitno, Nbits, val);      return *this; }
+    BitField & operator=(const uint64_t val)                          { data = setbits(data, Bitno, Nbits, val);      return *this; }
     operator uint64_t() const                                  { return (data >> Bitno) & bitmask(Nbits); }
 
     template <typename U> BitField & operator+= (const U val) { *this = *this + val; return *this; }
