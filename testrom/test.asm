@@ -33,17 +33,6 @@ scroll_x:       .res 1      ; x scroll position
 scroll_y:       .res 1      ; y scroll position
 nmi_flag:       .res 1
 
-;nmi_lock:       .res 1 ; prevents NMI re-entry
-;nmi_count:      .res 1 ; is incremented every NMI
-;nmi_ready:      .res 1 ; set to 1 to push a PPU frame update, 2 to turn rendering off next NMI
-;nmt_update_len: .res 1 ; number of bytes in nmt_update buffer
-;scroll_nmt:     .res 1 ; nametable select (0-3 = $2000,$2400,$2800,$2C00)
-;gamepad:        .res 1
-;cursor_x:       .res 1
-;cursor_y:       .res 1
-;temp_x:         .res 1
-;temp_y:         .res 1
-
 .segment "RAM"
 spritebuf:      .res 256        ; sprite data to be uploaded by DMA
 nmt_update:     .res 256        ; nametable update entry buffer for PPU update
@@ -183,6 +172,9 @@ joypad_poll:
 gamecode:
     rts
 
+hellostring: .byte $07, $08, $09, $09, $0A, $00, $0B, $0A, $0C, $09, $0D
+;hellostring: .byte $0E, $0F, $10, $11, $00, $09, $12, $13, $13, $12, $0C, $0A
+
 ; writes a hello world at the center of the screen
 ; assumes we are at the start of the game
 write_helloworld:
@@ -191,28 +183,13 @@ write_helloworld:
     sta $2006
     lda #$EC
     sta $2006
-    lda #$07    ; and begin writing "hello world"
+    ldx #$00
+write_loop:
+    lda hellostring,x
     sta $2007
-    lda #$08    ; 'E'
-    sta $2007
-    lda #$09    ; 'L'
-    sta $2007
-    lda #$09    ; 'L'
-    sta $2007
-    lda #$0A    ; 'O'
-    sta $2007
-    lda #$00    ; ' '
-    sta $2007
-    lda #$0B    ; 'W'
-    sta $2007
-    lda #$0A    ; 'O'
-    sta $2007
-    lda #$0C    ; 'R'
-    sta $2007
-    lda #$09    ; 'L'
-    sta $2007
-    lda #$0D    ; 'D'
-    sta $2007
+    inx
+    cpx #12
+    bne write_loop
     rts
 
 nmi:
