@@ -118,42 +118,32 @@ public:
 
     void power(bool reset);
     void bus_map(Bus<CPUBUS_SIZE> &bus);
-    void on_nmi(auto &&callback)           { nmi_callback = callback; }
+    void on_nmi(auto &&callback) { nmi_callback = callback; }
 
     // ppumain.cpp
     void run();
 
-    // these shouldn't be called outside ppumain.cpp
-    template <unsigned int Cycle> void ccycle();
-    template <unsigned int Line> void lcycle(unsigned int cycle);
-    template <unsigned Cycle> void background_cycle();
-    void cycle_idle();
-
 private:
-    uint8 readreg(const uint16 which);
-    void writereg(const uint16 which, const uint8 data);
-    uint8 readreg_no_sideeff(const uint16 which) const;
-
-    void output();
-    uint8 getcolor(uint8 pal, uint8 palind, bool select);
-
-    void copy_v_horzpos();
-    void copy_v_vertpos();
-
-    // void fetch_nt(bool dofetch);
-    // void fetch_attr(bool dofetch);
-    // void fetch_lowbg(bool dofetch);
-    // void fetch_highbg(bool dofetch);
+    uint8 readreg(uint16 addr);
+    void writereg(uint16 addr, uint8 data);
 
     uint8 fetch_nt(uint16 vram_addr);
     uint8 fetch_attr(uint16 nt, uint16 coarse_y, uint16 coarse_x);
     uint8 fetch_bg(bool base, uint8 nt, bool bitplane, uint3 fine_y);
-
+    void copy_v_horzpos();
+    void copy_v_vertpos();
     void shift_run();
     void shift_fill();
     uint8 bg_output();
 
+    uint8 getcolor(uint2 pal, uint2 palind, bool select);
+    void output();
+
     // ppumain.cpp
+    template <unsigned int Line> void lcycle(unsigned int cycle, void (PPU::*)());
+    template <unsigned Cycle> void background_cycle();
+    template <unsigned int Cycle> void ccycle();
+    void cycle_idle();
     void begin_frame();
     void cycle_fetchnt(bool cycle);
     void cycle_fetchattr(bool cycle);

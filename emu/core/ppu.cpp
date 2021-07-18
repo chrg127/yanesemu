@@ -221,21 +221,6 @@ void PPU::writereg(const uint16 which, const uint8 data)
     }
 }
 
-void PPU::output()
-{
-    uint8 bgpixel = io.bg_show ? bg_output() : 0;
-    auto x = cycles % PPU_MAX_LCYCLE;
-    auto y = lines % PPU_MAX_LINES;
-    assert((y <= 239 || y == 261) && x <= 256);
-    // is there any fucking document that says when i have to output pixels
-    // and doesn't have a shitty explanation?
-    if (x == 256)
-        return;
-    if (y == 261)
-        return;
-    screen->output(x, y, bgpixel);
-}
-
 void PPU::copy_v_horzpos()
 {
     vram.addr.coarse_x = vram.tmp.coarse_x;
@@ -297,10 +282,10 @@ void PPU::shift_fill()
 {
     // reversing the bits here fixes the bug with reversed tiles.
     // however, i'm pretty sure this is not the solution.
-    // shift.tlow  = Util::setbits(shift.tlow,  8, 8, Util::reverse_bits(tile.low));
-    // shift.thigh = Util::setbits(shift.thigh, 8, 8, Util::reverse_bits(tile.high);
-    shift.tlow  = Util::setbits(shift.tlow,  8, 8, tile.low);
-    shift.thigh = Util::setbits(shift.thigh, 8, 8, tile.high);
+    shift.tlow  = Util::setbits(shift.tlow,  8, 8, Util::reverse_bits(tile.low));
+    shift.thigh = Util::setbits(shift.thigh, 8, 8, Util::reverse_bits(tile.high));
+    // shift.tlow  = Util::setbits(shift.tlow,  8, 8, tile.low);
+    // shift.thigh = Util::setbits(shift.thigh, 8, 8, tile.high);
     // TODO: this is definitely wrong
     uint16 v = vram.addr;
     uint8 attr_mask = 0b11 << (~((v >> 1 & 1) | (v >> 6 & 1)))*2;
@@ -308,27 +293,40 @@ void PPU::shift_fill()
     shift.feed_low  = tile.attr & attr_mask;
 }
 
-// pal: 0-3, one of the 4 defined palettes for this frame
-// palind: which color of the palette
-// select: select if it's a background palette or a sprite palette
-// first 2 values are 2 bits big, not 8
-uint8 PPU::getcolor(uint8 pal, uint8 palind, bool select)
+uint8 PPU::bg_output()
 {
-    // this is a 5 bit number
-    uint8 n = select << 4 | pal << 2 | palind;
+    uint8 mask = 1UL << vram.fine_x;
+    bool low   = shift.tlow  & mask;
+    bool hi    = shift.thigh & mask;
+    bool at1   = shift.ahigh & mask;
+    bool at2   = shift.alow  & mask;
+    return getcolor(at1 << 1 | at2, hi << 1 | low, /* background */ 0);
+}
+
+/* SIIPP
+ *    ^^ pixel value (palind)
+ *  ^^ palette number (pal)
+ * ^ sprite or background (select)
+ */
+uint8 PPU::getcolor(uint2 pal, uint2 palind, bool select)
+{
+    uint5 n = select << 4 | pal << 2 | palind;
     return bus->read(0x3F00 + n);
 }
 
-uint8 PPU::bg_output()
+void PPU::output()
 {
-    uint8 mask      = 1UL << vram.fine_x;
-    bool lowbit     = shift.tlow  & mask;
-    bool hibit      = shift.thigh & mask;
-    bool at1        = shift.ahigh & mask;
-    bool at2        = shift.alow  & mask;
-    uint8 pal       = at1   << 1 | at2;
-    uint8 palind    = hibit << 1 | lowbit;
-    return getcolor(pal, palind, 0);
+    uint8 bgpixel = io.bg_show ? bg_output() : 0;
+    auto x = cycles % PPU_MAX_LCYCLE;
+    auto y = lines % PPU_MAX_LINES;
+    assert((y <= 239 || y == 261) && x <= 256);
+    // is there any fucking document that says when i have to output pixels
+    // and doesn't have a shitty explanation?
+    if (x == 256)
+        return;
+    if (y == 261)
+        return;
+    screen->output(x, y, bgpixel);
 }
 
 } // namespace Core

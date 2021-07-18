@@ -6,7 +6,6 @@
 
 void PPU::cycle_idle()
 {
-    dbgputc('.');
 }
 
 // called at (340, 261)
@@ -21,38 +20,11 @@ void PPU::begin_frame()
     dbgputc(odd_frame ? '\n' : '0');
 }
 
-/*
-void PPU::cycle_fetchnt(bool cycle)
-{
-    fetch_nt(cycle);
-    dbgputc('n');
-}
-
-void PPU::cycle_fetchattr(bool cycle)
-{
-    fetch_attr(cycle);
-    dbgputc('a');
-}
-
-void PPU::cycle_fetchlowbg(bool cycle)
-{
-    fetch_lowbg(cycle);
-    dbgputc('l');
-}
-
-void PPU::cycle_fetchhighbg(bool cycle)
-{
-    fetch_highbg(cycle);
-    dbgputc('h');
-}
-*/
-
 void PPU::cycle_incvhorz()
 {
     if (!io.bg_show)
         return;
     vram.addr = inc_v_horzpos(vram.addr);
-    dbgputc('+');
 }
 
 void PPU::cycle_incvvert()
@@ -60,7 +32,6 @@ void PPU::cycle_incvvert()
     if (!io.bg_show)
         return;
     vram.addr = inc_v_vertpos(vram.addr);
-    dbgputc('^');
 }
 
 void PPU::cycle_copyhorz()
@@ -68,7 +39,6 @@ void PPU::cycle_copyhorz()
     if (!io.bg_show)
         return;
     copy_v_horzpos();
-    dbgputc('c');
 }
 
 void PPU::cycle_copyvert()
@@ -76,7 +46,6 @@ void PPU::cycle_copyvert()
     if (!io.bg_show)
         return;
     copy_v_vertpos();
-    dbgputc('c');
 }
 
 void PPU::cycle_shift()
@@ -98,7 +67,6 @@ void PPU::vblank_begin()
     io.vblank = 1;
     if (io.nmi_enabled)
         nmi_callback();
-    dbgputc('v');
 }
 
 void PPU::vblank_end()
@@ -106,12 +74,18 @@ void PPU::vblank_end()
     io.vblank  = 0;
     io.sp_zero_hit = 0;
     io.sp_overflow  = 0;
-    dbgputc('e');
 }
 
-void PPU::cycle_outputpixel()
+template <unsigned Cycle>
+void PPU::background_cycle()
 {
-    output();
+    if constexpr(Cycle == 2 || Cycle == 4 || Cycle == 6 || Cycle == 0)
+        if (!io.bg_show)
+            return;
+    if constexpr(Cycle == 2) tile.nt   = fetch_nt(vram.addr.value);
+    if constexpr(Cycle == 4) tile.attr = fetch_attr(vram.addr.nt, vram.addr.coarse_y, vram.addr.coarse_x);
+    if constexpr(Cycle == 6) tile.low  = fetch_bg(io.bg_pt_addr, tile.nt, 0, uint8(vram.addr.fine_y));
+    if constexpr(Cycle == 0) tile.high = fetch_bg(io.bg_pt_addr, tile.nt, 1, uint8(vram.addr.fine_y));
 }
 
 /* this function models the cycles for visible lines
@@ -123,17 +97,6 @@ void PPU::cycle_outputpixel()
  * (every 1, 9, 17, ... cycle) some shift registers are filled.
  * at every other step, the shift registers... shift.
  */
-template <unsigned Cycle>
-void PPU::background_cycle()
-{
-    if (!io.bg_show)
-        return;
-    if constexpr(Cycle == 2) tile.nt   = fetch_nt(vram.addr.value);
-    if constexpr(Cycle == 4) tile.attr = fetch_attr(vram.addr.nt, vram.addr.coarse_y, vram.addr.coarse_x);
-    if constexpr(Cycle == 6) tile.low  = fetch_bg(io.bg_pt_addr, tile.nt, 0, uint8(vram.addr.fine_y));
-    if constexpr(Cycle == 0) tile.high = fetch_bg(io.bg_pt_addr, tile.nt, 1, uint8(vram.addr.fine_y));
-}
-
 template <unsigned int Cycle>
 void PPU::ccycle()
 {
@@ -141,11 +104,11 @@ void PPU::ccycle()
     // NOTE: between cycle 257 - 320 there are garbage fetches
     if constexpr((Cycle >= 1 && Cycle <= 256) || (Cycle >= 321 && Cycle <= 340)) {
         if constexpr(Cycle >= 4 && Cycle <= 256) {
-            cycle_outputpixel();
+            output();
         }
         background_cycle<Cycle % 8>();
+        cycle_shift();
         if constexpr(Cycle % 8 == 1 && Cycle != 1)   cycle_fillshifts();
-        if constexpr(Cycle % 8 != 1)                 cycle_shift();
         if constexpr(Cycle % 8 == 0 && Cycle != 256) cycle_incvhorz();
         if constexpr(Cycle == 256)                   cycle_incvvert();
     }
@@ -153,7 +116,70 @@ void PPU::ccycle()
 }
 
 using CycleFunc = void (PPU::*)();
-using LineFunc  = void (PPU::*)(unsigned);
+using LineFunc  = void (PPU::*)(unsigned, CycleFunc);
+
+template <unsigned int Line>
+void PPU::lcycle(unsigned int cycle, CycleFunc cycle_fn)
+{
+    static_assert(Line <= 261);
+    assert(cycle <= 340);
+    if (cycle == 0) {
+        dbgputc('\n');
+    }
+    if constexpr(Line < 240) {
+        (this->*cycle_fn)();
+    }
+    if constexpr(Line == 241)
+        cycle == 1 ? vblank_begin() : cycle_idle();
+    if constexpr(Line == 261) {
+        (this->*cycle_fn)();
+        if (cycle == 1)                   vblank_end();
+        if (cycle >= 280 && cycle <= 304) cycle_copyvert();
+        if (cycle == 340)                 begin_frame();
+    }
+    if constexpr(Line == 240 || (Line >= 242 && Line != 261))
+        cycle_idle();
+}
+
+void PPU::run()
+{
+#define LCYCLE &PPU::lcycle
+    static constexpr std::array<LineFunc, PPU_MAX_LINES> linetab = {
+        LCYCLE<0>,   LCYCLE<1>,   LCYCLE<2>,   LCYCLE<3>,   LCYCLE<4>,   LCYCLE<5>,   LCYCLE<6>,   LCYCLE<7>,
+        LCYCLE<8>,   LCYCLE<9>,   LCYCLE<10>,  LCYCLE<11>,  LCYCLE<12>,  LCYCLE<13>,  LCYCLE<14>,  LCYCLE<15>,
+        LCYCLE<16>,  LCYCLE<17>,  LCYCLE<18>,  LCYCLE<19>,  LCYCLE<20>,  LCYCLE<21>,  LCYCLE<22>,  LCYCLE<23>,
+        LCYCLE<24>,  LCYCLE<25>,  LCYCLE<26>,  LCYCLE<27>,  LCYCLE<28>,  LCYCLE<29>,  LCYCLE<30>,  LCYCLE<31>,
+        LCYCLE<32>,  LCYCLE<33>,  LCYCLE<34>,  LCYCLE<35>,  LCYCLE<36>,  LCYCLE<37>,  LCYCLE<38>,  LCYCLE<39>,
+        LCYCLE<40>,  LCYCLE<41>,  LCYCLE<42>,  LCYCLE<43>,  LCYCLE<44>,  LCYCLE<45>,  LCYCLE<46>,  LCYCLE<47>,
+        LCYCLE<48>,  LCYCLE<49>,  LCYCLE<50>,  LCYCLE<51>,  LCYCLE<52>,  LCYCLE<53>,  LCYCLE<54>,  LCYCLE<55>,
+        LCYCLE<56>,  LCYCLE<57>,  LCYCLE<58>,  LCYCLE<59>,  LCYCLE<60>,  LCYCLE<61>,  LCYCLE<62>,  LCYCLE<63>,
+        LCYCLE<64>,  LCYCLE<65>,  LCYCLE<66>,  LCYCLE<67>,  LCYCLE<68>,  LCYCLE<69>,  LCYCLE<70>,  LCYCLE<71>,
+        LCYCLE<72>,  LCYCLE<73>,  LCYCLE<74>,  LCYCLE<75>,  LCYCLE<76>,  LCYCLE<77>,  LCYCLE<78>,  LCYCLE<79>,
+        LCYCLE<80>,  LCYCLE<81>,  LCYCLE<82>,  LCYCLE<83>,  LCYCLE<84>,  LCYCLE<85>,  LCYCLE<86>,  LCYCLE<87>,
+        LCYCLE<88>,  LCYCLE<89>,  LCYCLE<90>,  LCYCLE<91>,  LCYCLE<92>,  LCYCLE<93>,  LCYCLE<94>,  LCYCLE<95>,
+        LCYCLE<96>,  LCYCLE<97>,  LCYCLE<98>,  LCYCLE<99>,  LCYCLE<100>, LCYCLE<101>, LCYCLE<102>, LCYCLE<103>,
+        LCYCLE<104>, LCYCLE<105>, LCYCLE<106>, LCYCLE<107>, LCYCLE<108>, LCYCLE<109>, LCYCLE<110>, LCYCLE<111>,
+        LCYCLE<112>, LCYCLE<113>, LCYCLE<114>, LCYCLE<115>, LCYCLE<116>, LCYCLE<117>, LCYCLE<118>, LCYCLE<119>,
+        LCYCLE<120>, LCYCLE<121>, LCYCLE<122>, LCYCLE<123>, LCYCLE<124>, LCYCLE<125>, LCYCLE<126>, LCYCLE<127>,
+        LCYCLE<128>, LCYCLE<129>, LCYCLE<130>, LCYCLE<131>, LCYCLE<132>, LCYCLE<133>, LCYCLE<134>, LCYCLE<135>,
+        LCYCLE<136>, LCYCLE<137>, LCYCLE<138>, LCYCLE<139>, LCYCLE<140>, LCYCLE<141>, LCYCLE<142>, LCYCLE<143>,
+        LCYCLE<144>, LCYCLE<145>, LCYCLE<146>, LCYCLE<147>, LCYCLE<148>, LCYCLE<149>, LCYCLE<150>, LCYCLE<151>,
+        LCYCLE<152>, LCYCLE<153>, LCYCLE<154>, LCYCLE<155>, LCYCLE<156>, LCYCLE<157>, LCYCLE<158>, LCYCLE<159>,
+        LCYCLE<160>, LCYCLE<161>, LCYCLE<162>, LCYCLE<163>, LCYCLE<164>, LCYCLE<165>, LCYCLE<166>, LCYCLE<167>,
+        LCYCLE<168>, LCYCLE<169>, LCYCLE<170>, LCYCLE<171>, LCYCLE<172>, LCYCLE<173>, LCYCLE<174>, LCYCLE<175>,
+        LCYCLE<176>, LCYCLE<177>, LCYCLE<178>, LCYCLE<179>, LCYCLE<180>, LCYCLE<181>, LCYCLE<182>, LCYCLE<183>,
+        LCYCLE<184>, LCYCLE<185>, LCYCLE<186>, LCYCLE<187>, LCYCLE<188>, LCYCLE<189>, LCYCLE<190>, LCYCLE<191>,
+        LCYCLE<192>, LCYCLE<193>, LCYCLE<194>, LCYCLE<195>, LCYCLE<196>, LCYCLE<197>, LCYCLE<198>, LCYCLE<199>,
+        LCYCLE<200>, LCYCLE<201>, LCYCLE<202>, LCYCLE<203>, LCYCLE<204>, LCYCLE<205>, LCYCLE<206>, LCYCLE<207>,
+        LCYCLE<208>, LCYCLE<209>, LCYCLE<210>, LCYCLE<211>, LCYCLE<212>, LCYCLE<213>, LCYCLE<214>, LCYCLE<215>,
+        LCYCLE<216>, LCYCLE<217>, LCYCLE<218>, LCYCLE<219>, LCYCLE<220>, LCYCLE<221>, LCYCLE<222>, LCYCLE<223>,
+        LCYCLE<224>, LCYCLE<225>, LCYCLE<226>, LCYCLE<227>, LCYCLE<228>, LCYCLE<229>, LCYCLE<230>, LCYCLE<231>,
+        LCYCLE<232>, LCYCLE<233>, LCYCLE<234>, LCYCLE<235>, LCYCLE<236>, LCYCLE<237>, LCYCLE<238>, LCYCLE<239>,
+        LCYCLE<240>, LCYCLE<241>, LCYCLE<242>, LCYCLE<243>, LCYCLE<244>, LCYCLE<245>, LCYCLE<246>, LCYCLE<247>,
+        LCYCLE<248>, LCYCLE<249>, LCYCLE<250>, LCYCLE<251>, LCYCLE<252>, LCYCLE<253>, LCYCLE<254>, LCYCLE<255>,
+        LCYCLE<256>, LCYCLE<257>, LCYCLE<258>, LCYCLE<259>, LCYCLE<260>, LCYCLE<261>
+    };
+#undef LCYCLE
 
 #define CCYCLE &PPU::ccycle
 #define IDLE &PPU::cycle_idle
@@ -205,73 +231,9 @@ static constexpr std::array<CycleFunc, PPU_MAX_LCYCLE> cycletab = {
 #undef CCYCLE
 #undef IDLE
 
-template <unsigned int Line>
-void PPU::lcycle(unsigned int cycle)
-{
-    static_assert(Line <= 261);
-    assert(cycle <= 340);
-    if (cycle == 0) {
-        dbgputc('\n');
-    }
-    if constexpr(Line < 240) {
-        const auto f = cycletab[cycle];
-        (this->*f)();
-    }
-    if constexpr(Line == 241)
-        cycle == 1 ? vblank_begin() : cycle_idle();
-    if constexpr(Line == 261) {
-        const auto f = cycletab[cycle];
-        (this->*f)();
-        if (cycle == 1)                   vblank_end();
-        if (cycle >= 280 && cycle <= 304) cycle_copyvert();
-        if (cycle == 340)                 begin_frame();
-    }
-    if constexpr(Line == 240 || (Line >= 242 && Line != 261))
-        cycle_idle();
-}
-
-#define LCYCLE &PPU::lcycle
-static constexpr std::array<LineFunc, PPU_MAX_LINES> linetab = {
-    LCYCLE<0>,   LCYCLE<1>,   LCYCLE<2>,   LCYCLE<3>,   LCYCLE<4>,   LCYCLE<5>,   LCYCLE<6>,   LCYCLE<7>,
-    LCYCLE<8>,   LCYCLE<9>,   LCYCLE<10>,  LCYCLE<11>,  LCYCLE<12>,  LCYCLE<13>,  LCYCLE<14>,  LCYCLE<15>,
-    LCYCLE<16>,  LCYCLE<17>,  LCYCLE<18>,  LCYCLE<19>,  LCYCLE<20>,  LCYCLE<21>,  LCYCLE<22>,  LCYCLE<23>,
-    LCYCLE<24>,  LCYCLE<25>,  LCYCLE<26>,  LCYCLE<27>,  LCYCLE<28>,  LCYCLE<29>,  LCYCLE<30>,  LCYCLE<31>,
-    LCYCLE<32>,  LCYCLE<33>,  LCYCLE<34>,  LCYCLE<35>,  LCYCLE<36>,  LCYCLE<37>,  LCYCLE<38>,  LCYCLE<39>,
-    LCYCLE<40>,  LCYCLE<41>,  LCYCLE<42>,  LCYCLE<43>,  LCYCLE<44>,  LCYCLE<45>,  LCYCLE<46>,  LCYCLE<47>,
-    LCYCLE<48>,  LCYCLE<49>,  LCYCLE<50>,  LCYCLE<51>,  LCYCLE<52>,  LCYCLE<53>,  LCYCLE<54>,  LCYCLE<55>,
-    LCYCLE<56>,  LCYCLE<57>,  LCYCLE<58>,  LCYCLE<59>,  LCYCLE<60>,  LCYCLE<61>,  LCYCLE<62>,  LCYCLE<63>,
-    LCYCLE<64>,  LCYCLE<65>,  LCYCLE<66>,  LCYCLE<67>,  LCYCLE<68>,  LCYCLE<69>,  LCYCLE<70>,  LCYCLE<71>,
-    LCYCLE<72>,  LCYCLE<73>,  LCYCLE<74>,  LCYCLE<75>,  LCYCLE<76>,  LCYCLE<77>,  LCYCLE<78>,  LCYCLE<79>,
-    LCYCLE<80>,  LCYCLE<81>,  LCYCLE<82>,  LCYCLE<83>,  LCYCLE<84>,  LCYCLE<85>,  LCYCLE<86>,  LCYCLE<87>,
-    LCYCLE<88>,  LCYCLE<89>,  LCYCLE<90>,  LCYCLE<91>,  LCYCLE<92>,  LCYCLE<93>,  LCYCLE<94>,  LCYCLE<95>,
-    LCYCLE<96>,  LCYCLE<97>,  LCYCLE<98>,  LCYCLE<99>,  LCYCLE<100>, LCYCLE<101>, LCYCLE<102>, LCYCLE<103>,
-    LCYCLE<104>, LCYCLE<105>, LCYCLE<106>, LCYCLE<107>, LCYCLE<108>, LCYCLE<109>, LCYCLE<110>, LCYCLE<111>,
-    LCYCLE<112>, LCYCLE<113>, LCYCLE<114>, LCYCLE<115>, LCYCLE<116>, LCYCLE<117>, LCYCLE<118>, LCYCLE<119>,
-    LCYCLE<120>, LCYCLE<121>, LCYCLE<122>, LCYCLE<123>, LCYCLE<124>, LCYCLE<125>, LCYCLE<126>, LCYCLE<127>,
-    LCYCLE<128>, LCYCLE<129>, LCYCLE<130>, LCYCLE<131>, LCYCLE<132>, LCYCLE<133>, LCYCLE<134>, LCYCLE<135>,
-    LCYCLE<136>, LCYCLE<137>, LCYCLE<138>, LCYCLE<139>, LCYCLE<140>, LCYCLE<141>, LCYCLE<142>, LCYCLE<143>,
-    LCYCLE<144>, LCYCLE<145>, LCYCLE<146>, LCYCLE<147>, LCYCLE<148>, LCYCLE<149>, LCYCLE<150>, LCYCLE<151>,
-    LCYCLE<152>, LCYCLE<153>, LCYCLE<154>, LCYCLE<155>, LCYCLE<156>, LCYCLE<157>, LCYCLE<158>, LCYCLE<159>,
-    LCYCLE<160>, LCYCLE<161>, LCYCLE<162>, LCYCLE<163>, LCYCLE<164>, LCYCLE<165>, LCYCLE<166>, LCYCLE<167>,
-    LCYCLE<168>, LCYCLE<169>, LCYCLE<170>, LCYCLE<171>, LCYCLE<172>, LCYCLE<173>, LCYCLE<174>, LCYCLE<175>,
-    LCYCLE<176>, LCYCLE<177>, LCYCLE<178>, LCYCLE<179>, LCYCLE<180>, LCYCLE<181>, LCYCLE<182>, LCYCLE<183>,
-    LCYCLE<184>, LCYCLE<185>, LCYCLE<186>, LCYCLE<187>, LCYCLE<188>, LCYCLE<189>, LCYCLE<190>, LCYCLE<191>,
-    LCYCLE<192>, LCYCLE<193>, LCYCLE<194>, LCYCLE<195>, LCYCLE<196>, LCYCLE<197>, LCYCLE<198>, LCYCLE<199>,
-    LCYCLE<200>, LCYCLE<201>, LCYCLE<202>, LCYCLE<203>, LCYCLE<204>, LCYCLE<205>, LCYCLE<206>, LCYCLE<207>,
-    LCYCLE<208>, LCYCLE<209>, LCYCLE<210>, LCYCLE<211>, LCYCLE<212>, LCYCLE<213>, LCYCLE<214>, LCYCLE<215>,
-    LCYCLE<216>, LCYCLE<217>, LCYCLE<218>, LCYCLE<219>, LCYCLE<220>, LCYCLE<221>, LCYCLE<222>, LCYCLE<223>,
-    LCYCLE<224>, LCYCLE<225>, LCYCLE<226>, LCYCLE<227>, LCYCLE<228>, LCYCLE<229>, LCYCLE<230>, LCYCLE<231>,
-    LCYCLE<232>, LCYCLE<233>, LCYCLE<234>, LCYCLE<235>, LCYCLE<236>, LCYCLE<237>, LCYCLE<238>, LCYCLE<239>,
-    LCYCLE<240>, LCYCLE<241>, LCYCLE<242>, LCYCLE<243>, LCYCLE<244>, LCYCLE<245>, LCYCLE<246>, LCYCLE<247>,
-    LCYCLE<248>, LCYCLE<249>, LCYCLE<250>, LCYCLE<251>, LCYCLE<252>, LCYCLE<253>, LCYCLE<254>, LCYCLE<255>,
-    LCYCLE<256>, LCYCLE<257>, LCYCLE<258>, LCYCLE<259>, LCYCLE<260>, LCYCLE<261>
-};
-#undef LCYCLE
-
-void PPU::run()
-{
     const auto linefunc = linetab[lines];
-    (this->*linefunc)(cycles % PPU_MAX_LCYCLE);
+    const auto cyclefunc = cycletab[cycles % PPU_MAX_LCYCLE];
+    (this->*linefunc)(cycles % PPU_MAX_LCYCLE, cyclefunc);
     cycles++;
     lines += (cycles % PPU_MAX_LCYCLE == 0);
 }
