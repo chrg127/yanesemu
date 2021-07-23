@@ -4,6 +4,7 @@
 #include <string>
 #include <emu/core/const.hpp>
 #include <emu/core/bus.hpp>
+#include <emu/util/bits.hpp>
 #include <emu/util/unsigned.hpp>
 
 namespace Debugger {
@@ -12,17 +13,6 @@ namespace Debugger {
 }
 
 namespace Core {
-
-union Reg16 {
-    struct { uint8 low, high; };
-    uint16 full;
-
-    Reg16() = default;
-    Reg16(uint16 val)                   { operator=(val); }
-    Reg16 & operator=(const uint16 val) { full = val;  return *this; }
-    template <typename T> Reg16 & operator&=(const T val) { full &= val; return *this; }
-    template <typename T> Reg16 & operator|=(const T val) { full |= val; return *this; }
-};
 
 /* The CPU has 2 main states:
  * - When it is constructed, all members are initialized to 0, except
@@ -51,7 +41,7 @@ class CPU {
                    breakf << 4  | unused << 5  | ov     << 6 | neg     << 7;
         }
 
-        void operator=(const uint8 data)
+        ProcStatus & operator=(uint8 data)
         {
             carry   = data & 0x01;
             zero    = data & 0x02;
@@ -61,6 +51,7 @@ class CPU {
             unused  = data & 0x20;
             ov      = data & 0x40;
             neg     = data & 0x80;
+            return *this;
         }
 
         void reset()
@@ -71,7 +62,7 @@ class CPU {
     };
 
     struct {
-        Reg16 pc  = 0;
+        Util::Word pc  = 0;
         uint8 acc = 0;
         uint8 x   = 0;
         uint8 y   = 0;
@@ -90,7 +81,7 @@ class CPU {
     } signal;
 
     Bus<CPUBUS_SIZE> *bus = nullptr;
-    Reg16 opargs = 0;
+    Util::Word opargs = 0;
     std::function<void(uint16, char)> fetch_callback;
     std::function<void(uint8, uint16)> error_callback;
 
@@ -115,18 +106,18 @@ public:
 private:
     uint8 fetch();
     uint8 fetchop();
-    void execute(uint8 instr);
-    void interrupt();
-    void push(uint8 val);
+    void  execute(uint8 instr);
+    void  interrupt();
+    void  push(uint8 val);
     uint8 pull();
-    void irqpoll();
-    void nmipoll();
-    void cycle();
-    void last_cycle();
+    void  irqpoll();
+    void  nmipoll();
+    void  cycle();
+    void  last_cycle();
     uint8 readmem(uint16 addr);
-    void writemem(uint16 addr, uint8 data);
+    void  writemem(uint16 addr, uint8 data);
     uint8 read_apu_reg(uint16 addr) { return 0; }
-    void write_apu_reg(uint16 addr, uint8 data) { }
+    void  write_apu_reg(uint16 addr, uint8 data) { }
 
     // instructions.cpp
     using InstrFuncRead = void (CPU::*)(const uint8);
@@ -156,13 +147,12 @@ private:
     void addrmode_absy_write(uint8 val);
     void addrmode_indx_write(uint8 val);
     void addrmode_indy_write(uint8 val);
-    /*
-     * instruction functions missing (as they are not needed):
+
+    /* instruction functions missing (as they are not needed):
      * - STA, STX, STY (use addrmode_write functions directly)
      * - BEQ, BNE, BMI, BPL, BVC, BVS, BCC, BCS (use instr_branch)
      * - TAX, TXA, TAY, TYA, TXS, TSX (use instr_transfer)
-     * . SEC, CLC, SEI, CLI, CLV, CLD (use instr_flag)
-     */
+     * . SEC, CLC, SEI, CLI, CLV, CLD (use instr_flag) */
     void instr_branch(bool take);
     void instr_flag(bool &flag, bool v);
     void instr_transfer(uint8 from, uint8 &to);

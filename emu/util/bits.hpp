@@ -78,6 +78,19 @@ struct BitField {
     BitField & operator--()    { return *this = *this - 1; }
 };
 
+/* A 16 number that can be accessed either through its full value and through
+ * its low and high byte. */
+union Word {
+    uint16_t v;
+    struct { uint8_t l; uint8_t h; };
+
+    Word() = default;
+    Word(uint16_t val) : v(val) {}
+    Word & operator= (uint16_t val) { v  = val; return *this; }
+    Word & operator&=(uint64_t val) { v &= val; return *this; }
+    Word & operator|=(uint64_t val) { v |= val; return *this; }
+};
+
 /* Convert from bytes to a unit. */
 inline constexpr unsigned long long to_kib(unsigned long long bytes) { return bytes*1024; }
 inline constexpr unsigned long long to_mib(unsigned long long bytes) { return bytes*1024*1024; }

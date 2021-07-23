@@ -12,7 +12,7 @@ uint16 CPUDebugger::getreg(Reg reg) const
     case Reg::ACC:   return cpu->r.acc;
     case Reg::X:     return cpu->r.x;
     case Reg::Y:     return cpu->r.y;
-    case Reg::PC:    return cpu->r.pc.full;
+    case Reg::PC:    return cpu->r.pc.v;
     case Reg::SP:    return cpu->r.sp;
     default:    return 0;
     }
@@ -62,9 +62,9 @@ uint16 CPUDebugger::get_vector_addr(uint16 vector)
 CPUDebugger::Instruction CPUDebugger::curr_instr()
 {
     return {
-        .id = cpu->bus->read(cpu->r.pc.full),
-        .lo = cpu->bus->read(cpu->r.pc.full+1),
-        .hi = cpu->bus->read(cpu->r.pc.full+2),
+        .id = cpu->bus->read(cpu->r.pc.v),
+        .lo = cpu->bus->read(cpu->r.pc.v+1),
+        .hi = cpu->bus->read(cpu->r.pc.v+2),
     };
 }
 
@@ -89,7 +89,7 @@ std::string CPUDebugger::curr_instr_str()
     std::string res = Core::disassemble(instr.id, instr.lo, instr.hi);
     if (Core::is_branch(instr.id)) {
         res += fmt::format(" [{:02X}] [{}]",
-                Core::branch_pointer(instr.lo, cpu->r.pc.full),
+                Core::branch_pointer(instr.lo, cpu->r.pc.v),
                 took_branch(instr.id, cpu->r.flags) ? "Branch taken" : "Branch not taken");
     }
     return res;

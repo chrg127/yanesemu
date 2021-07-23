@@ -71,9 +71,9 @@ void CPU::fire_nmi()
 uint8 CPU::fetch()
 {
     if (fetch_callback)
-        fetch_callback(r.pc.full, 'x');
+        fetch_callback(r.pc.v, 'x');
     cycle();
-    return bus->read(r.pc.full++);
+    return bus->read(r.pc.v++);
 }
 
 // This is here mostly so we can differentiate between actual instructions
@@ -81,7 +81,7 @@ uint8 CPU::fetch()
 uint8 CPU::fetchop()
 {
     cycle();
-    return bus->read(r.pc.full++);
+    return bus->read(r.pc.v++);
 }
 
 void CPU::execute(uint8 instr)
@@ -249,7 +249,7 @@ void CPU::execute(uint8 instr)
         INSTR_AMODE(0xFE, inc, absx, modify)
         default:
             if (error_callback)
-                error_callback(instr, r.pc.full);
+                error_callback(instr, r.pc.v);
     }
 #undef INSTR_IMPLD
 #undef INSTR_AMODE
@@ -261,8 +261,8 @@ void CPU::interrupt()
 {
     // one cycle for reading next instruction byte and throw away
     cycle();
-    push(r.pc.high);
-    push(r.pc.low);
+    push(r.pc.h);
+    push(r.pc.l);
     push((uint8) r.flags);
     // reset this here just in case
     r.flags.breakf = 0;
@@ -282,8 +282,8 @@ void CPU::interrupt()
         vec = IRQ_BRK_VEC;
     } else
         vec = IRQ_BRK_VEC;
-    r.pc.low = readmem(vec);
-    r.pc.high = readmem(vec+1);
+    r.pc.l = readmem(vec);
+    r.pc.h = readmem(vec+1);
 }
 
 void CPU::push(uint8 val)
