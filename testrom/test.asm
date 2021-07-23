@@ -89,17 +89,12 @@ resetram:
     sta $2006   ; set v = 3F00
     lda #$00
     sta $2006
-    ldx #8
+    ldx #0
 loadpal_loop:   ; fill background palette
-    lda #$0F
+    lda paltab,x
     sta $2007
-    lda #$00
-    sta $2007
-    lda #$10
-    sta $2007
-    lda #$30
-    sta $2007
-    dex
+    inx
+    cpx #32
     bne loadpal_loop
 
     lda #$20    ; reset v
@@ -172,16 +167,15 @@ joypad_poll:
 gamecode:
     rts
 
-hellostring: .byte $07, $08, $09, $09, $0A, $00, $0B, $0A, $0C, $09, $0D
-;hellostring: .byte $0E, $0F, $10, $11, $00, $09, $12, $13, $13, $12, $0C, $0A
+hellostring: .byte $04, $04, $04, $09, $0A, $00, $0B, $0A, $0C, $09, $0D
 
 ; writes a hello world at the center of the screen
 ; assumes we are at the start of the game
 write_helloworld:
     lda $2002
-    lda #$21    ; set starting pos to somewhat into the center
+    lda #$20    ; set starting pos to somewhat into the center
     sta $2006
-    lda #$EC
+    lda #$0A
     sta $2006
     ldx #$00
 write_loop:
@@ -190,6 +184,18 @@ write_loop:
     inx
     cpx #12
     bne write_loop
+
+    lda $2002
+    lda #$23
+    sta $2006
+    lda #$00
+    sta $2006
+    ldx #$FF
+    lda #$55
+pal_loop:
+    sta $2007
+    dex
+    bne pal_loop
     rts
 
 nmi:
