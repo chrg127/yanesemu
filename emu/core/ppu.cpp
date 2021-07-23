@@ -124,9 +124,9 @@ uint8 PPU::readreg(const uint16 which)
     case 0x2007:
         if (vram.addr < 0x3F00) {
             io.latch = io.data_buf;
-            io.data_buf = bus->read(vram.addr);
+            io.data_buf = bus->read(vram.addr.as_u14());
         } else
-            io.latch = bus->read(vram.addr);
+            io.latch = bus->read(vram.addr.as_u14());
         vram.addr += (1UL << 5*io.vram_inc);
         break;
 
@@ -209,7 +209,7 @@ void PPU::writereg(const uint16 which, const uint8 data)
 
     // PPUDATA
     case 0x2007:
-        bus->write(vram.addr, data);
+        bus->write(vram.addr.as_u14(), data);
         vram.addr += (1UL << 5*io.vram_inc);
         break;
 
@@ -239,7 +239,7 @@ void PPU::copy_v_vertpos()
  * this is how the vram address can return to the same tile for 8 lines:
  * in rendering, you can think of the fine y and the rest of the address
  * as separate, where fine y of course indicates the row of the tile. */
-uint8 PPU::fetch_nt(uint16 vram_addr)
+uint8 PPU::fetch_nt(uint15 vram_addr)
 {
     uint16 addr = 0x2000 | (vram_addr & 0x0FFF);
     return bus->read(addr);
@@ -275,7 +275,7 @@ void PPU::shift_run()
     shift.ahigh >>= 1;
     shift.alow  >>= 1;
     shift.ahigh = Util::setbit(shift.ahigh, 7, shift.feed_high);
-    shift.ahigh = Util::setbit(shift.alow,  7, shift.feed_low );
+    shift.alow  = Util::setbit(shift.alow,  7, shift.feed_low );
 }
 
 void PPU::shift_fill()
@@ -286,11 +286,19 @@ void PPU::shift_fill()
     shift.thigh = Util::setbits(shift.thigh, 8, 8, Util::reverse_bits(tile.high));
     // shift.tlow  = Util::setbits(shift.tlow,  8, 8, tile.low);
     // shift.thigh = Util::setbits(shift.thigh, 8, 8, tile.high);
-    // TODO: this is definitely wrong
-    uint16 v = vram.addr;
-    uint8 attr_mask = 0b11 << (~((v >> 1 & 1) | (v >> 6 & 1)))*2;
-    shift.feed_high = tile.attr & attr_mask;
-    shift.feed_low  = tile.attr & attr_mask;
+
+    // 00 -> 0
+    // 01 -> 2
+    // 10 -> 4
+    // 11 -> 6
+    uint8 bit1 = Util::getbit(vram.addr.coarse_x, 1);
+    uint8 bit2 = Util::getbit(vram.addr.coarse_y, 1);
+    int bitpos[] = { 0, 2, 4, 6 };
+    int bitno = bitpos[bit2 << 1 | bit1];
+
+    uint2 bits = Util::getbits(tile.attr, bitno, 2);
+    shift.feed_high = bits & 1;
+    shift.feed_low  = (bits >> 1) & 1;
 }
 
 uint8 PPU::bg_output()

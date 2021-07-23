@@ -33,8 +33,9 @@ public:
         VRAMAddress & operator=(const VRAMAddress &addr) { value = addr.value; return *this; }
 
         operator uint16() const                          { return value; }
-        // used for access through PPUDATA ($2007)
-        VRAMAddress & operator+=(uint14 n)               { value += n; return *this; }
+        VRAMAddress & operator+=(uint16 n)               { value += n; value = Util::getbits(value, 0, 15); return *this; }
+
+        uint14 as_u14() { return value; }
     };
 
 private:
@@ -88,8 +89,8 @@ private:
     struct VRAM {
         VRAMAddress addr;
         VRAMAddress tmp;
-        uint8 fine_x;
-        // 10 bit numbers?
+        uint3 fine_x;
+        // simply indicates the VRAM address position. not used anywhere in the PPU though.
         uint16 vx() const { return fine_x      | addr.coarse_x << 3 | (addr.nt & 1) << 8; }
         uint8 vy() const  { return addr.fine_y | addr.coarse_y << 3 | (addr.nt & 2) << 8; }
     } vram;
@@ -127,7 +128,7 @@ private:
     uint8 readreg(uint16 addr);
     void writereg(uint16 addr, uint8 data);
 
-    uint8 fetch_nt(uint16 vram_addr);
+    uint8 fetch_nt(uint15 vram_addr);
     uint8 fetch_attr(uint16 nt, uint16 coarse_y, uint16 coarse_x);
     uint8 fetch_bg(bool base, uint8 nt, bool bitplane, uint3 fine_y);
     void copy_v_horzpos();
