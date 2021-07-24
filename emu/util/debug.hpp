@@ -10,27 +10,26 @@
  *   message is seen only with DEBUG defined.
  */
 
+#include <cstdlib>
+#include <string_view>
 #include <fmt/core.h>
 
-template <typename... T>
-inline void error(std::string &&fmt, T&&... args)
+inline void error(std::string_view fmtstr, auto&&... args)
 {
     fmt::print(stderr, "error: ");
-    fmt::print(stderr, fmt, args...);
+    fmt::print(stderr, fmt::runtime(fmtstr), args...);
 }
 
-template <typename... T>
-inline void warning(std::string &&fmt, T&&... args)
+inline void warning(std::string_view fmtstr, auto&&... args)
 {
     fmt::print(stderr, "warning: ");
-    fmt::print(stderr, fmt, args...);
+    fmt::print(stderr, fmt::runtime(fmtstr), args...);
 }
 
-template <typename... T>
-[[noreturn]] inline void panic(std::string &&fmt, T&&... args)
+[[noreturn]] inline void panic(std::string_view fmtstr, auto&&... args)
 {
     fmt::print(stderr, "panic: ");
-    fmt::print(stderr, fmt, args...);
+    fmt::print(stderr, fmt::runtime(fmtstr), args...);
     std::exit(1);
 }
 

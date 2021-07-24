@@ -7,6 +7,7 @@
 #include <emu/core/ppu.hpp>
 #include <emu/core/cartridge.hpp>
 #include <emu/core/screen.hpp>
+#include <emu/core/memory.hpp>
 
 namespace Util { class File; }
 namespace Debugger { class Debugger; }
@@ -23,6 +24,7 @@ class Emulator {
     PPU ppu{&vrambus, &screen};
     // this is internal to the emulator only and doesn't affect the cpu and ppu
     bool nmi = false;
+    Memory memory;
 
     void bus_map(Mirroring mirroring);
 

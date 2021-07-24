@@ -3,9 +3,7 @@
 #include <string_view>
 #include <fmt/core.h>
 #include <emu/util/unsigned.hpp>
-#include <emu/util/debug.hpp>
 #include <emu/util/file.hpp>
-#include <emu/core/memory.hpp>
 
 using namespace Core;
 
@@ -13,7 +11,7 @@ void Emulator::power(bool reset)
 {
     cpu.power(reset);
     ppu.power(reset);
-    Memory::power(reset);
+    memory.power(reset);
 }
 
 void Emulator::run()
@@ -39,7 +37,7 @@ void Emulator::bus_map(Mirroring mirroring)
     vrambus.reset();
     cpu.bus_map(rambus);
     ppu.bus_map(rambus);
-    Memory::bus_map(rambus, vrambus, mirroring);
+    memory.bus_map(rambus, vrambus, mirroring);
     rambus.map(CARTRIDGE_START, 0x8000,
             [](uint16 addr)             { return 0; },
             [](uint16 addr, uint8 data) { /***********/ });
