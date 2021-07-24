@@ -122,7 +122,7 @@ uint8 PPU::readreg(const uint16 which)
 
     // PPUDATA
     case 0x2007:
-        if (vram.addr < 0x3F00) {
+        if (vram.addr.v < 0x3F00) {
             io.latch = io.data_buf;
             io.data_buf = bus->read(vram.addr.as_u14());
         } else
@@ -197,11 +197,11 @@ void PPU::writereg(const uint16 which, const uint8 data)
     case 0x2006:
         if (io.scroll_latch == 0) {
             // high byte
-            vram.tmp = Util::setbits(vram.tmp, 8, 6, data & 0x3F);
-            vram.tmp = Util::setbit(vram.tmp, 14, 0);
+            vram.tmp = Util::setbits(vram.tmp.v, 8, 6, data & 0x3F);
+            vram.tmp = Util::setbit(vram.tmp.v, 14, 0);
         } else {
             // low byte
-            vram.tmp = Util::setbits(vram.tmp, 0, 8, data);
+            vram.tmp = Util::setbits(vram.tmp.v, 0, 8, data);
             vram.addr = vram.tmp;
         }
         io.scroll_latch ^= 1;
@@ -270,31 +270,28 @@ uint8 PPU::fetch_bg(bool base, uint8 nt, bool bitplane, uint3 fine_y)
 
 void PPU::shift_run()
 {
-    shift.tlow  >>= 1;
-    shift.thigh >>= 1;
-    shift.ahigh >>= 1;
-    shift.alow  >>= 1;
-    shift.ahigh = Util::setbit(shift.ahigh, 7, shift.feed_high);
-    shift.alow  = Util::setbit(shift.alow,  7, shift.feed_low );
+    shift.tile_low  >>= 1;
+    shift.tile_high >>= 1;
+    shift.attr_low  >>= 1;
+    shift.attr_high >>= 1;
+    shift.attr_low  = Util::setbit(shift.attr_low,  7, shift.feed_low );
+    shift.attr_high = Util::setbit(shift.attr_high, 7, shift.feed_high);
 }
 
 void PPU::shift_fill()
 {
     // reversing the bits here fixes the bug with reversed tiles.
     // however, i'm pretty sure this is not the solution.
-    shift.tlow  = Util::setbits(shift.tlow,  8, 8, Util::reverse_bits(tile.low));
-    shift.thigh = Util::setbits(shift.thigh, 8, 8, Util::reverse_bits(tile.high));
+    shift.tile_low  = Util::setbits(shift.tile_low,  8, 8, Util::reverse_bits(tile.low));
+    shift.tile_high = Util::setbits(shift.tile_high, 8, 8, Util::reverse_bits(tile.high));
     // shift.tlow  = Util::setbits(shift.tlow,  8, 8, tile.low);
     // shift.thigh = Util::setbits(shift.thigh, 8, 8, tile.high);
 
-    // 00 -> 0
-    // 01 -> 2
-    // 10 -> 4
-    // 11 -> 6
+    // these are, respectively, bit 1 and 6 of vram.addr
     uint8 bit1 = Util::getbit(vram.addr.coarse_x, 1);
     uint8 bit2 = Util::getbit(vram.addr.coarse_y, 1);
-    int bitpos[] = { 0, 2, 4, 6 };
-    int bitno = bitpos[bit2 << 1 | bit1];
+    // (00,01,10,11) -> (0,2,4,6)
+    int bitno = (bit2 << 1 | bit1) * 2;
 
     uint2 bits = Util::getbits(tile.attr, bitno, 2);
     shift.feed_high = bits & 1;
@@ -304,10 +301,10 @@ void PPU::shift_fill()
 uint8 PPU::bg_output()
 {
     uint8 mask = 1UL << vram.fine_x;
-    bool low   = shift.tlow  & mask;
-    bool hi    = shift.thigh & mask;
-    bool at1   = shift.ahigh & mask;
-    bool at2   = shift.alow  & mask;
+    bool hi    = shift.tile_high & mask;
+    bool low   = shift.tile_low  & mask;
+    bool at1   = shift.attr_high & mask;
+    bool at2   = shift.attr_low  & mask;
     return getcolor(at1 << 1 | at2, hi << 1 | low, /* background */ 0);
 }
 

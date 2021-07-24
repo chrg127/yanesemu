@@ -29,9 +29,10 @@ uint8 PPUDebugger::getreg(uint16 addr) const
     case 0x2004: return 0;
     case 0x2005: return !ppu->io.scroll_latch ? ppu->vram.fine_x     << 5 | ppu->vram.tmp.coarse_x
                                               : ppu->vram.tmp.fine_y << 5 | ppu->vram.tmp.coarse_y;
-    case 0x2006: return !ppu->io.scroll_latch ? ppu->vram.tmp & 0xFF : ppu->vram.tmp >> 8 & 0xFF;
-    case 0x2007: return ppu->vram.addr < 0x3F00 ? ppu->io.data_buf
-                                                : ppu->bus->read(ppu->vram.addr);
+    case 0x2006: return !ppu->io.scroll_latch ? ppu->vram.tmp.v & 0xFF
+                                              : ppu->vram.tmp.v >> 8 & 0xFF;
+    case 0x2007: return ppu->vram.addr.v < 0x3F00 ? ppu->io.data_buf
+                                                  : ppu->bus->read(ppu->vram.addr.v);
     default: return 0xFF;
     }
 }
@@ -67,12 +68,12 @@ uint16 PPUDebugger::nt_base_addr() const
 
 uint16 PPUDebugger::vram_addr() const
 {
-    return ppu->vram.addr.value;
+    return ppu->vram.addr.v;
 }
 
 uint16 PPUDebugger::tmp_addr() const
 {
-    return ppu->vram.addr.value;
+    return ppu->vram.addr.v;
 }
 
 uint8 PPUDebugger::fine_x() const

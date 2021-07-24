@@ -21,21 +21,21 @@ namespace Core {
 class PPU {
 public:
     union VRAMAddress {
-        uint16 value = 0;
+        uint16 v = 0;
         Util::BitField<uint16, 12, 3> fine_y;
         Util::BitField<uint16, 10, 2> nt;
         Util::BitField<uint16, 5,  5> coarse_y;
         Util::BitField<uint16, 0,  5> coarse_x;
 
         VRAMAddress() = default;
-        VRAMAddress(uint16 data) : value(data) { }
-        VRAMAddress(const VRAMAddress &addr)             { operator=(addr); }
-        VRAMAddress & operator=(const VRAMAddress &addr) { value = addr.value; return *this; }
+        VRAMAddress(uint16 data) : v(data) { }
+        VRAMAddress(const VRAMAddress &a)             { operator=(a); }
+        VRAMAddress & operator=(const VRAMAddress &a) { v = a.v; return *this; }
 
-        operator uint16() const                          { return value; }
-        VRAMAddress & operator+=(uint16 n)               { value += n; value = Util::getbits(value, 0, 15); return *this; }
+        explicit operator uint16() const            { return v; }
+        VRAMAddress & operator+=(uint16 n) { v += n; v = Util::getbits(v, 0, 15); return *this; }
 
-        uint14 as_u14() { return value; }
+        uint14 as_u14() { return v; }
     };
 
 private:
@@ -103,9 +103,9 @@ private:
     } tile;
 
     struct Shift {
-        uint16 tlow, thigh;
-        uint8  alow, ahigh;
-        bool feed_low, feed_high;
+        uint8  attr_low, attr_high;
+        bool   feed_low, feed_high;
+        uint16 tile_low, tile_high;
     } shift;
 
     struct OAM {
@@ -144,12 +144,8 @@ private:
     template <unsigned int Line> void lcycle(unsigned int cycle, void (PPU::*)());
     template <unsigned Cycle> void background_cycle();
     template <unsigned int Cycle> void ccycle();
-    void cycle_idle();
+    void cycle_idle() { }
     void begin_frame();
-    void cycle_fetchnt(bool cycle);
-    void cycle_fetchattr(bool cycle);
-    void cycle_fetchlowbg(bool cycle);
-    void cycle_fetchhighbg(bool cycle);
     void cycle_incvhorz();
     void cycle_incvvert();
     void cycle_copyhorz();

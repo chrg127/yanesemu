@@ -4,10 +4,6 @@
 #define dbgputc(c) ;
 #endif
 
-void PPU::cycle_idle()
-{
-}
-
 // called at (340, 261)
 void PPU::begin_frame()
 {
@@ -65,7 +61,7 @@ void PPU::cycle_fillshifts()
 void PPU::vblank_begin()
 {
     io.vblank = 1;
-    if (io.nmi_enabled)
+    // if (io.nmi_enabled)
         nmi_callback();
 }
 
@@ -82,7 +78,7 @@ void PPU::background_cycle()
     if constexpr(Cycle == 2 || Cycle == 4 || Cycle == 6 || Cycle == 0)
         if (!io.bg_show)
             return;
-    if constexpr(Cycle == 2) tile.nt   = fetch_nt(vram.addr.value);
+    if constexpr(Cycle == 2) tile.nt   = fetch_nt(vram.addr.v);
     if constexpr(Cycle == 4) tile.attr = fetch_attr(vram.addr.nt, vram.addr.coarse_y, vram.addr.coarse_x);
     if constexpr(Cycle == 6) tile.low  = fetch_bg(io.bg_pt_addr, tile.nt, 0, uint8(vram.addr.fine_y));
     if constexpr(Cycle == 0) tile.high = fetch_bg(io.bg_pt_addr, tile.nt, 1, uint8(vram.addr.fine_y));
