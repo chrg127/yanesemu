@@ -25,7 +25,7 @@ uint8 PPUDebugger::getreg(uint16 addr) const
     case 0x2002: return ppu->io.vblank      << 7
                       | ppu->io.sp_zero_hit << 6
                       | ppu->io.sp_overflow << 5;
-    case 0x2003: return ppu->io.oam_addr;
+    case 0x2003: return ppu->oam.addr;
     case 0x2004: return 0;
     case 0x2005: return !ppu->io.scroll_latch ? ppu->vram.fine_x     << 5 | ppu->vram.tmp.coarse_x
                                               : ppu->vram.tmp.fine_y << 5 | ppu->vram.tmp.coarse_y;

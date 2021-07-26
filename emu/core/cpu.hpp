@@ -116,8 +116,9 @@ private:
     void  last_cycle();
     uint8 readmem(uint16 addr);
     void  writemem(uint16 addr, uint8 data);
-    uint8 read_apu_reg(uint16 addr) { return 0; }
-    void  write_apu_reg(uint16 addr, uint8 data) { }
+    uint8 readreg(uint16 addr);
+    void  writereg(uint16 addr, uint8 data);
+    // void oamdma_loop(uint8 page);
 
     // instructions.cpp
     using InstrFuncRead = void (CPU::*)(const uint8);

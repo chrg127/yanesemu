@@ -19,10 +19,10 @@ enum {
     IRQ_BRK_VEC     = 0xFFFE,
     STACK_BASE      = 0x0100,
 
-    // Constants for VRAM bus...
+    // Constants for PPU memories (VRAM and OAM).
     VRAM_SIZE       = 0x800,
     PAL_SIZE        = 0x20,
-    OAM_SIZE        = 0x0100,
+    OAM_SIZE        = 0x40 * 4,
     PT_START        = 0,
     NT_START        = 0x2000,
     PAL_START       = 0x3F00,
@@ -31,7 +31,7 @@ enum {
     SCREEN_WIDTH    = 256,
     SCREEN_HEIGHT   = 240,
     PPU_MAX_LINES   = 262,
-    PPU_MAX_LCYCLE   = 341,
+    PPU_MAX_LCYCLE  = 341,
 };
 
 // OTHER is usually mapper defined.

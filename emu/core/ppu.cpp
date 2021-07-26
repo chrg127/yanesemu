@@ -77,7 +77,7 @@ void PPU::power(bool reset)
         io.sp_zero_hit = 0; // Util::random_between(0, 1);
     }
     // OAMADDR
-    io.oam_addr = 0;
+    oam.addr = 0;
     // PPUSCROLL and PPUADDR
     if (!reset)
         vram.tmp = 0;
@@ -100,12 +100,11 @@ void PPU::bus_map(Bus<CPUBUS_SIZE> &rambus)
             [this](uint16 addr, uint8 data) { writereg(0x2000 + (addr & 0x7), data); });
 }
 
-uint8 PPU::readreg(const uint16 which)
+uint8 PPU::readreg(uint16 addr)
 {
-    switch (which) {
-    // PPUCTRL, PPUMASK, OAMADDR, PPUSCROLL, PPUADDR
-    case 0x2000: case 0x2001: case 0x2003:
-    case 0x2005: case 0x2006:
+    switch (addr) {
+    // PPUCTRL,       PPUMASK,     OAMADDR,     PPUSCROLL,   PPUADDR
+    case 0x2000: case 0x2001: case 0x2003: case 0x2005: case 0x2006:
         break;
 
     // PPUSTATUS
@@ -117,7 +116,7 @@ uint8 PPU::readreg(const uint16 which)
 
     // OAMDATA
     case 0x2004:
-        io.latch = 0;
+        io.latch = oam.mem[oam.addr];
         break;
 
     // PPUDATA
@@ -132,17 +131,17 @@ uint8 PPU::readreg(const uint16 which)
 
 #ifdef DEBUG
     default:
-        panic("invalid PPU register during read: {:02X}\n", which);
+        panic("invalid PPU register during read: {:02X}\n", addr);
         break;
 #endif
     }
     return io.latch;
 }
 
-void PPU::writereg(const uint16 which, const uint8 data)
+void PPU::writereg(uint16 addr, uint8 data)
 {
     io.latch = data;
-    switch (which) {
+    switch (addr) {
 
     // PPUCTRL
     case 0x2000:
@@ -173,12 +172,17 @@ void PPU::writereg(const uint16 which, const uint8 data)
 
     // OAMADDR
     case 0x2003:
-        io.oam_addr = data;
+        oam.addr = data;
         break;
 
     // OAMDATA
     case 0x2004:
-        io.oam_addr++;
+        if (lines <= 239 || lines == 261) {
+            // bump first 6 bits of oam.addr
+        } else {
+            oam.mem[oam.addr] = data;
+            oam.addr++;
+        }
         break;
 
     // PPUSCROLL
@@ -215,7 +219,7 @@ void PPU::writereg(const uint16 which, const uint8 data)
 
 #ifdef DEBUG
     default:
-        panic("invalid PPU register during write: {:02X}\n", which);
+        panic("invalid PPU register during write: {:02X}\n", addr);
         break;
 #endif
     }
@@ -298,30 +302,77 @@ void PPU::shift_fill()
     shift.feed_low  = (bits >> 1) & 1;
 }
 
-uint8 PPU::bg_output()
+std::pair<uint2, uint2> PPU::bg_output()
 {
+    if (io.bg_show)
+        return std::make_pair(0, 0);
     uint8 mask = 1UL << vram.fine_x;
     bool hi    = shift.tile_high & mask;
     bool low   = shift.tile_low  & mask;
     bool at1   = shift.attr_high & mask;
     bool at2   = shift.attr_low  & mask;
-    return getcolor(at1 << 1 | at2, hi << 1 | low, /* background */ 0);
+    return std::make_pair(at1 << 1 | at2, hi << 1 | low);
+}
+
+void PPU::update_sprite_counters()
+{
+    for (int i = 0; i < 8; i++) {
+        if (oam.xpos[i] != 0)
+            oam.xpos[i]--;
+        else {
+            oam.pattern_low[i]  >>= 1;
+            oam.pattern_high[i] >>= 1;
+        }
+    }
+}
+
+std::tuple<uint2, uint2, bool> PPU::sp_output()
+{
+    if (io.bg_show)
+        return std::make_tuple(0, 0, 0);
+    for (int i = 0; i < 8; i++) {
+        bool low  = oam.pattern_low[i] & 1;
+        bool high = oam.pattern_low[i] & 1;
+        if (low != 0 || high != 0)
+            return std::make_tuple(
+                high << 1 | low,
+                Util::getbits(oam.attrs[i], 0, 2),
+                Util::getbit(oam.attrs[i], 5)
+            );
+    }
+    return std::make_tuple(0, 0, 0);
 }
 
 /* SIIPP
- *    ^^ pixel value (palind)
- *  ^^ palette number (pal)
+ *    ^^ pixel value (palind) (also known as whatever we get from the pattern table)
+ *  ^^ palette number (pal) (attributes in tiles and sprites)
  * ^ sprite or background (select)
  */
-uint8 PPU::getcolor(uint2 pal, uint2 palind, bool select)
+uint2 PPU::choose_pixel()
 {
-    uint5 n = select << 4 | pal << 2 | palind;
-    return bus->read(0x3F00 + n);
+    auto [bg_pal, bg_palind]           = bg_output();
+    auto [sp_pal, sp_palind, priority] = sp_output();
+
+    auto getcolor = [this](uint2 pal, uint2 palind, bool select)
+    {
+        uint5 n = select << 4 | pal << 2 | palind;
+        return bus->read(0x3F00 + n);
+    };
+
+    int n = (bg_palind != 0) << 1 | (sp_palind != 0);
+    switch (n) {
+    case 0: return bus->read(0x3F00);
+    case 1: return getcolor(sp_pal, sp_palind, 1);
+    case 2: return getcolor(bg_pal, bg_palind, 0);
+    case 3: return priority ? getcolor(bg_pal, bg_palind, 0)
+                            : getcolor(sp_pal, sp_palind, 1);
+    default: return bus->read(0x3F00);
+    }
 }
 
 void PPU::output()
 {
-    uint8 bgpixel = io.bg_show ? bg_output() : 0;
+    uint8 pixel = choose_pixel();
     auto x = cycles % PPU_MAX_LCYCLE;
     auto y = lines % PPU_MAX_LINES;
     assert((y <= 239 || y == 261) && x <= 256);
@@ -331,7 +382,7 @@ void PPU::output()
         return;
     if (y == 261)
         return;
-    screen->output(x, y, bgpixel);
+    screen->output(x, y, pixel);
 }
 
 } // namespace Core

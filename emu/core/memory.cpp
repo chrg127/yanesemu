@@ -70,7 +70,6 @@ void Memory::power(bool reset, char fillval)
         std::fill(vrammem.begin(), vrammem.end(), fillval);
         std::fill(palmem.begin(),  palmem.end(), fillval);
     }
-    std::fill(oammem.begin(), oammem.end(), fillval);
 }
 
 } // namespace Core

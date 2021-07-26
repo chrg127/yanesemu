@@ -76,9 +76,6 @@ private:
         bool sp_zero_hit;
         bool vblank;
 
-        // OAMADDR
-        uint8 oam_addr;
-
         // PPUSCROLL, PPUADDR
         bool scroll_latch;
 
@@ -109,8 +106,28 @@ private:
     } shift;
 
     struct OAM {
-        uint8 shifts[8], latches[8], counters[8];
+        uint8 addr;
+        uint8 data;
+        bool read_ff;
+        bool addr_overflow;
+        uint8 pattern_low[8], pattern_high[8], attrs[8], xpos[8];
+        std::array<uint8, OAM_SIZE> mem;
     } oam;
+
+    struct {
+        uint8 si; // secondary oam index
+        bool secondary_write_disable;
+        std::array<uint8, 8*4> mem;
+        void write_secondary(uint8 val)
+        {
+            if (!secondary_write_disable)
+                mem[si] = val;
+        }
+    } secondary_oam;
+
+    struct Sprite {
+        uint8 y, tile, attr, x;
+    } sprite;
 
 public:
     PPU(Bus<PPUBUS_SIZE> *vrambus, Screen *scr)
@@ -135,9 +152,12 @@ private:
     void copy_v_vertpos();
     void shift_run();
     void shift_fill();
-    uint8 bg_output();
+    std::pair<uint2, uint2> bg_output();
 
-    uint8 getcolor(uint2 pal, uint2 palind, bool select);
+    void update_sprite_counters();
+    std::tuple<uint2, uint2, bool> sp_output();
+
+    uint2 choose_pixel();
     void output();
 
     // ppumain.cpp
@@ -152,7 +172,6 @@ private:
     void cycle_copyvert();
     void cycle_shift();
     void cycle_fillshifts();
-    void cycle_outputpixel();
     void vblank_begin();
     void vblank_end();
 

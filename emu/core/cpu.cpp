@@ -36,8 +36,8 @@ void CPU::power(bool reset)
 void CPU::bus_map(Bus<CPUBUS_SIZE> &rambus)
 {
     rambus.map(APU_START, CARTRIDGE_START,
-             [this](uint16 addr)             { return read_apu_reg(addr); },
-             [this](uint16 addr, uint8 data) { write_apu_reg(addr, data); });
+             [this](uint16 addr)             { return readreg(addr); },
+             [this](uint16 addr, uint8 data) { writereg(addr, data); });
 }
 
 void CPU::run()
@@ -294,7 +294,7 @@ void CPU::push(uint8 val)
 
 uint8 CPU::pull()
 {
-    ++r.sp;
+    r.sp++;
     return readmem(r.sp + STACK_BASE);
 }
 
@@ -336,6 +336,121 @@ void CPU::writemem(uint16 addr, uint8 data)
         fetch_callback(addr, 'w');
     cycle();
     bus->write(addr, data);
+}
+
+/* These two functions read the registers located between 0x4000 - 0x4020. */
+uint8 CPU::readreg(uint16 addr)
+{
+    switch (addr) {
+    case 0x4000: case 0x4001: case 0x4002: case 0x4003: case 0x4004: case 0x4005: case 0x4006: case 0x4007:
+    case 0x4008: case 0x400A: case 0x400B: case 0x400C: case 0x400E: case 0x400F: case 0x4010: case 0x4011:
+    case 0x4012: case 0x4013: case 0x4014: case 0x4015: case 0x4016: case 0x4017:
+        return 0;
+    default:
+        return 0;
+    }
+}
+
+void CPU::writereg(uint16 addr, uint8 data)
+{
+    switch (addr) {
+
+    // SQ1_VOL
+    case 0x4000:
+        break;
+
+    // SQ1_SWEEP
+    case 0x4001:
+        break;
+
+    // SQ1_LO
+    case 0x4002:
+        break;
+
+    // SQ1_HI
+    case 0x4003:
+        break;
+
+    // SQ2_VOL
+    case 0x4004:
+        break;
+
+    // SQ2_SWEEP
+    case 0x4005:
+        break;
+
+    // SQ2_LO
+    case 0x4006:
+        break;
+
+    // SQ2_HI
+    case 0x4007:
+        break;
+
+    // TRI_LINEAR
+    case 0x4008:
+        break;
+
+    // TRI_LO
+    case 0x400A:
+        break;
+
+    // TRI_HI
+    case 0x400B:
+        break;
+
+    // NOISE_VOL
+    case 0x400C:
+        break;
+
+    // NOISE_LO
+    case 0x400E:
+        break;
+
+    // NOISE_HI
+    case 0x400F:
+        break;
+
+    // DMC_FREQ
+    case 0x4010:
+        break;
+
+    // DMC_RAW
+    case 0x4011:
+        break;
+
+    // DMC_START
+    case 0x4012:
+        break;
+
+    // DMC_LEN
+    case 0x4013:
+        break;
+
+    // OAMDMA
+    case 0x4014:
+        //oamdma_loop(data);
+        break;
+
+    // SND_CHN
+    case 0x4015:
+        break;
+
+    // JOY1
+    case 0x4016:
+        break;
+
+    // JOY2
+    case 0x4017:
+        break;
+
+    default:
+#ifdef DEBUG
+        if (addr < 0x4000 || addr > 0x4020)
+            panic("wrong address passed to {}", __PRETTY_FUNCTION__);
+#endif
+        break;
+    }
 }
 
 } // namespace Core
