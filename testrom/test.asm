@@ -40,14 +40,15 @@ palette:        .res 32         ; palette buffer for PPU update
 
 .segment "RODATA"
 paltab:
-.byte $13,$15,$26,$37 ; bg0 purple/pink
+.byte $0F,$15,$26,$37 ; bg0 purple/pink
 .byte $0F,$09,$19,$29 ; bg1 green
 .byte $0F,$01,$11,$21 ; bg2 blue
 .byte $0F,$00,$10,$30 ; bg3 greyscale
-.byte $13,$18,$28,$38 ; sp0 yellow
+.byte $0F,$18,$28,$38 ; sp0 yellow
 .byte $0F,$14,$24,$34 ; sp1 purple
 .byte $0F,$1B,$2B,$3B ; sp2 teal
 .byte $0F,$12,$22,$32 ; sp3 marine
+hellostring: .byte $04, $04, $04, $09, $0A, $00, $0B, $0A, $0C, $09, $0D
 
 .segment "CODE"
 reset:
@@ -85,8 +86,8 @@ resetram:
     jsr clearnt
 
     lda $2002   ; reset latch
-    lda #$3F    ; set v = 3F00
-    sta $2006
+    lda #$3F
+    sta $2006   ; set v = 3F00
     lda #$00
     sta $2006
     ldx #0
@@ -106,7 +107,6 @@ loadpal_loop:   ; fill background palette
     sta scroll_x
     sta scroll_y
     jsr write_helloworld    ; and write a 'hello world'
-    jsr create_sprites
     jsr waitvblank
     lda #$20
     sta $2006
@@ -115,7 +115,7 @@ loadpal_loop:   ; fill background palette
     sta $2005
     lda #$80    ;turn on nmi
     sta $2000
-    lda #%00011110
+    lda #%00001010
     sta $2001
 
 mainloop:
@@ -138,9 +138,9 @@ waitvblank:
 
 clear_spbuf:
     ldx #$00
-    lda #$ff             ;y = ff, below bottom of screen
+    lda #$ff                ;y = ff, below bottom of screen
 clear_spbuf_loop:        ;puts all sprites off screen
-    sta spritebuf,x
+    sta spritebuf, x
     inx
     bne clear_spbuf_loop
     rts
@@ -168,23 +168,21 @@ joypad_poll:
 gamecode:
     rts
 
-hellostring: .byte $04, $04, $04, $09, $0A, $00, $0B, $0A, $0C, $09, $0D
-
 ; writes a hello world at the center of the screen
 ; assumes we are at the start of the game
 write_helloworld:
-    lda $2002
-    lda #$20    ; set starting pos to somewhat into the center
-    sta $2006
+    lda #$20
+    sta $02
     lda #$0A
-    sta $2006
-    ldx #$00
-write_loop:
-    lda hellostring,x
-    sta $2007
-    inx
-    cpx #12
-    bne write_loop
+    sta $03
+    lda #<hellostring
+    sta $00
+    lda #>hellostring
+    sta $01
+    lda #12
+    sta $04
+    jsr write_string
+
     lda $2002
     lda #$23
     sta $2006
@@ -196,6 +194,23 @@ pal_loop:
     sta $2007
     dex
     bne pal_loop
+    rts
+
+; 00 = pointer to string, 02: position, 04: string size (< 256)
+; void write_string(u8 *str, u8 pos[2], u8 size)
+write_string:
+    lda $2002
+    lda $02
+    sta $2006
+    lda $03
+    sta $2006
+    ldy #$00
+write_string_loop:
+    lda ($00),y
+    sta $2007
+    iny
+    cpy $04
+    bne write_string_loop
     rts
 
 sprite1: .byte  0, 7, 1, $60
@@ -211,15 +226,15 @@ create_sprites:
     ldx #0
 
     lda #<sprite1
-    sta $01
+    sta $00
     lda #>sprite1
-    sta $02
+    sta $01
     jsr create_sprite
 
     lda #<sprite2
-    sta $01
+    sta $00
     lda #>sprite2
-    sta $02
+    sta $01
     jsr create_sprite
 
     rts
@@ -228,7 +243,7 @@ create_sprites:
 create_sprite:
     ldy #0
 create_sprite_loop:
-    lda ($01),y
+    lda ($00),y
     sta spritebuf,x
     inx
     iny
@@ -245,7 +260,7 @@ nmi:
     inc nmi_flag
     lda #$00
     sta $2003
-    lda #2
+    lda spritebuf
     sta $4014
 
     ; should write to $2000 and $2005
@@ -261,4 +276,5 @@ nmi:
     pla
 irq:
     rti
+
 
