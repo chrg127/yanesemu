@@ -80,6 +80,11 @@ class CPU {
         bool execirq    = false;
     } signal;
 
+    struct {
+        bool flag;
+        uint8 page;
+    } dma;
+
     Bus<CPUBUS_SIZE> *bus = nullptr;
     Util::Word opargs = 0;
     std::function<void(uint16, char)> fetch_callback;
@@ -118,7 +123,7 @@ private:
     void  writemem(uint16 addr, uint8 data);
     uint8 readreg(uint16 addr);
     void  writereg(uint16 addr, uint8 data);
-    // void oamdma_loop(uint8 page);
+    void oamdma_loop(uint8 page);
 
     // instructions.cpp
     using InstrFuncRead = void (CPU::*)(const uint8);

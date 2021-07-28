@@ -27,6 +27,8 @@ void CPU::power(bool reset)
     }
     r.flags.intdis = 1;
     r.cycles = 0;
+    dma.flag = false;
+    dma.page = 0;
     bus->write(0x4015, 0);
     // an interrupt is performed during 6502 start up. this is why SP = $FD.
     signal.resetpending = true;
@@ -42,6 +44,8 @@ void CPU::bus_map(Bus<CPUBUS_SIZE> &rambus)
 
 void CPU::run()
 {
+    if (dma.flag)
+        oamdma_loop(dma.page);
     if (!signal.interrupt_pending)
         execute(fetch());
     if (signal.execnmi) {
@@ -429,7 +433,8 @@ void CPU::writereg(uint16 addr, uint8 data)
 
     // OAMDMA
     case 0x4014:
-        //oamdma_loop(data);
+        dma.flag = true;
+        dma.page = data;
         break;
 
     // SND_CHN
@@ -451,6 +456,17 @@ void CPU::writereg(uint16 addr, uint8 data)
 #endif
         break;
     }
+}
+
+void CPU::oamdma_loop(uint8 page)
+{
+    uint16 start = uint16(page) << 8;
+    uint16 end = uint16(page) << 8 | 0xFF;
+    cycle();
+    if (r.cycles % 2 == 1)
+        cycle();
+    while (start <= end)
+        writemem(0x2004, readmem(start++));
 }
 
 } // namespace Core
