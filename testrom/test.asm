@@ -40,11 +40,11 @@ palette:        .res 32         ; palette buffer for PPU update
 
 .segment "RODATA"
 paltab:
-.byte $0F,$15,$26,$37 ; bg0 purple/pink
+.byte $13,$15,$26,$37 ; bg0 purple/pink
 .byte $0F,$09,$19,$29 ; bg1 green
 .byte $0F,$01,$11,$21 ; bg2 blue
 .byte $0F,$00,$10,$30 ; bg3 greyscale
-.byte $0F,$18,$28,$38 ; sp0 yellow
+.byte $13,$18,$28,$38 ; sp0 yellow
 .byte $0F,$14,$24,$34 ; sp1 purple
 .byte $0F,$1B,$2B,$3B ; sp2 teal
 .byte $0F,$12,$22,$32 ; sp3 marine
@@ -107,6 +107,7 @@ loadpal_loop:   ; fill background palette
     sta scroll_x
     sta scroll_y
     jsr write_helloworld    ; and write a 'hello world'
+    jsr create_sprites
     jsr waitvblank
     lda #$20
     sta $2006
@@ -115,7 +116,7 @@ loadpal_loop:   ; fill background palette
     sta $2005
     lda #$80    ;turn on nmi
     sta $2000
-    lda #%00001010
+    lda #%00011110
     sta $2001
 
 mainloop:
@@ -213,14 +214,14 @@ write_string_loop:
     bne write_string_loop
     rts
 
-sprite1: .byte  0, 7, 1, $60
+sprite1: .byte  0, 7, 1, 50
 sprite2: .byte 60, 2, $20, 60
-sprite3: .byte 60, 3, $20, 60
-sprite4: .byte 60, 4, 0, 60
-sprite5: .byte 60, 5, 0, 60
-sprite6: .byte 60, 6, 0, 60
-sprite7: .byte 60, 7, 0, 60
-sprite8: .byte 60, 8, 0, 60
+sprite3: .byte 60, 3, $20, 68
+sprite4: .byte 60, 4, 0, 0
+sprite5: .byte 60, 5, 0, 8
+sprite6: .byte 60, 6, 0, 16
+sprite7: .byte 60, 7, 0, 24
+sprite8: .byte 60, 8, 0, 32
 
 create_sprites:
     ldx #0
@@ -231,6 +232,43 @@ create_sprites:
     sta $01
     jsr create_sprite
 
+    lda #<sprite3
+    sta $00
+    lda #>sprite3
+    sta $01
+    jsr create_sprite
+
+    lda #<sprite4
+    sta $00
+    lda #>sprite4
+    sta $01
+    jsr create_sprite
+
+    lda #<sprite5
+    sta $00
+    lda #>sprite5
+    sta $01
+    jsr create_sprite
+
+    lda #<sprite6
+    sta $00
+    lda #>sprite6
+    sta $01
+    jsr create_sprite
+
+    lda #<sprite7
+    sta $00
+    lda #>sprite7
+    sta $01
+    jsr create_sprite
+
+    lda #<sprite8
+    sta $00
+    lda #>sprite8
+    sta $01
+    jsr create_sprite
+
+    ldx #252
     lda #<sprite2
     sta $00
     lda #>sprite2
@@ -260,7 +298,7 @@ nmi:
     inc nmi_flag
     lda #$00
     sta $2003
-    lda spritebuf
+    lda #2
     sta $4014
 
     ; should write to $2000 and $2005
