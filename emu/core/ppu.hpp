@@ -108,25 +108,36 @@ private:
     struct OAM {
         uint8 addr;
         uint8 data;
+
+        uint2 sp_counter; // if sp_counter == 0, then mem[addr] points to a sprite's y byte
+        bool inrange;
+
         bool read_ff;
         bool addr_overflow;
+
+        bool sp0_next;
+        bool sp0_curr;
+
         uint8 pattern_low[8], pattern_high[8], attrs[8], xpos[8];
         std::array<uint8, OAM_SIZE> mem;
+
+        void inc()  { ++addr; ++sp_counter; }
+        uint8 read() { return read_ff ? 0xFF : mem[addr]; }
     } oam;
 
     struct {
-        uint8 si; // secondary oam index
-        bool secondary_write_disable;
+        uint8 index;
         std::array<uint8, 8*4> mem;
-        void write_secondary(uint8 val)
-        {
-            if (!secondary_write_disable)
-                mem[si] = val;
-        }
+
+        bool full()           { return index == 32; }
+        void write(uint8 val) { if (!full()) mem[index++] = val; }
     } secondary_oam;
 
     struct Sprite {
-        uint8 y, tile, attr, x;
+        uint8 y;
+        uint8 tile;
+        uint8 attr;
+        uint8 x;
     } sprite;
 
 public:
@@ -155,16 +166,17 @@ private:
     std::pair<uint2, uint2> bg_output();
 
     void update_sprite_counters();
+    void update_sprite_eval_flags(unsigned line);
     std::tuple<uint2, uint2, bool> sp_output();
 
-    uint2 choose_pixel();
+    uint2 choose_pixel(unsigned x);
     void output();
 
     // ppumain.cpp
-    template <unsigned int Line> void lcycle(unsigned int cycle, void (PPU::*)());
+    template <unsigned Line> void lcycle(unsigned cycle, void (PPU::*)(unsigned));
     template <unsigned Cycle> void background_cycle();
-    template <unsigned int Cycle> void ccycle();
-    void cycle_idle() { }
+    template <unsigned Cycle> void ccycle(unsigned line);
+    template <unsigned Cycle> void sprite_eval(unsigned line);
     void begin_frame();
     void cycle_incvhorz();
     void cycle_incvvert();

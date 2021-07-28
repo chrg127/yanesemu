@@ -84,6 +84,41 @@ void PPU::background_cycle()
     if constexpr(Cycle == 0) tile.high = fetch_bg(io.bg_pt_addr, tile.nt, 1, uint8(vram.addr.fine_y));
 }
 
+template <unsigned Cycle>
+void PPU::sprite_eval(unsigned line)
+{
+    if constexpr(Cycle >= 1 && Cycle <= 64) {
+        if constexpr(Cycle == 1) oam.read_ff = 1;
+        if constexpr(Cycle % 2 == 1) { oam.data = oam.read(); }
+        if constexpr(Cycle % 2 == 0) { secondary_oam.write(oam.data); }
+        if constexpr(Cycle == 64) {
+            oam.read_ff = 0;
+            secondary_oam.index = 0;
+        }
+    }
+    if constexpr(Cycle >= 65 && Cycle <= 256) {
+        if constexpr(Cycle % 2 == 1) { oam.data = oam.read(); }
+        if constexpr(Cycle % 2 == 0) {
+            secondary_oam.write(oam.data);
+            update_sprite_eval_flags(line);
+        }
+    }
+    if constexpr(Cycle >= 257 && Cycle <= 320) {
+        if constexpr(Cycle == 257) secondary_oam.index = 0;
+        if constexpr(Cycle % 8 == 1) sprite.y    = secondary_oam.mem[secondary_oam.index++];
+        if constexpr(Cycle % 8 == 2) sprite.tile = secondary_oam.mem[secondary_oam.index++];
+        if constexpr(Cycle % 8 == 3) sprite.attr = secondary_oam.mem[secondary_oam.index++];
+        if constexpr(Cycle % 8 == 4) sprite.x    = secondary_oam.mem[secondary_oam.index];
+        if constexpr(Cycle % 8 == 5) oam.data    = secondary_oam.mem[secondary_oam.index];
+        if constexpr(Cycle % 8 == 6) oam.data    = secondary_oam.mem[secondary_oam.index];
+        if constexpr(Cycle % 8 == 7) oam.data    = secondary_oam.mem[secondary_oam.index];
+        if constexpr(Cycle % 8 == 0) oam.data    = secondary_oam.mem[secondary_oam.index++];
+    }
+    if constexpr ((Cycle >= 321 && Cycle <= 340) || Cycle == 0) {
+        oam.data = secondary_oam.mem[secondary_oam.index];
+    }
+}
+
 /* this function models the cycles for visible lines
  * the fetch pipeline goes like this:
  *
@@ -93,8 +128,8 @@ void PPU::background_cycle()
  * (every 1, 9, 17, ... cycle) some shift registers are filled.
  * at every other step, the shift registers... shift.
  */
-template <unsigned int Cycle>
-void PPU::ccycle()
+template <unsigned Cycle>
+void PPU::ccycle(unsigned line)
 {
     static_assert(Cycle <= 340);
     // NOTE: between cycle 257 - 320 there are garbage fetches
@@ -109,13 +144,14 @@ void PPU::ccycle()
         if constexpr(Cycle == 256)                   cycle_incvvert();
     }
     if constexpr(Cycle == 257) cycle_copyhorz();
+    sprite_eval<Cycle>(line);
 }
 
-using CycleFunc = void (PPU::*)();
+using CycleFunc = void (PPU::*)(unsigned);
 using LineFunc  = void (PPU::*)(unsigned, CycleFunc);
 
-template <unsigned int Line>
-void PPU::lcycle(unsigned int cycle, CycleFunc cycle_fn)
+template <unsigned Line>
+void PPU::lcycle(unsigned cycle, CycleFunc cycle_fn)
 {
     static_assert(Line <= 261);
     assert(cycle <= 340);
@@ -123,18 +159,18 @@ void PPU::lcycle(unsigned int cycle, CycleFunc cycle_fn)
         dbgputc('\n');
     }
     if constexpr(Line < 240) {
-        (this->*cycle_fn)();
+        (this->*cycle_fn)(Line);
     }
     if constexpr(Line == 241)
-        cycle == 1 ? vblank_begin() : cycle_idle();
+        if (cycle == 1)
+            vblank_begin();
     if constexpr(Line == 261) {
-        (this->*cycle_fn)();
+        (this->*cycle_fn)(Line);
         if (cycle == 1)                   vblank_end();
         if (cycle >= 280 && cycle <= 304) cycle_copyvert();
         if (cycle == 340)                 begin_frame();
     }
-    if constexpr(Line == 240 || (Line >= 242 && Line != 261))
-        cycle_idle();
+    if constexpr(Line == 240 || (Line >= 242 && Line != 261)) {}
 }
 
 void PPU::run()
@@ -178,9 +214,8 @@ void PPU::run()
 #undef LCYCLE
 
 #define CCYCLE &PPU::ccycle
-#define IDLE &PPU::cycle_idle
 static constexpr std::array<CycleFunc, PPU_MAX_LCYCLE> cycletab = {
-    IDLE,        CCYCLE<1>,   CCYCLE<2>,   CCYCLE<3>,   CCYCLE<4>,   CCYCLE<5>,   CCYCLE<6>,   CCYCLE<7>,
+    CCYCLE<0>,   CCYCLE<1>,   CCYCLE<2>,   CCYCLE<3>,   CCYCLE<4>,   CCYCLE<5>,   CCYCLE<6>,   CCYCLE<7>,
     CCYCLE<8>,   CCYCLE<9>,   CCYCLE<10>,  CCYCLE<11>,  CCYCLE<12>,  CCYCLE<13>,  CCYCLE<14>,  CCYCLE<15>,
     CCYCLE<16>,  CCYCLE<17>,  CCYCLE<18>,  CCYCLE<19>,  CCYCLE<20>,  CCYCLE<21>,  CCYCLE<22>,  CCYCLE<23>,
     CCYCLE<24>,  CCYCLE<25>,  CCYCLE<26>,  CCYCLE<27>,  CCYCLE<28>,  CCYCLE<29>,  CCYCLE<30>,  CCYCLE<31>,
@@ -212,20 +247,19 @@ static constexpr std::array<CycleFunc, PPU_MAX_LCYCLE> cycletab = {
     CCYCLE<232>, CCYCLE<233>, CCYCLE<234>, CCYCLE<235>, CCYCLE<236>, CCYCLE<237>, CCYCLE<238>, CCYCLE<239>,
     CCYCLE<240>, CCYCLE<241>, CCYCLE<242>, CCYCLE<243>, CCYCLE<244>, CCYCLE<245>, CCYCLE<246>, CCYCLE<247>,
     CCYCLE<248>, CCYCLE<249>, CCYCLE<250>, CCYCLE<251>, CCYCLE<252>, CCYCLE<253>, CCYCLE<254>, CCYCLE<255>,
-    CCYCLE<256>, CCYCLE<257>, IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,
-    IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,
-    IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,
-    IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,
-    IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,
-    IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,
-    IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,
-    IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,        IDLE,
-    IDLE,        CCYCLE<321>, CCYCLE<322>, CCYCLE<323>, CCYCLE<324>, CCYCLE<325>, CCYCLE<326>, CCYCLE<327>,
+    CCYCLE<256>, CCYCLE<257>, CCYCLE<258>, CCYCLE<259>, CCYCLE<260>, CCYCLE<261>, CCYCLE<262>, CCYCLE<263>,
+    CCYCLE<264>, CCYCLE<265>, CCYCLE<266>, CCYCLE<267>, CCYCLE<268>, CCYCLE<269>, CCYCLE<270>, CCYCLE<271>,
+    CCYCLE<272>, CCYCLE<273>, CCYCLE<274>, CCYCLE<275>, CCYCLE<276>, CCYCLE<277>, CCYCLE<278>, CCYCLE<279>,
+    CCYCLE<280>, CCYCLE<281>, CCYCLE<282>, CCYCLE<283>, CCYCLE<284>, CCYCLE<285>, CCYCLE<286>, CCYCLE<287>,
+    CCYCLE<288>, CCYCLE<289>, CCYCLE<290>, CCYCLE<291>, CCYCLE<292>, CCYCLE<293>, CCYCLE<294>, CCYCLE<295>,
+    CCYCLE<296>, CCYCLE<297>, CCYCLE<298>, CCYCLE<299>, CCYCLE<300>, CCYCLE<301>, CCYCLE<302>, CCYCLE<303>,
+    CCYCLE<304>, CCYCLE<305>, CCYCLE<306>, CCYCLE<307>, CCYCLE<308>, CCYCLE<309>, CCYCLE<310>, CCYCLE<311>,
+    CCYCLE<312>, CCYCLE<313>, CCYCLE<314>, CCYCLE<315>, CCYCLE<316>, CCYCLE<317>, CCYCLE<318>, CCYCLE<319>,
+    CCYCLE<320>, CCYCLE<321>, CCYCLE<322>, CCYCLE<323>, CCYCLE<324>, CCYCLE<325>, CCYCLE<326>, CCYCLE<327>,
     CCYCLE<328>, CCYCLE<329>, CCYCLE<330>, CCYCLE<331>, CCYCLE<332>, CCYCLE<333>, CCYCLE<334>, CCYCLE<335>,
     CCYCLE<336>, CCYCLE<337>, CCYCLE<338>, CCYCLE<339>, CCYCLE<340>,
 };
 #undef CCYCLE
-#undef IDLE
 
     const auto linefunc = linetab[lines];
     const auto cyclefunc = cycletab[cycles % PPU_MAX_LCYCLE];

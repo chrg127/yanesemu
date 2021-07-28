@@ -326,6 +326,27 @@ void PPU::update_sprite_counters()
     }
 }
 
+void PPU::update_sprite_eval_flags(unsigned line)
+{
+    // determine if the sprite's y byte is in range and update inrange flag
+    // oam.inrange = oam.sp_counter == 0 ? oam.buf == line : oam.inrange;
+    if (oam.sp_counter == 0)
+        oam.inrange = oam.data == line + 1;
+    if (oam.inrange && !oam.addr_overflow) {
+        // determine if this is a sprite 0 hit
+        if (!io.sp_zero_hit && oam.addr == 0)
+            oam.sp0_next = true;
+        if (!io.sp_overflow && secondary_oam.full())
+            io.sp_overflow = true;
+        oam.inc();
+    } else {
+        oam.inc(); oam.inc(); oam.inc(); oam.inc();
+        if (secondary_oam.full() && !oam.addr_overflow)
+            oam.inc();
+    }
+    oam.addr_overflow = oam.addr == 0;
+}
+
 std::tuple<uint2, uint2, bool> PPU::sp_output()
 {
     if (io.bg_show)
@@ -348,7 +369,7 @@ std::tuple<uint2, uint2, bool> PPU::sp_output()
  *  ^^ palette number (pal) (attributes in tiles and sprites)
  * ^ sprite or background (select)
  */
-uint2 PPU::choose_pixel()
+uint2 PPU::choose_pixel(unsigned x)
 {
     auto [bg_pal, bg_palind]           = bg_output();
     auto [sp_pal, sp_palind, priority] = sp_output();
@@ -361,19 +382,22 @@ uint2 PPU::choose_pixel()
 
     int n = (bg_palind != 0) << 1 | (sp_palind != 0);
     switch (n) {
-    case 0: return bus->read(0x3F00);
+    case 0: default: return bus->read(0x3F00);
     case 1: return getcolor(sp_pal, sp_palind, 1);
     case 2: return getcolor(bg_pal, bg_palind, 0);
-    case 3: return priority ? getcolor(bg_pal, bg_palind, 0)
-                            : getcolor(sp_pal, sp_palind, 1);
-    default: return bus->read(0x3F00);
+    case 3:
+        // check for sprite 0 hit.
+        if (oam.sp0_curr && !io.sp_zero_hit && !(!io.sp_show_left && x <= 7))
+            io.sp_zero_hit = 1;
+        return priority ? getcolor(bg_pal, bg_palind, 0)
+                        : getcolor(sp_pal, sp_palind, 1);
     }
 }
 
 void PPU::output()
 {
-    uint8 pixel = choose_pixel();
     auto x = cycles % PPU_MAX_LCYCLE;
+    uint8 pixel = choose_pixel(x);
     auto y = lines % PPU_MAX_LINES;
     assert((y <= 239 || y == 261) && x <= 256);
     // is there any fucking document that says when i have to output pixels
