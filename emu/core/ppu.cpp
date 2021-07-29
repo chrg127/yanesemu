@@ -260,19 +260,19 @@ uint8 PPU::fetch_attr(uint16 nt, uint16 coarse_y, uint16 coarse_x)
 
 /* A pattern table address is formed this way:
  * 0HRRRRCCCCPTTT
- * H - which table is used, left/right. controlled by io.bg_pt_addr.
- * RRRR CCCC - row, column. controlled by the fetch nt byte.
- * P - bit plane. 0 = get the low byte, 1 = get the high byte. (it is implicitly
- * set to 0 here)
- * TTT - fine y, or the current row. fine y is incremented at cycle 256 of each
- * row. */
-uint8 PPU::fetch_bg(bool base, uint8 nt, bool bitplane, uint3 fine_y)
+ * H - which table is used, left or right.
+ * RRRR CCCC - row, column. Imagine the pattern table as a grid, without
+ * thinking about the real representation.
+ * P - bit plane. 0 = get the low byte, 1 = get the high byte.
+ * TTT - row. A tile is composed of 8 rows, these 3 bits decide which one.
+ */
+uint8 PPU::fetch_pt(bool base, uint8 nt, bool bitplane, uint3 fine_y)
 {
     uint16 addr = base << 12 | nt << 4 | bitplane << 3 | fine_y;
     return bus->read(addr);
 }
 
-void PPU::shift_run()
+void PPU::background_shift_run()
 {
     shift.tile_low  >>= 1;
     shift.tile_high >>= 1;
@@ -282,7 +282,7 @@ void PPU::shift_run()
     shift.attr_high = Util::setbit(shift.attr_high, 7, shift.feed_high);
 }
 
-void PPU::shift_fill()
+void PPU::background_shift_fill()
 {
     // reversing the bits here fixes the bug with reversed tiles.
     // however, i'm pretty sure this is not the solution.
@@ -302,7 +302,7 @@ void PPU::shift_fill()
     shift.feed_low  = (bits >> 1) & 1;
 }
 
-std::pair<uint2, uint2> PPU::bg_output()
+std::pair<uint2, uint2> PPU::background_output()
 {
     if (io.bg_show)
         return std::make_pair(0, 0);
@@ -314,19 +314,7 @@ std::pair<uint2, uint2> PPU::bg_output()
     return std::make_pair(at1 << 1 | at2, hi << 1 | low);
 }
 
-void PPU::update_sprite_counters()
-{
-    for (int i = 0; i < 8; i++) {
-        if (oam.xpos[i] != 0)
-            oam.xpos[i]--;
-        else {
-            oam.pattern_low[i]  >>= 1;
-            oam.pattern_high[i] >>= 1;
-        }
-    }
-}
-
-void PPU::update_sprite_eval_flags(unsigned line)
+void PPU::sprite_update_flags(unsigned line)
 {
     // determine if the sprite's y byte is in range and update inrange flag
     // oam.inrange = oam.sp_counter == 0 ? oam.buf == line : oam.inrange;
@@ -347,11 +335,25 @@ void PPU::update_sprite_eval_flags(unsigned line)
     oam.addr_overflow = oam.addr == 0;
 }
 
-std::tuple<uint2, uint2, bool> PPU::sp_output()
+void PPU::sprite_shift_run()
+{
+    for (int i = 0; i < 8; i++) {
+        if (oam.xpos[i] != 0)
+            oam.xpos[i]--;
+        else {
+            oam.pattern_low[i]  >>= 1;
+            oam.pattern_high[i] >>= 1;
+        }
+    }
+}
+
+std::tuple<uint2, uint2, bool> PPU::sprite_output(unsigned x)
 {
     if (io.bg_show)
         return std::make_tuple(0, 0, 0);
     for (int i = 0; i < 8; i++) {
+        if (oam.xpos[i] != 0)
+            continue;
         bool low  = oam.pattern_low[i] & 1;
         bool high = oam.pattern_low[i] & 1;
         if (low != 0 || high != 0)
@@ -369,10 +371,10 @@ std::tuple<uint2, uint2, bool> PPU::sp_output()
  *  ^^ palette number (pal) (attributes in tiles and sprites)
  * ^ sprite or background (select)
  */
-uint2 PPU::choose_pixel(unsigned x)
+uint2 PPU::output(unsigned x)
 {
-    auto [bg_pal, bg_palind]           = bg_output();
-    auto [sp_pal, sp_palind, priority] = sp_output();
+    auto [bg_pal, bg_palind]           = background_output();
+    auto [sp_pal, sp_palind, priority] = sprite_output(x);
 
     auto getcolor = [this](uint2 pal, uint2 palind, bool select)
     {
@@ -394,10 +396,10 @@ uint2 PPU::choose_pixel(unsigned x)
     }
 }
 
-void PPU::output()
+void PPU::render()
 {
     auto x = cycles % PPU_MAX_LCYCLE;
-    uint8 pixel = choose_pixel(x);
+    uint8 pixel = output(x);
     auto y = lines % PPU_MAX_LINES;
     assert((y <= 239 || y == 261) && x <= 256);
     // is there any fucking document that says when i have to output pixels

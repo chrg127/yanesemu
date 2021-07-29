@@ -31,9 +31,10 @@ class Emulator {
 public:
     Emulator()
     {
-        ppu.on_nmi([this]() {
+        ppu.on_nmi([this](bool nmi_enabled) {
             nmi = true;
-            cpu.fire_nmi();
+            if (nmi_enabled)
+                cpu.fire_nmi();
         });
     }
 

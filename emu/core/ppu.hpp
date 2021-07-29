@@ -43,7 +43,7 @@ private:
     Screen *screen;
     unsigned long cycles = 0;
     unsigned long lines  = 0;
-    std::function<void(void)> nmi_callback;
+    std::function<void(bool)> nmi_callback;
     bool odd_frame;
 
     struct IO {
@@ -87,6 +87,7 @@ private:
         VRAMAddress addr;
         VRAMAddress tmp;
         uint3 fine_x;
+        uint8 buf; // buffer used during background and sprite fetches while rendering
         // simply indicates the VRAM address position. not used anywhere in the PPU though.
         uint16 vx() const { return fine_x      | addr.coarse_x << 3 | (addr.nt & 1) << 8; }
         uint8 vy() const  { return addr.fine_y | addr.coarse_y << 3 | (addr.nt & 2) << 8; }
@@ -156,34 +157,31 @@ private:
     uint8 readreg(uint16 addr);
     void writereg(uint16 addr, uint8 data);
 
-    uint8 fetch_nt(uint15 vram_addr);
-    uint8 fetch_attr(uint16 nt, uint16 coarse_y, uint16 coarse_x);
-    uint8 fetch_bg(bool base, uint8 nt, bool bitplane, uint3 fine_y);
     void copy_v_horzpos();
     void copy_v_vertpos();
-    void shift_run();
-    void shift_fill();
-    std::pair<uint2, uint2> bg_output();
 
-    void update_sprite_counters();
-    void update_sprite_eval_flags(unsigned line);
-    std::tuple<uint2, uint2, bool> sp_output();
+    uint8 fetch_nt(uint15 vram_addr);
+    uint8 fetch_attr(uint16 nt, uint16 coarse_y, uint16 coarse_x);
+    uint8 fetch_pt(bool base, uint8 nt, bool bitplane, uint3 fine_y);
 
-    uint2 choose_pixel(unsigned x);
-    void output();
+    void background_shift_run();
+    void background_shift_fill();
+    std::pair<uint2, uint2> background_output();
+
+    void sprite_shift_run();
+    void sprite_update_flags(unsigned line);
+    std::tuple<uint2, uint2, bool> sprite_output(unsigned x);
+
+    uint2 output(unsigned x);
+    void render();
 
     // ppumain.cpp
-    template <unsigned Line> void lcycle(unsigned cycle, void (PPU::*)(unsigned));
-    template <unsigned Cycle> void background_cycle();
-    template <unsigned Cycle> void ccycle(unsigned line);
+    template <unsigned Cycle> void background_fetch_cycle();
+    template <unsigned Cycle> void sprite_fetch_cycle();
     template <unsigned Cycle> void sprite_eval(unsigned line);
+    template <unsigned Cycle> void ccycle(unsigned line);
+    template <unsigned Line> void lcycle(unsigned cycle, void (PPU::*)(unsigned));
     void begin_frame();
-    void cycle_incvhorz();
-    void cycle_incvvert();
-    void cycle_copyhorz();
-    void cycle_copyvert();
-    void cycle_shift();
-    void cycle_fillshifts();
     void vblank_begin();
     void vblank_end();
 

@@ -16,53 +16,10 @@ void PPU::begin_frame()
     dbgputc(odd_frame ? '\n' : '0');
 }
 
-void PPU::cycle_incvhorz()
-{
-    if (!io.bg_show)
-        return;
-    vram.addr = inc_v_horzpos(vram.addr);
-}
-
-void PPU::cycle_incvvert()
-{
-    if (!io.bg_show)
-        return;
-    vram.addr = inc_v_vertpos(vram.addr);
-}
-
-void PPU::cycle_copyhorz()
-{
-    if (!io.bg_show)
-        return;
-    copy_v_horzpos();
-}
-
-void PPU::cycle_copyvert()
-{
-    if (!io.bg_show)
-        return;
-    copy_v_vertpos();
-}
-
-void PPU::cycle_shift()
-{
-    if (!io.bg_show)
-        return;
-    shift_run();
-}
-
-void PPU::cycle_fillshifts()
-{
-    if (!io.bg_show)
-        return;
-    shift_fill();
-}
-
 void PPU::vblank_begin()
 {
     io.vblank = 1;
-    // if (io.nmi_enabled)
-        nmi_callback();
+    nmi_callback(io.nmi_enabled);
 }
 
 void PPU::vblank_end()
@@ -73,15 +30,34 @@ void PPU::vblank_end()
 }
 
 template <unsigned Cycle>
-void PPU::background_cycle()
+void PPU::background_fetch_cycle()
 {
-    if constexpr(Cycle == 2 || Cycle == 4 || Cycle == 6 || Cycle == 0)
-        if (!io.bg_show)
-            return;
-    if constexpr(Cycle == 2) tile.nt   = fetch_nt(vram.addr.v);
-    if constexpr(Cycle == 4) tile.attr = fetch_attr(vram.addr.nt, vram.addr.coarse_y, vram.addr.coarse_x);
-    if constexpr(Cycle == 6) tile.low  = fetch_bg(io.bg_pt_addr, tile.nt, 0, uint8(vram.addr.fine_y));
-    if constexpr(Cycle == 0) tile.high = fetch_bg(io.bg_pt_addr, tile.nt, 1, uint8(vram.addr.fine_y));
+    if (!io.bg_show)
+        return;
+    if constexpr(Cycle == 1) vram.buf  = fetch_nt(vram.addr.v);
+    if constexpr(Cycle == 2) tile.nt   = vram.buf;
+    if constexpr(Cycle == 3) vram.buf  = fetch_attr(vram.addr.nt, vram.addr.coarse_y, vram.addr.coarse_x);
+    if constexpr(Cycle == 4) tile.attr = vram.buf;
+    if constexpr(Cycle == 5) vram.buf  = fetch_pt(io.bg_pt_addr, tile.nt, 0, uint8(vram.addr.fine_y));
+    if constexpr(Cycle == 6) tile.low  = vram.buf;
+    if constexpr(Cycle == 7) vram.buf  = fetch_pt(io.bg_pt_addr, tile.nt, 1, uint8(vram.addr.fine_y));
+    if constexpr(Cycle == 0) tile.high = vram.buf;
+}
+
+template <unsigned Cycle>
+void PPU::sprite_fetch_cycle()
+{
+    if (!io.sp_show)
+        return;
+    int n = Util::getbits(secondary_oam.index, 2, 3);
+    if constexpr(Cycle == 1) vram.buf = fetch_nt(0);
+    // if constexpr(Cycle == 2)
+    if constexpr(Cycle == 3) vram.buf = fetch_attr(0, 0, 0);
+    // if constexpr(Cycle == 4) oam.xpos[n]  = sprite.x;
+    if constexpr(Cycle == 5) { vram.buf = fetch_pt(io.sp_pt_addr, sprite.tile, 0, /*???*/ 0); oam.attrs[n] = sprite.attr; }
+    if constexpr(Cycle == 6) oam.pattern_low[n] = vram.buf;
+    if constexpr(Cycle == 7) { vram.buf = fetch_pt(io.sp_pt_addr, sprite.tile, 1, /*???*/ 0); oam.xpos[n] = sprite.x; }
+    if constexpr(Cycle == 0) oam.pattern_high[n] = vram.buf;
 }
 
 template <unsigned Cycle>
@@ -100,7 +76,7 @@ void PPU::sprite_eval(unsigned line)
         if constexpr(Cycle % 2 == 1) { oam.data = oam.read(); }
         if constexpr(Cycle % 2 == 0) {
             secondary_oam.write(oam.data);
-            update_sprite_eval_flags(line);
+            sprite_update_flags(line);
         }
     }
     if constexpr(Cycle >= 257 && Cycle <= 320) {
@@ -135,16 +111,30 @@ void PPU::ccycle(unsigned line)
     // NOTE: between cycle 257 - 320 there are garbage fetches
     if constexpr((Cycle >= 1 && Cycle <= 256) || (Cycle >= 321 && Cycle <= 340)) {
         if constexpr(Cycle >= 4 && Cycle <= 256) {
-            output();
+            render();
         }
-        background_cycle<Cycle % 8>();
-        cycle_shift();
-        if constexpr(Cycle % 8 == 1 && Cycle != 1)   cycle_fillshifts();
-        if constexpr(Cycle % 8 == 0 && Cycle != 256) cycle_incvhorz();
-        if constexpr(Cycle == 256)                   cycle_incvvert();
+        if (io.bg_show) {
+            background_fetch_cycle<Cycle % 8>();
+            background_shift_run();
+            if constexpr(Cycle % 8 == 1 && Cycle != 1)   background_shift_fill();
+            if constexpr(Cycle % 8 == 0 && Cycle != 256)
+                vram.addr = inc_v_horzpos(vram.addr);
+            if constexpr(Cycle == 256)
+                vram.addr = inc_v_vertpos(vram.addr);
+        }
+        if (io.sp_show) {
+            sprite_shift_run();
+        }
     }
-    if constexpr(Cycle == 257) cycle_copyhorz();
+
+    if constexpr(Cycle == 257)
+        if (io.bg_show)
+            copy_v_horzpos();
+
     sprite_eval<Cycle>(line);
+    if constexpr(Cycle >= 257 && Cycle <= 320) {
+        sprite_fetch_cycle<Cycle % 8>();
+    }
 }
 
 using CycleFunc = void (PPU::*)(unsigned);
@@ -167,7 +157,9 @@ void PPU::lcycle(unsigned cycle, CycleFunc cycle_fn)
     if constexpr(Line == 261) {
         (this->*cycle_fn)(Line);
         if (cycle == 1)                   vblank_end();
-        if (cycle >= 280 && cycle <= 304) cycle_copyvert();
+        if (cycle >= 280 && cycle <= 304)
+            if (io.bg_show)
+                copy_v_vertpos();
         if (cycle == 340)                 begin_frame();
     }
     if constexpr(Line == 240 || (Line >= 242 && Line != 261)) {}
