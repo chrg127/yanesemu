@@ -86,5 +86,15 @@ std::pair<int, int> PPUDebugger::screen_coords() const
     return { ppu->vram.vx(), ppu->vram.vy() };
 }
 
+uint8 PPUDebugger::read_oam(uint8 addr)
+{
+    return ppu->oam.mem[addr];
+}
+
+void PPUDebugger::write_oam(uint8 addr, uint8 data)
+{
+    ppu->oam.mem[addr] = data;
+}
+
 } // namespace Debugger
 

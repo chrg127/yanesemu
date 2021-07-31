@@ -60,6 +60,8 @@ public:
     uint16 tmp_addr() const;
     uint8 fine_x() const;
     std::pair<int, int> screen_coords() const;
+    uint8 read_oam(uint8 addr);
+    void write_oam(uint8 addr, uint8 data);
 };
 
 struct Debugger {
@@ -90,7 +92,7 @@ struct Debugger {
     };
 
     enum class Loc {
-        RAM, VRAM
+        RAM, VRAM, OAM
     };
 
 private:
@@ -108,22 +110,25 @@ public:
 
     void on_report(auto &&f) { report_callback = f; }
     void run(StepType step_type);
+
     uint8 read_ram(uint16 addr);
     uint8 read_vram(uint14 addr);
+    uint8 read_oam(uint8 addr);
     void write_ram(uint16 addr, uint8 data);
     void write_vram(uint14 addr, uint8 data);
-    unsigned set_breakpoint(Breakpoint &&p);
-    void delete_breakpoint(unsigned index);
-    void stop_tracing();
+    void write_oam(uint8 addr, uint8 data);
 
     void step()          { run(StepType::STEP); }
     void next()          { run(StepType::NEXT); }
     void advance()       { run(StepType::NONE); }
     void advance_frame() { run(StepType::FRAME); }
 
+    unsigned set_breakpoint(Breakpoint &&p);
+    void delete_breakpoint(unsigned index);
     std::vector<Breakpoint> breakpoints() const { return break_list; }
 
     bool start_tracing(std::string_view pathname);
+    void stop_tracing();
 
 private:
     void trace();

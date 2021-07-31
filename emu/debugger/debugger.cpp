@@ -98,20 +98,12 @@ uint8 Debugger::read_ram(uint16 addr)
     return emu->rambus.read(addr);
 }
 
-void Debugger::write_ram(uint16 addr, uint8 data)
-{
-    emu->rambus.write(addr, data);
-}
+void Debugger::write_ram(uint16 addr, uint8 data)   { emu->rambus.write(addr, data); }
 
-uint8 Debugger::read_vram(uint14 addr)
-{
-    return emu->vrambus.read(addr);
-}
-
-void Debugger::write_vram(uint14 addr, uint8 data)
-{
-    return emu->vrambus.write(addr, data);
-}
+uint8 Debugger::read_vram(uint14 addr)              { return emu->vrambus.read(addr); }
+void Debugger::write_vram(uint14 addr, uint8 data)  { emu->vrambus.write(addr, data); }
+uint8 Debugger::read_oam(uint8 addr)                { return ppudbg.read_oam(addr); }
+void Debugger::write_oam(uint8 addr, uint8 data)    { ppudbg.write_oam(addr, data); }
 
 unsigned Debugger::set_breakpoint(Breakpoint &&bp)
 {
@@ -165,6 +157,7 @@ std::function<uint8(Debugger *, uint16)> get_read_fn(Debugger::Loc loc)
     switch (loc) {
     case Debugger::Loc::RAM:  return std::mem_fn(&Debugger::read_ram);
     case Debugger::Loc::VRAM: return std::mem_fn(&Debugger::read_vram);
+    case Debugger::Loc::OAM:  return std::mem_fn(&Debugger::read_oam);
     default: panic("get_read_fn");
     }
 }
@@ -174,6 +167,7 @@ std::function<void(Debugger *, uint16, uint8)> get_write_fn(Debugger::Loc loc)
     switch (loc) {
     case Debugger::Loc::RAM:  return std::mem_fn(&Debugger::write_ram);
     case Debugger::Loc::VRAM: return std::mem_fn(&Debugger::write_vram);
+    case Debugger::Loc::OAM:  return std::mem_fn(&Debugger::write_oam);
     default: panic("get_write_fn");
     }
 }
@@ -186,6 +180,7 @@ std::optional<Debugger::Loc> str_to_memsrc(const std::string &str)
         { "ram", Debugger::Loc::RAM },
         { "ppu", Debugger::Loc::VRAM },
         { "vram", Debugger::Loc::VRAM },
+        { "oam", Debugger::Loc::OAM },
     };
     return Util::map_lookup(srcmap, str);
 }

@@ -85,6 +85,9 @@ static bool check_addr_ranges(uint16 start, uint16 end, Debugger::Loc loc)
     } else if (loc == Debugger::Loc::VRAM && (start > 0x4000 || end > 0x4000)) {
         fmt::print("Invalid range for VRAM.\n");
         return false;
+    } else if (loc == Debugger::Loc::OAM && (start > 0xFF || end > 0xFF)) {
+        fmt::print("Invalid range for source OAM.\n");
+        return false;
     }
     return true;
 }
