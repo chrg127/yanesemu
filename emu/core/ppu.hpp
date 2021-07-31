@@ -172,7 +172,7 @@ private:
     void sprite_update_flags(unsigned line);
     std::tuple<uint2, uint2, bool> sprite_output(unsigned x);
 
-    uint2 output(unsigned x);
+    uint8 output(unsigned x);
     void render();
 
     // ppumain.cpp

@@ -88,9 +88,10 @@ void PPU::power(bool reset)
     // other
     odd_frame = 0;
     lines = cycles = 0;
-    // i have no idea
     vram.addr = 0;
     vram.tmp = 0;
+    std::fill(oam.mem.begin(), oam.mem.end(), 0);
+    std::fill(secondary_oam.mem.begin(), secondary_oam.mem.end(), 0);
 }
 
 void PPU::bus_map(Bus<CPUBUS_SIZE> &rambus)
@@ -298,20 +299,24 @@ void PPU::background_shift_fill()
     int bitno = (bit2 << 1 | bit1) * 2;
 
     uint2 bits = Util::getbits(tile.attr, bitno, 2);
-    shift.feed_high = bits & 1;
-    shift.feed_low  = (bits >> 1) & 1;
+    shift.feed_high = bits >> 1 & 1;
+    shift.feed_low  = bits & 1;
 }
 
 std::pair<uint2, uint2> PPU::background_output()
 {
-    if (io.bg_show)
+    if (!io.bg_show)
         return std::make_pair(0, 0);
     uint8 mask = 1UL << vram.fine_x;
     bool hi    = shift.tile_high & mask;
     bool low   = shift.tile_low  & mask;
     bool at1   = shift.attr_high & mask;
     bool at2   = shift.attr_low  & mask;
-    return std::make_pair(at1 << 1 | at2, hi << 1 | low);
+    uint2 f = at1 << 1 | at2;
+    uint2 s = hi << 1 | low;
+    // fmt::print("f: {:02X}\n", f.value());
+    // fmt::print("s: {:02X}\n", s.value());
+    return std::make_pair(f, s);
 }
 
 void PPU::sprite_update_flags(unsigned line)
@@ -349,7 +354,7 @@ void PPU::sprite_shift_run()
 
 std::tuple<uint2, uint2, bool> PPU::sprite_output(unsigned x)
 {
-    if (io.bg_show)
+    if (!io.sp_show)
         return std::make_tuple(0, 0, 0);
     for (int i = 0; i < 8; i++) {
         if (oam.xpos[i] != 0)
@@ -371,17 +376,18 @@ std::tuple<uint2, uint2, bool> PPU::sprite_output(unsigned x)
  *  ^^ palette number (pal) (attributes in tiles and sprites)
  * ^ sprite or background (select)
  */
-uint2 PPU::output(unsigned x)
+uint8 PPU::output(unsigned x)
 {
     auto [bg_pal, bg_palind]           = background_output();
     auto [sp_pal, sp_palind, priority] = sprite_output(x);
 
-    auto getcolor = [this](uint2 pal, uint2 palind, bool select)
+    auto getcolor = [this](uint2 pal, uint2 palind, bool select) -> uint8
     {
         uint5 n = select << 4 | pal << 2 | palind;
         return bus->read(0x3F00 + n);
     };
 
+    // return getcolor(bg_pal, bg_palind, 0);
     int n = (bg_palind != 0) << 1 | (sp_palind != 0);
     switch (n) {
     case 0: default: return bus->read(0x3F00);

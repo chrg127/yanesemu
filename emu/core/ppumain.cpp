@@ -32,8 +32,6 @@ void PPU::vblank_end()
 template <unsigned Cycle>
 void PPU::background_fetch_cycle()
 {
-    if (!io.bg_show)
-        return;
     if constexpr(Cycle == 1) vram.buf  = fetch_nt(vram.addr.v);
     if constexpr(Cycle == 2) tile.nt   = vram.buf;
     if constexpr(Cycle == 3) vram.buf  = fetch_attr(vram.addr.nt, vram.addr.coarse_y, vram.addr.coarse_x);
@@ -63,6 +61,8 @@ void PPU::sprite_fetch_cycle()
 template <unsigned Cycle>
 void PPU::sprite_eval(unsigned line)
 {
+    if (!io.sp_show)
+        return;
     if constexpr(Cycle >= 1 && Cycle <= 64) {
         if constexpr(Cycle == 1) oam.read_ff = 1;
         if constexpr(Cycle % 2 == 1) { oam.data = oam.read(); }
@@ -95,28 +95,19 @@ void PPU::sprite_eval(unsigned line)
     }
 }
 
-/* this function models the cycles for visible lines
- * the fetch pipeline goes like this:
- *
- *   nt byte -> attr byte -> low bg byte -> high bg byte
- *
- * every step requires two cycles. at the start of the pipeline
- * (every 1, 9, 17, ... cycle) some shift registers are filled.
- * at every other step, the shift registers... shift.
- */
 template <unsigned Cycle>
 void PPU::ccycle(unsigned line)
 {
     static_assert(Cycle <= 340);
     // NOTE: between cycle 257 - 320 there are garbage fetches
     if constexpr((Cycle >= 1 && Cycle <= 256) || (Cycle >= 321 && Cycle <= 340)) {
-        if constexpr(Cycle >= 4 && Cycle <= 256) {
+        if constexpr(Cycle <= 256)
             render();
-        }
         if (io.bg_show) {
             background_fetch_cycle<Cycle % 8>();
             background_shift_run();
-            if constexpr(Cycle % 8 == 1 && Cycle != 1)   background_shift_fill();
+            if constexpr(Cycle % 8 == 1 && Cycle != 1)
+                background_shift_fill();
             if constexpr(Cycle % 8 == 0 && Cycle != 256)
                 vram.addr = inc_v_horzpos(vram.addr);
             if constexpr(Cycle == 256)
@@ -131,10 +122,11 @@ void PPU::ccycle(unsigned line)
         if (io.bg_show)
             copy_v_horzpos();
 
+    if constexpr(Cycle >= 257 && Cycle <= 320)
+        if (io.sp_show)
+            sprite_fetch_cycle<Cycle % 8>();
+
     sprite_eval<Cycle>(line);
-    if constexpr(Cycle >= 257 && Cycle <= 320) {
-        sprite_fetch_cycle<Cycle % 8>();
-    }
 }
 
 using CycleFunc = void (PPU::*)(unsigned);
@@ -145,24 +137,22 @@ void PPU::lcycle(unsigned cycle, CycleFunc cycle_fn)
 {
     static_assert(Line <= 261);
     assert(cycle <= 340);
-    if (cycle == 0) {
-        dbgputc('\n');
-    }
-    if constexpr(Line < 240) {
+    if constexpr(Line < 240)
         (this->*cycle_fn)(Line);
-    }
     if constexpr(Line == 241)
         if (cycle == 1)
             vblank_begin();
     if constexpr(Line == 261) {
         (this->*cycle_fn)(Line);
-        if (cycle == 1)                   vblank_end();
-        if (cycle >= 280 && cycle <= 304)
-            if (io.bg_show)
-                copy_v_vertpos();
-        if (cycle == 340)                 begin_frame();
+        if (cycle == 1)
+            vblank_end();
+        if (io.bg_show && cycle >= 280 && cycle <= 304)
+            copy_v_vertpos();
+        if (cycle == 340)
+            begin_frame();
     }
-    if constexpr(Line == 240 || (Line >= 242 && Line != 261)) {}
+    // if constexpr(Line == 240 || (Line >= 242 && Line != 261))
+    //     ;
 }
 
 void PPU::run()
