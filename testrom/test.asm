@@ -81,8 +81,8 @@ resetram:
     lda #0          ; disable all apu channels
     sta $4015
 
-    jsr waitvblank  ; wait again...
-    jsr clear_spbuf ; clear oam and nametables
+    jsr waitvblank
+    jsr clear_spbuf
     jsr clearnt
 
     lda $2002   ; reset latch
@@ -174,7 +174,7 @@ gamecode:
 write_helloworld:
     lda #$20
     sta $02
-    lda #$0A
+    lda #$00
     sta $03
     lda #<hellostring
     sta $00
@@ -190,7 +190,7 @@ write_helloworld:
     lda #$00
     sta $2006
     ldx #$FF
-    lda #$55
+    lda #$aa
 pal_loop:
     sta $2007
     dex

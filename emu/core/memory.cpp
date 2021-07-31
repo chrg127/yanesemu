@@ -43,10 +43,6 @@ void Memory::bus_map(Bus<CPUBUS_SIZE> &rambus, Bus<PPUBUS_SIZE> &vrambus, Mirror
             palmem[addr & 0x1F] = data;
         });
 
-    vrambus.map(NT_START, PAL_START,
-        [](uint16 addr)             { return 0; },
-        [](uint16 addr, uint8 data) { /*******/ });
-
     const auto decode = get_decode(mirroring);
     vrambus.map(NT_START, PAL_START,
         [this, decode](uint16 addr)
