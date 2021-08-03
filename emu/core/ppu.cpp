@@ -312,19 +312,13 @@ std::pair<uint2, uint2> PPU::background_output()
     bool low   = shift.tile_low  & mask;
     bool at1   = shift.attr_high & mask;
     bool at2   = shift.attr_low  & mask;
-    uint2 f = at1 << 1 | at2;
-    uint2 s = hi << 1 | low;
-    // fmt::print("f: {:02X}\n", f.value());
-    // fmt::print("s: {:02X}\n", s.value());
-    return std::make_pair(f, s);
+    return std::make_pair(at1 << 1 | at2, hi << 1 | low);
 }
 
 void PPU::sprite_update_flags(unsigned line)
 {
-    // determine if the sprite's y byte is in range and update inrange flag
-    // oam.inrange = oam.sp_counter == 0 ? oam.buf == line : oam.inrange;
     if (oam.sp_counter == 0)
-        oam.inrange = oam.data == line + 1;
+        oam.inrange = (line - oam.data) < 8;
     if (oam.inrange && !oam.addr_overflow) {
         // determine if this is a sprite 0 hit
         if (!io.sp_zero_hit && oam.addr == 0)
@@ -360,11 +354,11 @@ std::tuple<uint2, uint2, bool> PPU::sprite_output(unsigned x)
         if (oam.xpos[i] != 0)
             continue;
         bool low  = oam.pattern_low[i] & 1;
-        bool high = oam.pattern_low[i] & 1;
+        bool high = oam.pattern_high[i] & 1;
         if (low != 0 || high != 0)
             return std::make_tuple(
-                high << 1 | low,
                 Util::getbits(oam.attrs[i], 0, 2),
+                high << 1 | low,
                 Util::getbit(oam.attrs[i], 5)
             );
     }
@@ -408,13 +402,7 @@ void PPU::render()
     uint8 pixel = output(x);
     auto y = lines % PPU_MAX_LINES;
     assert((y <= 239 || y == 261) && x <= 256);
-    // is there any fucking document that says when i have to output pixels
-    // and doesn't have a shitty explanation?
-    if (x == 256)
-        return;
-    if (y == 261)
-        return;
-    screen->output(x, y, pixel);
+    screen->output(x-1, y, pixel);
 }
 
 } // namespace Core
