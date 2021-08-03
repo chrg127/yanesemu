@@ -44,10 +44,6 @@ void CPU::bus_map(Bus<CPUBUS_SIZE> &rambus)
 
 void CPU::run()
 {
-    if (dma.flag)
-        oamdma_loop(dma.page);
-    if (!signal.interrupt_pending)
-        execute(fetch());
     if (signal.execnmi) {
         signal.execnmi = 0;
         cycle();
@@ -60,6 +56,11 @@ void CPU::run()
         interrupt();
         return;
     }
+    if (dma.flag) {
+        oamdma_loop(dma.page);
+        return;
+    }
+    execute(fetch());
 }
 
 void CPU::fire_irq()
@@ -467,6 +468,7 @@ void CPU::oamdma_loop(uint8 page)
         cycle();
     while (start <= end)
         writemem(0x2004, readmem(start++));
+    dma.flag = false;
 }
 
 } // namespace Core

@@ -72,7 +72,6 @@ class CPU {
     } r;
 
     struct {
-        bool interrupt_pending = 0;
         bool nmipending = false;
         bool irqpending = false;
         bool resetpending = false;
