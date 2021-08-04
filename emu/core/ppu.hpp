@@ -131,7 +131,7 @@ private:
         std::array<uint8, 8*4> mem;
 
         bool full()           { return index == 32; }
-        void write(uint8 val) { if (!full()) mem[index++] = val; }
+        void write(uint8 val) { if (!full()) mem[index] = val; }
     } secondary_oam;
 
     struct Sprite {

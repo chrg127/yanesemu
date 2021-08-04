@@ -214,14 +214,14 @@ write_string_loop:
     bne write_string_loop
     rts
 
-sprite1: .byte  0, 7, 1, 50
-sprite2: .byte 60, 2, $20, 60
-sprite3: .byte 60, 3, $20, 68
-sprite4: .byte 60, 4, 0, 0
-sprite5: .byte 60, 5, 0, 8
-sprite6: .byte 60, 6, 0, 16
-sprite7: .byte 60, 7, 0, 24
-sprite8: .byte 60, 8, 0, 32
+sprite1: .byte  4, 4, 1, 0
+sprite2: .byte  60, 2, 0, 8
+sprite3: .byte  60, 3, 0, 16
+sprite4: .byte  60, 4, 0, 24
+sprite5: .byte  60, 5, 0, 32
+sprite6: .byte  60, 6, 0, 40
+sprite7: .byte  60, 7, 0, 48
+sprite8: .byte  60, 8, 0, 56
 
 create_sprites:
     ldx #0

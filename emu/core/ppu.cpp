@@ -326,6 +326,7 @@ void PPU::sprite_update_flags(unsigned line)
         if (!io.sp_overflow && secondary_oam.full())
             io.sp_overflow = true;
         oam.inc();
+        secondary_oam.index++;
     } else {
         oam.inc(); oam.inc(); oam.inc(); oam.inc();
         if (secondary_oam.full() && !oam.addr_overflow)

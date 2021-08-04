@@ -51,18 +51,16 @@ void PPU::sprite_fetch_cycle(unsigned line)
     if constexpr(Cycle == 3) vram.buf = fetch_attr(0, 0, 0);
     // if constexpr(Cycle == 4) oam.xpos[n]  = sprite.x;
     if constexpr(Cycle == 5) {
-        // uint2 row = line - sprite.y;
-        // if (row >= 8)
-        //     panic("y = {} line = {}\n", sprite.y, line);
-        vram.buf = fetch_pt(io.sp_pt_addr, sprite.tile, 0, 0);
+        uint8 row_nottrunc = line - sprite.y;
+        // fmt::print("row_nottrunc = {:X}, line = {}, cycle = {}\n", row_nottrunc, line, Cycle);
+        uint3 row = row_nottrunc;
+        vram.buf = fetch_pt(io.sp_pt_addr, sprite.tile, 0, row);
         oam.attrs[n] = sprite.attr;
     }
     if constexpr(Cycle == 6) oam.pattern_low[n] = vram.buf;
     if constexpr(Cycle == 7) {
-        // uint2 row = line - sprite.y;
-        // if (row >= 8)
-        //     panic("y = {} line = {}\n", sprite.y, line);
-        vram.buf = fetch_pt(io.sp_pt_addr, sprite.tile, 1, 0);
+        uint3 row = line - sprite.y;
+        vram.buf = fetch_pt(io.sp_pt_addr, sprite.tile, 1, row);
         oam.xpos[n] = sprite.x;
     }
     if constexpr(Cycle == 0) oam.pattern_high[n] = vram.buf;
@@ -109,7 +107,7 @@ void PPU::ccycle(unsigned line)
             sprite_shift_run();
         if constexpr(Cycle >= 257 && Cycle <= 320) {
             if constexpr(Cycle == 257) secondary_oam.index = 0;
-            sprite_fetch_cycle<Cycle % 8>(line);
+            sprite_fetch_cycle <Cycle % 8>(line);
             sprite_fetch_cycle2<Cycle % 8>();
             oam.addr = 0;
         }
@@ -119,7 +117,7 @@ void PPU::ccycle(unsigned line)
         if constexpr(Cycle >= 1 && Cycle <= 64) {
             if constexpr(Cycle == 1) { oam.read_ff = 1; secondary_oam.index = 0; }
             if constexpr(Cycle % 2 == 1) { oam.data = oam.read(); }
-            if constexpr(Cycle % 2 == 0) { secondary_oam.write(oam.data); }
+            if constexpr(Cycle % 2 == 0) { secondary_oam.write(oam.data); secondary_oam.index++; }
             if constexpr(Cycle == 64) {
                 oam.read_ff = 0;
                 secondary_oam.index = 0;
