@@ -43,67 +43,54 @@ void PPU::background_fetch_cycle()
 }
 
 template <unsigned Cycle>
-void PPU::sprite_fetch_cycle()
+void PPU::sprite_fetch_cycle(unsigned line)
 {
-    if (!io.sp_show)
-        return;
     int n = Util::getbits(secondary_oam.index, 2, 3);
     if constexpr(Cycle == 1) vram.buf = fetch_nt(0);
     // if constexpr(Cycle == 2)
     if constexpr(Cycle == 3) vram.buf = fetch_attr(0, 0, 0);
     // if constexpr(Cycle == 4) oam.xpos[n]  = sprite.x;
-    if constexpr(Cycle == 5) { vram.buf = fetch_pt(io.sp_pt_addr, sprite.tile, 0, /*???*/ 0); oam.attrs[n] = sprite.attr; }
+    if constexpr(Cycle == 5) {
+        // uint2 row = line - sprite.y;
+        // if (row >= 8)
+        //     panic("y = {} line = {}\n", sprite.y, line);
+        vram.buf = fetch_pt(io.sp_pt_addr, sprite.tile, 0, 0);
+        oam.attrs[n] = sprite.attr;
+    }
     if constexpr(Cycle == 6) oam.pattern_low[n] = vram.buf;
-    if constexpr(Cycle == 7) { vram.buf = fetch_pt(io.sp_pt_addr, sprite.tile, 1, /*???*/ 0); oam.xpos[n] = sprite.x; }
+    if constexpr(Cycle == 7) {
+        // uint2 row = line - sprite.y;
+        // if (row >= 8)
+        //     panic("y = {} line = {}\n", sprite.y, line);
+        vram.buf = fetch_pt(io.sp_pt_addr, sprite.tile, 1, 0);
+        oam.xpos[n] = sprite.x;
+    }
     if constexpr(Cycle == 0) oam.pattern_high[n] = vram.buf;
 }
 
 template <unsigned Cycle>
-void PPU::sprite_eval(unsigned line)
+void PPU::sprite_fetch_cycle2()
 {
-    if (!io.sp_show)
-        return;
-    if constexpr(Cycle >= 1 && Cycle <= 64) {
-        if constexpr(Cycle == 1) oam.read_ff = 1;
-        if constexpr(Cycle % 2 == 1) { oam.data = oam.read(); }
-        if constexpr(Cycle % 2 == 0) { secondary_oam.write(oam.data); }
-        if constexpr(Cycle == 64) {
-            oam.read_ff = 0;
-            secondary_oam.index = 0;
-        }
-    }
-    if constexpr(Cycle >= 65 && Cycle <= 256) {
-        if constexpr(Cycle % 2 == 1) { oam.data = oam.read(); }
-        if constexpr(Cycle % 2 == 0) {
-            secondary_oam.write(oam.data);
-            sprite_update_flags(line);
-        }
-    }
-    if constexpr(Cycle >= 257 && Cycle <= 320) {
-        if constexpr(Cycle == 257) secondary_oam.index = 0;
-        if constexpr(Cycle % 8 == 1) sprite.y    = secondary_oam.mem[secondary_oam.index++];
-        if constexpr(Cycle % 8 == 2) sprite.tile = secondary_oam.mem[secondary_oam.index++];
-        if constexpr(Cycle % 8 == 3) sprite.attr = secondary_oam.mem[secondary_oam.index++];
-        if constexpr(Cycle % 8 == 4) sprite.x    = secondary_oam.mem[secondary_oam.index];
-        if constexpr(Cycle % 8 == 5) oam.data    = secondary_oam.mem[secondary_oam.index];
-        if constexpr(Cycle % 8 == 6) oam.data    = secondary_oam.mem[secondary_oam.index];
-        if constexpr(Cycle % 8 == 7) oam.data    = secondary_oam.mem[secondary_oam.index];
-        if constexpr(Cycle % 8 == 0) oam.data    = secondary_oam.mem[secondary_oam.index++];
-    }
-    if constexpr ((Cycle >= 321 && Cycle <= 340) || Cycle == 0) {
-        oam.data = secondary_oam.mem[secondary_oam.index];
-    }
+    if constexpr(Cycle == 1) sprite.y    = secondary_oam.mem[secondary_oam.index++];
+    if constexpr(Cycle == 2) sprite.tile = secondary_oam.mem[secondary_oam.index++];
+    if constexpr(Cycle == 3) sprite.attr = secondary_oam.mem[secondary_oam.index++];
+    if constexpr(Cycle == 4) sprite.x    = secondary_oam.mem[secondary_oam.index];
+    if constexpr(Cycle == 5) oam.data    = secondary_oam.mem[secondary_oam.index];
+    if constexpr(Cycle == 6) oam.data    = secondary_oam.mem[secondary_oam.index];
+    if constexpr(Cycle == 7) oam.data    = secondary_oam.mem[secondary_oam.index];
+    if constexpr(Cycle == 0) oam.data    = secondary_oam.mem[secondary_oam.index++];
 }
 
 template <unsigned Cycle>
 void PPU::ccycle(unsigned line)
 {
-    static_assert(Cycle <= 340);
-    // NOTE: between cycle 257 - 320 there are garbage fetches
-    if constexpr((Cycle >= 1 && Cycle <= 256) || (Cycle >= 321 && Cycle <= 340)) {
-        if constexpr(Cycle <= 256)
+    if constexpr(Cycle >= 1 && Cycle <= 256) {
+        if (line != 261)
             render();
-        if (io.bg_show) {
+    }
+
+    if (io.bg_show) {
+        if constexpr((Cycle >= 1 && Cycle <= 256) || (Cycle >= 321 && Cycle <= 340)) {
             background_fetch_cycle<Cycle % 8>();
             background_shift_run();
             if constexpr(Cycle % 8 == 1 && Cycle != 1)
@@ -113,20 +100,43 @@ void PPU::ccycle(unsigned line)
             if constexpr(Cycle == 256)
                 vram.addr = inc_v_vertpos(vram.addr);
         }
-        if (io.sp_show) {
+        if constexpr(Cycle == 257)
+            copy_v_horzpos();
+    }
+
+    if (io.sp_show) {
+        if constexpr(Cycle >= 1 && Cycle <= 256)
             sprite_shift_run();
+        if constexpr(Cycle >= 257 && Cycle <= 320) {
+            if constexpr(Cycle == 257) secondary_oam.index = 0;
+            sprite_fetch_cycle<Cycle % 8>(line);
+            sprite_fetch_cycle2<Cycle % 8>();
+            oam.addr = 0;
         }
     }
 
-    if constexpr(Cycle == 257)
-        if (io.bg_show)
-            copy_v_horzpos();
-
-    if constexpr(Cycle >= 257 && Cycle <= 320)
-        if (io.sp_show)
-            sprite_fetch_cycle<Cycle % 8>();
-
-    sprite_eval<Cycle>(line);
+    if (io.sp_show && line != 261) {
+        if constexpr(Cycle >= 1 && Cycle <= 64) {
+            if constexpr(Cycle == 1) { oam.read_ff = 1; secondary_oam.index = 0; }
+            if constexpr(Cycle % 2 == 1) { oam.data = oam.read(); }
+            if constexpr(Cycle % 2 == 0) { secondary_oam.write(oam.data); }
+            if constexpr(Cycle == 64) {
+                oam.read_ff = 0;
+                secondary_oam.index = 0;
+                oam.sp_counter = 0;
+            }
+        }
+        if constexpr(Cycle >= 65 && Cycle <= 256) {
+            if constexpr(Cycle % 2 == 1) { oam.data = oam.read(); }
+            if constexpr(Cycle % 2 == 0) {
+                secondary_oam.write(oam.data);
+                sprite_update_flags(line);
+            }
+        }
+        if constexpr((Cycle >= 321 && Cycle <= 340) || Cycle == 0) {
+            oam.data = secondary_oam.mem[secondary_oam.index];
+        }
+    }
 }
 
 using CycleFunc = void (PPU::*)(unsigned);

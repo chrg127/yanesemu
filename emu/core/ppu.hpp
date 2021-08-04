@@ -177,8 +177,9 @@ private:
 
     // ppumain.cpp
     template <unsigned Cycle> void background_fetch_cycle();
-    template <unsigned Cycle> void sprite_fetch_cycle();
-    template <unsigned Cycle> void sprite_eval(unsigned line);
+    template <unsigned Cycle> void sprite_fetch_cycle(unsigned line);
+    template <unsigned Cycle> void sprite_fetch_cycle2();
+    // template <unsigned Cycle> void sprite_eval(unsigned line);
     template <unsigned Cycle> void ccycle(unsigned line);
     template <unsigned Line> void lcycle(unsigned cycle, void (PPU::*)(unsigned));
     void begin_frame();
