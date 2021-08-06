@@ -32,7 +32,7 @@ uint8 PPUDebugger::getreg(uint16 addr) const
     case 0x2006: return !ppu->io.scroll_latch ? ppu->vram.tmp.v & 0xFF
                                               : ppu->vram.tmp.v >> 8 & 0xFF;
     case 0x2007: return ppu->vram.addr.v < 0x3F00 ? ppu->io.data_buf
-                                                  : ppu->bus->read(ppu->vram.addr.v);
+                                                  : ppu->bus->read(ppu->vram.addr.as_u14());
     default: return 0xFF;
     }
 }
