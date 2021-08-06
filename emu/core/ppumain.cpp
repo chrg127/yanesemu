@@ -1,19 +1,8 @@
-#ifdef PRINT_FRAME
-#define dbgputc(c) do { std::fputc(c, stderr); } while (0)
-#else
-#define dbgputc(c) ;
-#endif
-
-// called at (340, 261)
 void PPU::begin_frame()
 {
-    assert(lines%PPU_MAX_LINES == PPU_MAX_LINES-1
-        && cycles%PPU_MAX_LCYCLE == PPU_MAX_LCYCLE-1
-        && "begin_frame() called when not at the beginning of a frame");
     lines = 0;
     cycles = 0;
     odd_frame ^= 1;
-    dbgputc(odd_frame ? '\n' : '0');
 }
 
 void PPU::vblank_begin()
@@ -32,56 +21,51 @@ void PPU::vblank_end()
 template <unsigned Cycle>
 void PPU::background_fetch_cycle()
 {
-    if constexpr(Cycle == 1) vram.buf  = fetch_nt(vram.addr.v);
-    if constexpr(Cycle == 2) tile.nt   = vram.buf;
-    if constexpr(Cycle == 3) vram.buf  = fetch_attr(vram.addr.nt, vram.addr.coarse_y, vram.addr.coarse_x);
-    if constexpr(Cycle == 4) tile.attr = vram.buf;
-    if constexpr(Cycle == 5) vram.buf  = fetch_pt(io.bg_pt_addr, tile.nt, 0, uint8(vram.addr.fine_y));
-    if constexpr(Cycle == 6) tile.low  = vram.buf;
-    if constexpr(Cycle == 7) vram.buf  = fetch_pt(io.bg_pt_addr, tile.nt, 1, uint8(vram.addr.fine_y));
-    if constexpr(Cycle == 0) tile.high = vram.buf;
+    if constexpr(Cycle == 1) vram.buf     = fetch_nt(vram.addr.v);
+    if constexpr(Cycle == 2) tile.nt      = vram.buf;
+    if constexpr(Cycle == 3) vram.buf     = fetch_attr(vram.addr.nt, vram.addr.coarse_y, vram.addr.coarse_x);
+    if constexpr(Cycle == 4) tile.attr    = vram.buf;
+    if constexpr(Cycle == 5) vram.buf     = fetch_pt(io.bg_pt_addr, tile.nt, 0, uint8(vram.addr.fine_y));
+    if constexpr(Cycle == 6) tile.pt_low  = vram.buf;
+    if constexpr(Cycle == 7) vram.buf     = fetch_pt(io.bg_pt_addr, tile.nt, 1, uint8(vram.addr.fine_y));
+    if constexpr(Cycle == 0) tile.pt_high = vram.buf;
 }
 
 template <unsigned Cycle>
-void PPU::sprite_fetch_cycle(unsigned line)
+void PPU::sprite_fetch_cycle(uint3 n, unsigned line)
 {
-    int n = Util::getbits(secondary_oam.index, 2, 3);
-    if constexpr(Cycle == 1) vram.buf = fetch_nt(0);
-    // if constexpr(Cycle == 2)
-    if constexpr(Cycle == 3) vram.buf = fetch_attr(0, 0, 0);
-    // if constexpr(Cycle == 4) oam.xpos[n]  = sprite.x;
-    if constexpr(Cycle == 5) {
-        uint8 row_nottrunc = line - sprite.y;
-        // fmt::print("row_nottrunc = {:X}, line = {}, cycle = {}\n", row_nottrunc, line, Cycle);
-        uint3 row = row_nottrunc;
-        vram.buf = fetch_pt(io.sp_pt_addr, sprite.tile, 0, row);
-        oam.attrs[n] = sprite.attr;
-    }
-    if constexpr(Cycle == 6) oam.pattern_low[n] = vram.buf;
-    if constexpr(Cycle == 7) {
-        uint3 row = line - sprite.y;
-        vram.buf = fetch_pt(io.sp_pt_addr, sprite.tile, 1, row);
-        oam.xpos[n] = sprite.x;
-    }
-    if constexpr(Cycle == 0) oam.pattern_high[n] = vram.buf;
+    if constexpr(Cycle == 1) vram.buf       = fetch_nt(0);
+    // nothing happens on cycle 2
+    if constexpr(Cycle == 3) { vram.buf     = fetch_attr(0, 0, 0); oam.attrs[n] = sprite.attr; }
+    if constexpr(Cycle == 4) oam.xpos[n]    = sprite.x;
+    if constexpr(Cycle == 5) vram.buf       = fetch_pt(io.sp_pt_addr, sprite.nt, 0, uint3(line - sprite.y));
+    if constexpr(Cycle == 6) oam.pt_low[n]  = vram.buf;
+    if constexpr(Cycle == 7) vram.buf       = fetch_pt(io.sp_pt_addr, sprite.nt, 1, uint3(line - sprite.y));
+    if constexpr(Cycle == 0) oam.pt_high[n] = vram.buf;
 }
 
 template <unsigned Cycle>
-void PPU::sprite_fetch_cycle2()
+void PPU::sprite_read_secondary()
 {
     if constexpr(Cycle == 1) sprite.y    = secondary_oam.mem[secondary_oam.index++];
-    if constexpr(Cycle == 2) sprite.tile = secondary_oam.mem[secondary_oam.index++];
+    if constexpr(Cycle == 2) sprite.nt   = secondary_oam.mem[secondary_oam.index++];
     if constexpr(Cycle == 3) sprite.attr = secondary_oam.mem[secondary_oam.index++];
-    if constexpr(Cycle == 4) sprite.x    = secondary_oam.mem[secondary_oam.index];
-    if constexpr(Cycle == 5) oam.data    = secondary_oam.mem[secondary_oam.index];
-    if constexpr(Cycle == 6) oam.data    = secondary_oam.mem[secondary_oam.index];
-    if constexpr(Cycle == 7) oam.data    = secondary_oam.mem[secondary_oam.index];
+    if constexpr(Cycle == 4) sprite.x    = secondary_oam.mem[secondary_oam.index  ];
+    if constexpr(Cycle == 5) oam.data    = secondary_oam.mem[secondary_oam.index  ];
+    if constexpr(Cycle == 6) oam.data    = secondary_oam.mem[secondary_oam.index  ];
+    if constexpr(Cycle == 7) oam.data    = secondary_oam.mem[secondary_oam.index  ];
     if constexpr(Cycle == 0) oam.data    = secondary_oam.mem[secondary_oam.index++];
 }
 
 template <unsigned Cycle>
-void PPU::ccycle(unsigned line)
+void PPU::cycle(unsigned line)
 {
+    if constexpr(Cycle == 0) {
+        if (oam.sp0_next) {
+            oam.sp0_curr = 1;
+            oam.sp0_next = 0;
+        }
+    }
     if constexpr(Cycle >= 1 && Cycle <= 256) {
         if (line != 261)
             render();
@@ -91,15 +75,11 @@ void PPU::ccycle(unsigned line)
         if constexpr((Cycle >= 1 && Cycle <= 256) || (Cycle >= 321 && Cycle <= 340)) {
             background_fetch_cycle<Cycle % 8>();
             background_shift_run();
-            if constexpr(Cycle % 8 == 1 && Cycle != 1)
-                background_shift_fill();
-            if constexpr(Cycle % 8 == 0 && Cycle != 256)
-                vram.addr = inc_v_horzpos(vram.addr);
-            if constexpr(Cycle == 256)
-                vram.addr = inc_v_vertpos(vram.addr);
+            if constexpr(Cycle % 8 == 1) background_shift_fill();
+            if constexpr(Cycle % 8 == 0) vram.addr = inc_v_horzpos(vram.addr);
+            if constexpr(Cycle == 256)   vram.addr = inc_v_vertpos(vram.addr);
         }
-        if constexpr(Cycle == 257)
-            copy_v_horzpos();
+        if constexpr(Cycle == 257) copy_v_horzpos();
     }
 
     if (io.sp_show) {
@@ -107,8 +87,9 @@ void PPU::ccycle(unsigned line)
             sprite_shift_run();
         if constexpr(Cycle >= 257 && Cycle <= 320) {
             if constexpr(Cycle == 257) secondary_oam.index = 0;
-            sprite_fetch_cycle <Cycle % 8>(line);
-            sprite_fetch_cycle2<Cycle % 8>();
+            uint3 sprite_num = Util::getbits(secondary_oam.index, 2, 3);
+            sprite_read_secondary<Cycle % 8>();
+            sprite_fetch_cycle<Cycle % 8>(sprite_num, line);
             oam.addr = 0;
         }
     }
@@ -117,11 +98,11 @@ void PPU::ccycle(unsigned line)
         if constexpr(Cycle >= 1 && Cycle <= 64) {
             if constexpr(Cycle == 1) { oam.read_ff = 1; secondary_oam.index = 0; }
             if constexpr(Cycle % 2 == 1) { oam.data = oam.read(); }
-            if constexpr(Cycle % 2 == 0) { secondary_oam.write(oam.data); secondary_oam.index++; }
+            if constexpr(Cycle % 2 == 0) { secondary_oam.write(oam.data); secondary_oam.inc(); }
             if constexpr(Cycle == 64) {
                 oam.read_ff = 0;
-                secondary_oam.index = 0;
                 oam.sp_counter = 0;
+                secondary_oam.index = 0;
             }
         }
         if constexpr(Cycle >= 65 && Cycle <= 256) {
@@ -141,10 +122,8 @@ using CycleFunc = void (PPU::*)(unsigned);
 using LineFunc  = void (PPU::*)(unsigned, CycleFunc);
 
 template <unsigned Line>
-void PPU::lcycle(unsigned cycle, CycleFunc cycle_fn)
+void PPU::line(unsigned cycle, CycleFunc cycle_fn)
 {
-    static_assert(Line <= 261);
-    assert(cycle <= 340);
     if constexpr(Line < 240)
         (this->*cycle_fn)(Line);
     if constexpr(Line == 241)
@@ -156,16 +135,15 @@ void PPU::lcycle(unsigned cycle, CycleFunc cycle_fn)
             vblank_end();
         if (io.bg_show && cycle >= 280 && cycle <= 304)
             copy_v_vertpos();
-        if (cycle == 340)
+        // on odd frames, skip from (339, 261) to (0, 0)
+        if (cycle == 340u - odd_frame)
             begin_frame();
     }
-    // if constexpr(Line == 240 || (Line >= 242 && Line != 261))
-    //     ;
 }
 
 void PPU::run()
 {
-#define LCYCLE &PPU::lcycle
+#define LCYCLE &PPU::line
     static constexpr std::array<LineFunc, PPU_MAX_LINES> linetab = {
         LCYCLE<0>,   LCYCLE<1>,   LCYCLE<2>,   LCYCLE<3>,   LCYCLE<4>,   LCYCLE<5>,   LCYCLE<6>,   LCYCLE<7>,
         LCYCLE<8>,   LCYCLE<9>,   LCYCLE<10>,  LCYCLE<11>,  LCYCLE<12>,  LCYCLE<13>,  LCYCLE<14>,  LCYCLE<15>,
@@ -203,7 +181,7 @@ void PPU::run()
     };
 #undef LCYCLE
 
-#define CCYCLE &PPU::ccycle
+#define CCYCLE &PPU::cycle
 static constexpr std::array<CycleFunc, PPU_MAX_LCYCLE> cycletab = {
     CCYCLE<0>,   CCYCLE<1>,   CCYCLE<2>,   CCYCLE<3>,   CCYCLE<4>,   CCYCLE<5>,   CCYCLE<6>,   CCYCLE<7>,
     CCYCLE<8>,   CCYCLE<9>,   CCYCLE<10>,  CCYCLE<11>,  CCYCLE<12>,  CCYCLE<13>,  CCYCLE<14>,  CCYCLE<15>,
@@ -251,10 +229,11 @@ static constexpr std::array<CycleFunc, PPU_MAX_LCYCLE> cycletab = {
 };
 #undef CCYCLE
 
-    const auto linefunc = linetab[lines];
-    const auto cyclefunc = cycletab[cycles % PPU_MAX_LCYCLE];
-    (this->*linefunc)(cycles % PPU_MAX_LCYCLE, cyclefunc);
+    const unsigned long cycle = cycles % PPU_MAX_LCYCLE;
+    const auto linefn  = linetab[lines];
+    const auto cyclefn = cycletab[cycle];
+    (this->*linefn)(cycle, cyclefn);
     cycles++;
-    lines += (cycles % PPU_MAX_LCYCLE == 0);
+    lines += (cycle == 0);
 }
 

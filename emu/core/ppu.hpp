@@ -46,19 +46,16 @@ private:
     std::function<void(bool)> nmi_callback;
     bool odd_frame;
 
-    struct IO {
+    struct {
         // used as internal buffer with regs I/O
         uint8 latch = 0;
 
         // PPUCTRL
-        // nt addr is the most significant bits of vram.addr/vram.tmp
         bool vram_inc;
         bool sp_pt_addr;
         bool bg_pt_addr;
         bool sp_size;
-        // i can't find explanations for this one
-        bool ext_bus_dir;
-        // whether the ppu can go into vblank (leftmost bit of PPUCTRL)
+        bool ext_bus_dir; // this one is weird
         bool nmi_enabled;
 
         // PPUMASK
@@ -83,7 +80,7 @@ private:
         uint8 data_buf;
     } io;
 
-    struct VRAM {
+    struct {
         VRAMAddress addr;
         VRAMAddress tmp;
         uint3 fine_x;
@@ -93,33 +90,29 @@ private:
         uint8 vy() const  { return addr.fine_y | addr.coarse_y << 3 | (addr.nt & 2) << 8; }
     } vram;
 
-    struct Tile {
+    struct {
         uint8 nt;
         uint8 attr;
-        uint8 low;
-        uint8 high;
+        uint8 pt_low;
+        uint8 pt_high;
     } tile;
 
-    struct Shift {
+    struct {
         uint8  attr_low, attr_high;
         bool   feed_low, feed_high;
-        uint16 tile_low, tile_high;
+        uint16 pt_low, pt_high;
     } shift;
 
-    struct OAM {
+    struct {
         uint8 addr;
         uint8 data;
-
-        uint2 sp_counter; // if sp_counter == 0, then mem[addr] points to a sprite's y byte
-        bool inrange;
-
-        bool read_ff;
-        bool addr_overflow;
-
-        bool sp0_next;
-        bool sp0_curr;
-
-        uint8 pattern_low[8], pattern_high[8], attrs[8], xpos[8];
+        uint2 sp_counter = 0; // if sp_counter == 0, then mem[addr] points to a sprite's y byte
+        bool inrange = 0;
+        bool read_ff = 0;
+        bool addr_overflow = 0;
+        bool sp0_next = 0;
+        bool sp0_curr = 0;
+        uint8 pt_low[8], pt_high[8], attrs[8], xpos[8];
         std::array<uint8, OAM_SIZE> mem;
 
         void inc()  { ++addr; ++sp_counter; }
@@ -127,16 +120,17 @@ private:
     } oam;
 
     struct {
-        uint8 index;
+        uint8 index = 0;
         std::array<uint8, 8*4> mem;
 
         bool full()           { return index == 32; }
         void write(uint8 val) { if (!full()) mem[index] = val; }
+        void inc()            { if (!full()) index++; }
     } secondary_oam;
 
-    struct Sprite {
+    struct {
         uint8 y;
-        uint8 tile;
+        uint8 nt;
         uint8 attr;
         uint8 x;
     } sprite;
@@ -170,18 +164,17 @@ private:
 
     void sprite_shift_run();
     void sprite_update_flags(unsigned line);
-    std::tuple<uint2, uint2, bool> sprite_output(unsigned x);
+    std::tuple<uint2, uint2, uint8> sprite_output(unsigned x);
 
     uint8 output(unsigned x);
     void render();
 
     // ppumain.cpp
     template <unsigned Cycle> void background_fetch_cycle();
-    template <unsigned Cycle> void sprite_fetch_cycle(unsigned line);
-    template <unsigned Cycle> void sprite_fetch_cycle2();
-    // template <unsigned Cycle> void sprite_eval(unsigned line);
-    template <unsigned Cycle> void ccycle(unsigned line);
-    template <unsigned Line> void lcycle(unsigned cycle, void (PPU::*)(unsigned));
+    template <unsigned Cycle> void sprite_fetch_cycle(uint3 n, unsigned line);
+    template <unsigned Cycle> void sprite_read_secondary();
+    template <unsigned Cycle> void cycle(unsigned line);
+    template <unsigned Line>  void line(unsigned cycle, void (PPU::*)(unsigned));
     void begin_frame();
     void vblank_begin();
     void vblank_end();
