@@ -121,6 +121,7 @@ loadpal_loop:   ; fill background palette
 
 mainloop:
     jsr waitnmi
+    jsr wait_sprite_zero_hit
     jsr joypad_poll
     jsr gamecode
     jmp mainloop
@@ -130,6 +131,14 @@ waitnmi:
 waitnmi_wait:
     cmp nmi_flag
     beq waitnmi_wait
+    lda #0
+    sta nmi_flag
+    rts
+
+wait_sprite_zero_hit:
+    lda $2002
+    and #$40
+    beq wait_sprite_zero_hit
     rts
 
 waitvblank:
@@ -214,7 +223,7 @@ write_string_loop:
     bne write_string_loop
     rts
 
-sprite1: .byte  4, 4, 1, 0
+sprite1: .byte  0, 4, 1, 32
 sprite2: .byte  60, 2, 0, 8
 sprite3: .byte  60, 3, 0, 16
 sprite4: .byte  60, 4, 0, 24

@@ -149,7 +149,7 @@ int cli_interface(Util::ArgResult &flags)
     if (!flags.has['d']) {
         emu.on_cpu_error([&](uint8 id, uint16 addr)
         {
-            fmt::print("The CPU has found an invalid instruction of id: {:02X}, addr: {:02X}. Stopping.\n", id, addr);
+            fmt::print("The CPU has found an invalid instruction of ID ${:02X} at address ${:02X}. Stopping.\n", id, addr);
             mainthread.end();
         });
 
