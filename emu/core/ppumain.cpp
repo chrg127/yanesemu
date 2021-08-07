@@ -1,10 +1,3 @@
-void PPU::begin_frame()
-{
-    lines = 0;
-    cycles = 0;
-    odd_frame ^= 1;
-}
-
 void PPU::vblank_begin()
 {
     io.vblank = 1;
@@ -13,9 +6,9 @@ void PPU::vblank_begin()
 
 void PPU::vblank_end()
 {
-    io.vblank  = 0;
+    io.vblank      = 0;
     io.sp_zero_hit = 0;
-    io.sp_overflow  = 0;
+    io.sp_overflow = 0;
 }
 
 template <unsigned Cycle>
@@ -72,14 +65,16 @@ void PPU::cycle(unsigned line)
     }
 
     if (io.bg_show) {
-        if constexpr((Cycle >= 1 && Cycle <= 256) || (Cycle >= 321 && Cycle <= 340)) {
-            background_fetch_cycle<Cycle % 8>();
-            background_shift_run();
+        if constexpr((Cycle >= 1 && Cycle <= 256) || (Cycle >= 321 && Cycle <= 336)) {
             if constexpr(Cycle % 8 == 1) background_shift_fill();
+            background_shift_run();
+            background_fetch_cycle<Cycle % 8>();
             if constexpr(Cycle % 8 == 0) vram.addr = inc_v_horzpos(vram.addr);
             if constexpr(Cycle == 256)   vram.addr = inc_v_vertpos(vram.addr);
         }
         if constexpr(Cycle == 257) copy_v_horzpos();
+        if constexpr(Cycle >= 337 && Cycle <= 340)
+            background_fetch_cycle<Cycle % 8>();
     }
 
     if (io.sp_show) {
@@ -135,9 +130,13 @@ void PPU::line(unsigned cycle, CycleFunc cycle_fn)
             vblank_end();
         if (io.bg_show && cycle >= 280 && cycle <= 304)
             copy_v_vertpos();
-        // on odd frames, skip from (339, 261) to (0, 0)
-        if (cycle == 340u - odd_frame)
-            begin_frame();
+        // check for last cycle.
+        // last cycle of this scanline is 339 on an odd_frame, 340 on an even frame
+        if (cycle == 340u - odd_frame) {
+            if (odd_frame)
+                cycle_inc();
+            odd_frame ^= 1;
+        }
     }
 }
 
@@ -229,11 +228,8 @@ static constexpr std::array<CycleFunc, PPU_MAX_LCYCLE> cycletab = {
 };
 #undef CCYCLE
 
-    const unsigned long cycle = cycles % PPU_MAX_LCYCLE;
     const auto linefn  = linetab[lines];
-    const auto cyclefn = cycletab[cycle];
-    (this->*linefn)(cycle, cyclefn);
-    cycles++;
-    lines += (cycle == 0);
+    const auto cyclefn = cycletab[cycles];
+    (this->*linefn)(cycles, cyclefn);
+    cycle_inc();
 }
-

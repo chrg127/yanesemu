@@ -41,8 +41,8 @@ public:
 private:
     Bus<PPUBUS_SIZE> *bus;
     Screen *screen;
-    unsigned long cycles = 0;
-    unsigned long lines  = 0;
+    unsigned cycles = 0;
+    unsigned lines  = 0;
     std::function<void(bool)> nmi_callback;
     bool odd_frame;
 
@@ -150,6 +150,12 @@ public:
 private:
     uint8 readreg(uint16 addr);
     void writereg(uint16 addr, uint8 data);
+    void cycle_inc()
+    {
+        cycles = (cycles + 1) % PPU_MAX_LCYCLE;
+        lines += (cycles == 0);
+        lines %= PPU_MAX_LINES;
+    }
 
     void copy_v_horzpos();
     void copy_v_vertpos();
@@ -175,7 +181,6 @@ private:
     template <unsigned Cycle> void sprite_read_secondary();
     template <unsigned Cycle> void cycle(unsigned line);
     template <unsigned Line>  void line(unsigned cycle, void (PPU::*)(unsigned));
-    void begin_frame();
     void vblank_begin();
     void vblank_end();
 
