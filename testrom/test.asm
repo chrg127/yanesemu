@@ -29,8 +29,8 @@ tmp5:           .res 1
 tmp6:           .res 1
 tmp7:           .res 1
 tmp8:           .res 1
-scroll_x:       .res 1      ; x scroll position
-scroll_y:       .res 1      ; y scroll position
+scroll_y:       .res 1      ; x scroll position
+scroll_x:       .res 1      ; y scroll position
 nmi_flag:       .res 1
 
 .segment "RAM"
@@ -104,8 +104,8 @@ loadpal_loop:   ; fill background palette
     sta $2006
 
     lda #$00
-    sta scroll_x
     sta scroll_y
+    sta scroll_x
     jsr write_helloworld    ; and write a 'hello world'
     jsr create_sprites
     jsr waitvblank
@@ -121,7 +121,7 @@ loadpal_loop:   ; fill background palette
 
 mainloop:
     jsr waitnmi
-    jsr wait_sprite_zero_hit
+    ; jsr wait_sprite_zero_hit
     jsr joypad_poll
     jsr gamecode
     jmp mainloop
@@ -176,6 +176,8 @@ joypad_poll:
     rts
 
 gamecode:
+    ; dec scroll_y
+    inc scroll_x
     rts
 
 ; writes a hello world at the center of the screen
@@ -183,7 +185,7 @@ gamecode:
 write_helloworld:
     lda #$20
     sta $02
-    lda #$00
+    lda #$0A
     sta $03
     lda #<hellostring
     sta $00
@@ -299,7 +301,7 @@ create_sprite_loop:
     rts
 
 nmi:
-    pha     ; save registers
+    pha
     txa
     pha
     tya
@@ -310,13 +312,12 @@ nmi:
     lda #2
     sta $4014
 
-    ; should write to $2000 and $2005
-    lda scroll_x
-    sta $2005
     lda scroll_y
     sta $2005
+    lda scroll_x
+    sta $2005
 
-    pla     ; restore registers
+    pla
     tay
     pla
     tax

@@ -185,11 +185,11 @@ void PPU::writereg(uint16 addr, uint8 data)
     // PPUSCROLL
     case 0x2005:
         if (!io.scroll_latch) {
-            vram.tmp.coarse_x = data >> 3 & 0x1F;
-            vram.fine_x       = data & 0x7;
+            vram.tmp.coarse_x = Util::getbits(data, 3, 5);
+            vram.fine_x       = Util::getbits(data, 0, 3);
         } else {
-            vram.tmp.coarse_y = data >> 3 & 0x1F;
-            vram.tmp.fine_y   = data & 0x7;
+            vram.tmp.coarse_y = Util::getbits(data, 3, 5);
+            vram.tmp.fine_y   = Util::getbits(data, 0, 3);
         }
         io.scroll_latch ^= 1;
         break;
@@ -400,12 +400,11 @@ uint8 PPU::output(unsigned x)
 
 void PPU::render()
 {
-    auto x = cycles % PPU_MAX_LCYCLE;
+    auto x = cycles;
     uint8 pixel = output(x);
-    auto y = lines % PPU_MAX_LINES;
-    assert((y <= 239 || y == 261) && x <= 256);
+    auto y = lines;
+    assert(y <= 239 && x <= 256);
     screen->output(x-1, y, pixel);
 }
 
 } // namespace Core
-

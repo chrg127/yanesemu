@@ -73,7 +73,7 @@ uint16 PPUDebugger::vram_addr() const
 
 uint16 PPUDebugger::tmp_addr() const
 {
-    return ppu->vram.addr.v;
+    return ppu->vram.tmp.v;
 }
 
 uint8 PPUDebugger::fine_x() const

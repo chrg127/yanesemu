@@ -32,7 +32,7 @@ public:
         VRAMAddress(const VRAMAddress &a)             { operator=(a); }
         VRAMAddress & operator=(const VRAMAddress &a) { v = a.v; return *this; }
 
-        explicit operator uint16() const            { return v; }
+        explicit operator uint16() const   { return v; }
         VRAMAddress & operator+=(uint16 n) { v += n; v = Util::getbits(v, 0, 15); return *this; }
 
         uint14 as_u14() { return v; }
