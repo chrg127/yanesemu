@@ -114,7 +114,7 @@ loadpal_loop:   ; fill background palette
     lda #$00
     sta $2006
     sta $2005
-    lda #$80    ;turn on nmi
+    lda #%10100000
     sta $2000
     lda #%00011110
     sta $2001
@@ -224,7 +224,6 @@ write_string_loop:
     cpy $04
     bne write_string_loop
     rts
-
 sprite1: .byte  0, 4, 1, 32
 sprite2: .byte  60, 2, 0, 8
 sprite3: .byte  60, 3, 0, 16
@@ -243,43 +242,6 @@ create_sprites:
     sta $01
     jsr create_sprite
 
-    lda #<sprite3
-    sta $00
-    lda #>sprite3
-    sta $01
-    jsr create_sprite
-
-    lda #<sprite4
-    sta $00
-    lda #>sprite4
-    sta $01
-    jsr create_sprite
-
-    lda #<sprite5
-    sta $00
-    lda #>sprite5
-    sta $01
-    jsr create_sprite
-
-    lda #<sprite6
-    sta $00
-    lda #>sprite6
-    sta $01
-    jsr create_sprite
-
-    lda #<sprite7
-    sta $00
-    lda #>sprite7
-    sta $01
-    jsr create_sprite
-
-    lda #<sprite8
-    sta $00
-    lda #>sprite8
-    sta $01
-    jsr create_sprite
-
-    ldx #252
     lda #<sprite2
     sta $00
     lda #>sprite2

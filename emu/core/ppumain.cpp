@@ -31,9 +31,9 @@ void PPU::sprite_fetch_cycle(uint3 n, unsigned line)
     // nothing happens on cycle 2
     if constexpr(Cycle == 3) { vram.buf     = fetch_attr(0, 0, 0); oam.attrs[n] = sprite.attr; }
     if constexpr(Cycle == 4) oam.xpos[n]    = sprite.x;
-    if constexpr(Cycle == 5) vram.buf       = fetch_pt(io.sp_pt_addr, sprite.nt, 0, uint3(line - sprite.y));
+    if constexpr(Cycle == 5) vram.buf       = fetch_pt_sprite(io.sp_size, sprite.nt, 0, line - sprite.y);
     if constexpr(Cycle == 6) oam.pt_low[n]  = vram.buf;
-    if constexpr(Cycle == 7) vram.buf       = fetch_pt(io.sp_pt_addr, sprite.nt, 1, uint3(line - sprite.y));
+    if constexpr(Cycle == 7) vram.buf       = fetch_pt_sprite(io.sp_size, sprite.nt, 1, line - sprite.y);
     if constexpr(Cycle == 0) oam.pt_high[n] = vram.buf;
 }
 

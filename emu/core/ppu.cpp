@@ -150,7 +150,7 @@ void PPU::writereg(uint16 addr, uint8 data)
         io.vram_inc     = data & 0x04;
         io.sp_pt_addr   = data & 0x08;
         io.bg_pt_addr   = data & 0x10;
-        io.sp_size      = data & 0x20;
+        io.sp_size      = (data & 0x20) >> 5;
         io.ext_bus_dir  = data & 0x40;
         io.nmi_enabled  = data & 0x80;
         break;
@@ -232,27 +232,32 @@ void PPU::copy_v_vertpos()
     vram.addr.nt = Util::setbit(vram.addr.nt, 1, vram.tmp.nt >> 1 & 1);
 }
 
-/* it's probably worth mentioning here that this mask
+/*
+ * it's probably worth mentioning here that this mask
  * takes all bits of the vram address except for the fine y.
  * this is how the vram address can return to the same tile for 8 lines:
  * in rendering, you can think of the fine y and the rest of the address
- * as separate, where fine y of course indicates the row of the tile. */
+ * as separate, where fine y of course indicates the row of the tile.
+ */
 uint8 PPU::fetch_nt(uint15 vram_addr)
 {
     uint16 addr = 0x2000 | (vram_addr & 0x0FFF);
     return bus->read(addr);
 }
 
-/* an attribute address can be composed this way:
+/*
+ * an attribute address can be composed this way:
  * NN 1111 YYY XXX
- * where YYY/XXX are the highest bits of coarse x/y. */
+ * where YYY/XXX are the highest bits of coarse x/y.
+ */
 uint8 PPU::fetch_attr(uint16 nt, uint16 coarse_y, uint16 coarse_x)
 {
     uint16 addr = 0x23C0 | nt << 10 | (coarse_y & 0x1C) << 1 | (coarse_x & 0x1C) >> 2;
     return bus->read(addr);
 }
 
-/* A pattern table address is formed this way:
+/*
+ * A pattern table address is formed this way:
  * 0HRRRRCCCCPTTT
  * H - which table is used, left or right.
  * RRRR CCCC - row, column. Imagine the pattern table as a grid, without
@@ -264,6 +269,17 @@ uint8 PPU::fetch_pt(bool base, uint8 nt, bool bitplane, uint3 fine_y)
 {
     uint16 addr = base << 12 | nt << 4 | bitplane << 3 | fine_y;
     return bus->read(addr);
+}
+
+// This function checks for sprite size and row before fetching from the pattern table
+uint8 PPU::fetch_pt_sprite(bool sp_size, uint8 nt, bool bitplane, unsigned row)
+{
+    if (row > 16)
+        return 0;
+    if (!sp_size)
+        return fetch_pt(io.sp_pt_addr, nt, bitplane, row);
+    unsigned bit = Util::getbit(row, 3);
+    return fetch_pt(nt & 1, (nt & 0xFE) + bit, bitplane, row - 8*bit);
 }
 
 void PPU::background_shift_run()
@@ -307,7 +323,7 @@ std::pair<uint2, uint2> PPU::background_output()
 void PPU::sprite_update_flags(unsigned line)
 {
     if (oam.sp_counter == 0)
-        oam.inrange = (line - oam.data) < 8;
+        oam.inrange = (line - oam.data) < unsigned(8 + io.sp_size * 8);
     if (oam.inrange && !oam.addr_overflow) {
         // determine if this is a sprite 0 hit
         if (!io.sp_zero_hit && oam.addr == 0)

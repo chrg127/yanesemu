@@ -54,7 +54,7 @@ private:
         bool vram_inc;
         bool sp_pt_addr;
         bool bg_pt_addr;
-        bool sp_size;
+        uint8 sp_size;
         bool ext_bus_dir; // this one is weird
         bool nmi_enabled;
 
@@ -163,6 +163,7 @@ private:
     uint8 fetch_nt(uint15 vram_addr);
     uint8 fetch_attr(uint16 nt, uint16 coarse_y, uint16 coarse_x);
     uint8 fetch_pt(bool base, uint8 nt, bool bitplane, uint3 fine_y);
+    uint8 fetch_pt_sprite(bool sp_size, uint8 nt, bool bitplane, unsigned row);
 
     void background_shift_run();
     void background_shift_fill();
