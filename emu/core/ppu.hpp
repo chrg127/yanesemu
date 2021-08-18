@@ -141,15 +141,14 @@ public:
     { }
 
     void power(bool reset);
-    void bus_map(Bus<CPUBUS_SIZE> &bus);
+    uint8 readreg(uint16 addr);
+    void writereg(uint16 addr, uint8 data);
     void on_nmi(auto &&callback) { nmi_callback = callback; }
 
     // ppumain.cpp
     void run();
 
 private:
-    uint8 readreg(uint16 addr);
-    void writereg(uint16 addr, uint8 data);
     void cycle_inc()
     {
         cycles = (cycles + 1) % PPU_MAX_LCYCLE;

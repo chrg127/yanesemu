@@ -35,13 +35,6 @@ void CPU::power(bool reset)
     interrupt();
 }
 
-void CPU::bus_map(Bus<CPUBUS_SIZE> &rambus)
-{
-    rambus.map(APU_START, CARTRIDGE_START,
-             [this](uint16 addr)             { return readreg(addr); },
-             [this](uint16 addr, uint8 data) { writereg(addr, data); });
-}
-
 void CPU::run()
 {
     if (signal.execnmi) {

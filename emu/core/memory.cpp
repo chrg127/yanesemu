@@ -25,7 +25,7 @@ static DecodeFn get_decode(Mirroring mirroring)
     }
 }
 
-void Memory::bus_map(Bus<CPUBUS_SIZE> &rambus, Bus<PPUBUS_SIZE> &vrambus, Mirroring mirroring)
+void Memory::map(Bus<CPUBUS_SIZE> &rambus, Bus<PPUBUS_SIZE> &vrambus, Mirroring mirroring)
 {
     rambus.map(RAM_START, PPUREG_START,
         [this](uint16 addr)             { return rammem[addr & 0x7FF]; },

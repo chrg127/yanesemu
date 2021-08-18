@@ -1,11 +1,17 @@
 #include <emu/core/emulator.hpp>
 
-#include <string_view>
-#include <fmt/core.h>
 #include <emu/util/unsigned.hpp>
-#include <emu/util/file.hpp>
 
 using namespace Core;
+
+Emulator::Emulator()
+{
+    ppu.on_nmi([this](bool nmi_enabled) {
+        nmi = true;
+        if (nmi_enabled)
+            cpu.fire_nmi();
+    });
+}
 
 void Emulator::power(bool reset)
 {
@@ -31,34 +37,44 @@ void Emulator::run_frame()
     nmi = false;
 }
 
-void Emulator::bus_map(Mirroring mirroring)
+void Emulator::map(Mirroring mirroring)
 {
     rambus.reset();
     vrambus.reset();
-    cpu.bus_map(rambus);
-    ppu.bus_map(rambus);
-    memory.bus_map(rambus, vrambus, mirroring);
+
+    memory.map(rambus, vrambus, mirroring);
+
+    rambus.map(APU_START, CARTRIDGE_START,
+        [this](uint16 addr)             { return cpu.readreg(addr); },
+        [this](uint16 addr, uint8 data) { cpu.writereg(addr, data); });
+
+    rambus.map(PPUREG_START, APU_START,
+        [this](uint16 addr)             { return ppu.readreg(0x2000 + (addr & 0x7)); },
+        [this](uint16 addr, uint8 data) { ppu.writereg(0x2000 + (addr & 0x7), data); });
+
     rambus.map(CARTRIDGE_START, 0x8000,
-            [](uint16 addr)             { return 0; },
-            [](uint16 addr, uint8 data) { /***********/ });
+        [](uint16 addr)             { return 0; },
+        [](uint16 addr, uint8 data) { /**/ });
+
     rambus.map(0x8000, CPUBUS_SIZE,
-            [this](uint16 addr)
-            {
-                uint16 offset = addr - 0x8000;
-                uint16 start = prgrom.size() - 0x8000;
-                uint16 eff_addr = start + offset;
-                return prgrom[eff_addr];
-            },
-            [](uint16 addr, uint8 data) { /***********/ });
+        [this](uint16 addr)
+        {
+            uint16 offset = addr - 0x8000;
+            uint16 start = prgrom.size() - 0x8000;
+            uint16 eff_addr = start + offset;
+            return prgrom[eff_addr];
+        },
+        [](uint16 addr, uint8 data) { /**/ });
+
     vrambus.map(PT_START, NT_START,
-            [this](uint16 addr)         { return chrrom[addr]; },
-            [](uint16 addr, uint8 data) { /***********/ });
+        [this](uint16 addr)         { return chrrom[addr]; },
+        [](uint16 addr, uint8 data) { /**/ });
 }
 
 void Emulator::insert_rom(Cartridge::Data &&cartdata)
 {
     prgrom = cartdata.prgrom;
     chrrom = cartdata.chrrom;
-    bus_map(cartdata.mirroring);
+    map(cartdata.mirroring);
 }
 

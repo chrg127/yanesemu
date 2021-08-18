@@ -95,8 +95,9 @@ public:
     { }
 
     void power(bool reset = false);
-    void bus_map(Bus<CPUBUS_SIZE> &rambus);
     void run();
+    uint8 readreg(uint16 addr);
+    void writereg(uint16 addr, uint8 data);
     void fire_irq();
     void fire_nmi();
 
@@ -120,8 +121,6 @@ private:
     void  last_cycle();
     uint8 readmem(uint16 addr);
     void  writemem(uint16 addr, uint8 data);
-    uint8 readreg(uint16 addr);
-    void  writereg(uint16 addr, uint8 data);
     void oamdma_loop(uint8 page);
 
     // instructions.cpp

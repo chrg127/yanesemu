@@ -10,7 +10,7 @@ class Memory {
     std::array<uint8, Core::VRAM_SIZE> vrammem;
     std::array<uint8, Core::PAL_SIZE> palmem;
 public:
-    void bus_map(Bus<CPUBUS_SIZE> &rambus, Bus<PPUBUS_SIZE> &vrambus, Mirroring mirroring);
+    void map(Bus<CPUBUS_SIZE> &rambus, Bus<PPUBUS_SIZE> &vrambus, Mirroring mirroring);
     void power(bool reset, char fillval = 0);
 };
 

@@ -94,13 +94,6 @@ void PPU::power(bool reset)
     std::fill(secondary_oam.mem.begin(), secondary_oam.mem.end(), 0);
 }
 
-void PPU::bus_map(Bus<CPUBUS_SIZE> &rambus)
-{
-    rambus.map(PPUREG_START, APU_START,
-            [this](uint16 addr)             { return readreg(0x2000 + (addr & 0x7)); },
-            [this](uint16 addr, uint8 data) { writereg(0x2000 + (addr & 0x7), data); });
-}
-
 uint8 PPU::readreg(uint16 addr)
 {
     switch (addr) {
