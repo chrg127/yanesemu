@@ -4,7 +4,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <emu/util/unsigned.hpp>
+#include <emu/util/uint.hpp>
 
 namespace Util {
 

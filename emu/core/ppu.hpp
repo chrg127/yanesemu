@@ -6,7 +6,7 @@
 #include <emu/core/bus.hpp>
 #include <emu/core/const.hpp>
 #include <emu/util/array.hpp>
-#include <emu/util/unsigned.hpp>
+#include <emu/util/uint.hpp>
 #include <emu/util/bits.hpp>
 
 class Screen;

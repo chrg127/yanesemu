@@ -1,16 +1,17 @@
 #pragma once
 
-/* This library provides uint* types. This includes the usual
- * uint8, uint16, uint32, uint64, but also anything in-between,
- * giving unusual types such as uint3, uint15, etc.  */
+/*
+ * This header file provides aliases for precise bit size types (uint8_t, uint16_t,
+ * etc.) and a class for arbitrary bit sizes (uint1, uint2, ..., uint63).
+ */
 
 #include <cstdint>
 #include <type_traits>
 
-using uint8  = uint_least8_t;
-using uint16 = uint_least16_t;
-using uint32 = uint_least32_t;
-using uint64 = uint_least64_t;
+using uint8  = uint8_t;
+using uint16 = uint16_t;
+using uint32 = uint32_t;
+using uint64 = uint64_t;
 
 template <unsigned Bits>
 struct UInt {
@@ -47,10 +48,10 @@ public:
     template <typename T> UInt operator>>=(const T val) { num >>= cast(val); return *this; }
     template <typename T> UInt operator<<=(const T val) { num <<= cast(val); return *this; }
 
-    inline UInt operator++(int) { auto ret = *this; num = cast(num + 1); return ret;   }
-    inline UInt operator++()    {                   num = cast(num + 1); return *this; }
-    inline UInt operator--(int) { auto ret = *this; num = cast(num - 1); return ret;   }
-    inline UInt operator--()    {                   num = cast(num - 1); return *this; }
+    UInt operator++(int) { auto ret = *this; num = cast(num + 1); return ret;   }
+    UInt operator++()    {                   num = cast(num + 1); return *this; }
+    UInt operator--(int) { auto ret = *this; num = cast(num - 1); return ret;   }
+    UInt operator--()    {                   num = cast(num - 1); return *this; }
 };
 
 template <unsigned Bits, typename T>

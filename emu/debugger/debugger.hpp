@@ -3,7 +3,7 @@
 #include <functional>
 #include <optional>
 #include <vector>
-#include <emu/util/unsigned.hpp>
+#include <emu/util/uint.hpp>
 #include <emu/util/file.hpp>
 
 namespace Core {

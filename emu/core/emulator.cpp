@@ -1,6 +1,6 @@
 #include <emu/core/emulator.hpp>
 
-#include <emu/util/unsigned.hpp>
+#include <emu/util/uint.hpp>
 
 using namespace Core;
 

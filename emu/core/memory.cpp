@@ -3,7 +3,7 @@
 #include <cassert>
 #include <array>
 #include <emu/util/bits.hpp>
-#include <emu/util/unsigned.hpp>
+#include <emu/util/uint.hpp>
 
 namespace Core {
 

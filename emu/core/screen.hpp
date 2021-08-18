@@ -2,7 +2,7 @@
 
 #include <emu/core/const.hpp>
 #include <emu/util/array.hpp>
-#include <emu/util/unsigned.hpp>
+#include <emu/util/uint.hpp>
 
 class Screen {
     struct ColorRGBA {

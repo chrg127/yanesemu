@@ -4,7 +4,7 @@
 #include <memory>
 #include <string_view>
 #include <optional>
-#include <emu/util/unsigned.hpp>
+#include <emu/util/uint.hpp>
 #include <emu/util/array.hpp>
 
 namespace Video {

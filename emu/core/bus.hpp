@@ -3,7 +3,7 @@
 #include <concepts>
 #include <functional>
 #include <array>
-#include <emu/util/unsigned.hpp>
+#include <emu/util/uint.hpp>
 #include <emu/util/debug.hpp>
 
 namespace Core {

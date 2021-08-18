@@ -7,7 +7,7 @@
 #pragma GCC diagnostic ignored "-Wcast-qual"
 #include <external/stb/stb_image.h>
 #pragma GCC diagnostic pop
-#include <emu/util/unsigned.hpp>
+#include <emu/util/uint.hpp>
 #include <emu/util/debug.hpp>
 
 #include "opengl.hpp"

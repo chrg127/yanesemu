@@ -5,7 +5,7 @@
 #include <emu/core/const.hpp>
 #include <emu/core/bus.hpp>
 #include <emu/util/bits.hpp>
-#include <emu/util/unsigned.hpp>
+#include <emu/util/uint.hpp>
 
 namespace Debugger {
     class Debugger;

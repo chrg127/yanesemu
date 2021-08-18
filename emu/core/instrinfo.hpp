@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include <emu/util/unsigned.hpp>
+#include <emu/util/uint.hpp>
 
 namespace Core {
 
