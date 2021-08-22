@@ -1,4 +1,4 @@
-#include "stringops.hpp"
+#include "string.hpp"
 
 namespace str {
 
