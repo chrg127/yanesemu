@@ -3,7 +3,7 @@
 #include <string>
 #include <emu/util/uint.hpp>
 
-namespace Core {
+namespace core {
 
 // Given 3 bytes, return a string representing an instruction.
 std::string disassemble(const uint8 id, const uint8 oplow, const uint8 ophigh);
@@ -46,4 +46,4 @@ constexpr inline bool is_jump(const uint8 id)
     return id == 0x20 || id == 0x4C || id == 0x6C;
 }
 
-} // namespace Core
+} // namespace core

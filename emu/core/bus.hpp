@@ -6,7 +6,7 @@
 #include <emu/util/uint.hpp>
 #include <emu/util/debug.hpp>
 
-namespace Core {
+namespace core {
 
 template <std::size_t BusSize>
 class Bus {
@@ -51,4 +51,4 @@ public:
     void write(uint16 addr, uint8 data) { writetab[lookup[addr]](addr, data); }
 };
 
-} // namespace Core
+} // namespace core

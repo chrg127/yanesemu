@@ -16,7 +16,7 @@ namespace Debugger {
     class PPUDebugger;
 }
 
-namespace Core {
+namespace core {
 
 class PPU {
 public:
@@ -188,4 +188,4 @@ private:
     friend class Debugger::PPUDebugger;
 };
 
-} // namespace Core
+} // namespace core

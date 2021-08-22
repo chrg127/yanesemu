@@ -9,7 +9,7 @@
 
 namespace Debugger {
 
-Debugger::Debugger(Core::Emulator *e)
+Debugger::Debugger(core::Emulator *e)
     : emu(e), cpudbg(&emu->cpu), ppudbg(&emu->ppu)
 {
     emu->on_cpu_error([this](uint8 id, uint16 addr)
@@ -81,7 +81,7 @@ void Debugger::run(StepType step_type)
         break;
     }
     case StepType::FRAME: {
-        uint16 addr = cpudbg.get_vector_addr(Core::NMI_VEC);
+        uint16 addr = cpudbg.get_vector_addr(core::NMI_VEC);
         runloop([&]() { return cpudbg.getreg(CPUDebugger::Reg::PC) == addr; });
         break;
     }

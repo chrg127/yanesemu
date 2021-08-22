@@ -11,7 +11,7 @@ namespace Debugger {
     class CPUDebugger;
 }
 
-namespace Core {
+namespace core {
 
 /* The CPU has 2 main states:
  * - When it is constructed, all members are initialized to 0, except
@@ -196,4 +196,4 @@ private:
     void instr_nop();
 };
 
-} // namespace Core
+} // namespace core

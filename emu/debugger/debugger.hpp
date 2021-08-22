@@ -6,7 +6,7 @@
 #include <emu/util/uint.hpp>
 #include <emu/util/file.hpp>
 
-namespace Core {
+namespace core {
     class Emulator;
     class CPU;
     class PPU;
@@ -15,10 +15,10 @@ namespace Core {
 namespace Debugger {
 
 class CPUDebugger {
-    Core::CPU *cpu;
+    core::CPU *cpu;
 
 public:
-    CPUDebugger(Core::CPU *c)
+    CPUDebugger(core::CPU *c)
         : cpu(c)
     { }
 
@@ -41,10 +41,10 @@ public:
 };
 
 class PPUDebugger {
-    Core::PPU *ppu;
+    core::PPU *ppu;
 
 public:
-    PPUDebugger(Core::PPU *p) : ppu(p) {}
+    PPUDebugger(core::PPU *p) : ppu(p) {}
 
     enum class Reg {
         CTRL,    MASK,      STATUS,  OAMADDR,
@@ -96,7 +96,7 @@ struct Debugger {
     };
 
 private:
-    Core::Emulator *emu;
+    core::Emulator *emu;
     std::function<void (Event &&)> report_callback;
     std::vector<Breakpoint> break_list;
     std::optional<io::File> tracefile;
@@ -106,7 +106,7 @@ public:
     CPUDebugger cpudbg;
     PPUDebugger ppudbg;
 
-    explicit Debugger(Core::Emulator *e);
+    explicit Debugger(core::Emulator *e);
 
     void on_report(auto &&f) { report_callback = f; }
     void run(StepType step_type);
@@ -138,4 +138,4 @@ std::function<uint8(Debugger *, uint16)> get_read_fn(Debugger::Loc loc);
 std::function<void(Debugger *, uint16, uint8)> get_write_fn(Debugger::Loc loc);
 std::optional<Debugger::Loc> str_to_memsrc(const std::string &str);
 
-} // namespace Core
+} // namespace core

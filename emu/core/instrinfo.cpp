@@ -2,7 +2,7 @@
 
 #include <fmt/core.h>
 
-namespace Core {
+namespace core {
 
 #define INSTR_MODE(X) \
     X(0x00, brk, impld) \
@@ -282,5 +282,5 @@ std::string get_instr_desc(const std::string &s)
 }
 */
 
-} // namespace Core
+} // namespace core
 

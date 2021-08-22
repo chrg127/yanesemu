@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Core {
+namespace core {
 
 enum {
     // Effective bus sizes. These aren't the REAL bus sizes,
@@ -42,4 +42,4 @@ enum class Mirroring {
     OTHER,
 };
 
-} // namespace Core
+} // namespace core

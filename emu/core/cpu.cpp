@@ -2,7 +2,7 @@
 
 #include <emu/util/debug.hpp>
 
-namespace Core {
+namespace core {
 
 #define INSIDE_CPU_CPP
 #include <emu/core/instructions.cpp>
@@ -462,4 +462,4 @@ void CPU::oamdma_loop(uint8 page)
     dma.flag = false;
 }
 
-} // namespace Core
+} // namespace core

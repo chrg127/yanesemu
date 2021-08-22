@@ -9,7 +9,7 @@
 
 namespace Util { class File; }
 
-namespace Core {
+namespace core {
 
 namespace Cartridge {
     const int HEADER_SIZE = 16;
@@ -63,4 +63,4 @@ namespace Cartridge {
 
 std::optional<Cartridge::Data> parse_cartridge(io::MappedFile &romfile);
 
-} // namespace Core
+} // namespace core

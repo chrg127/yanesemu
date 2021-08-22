@@ -8,7 +8,7 @@
 #include <emu/util/easyrandom.hpp>
 #include <emu/util/debug.hpp>
 
-namespace Core {
+namespace core {
 
 /* The VRAM address has the following components:
  * FFFNNYYYYYXXXXX
@@ -416,4 +416,4 @@ void PPU::render()
     screen->output(x-1, y, pixel);
 }
 
-} // namespace Core
+} // namespace core

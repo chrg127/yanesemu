@@ -135,7 +135,7 @@ static std::optional<Debugger::Loc> parse_mem_loc(const std::string &str)
     return loc;
 }
 
-CliDebugger::CliDebugger(Core::Emulator *emu)
+CliDebugger::CliDebugger(core::Emulator *emu)
     : dbg(emu)
 {
     dbg.on_report([this](Debugger::Event &&ev) { report_event(std::move(ev)); });
@@ -250,7 +250,7 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
         auto lo = args.size() >= 2 ? parse_data(args[1]) : 0;
         auto hi = args.size() >= 3 ? parse_data(args[2]) : 0;
         if (id && lo && hi)
-            fmt::print("{}\n", Core::disassemble(id.value(), lo.value(), hi.value()));
+            fmt::print("{}\n", core::disassemble(id.value(), lo.value(), hi.value()));
         break;
     }
 
@@ -274,7 +274,7 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
         auto val  = parse_data(args[1]);
         auto loc  = parse_mem_loc(args.size() == 3 ? args[2] : "");
         if (addr && val && loc) {
-            if (loc.value() == Debugger::Loc::RAM && addr.value() >= Core::CARTRIDGE_START)
+            if (loc.value() == Debugger::Loc::RAM && addr.value() >= core::CARTRIDGE_START)
                 fmt::print("Warning: writes to ROM have no effects\n");
             write_block(dbg, addr.value(), addr.value(), val.value(), loc.value());
         }
@@ -294,7 +294,7 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
         auto start = parse_addr(args[0]);
         auto end   = parse_addr(args[1]);
         if (start && end && check_addr_ranges(start.value(), end.value(), Debugger::Loc::RAM)) {
-            Core::disassemble_block(start.value(), end.value(),
+            core::disassemble_block(start.value(), end.value(),
                 [&](uint16 addr)                  { return dbg.read_ram(addr); },
                 [ ](uint16 addr, std::string &&str) { fmt::print("${:04X}: {}\n", addr, str); });
         }

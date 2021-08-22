@@ -70,7 +70,7 @@ CPUDebugger::Instruction CPUDebugger::curr_instr()
 
 std::string CPUDebugger::curr_instr_str()
 {
-    const auto took_branch = [](uint8 id, const Core::CPU::ProcStatus &ps)
+    const auto took_branch = [](uint8 id, const core::CPU::ProcStatus &ps)
     {
         switch (id) {
         case 0x10: return ps.neg == 0;
@@ -86,10 +86,10 @@ std::string CPUDebugger::curr_instr_str()
     };
 
     Instruction instr = curr_instr();
-    std::string res = Core::disassemble(instr.id, instr.lo, instr.hi);
-    if (Core::is_branch(instr.id)) {
+    std::string res = core::disassemble(instr.id, instr.lo, instr.hi);
+    if (core::is_branch(instr.id)) {
         res += fmt::format(" [{:02X}] [{}]",
-                Core::branch_pointer(instr.lo, cpu->r.pc.v),
+                core::branch_pointer(instr.lo, cpu->r.pc.v),
                 took_branch(instr.id, cpu->r.flags) ? "Branch taken" : "Branch not taken");
     }
     return res;
@@ -114,5 +114,5 @@ unsigned long CPUDebugger::cycles()
     return cpu->cycles();
 }
 
-} // namespace Core
+} // namespace core
 

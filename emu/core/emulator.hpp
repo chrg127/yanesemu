@@ -10,7 +10,7 @@
 #include <emu/core/memory.hpp>
 #include <emu/util/uint.hpp>
 
-namespace Core {
+namespace core {
 
 class Emulator {
     Bus<CPUBUS_SIZE> rambus;
@@ -40,4 +40,4 @@ public:
     friend class Debugger::Debugger;
 };
 
-} // namespace Core
+} // namespace core

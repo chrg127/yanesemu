@@ -8,7 +8,7 @@ using util::getbits;
 using util::getbit;
 using util::bitmask;
 
-namespace Core {
+namespace core {
 
 std::string Cartridge::Data::to_string() const
 {
@@ -105,4 +105,4 @@ std::optional<Cartridge::Data> parse_cartridge(io::MappedFile &romfile)
     return cart;
 }
 
-} // namespace Core
+} // namespace core

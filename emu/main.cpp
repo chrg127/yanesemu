@@ -13,7 +13,7 @@
 #include <emu/util/platform.hpp>
 #include <emu/video/video.hpp>
 
-static Core::Emulator emu;
+static core::Emulator emu;
 
 class MainThread {
     enum State {
@@ -77,7 +77,7 @@ public:
 
 bool open_rom(io::MappedFile &romfile)
 {
-    auto opt_cart = Core::parse_cartridge(romfile);
+    auto opt_cart = core::parse_cartridge(romfile);
     if (!opt_cart) {
         error("not a real NES ROM: {}\n", romfile.filename());
         return false;
@@ -142,7 +142,7 @@ int cli_interface(cmdline::Result &flags)
         error("can't initialize video\n");
         return 1;
     }
-    Video::Texture tex = context->create_texture(Core::SCREEN_WIDTH, Core::SCREEN_HEIGHT);
+    Video::Texture tex = context->create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
 
     MainThread mainthread;
 

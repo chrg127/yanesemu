@@ -4,7 +4,7 @@
 #include <string>
 #include <emu/debugger/debugger.hpp>
 
-namespace Core { class Emulator; }
+namespace core { class Emulator; }
 
 namespace Debugger {
 
@@ -23,7 +23,7 @@ class CliDebugger {
     bool quit = false;
 
 public:
-    explicit CliDebugger(Core::Emulator *emu);
+    explicit CliDebugger(core::Emulator *emu);
     bool repl();
     void print_instr();
 

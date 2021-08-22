@@ -5,7 +5,7 @@
 #include <emu/util/bits.hpp>
 #include <emu/util/uint.hpp>
 
-namespace Core {
+namespace core {
 
 using DecodeFn = uint16 (*)(uint16);
 static DecodeFn get_decode(Mirroring mirroring)
@@ -68,4 +68,4 @@ void Memory::power(bool reset, char fillval)
     }
 }
 
-} // namespace Core
+} // namespace core
