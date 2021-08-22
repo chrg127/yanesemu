@@ -87,7 +87,7 @@ bool open_rom(io::MappedFile &romfile)
     return true;
 }
 
-void rendering_thread(MainThread &mainthread, Video::Context &ctx, Video::Texture &screen)
+void rendering_thread(MainThread &mainthread, video::Context &ctx, video::Texture &screen)
 {
     while (mainthread.running()) {
         for (SDL_Event ev; SDL_PollEvent(&ev) != 0; ) {
@@ -137,12 +137,12 @@ int cli_interface(cmdline::Result &flags)
         return 1;
     }
 
-    auto context = Video::Context::create(Video::Context::Type::OPENGL);
+    auto context = video::Context::create(video::Context::Type::OPENGL);
     if (!context) {
         error("can't initialize video\n");
         return 1;
     }
-    Video::Texture tex = context->create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
+    video::Texture tex = context->create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
 
     MainThread mainthread;
 

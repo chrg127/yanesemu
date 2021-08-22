@@ -12,14 +12,14 @@
 
 #include "opengl.hpp"
 
-namespace Video {
+namespace video {
 
 std::optional<Context> Context::create(Type type)
 {
     const auto create_ptr = [](Type type)
     {
         switch (type) {
-        case Type::OPENGL: return std::make_unique<Video::OpenGL>(); break;
+        case Type::OPENGL: return std::make_unique<video::OpenGL>(); break;
         default:
            panic("unknown type supplied to create_context()\n");
            break;
@@ -47,4 +47,4 @@ ImageTexture::~ImageTexture()
     stbi_image_free(data);
 }
 
-} // namespace Video
+} // namespace video

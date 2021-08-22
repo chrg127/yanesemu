@@ -3,7 +3,7 @@
 #include <SDL2/SDL.h>
 #include <emu/video/video.hpp>
 
-namespace Video {
+namespace video {
 
 class OpenGL : public Context::Impl {
     bool initialized = false;
@@ -23,4 +23,4 @@ public:
     void draw() override;
 };
 
-} // namespace Video
+} // namespace video

@@ -130,7 +130,7 @@ static void create_objects(unsigned &vao, unsigned &vbo, unsigned &ebo)
 }
 
 
-namespace Video {
+namespace video {
 
 OpenGL::~OpenGL()
 {
@@ -219,4 +219,4 @@ void OpenGL::draw()
     SDL_GL_SwapWindow(window);
 }
 
-} // namespace Video
+} // namespace video

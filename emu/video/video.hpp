@@ -7,7 +7,7 @@
 #include <emu/util/uint.hpp>
 #include <emu/util/array.hpp>
 
-namespace Video {
+namespace video {
 
 class Texture {
 protected:
@@ -98,4 +98,4 @@ public:
     }
 };
 
-} // namespace Video
+} // namespace video
