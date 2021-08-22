@@ -1,6 +1,7 @@
 #pragma once
 
-/* This is a collection of macros and inline functions to be used for debugging and error messages.
+/*
+ * This is a collection of macros and inline functions to be used for debugging and error messages.
  * #define DEBUG to use the macros. Error message functions need not to define it.
  *
  * - error(): prints a message to stderr with leading 'error: '.

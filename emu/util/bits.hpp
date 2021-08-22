@@ -4,7 +4,7 @@
 
 #include <cstdint>
 
-namespace Util {
+namespace util {
 
 /* Returns a mask usable to mask off a given number of bits.
  * For example: 3 -> 0b11; 6 -> 0b111111 */

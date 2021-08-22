@@ -1,8 +1,8 @@
 #include "stringops.hpp"
 
-namespace Util {
+namespace str {
 
-std::vector<std::string> strsplit(const std::string &s, int delim)
+std::vector<std::string> split(const std::string &s, int delim)
 {
     std::size_t i = 0, p = 0;
     std::vector<std::string> res;

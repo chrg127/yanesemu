@@ -7,7 +7,7 @@
 #include <span>
 #include <memory>
 
-namespace Util {
+namespace util {
 
 template <typename T>
 class HeapArray {
@@ -28,10 +28,10 @@ public:
     }
 
     T & operator[](std::size_t pos) { return ptr[pos]; }
-    T *data()        { return ptr.get(); }
-    T *begin() const { return ptr.get(); }
-    T *end() const   { return ptr.get() + len; }
-    std::size_t size() const { return len; }
+    T *data()                       { return ptr.get(); }
+    T *begin() const                { return ptr.get(); }
+    T *end() const                  { return ptr.get() + len; }
+    std::size_t size() const        { return len; }
 
     void reset(std::size_t s)
     {

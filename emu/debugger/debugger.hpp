@@ -99,7 +99,7 @@ private:
     Core::Emulator *emu;
     std::function<void (Event &&)> report_callback;
     std::vector<Breakpoint> break_list;
-    std::optional<Util::File> tracefile;
+    std::optional<io::File> tracefile;
     bool got_error = false;
 
 public:

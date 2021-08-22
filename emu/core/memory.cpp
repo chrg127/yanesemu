@@ -15,8 +15,8 @@ static DecodeFn get_decode(Mirroring mirroring)
         return [](uint16 addr) -> uint16
         {
             auto tmp = addr & 0xFFF;
-            auto bits = Util::getbits(tmp, 10, 2) >> 1;
-            return Util::setbits(tmp, 10, 2, bits);
+            auto bits = util::getbits(tmp, 10, 2) >> 1;
+            return util::setbits(tmp, 10, 2, bits);
         };
     case Mirroring::VERT:
         return [](uint16 addr) -> uint16 { return addr & 0x7FF; };

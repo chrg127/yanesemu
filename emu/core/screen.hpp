@@ -18,7 +18,7 @@ class Screen {
         }
     };
 
-    Util::Array2D<ColorRGBA, Core::SCREEN_WIDTH, Core::SCREEN_HEIGHT> buf;
+    util::Array2D<ColorRGBA, Core::SCREEN_WIDTH, Core::SCREEN_HEIGHT> buf;
     uint32 *pal;
 
 public:

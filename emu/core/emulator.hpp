@@ -8,6 +8,7 @@
 #include <emu/core/cartridge.hpp>
 #include <emu/core/screen.hpp>
 #include <emu/core/memory.hpp>
+#include <emu/util/uint.hpp>
 
 namespace Core {
 

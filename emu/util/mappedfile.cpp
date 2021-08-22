@@ -11,7 +11,7 @@
 #error "Platforms without mmap() are still unsupported."
 #endif
 
-namespace Util {
+namespace io {
 
 #ifdef PLATFORM_LINUX
 

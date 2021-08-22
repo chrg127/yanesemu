@@ -8,7 +8,7 @@
 #include <emu/util/array.hpp>
 #include <emu/util/uint.hpp>
 
-namespace Util {
+namespace io {
 
 enum class Access {
     READ, WRITE, MODIFY, APPEND,
@@ -33,7 +33,9 @@ public:
         return *this;
     }
 
-    // Create a File using ONLY these two functions
+    // File's are created using these two functions.
+    // The first opens a file using a string, the second associates an existing
+    // file (used for stdin, stdout, stderr).
     static std::optional<File> open(std::string_view pathname, Access access);
     static File assoc(FILE *fp);
 
@@ -57,10 +59,10 @@ public:
     void reopen(Access access)
     {
         switch (access) {
-        case Util::Access::READ:   fp = freopen(name.c_str(), "rb",  fp); break;
-        case Util::Access::WRITE:  fp = freopen(name.c_str(), "wb",  fp); break;
-        case Util::Access::APPEND: fp = freopen(name.c_str(), "ab",  fp); break;
-        case Util::Access::MODIFY: fp = freopen(name.c_str(), "rb+", fp); break;
+        case Access::READ:   fp = freopen(name.c_str(), "rb",  fp); break;
+        case Access::WRITE:  fp = freopen(name.c_str(), "wb",  fp); break;
+        case Access::APPEND: fp = freopen(name.c_str(), "ab",  fp); break;
+        case Access::MODIFY: fp = freopen(name.c_str(), "rb+", fp); break;
         }
     }
 
@@ -81,9 +83,9 @@ public:
         return size;
     }
 
-    HeapArray<uint8> read_bytes(std::size_t nb)
+    util::HeapArray<uint8> read_bytes(std::size_t nb)
     {
-        HeapArray<uint8> arr(nb);
+        util::HeapArray<uint8> arr(nb);
         auto nr = bread(arr.data(), nb);
         arr.shrink(nr);
         return arr;
@@ -95,7 +97,5 @@ public:
         bwrite(buf.data(), buf.size());
     }
 };
-
-std::optional<File> open_file(Access access);
 
 } // namespace Util

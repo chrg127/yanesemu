@@ -2,7 +2,7 @@
 #error "Only emu/core/cpu.cpp may #include this file."
 #else
 
-using Util::Word;
+using util::Word;
 
 #define call(f, ...) (this->*f)(__VA_ARGS__)
 

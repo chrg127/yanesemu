@@ -7,17 +7,17 @@ static bool is_space(int c)
     return c == ' ' || c == '\t';
 }
 
-namespace Util {
+namespace io {
 
 std::optional<File> File::open(std::string_view pathname, Access access)
 {
     const auto open = [](const char *name, Access access) -> FILE *
     {
         switch (access) {
-        case Util::Access::READ:   return fopen(name, "rb");
-        case Util::Access::WRITE:  return fopen(name, "wb");
-        case Util::Access::APPEND: return fopen(name, "ab");
-        case Util::Access::MODIFY: return fopen(name, "rb+");
+        case Access::READ:   return fopen(name, "rb");
+        case Access::WRITE:  return fopen(name, "wb");
+        case Access::APPEND: return fopen(name, "ab");
+        case Access::MODIFY: return fopen(name, "rb+");
         default: return nullptr;
         }
     };

@@ -3,7 +3,7 @@
 #include <mutex>
 #include <random>
 
-namespace Util {
+namespace util {
 
 using GenType = std::mt19937;
 GenType generator;

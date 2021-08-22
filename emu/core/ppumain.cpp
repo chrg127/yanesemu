@@ -82,7 +82,7 @@ void PPU::cycle(unsigned line)
             sprite_shift_run();
         if constexpr(Cycle >= 257 && Cycle <= 320) {
             if constexpr(Cycle == 257) secondary_oam.index = 0;
-            uint3 sprite_num = Util::getbits(secondary_oam.index, 2, 3);
+            uint3 sprite_num = util::getbits(secondary_oam.index, 2, 3);
             sprite_read_secondary<Cycle % 8>();
             sprite_fetch_cycle<Cycle % 8>(sprite_num, line);
             oam.addr = 0;

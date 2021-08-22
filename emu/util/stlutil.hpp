@@ -7,7 +7,7 @@
 /* STL collections utilities.
  * These were made for fixing some dumb problems in standard collections. */
 
-namespace Util {
+namespace util {
 
 /* Lookup value for a constant map, returning defval if not found.
  * const maps have the problem that map[key] will never work, since

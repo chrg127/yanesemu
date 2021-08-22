@@ -1,7 +1,5 @@
-#include <emu/core/cpu.hpp>
+#include "cpu.hpp"
 
-#include <cstring> // memset
-#include <emu/util/easyrandom.hpp>
 #include <emu/util/debug.hpp>
 
 namespace Core {

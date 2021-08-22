@@ -116,14 +116,14 @@ static void write_block(Debugger &dbg, uint16 start, uint16 end, uint8 data, Deb
 
 static std::optional<uint16> parse_addr(const std::string &str)
 {
-    auto addr = Util::strconv<uint16>(str, 16);
+    auto addr = str::conv<uint16>(str, 16);
     if (!addr) fmt::print("Invalid address: {}\n", str);
     return addr;
 }
 
 static std::optional<uint8> parse_data(const std::string &str)
 {
-    auto data = Util::strconv<uint8>(str, 8);
+    auto data = str::conv<uint8>(str, 8);
     if (!data) fmt::print("Invalid value: {}\n", str);
     return data;
 }
@@ -143,7 +143,7 @@ CliDebugger::CliDebugger(Core::Emulator *emu)
 
 bool CliDebugger::repl()
 {
-    Util::File input = Util::File::assoc(stdin);
+    io::File input = io::File::assoc(stdin);
     std::string cmdstr, argsstr;
 
     fmt::print("[NESDBG]> ");
@@ -153,9 +153,9 @@ bool CliDebugger::repl()
     }
     if (cmdstr.empty())
         eval(last_cmd, last_args);
-    else if (auto optcmd = Util::map_lookup(name_lookup, cmdstr); optcmd) {
+    else if (auto optcmd = util::map_lookup(name_lookup, cmdstr); optcmd) {
         last_cmd  = optcmd.value();
-        last_args = Util::strsplit(argsstr, ' ');
+        last_args = str::split(argsstr, ' ');
         eval(last_cmd, last_args);
     } else
         fmt::print("Invalid command. Try 'help'.\n");
@@ -178,7 +178,7 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
 
     case Command::HELP:
         if (args.size() == 1) {
-            auto cmd = Util::map_lookup_withdef(name_lookup, args[0], Command::HELP);
+            auto cmd = util::map_lookup_withdef(name_lookup, args[0], Command::HELP);
             fmt::print("{}\n", info_lookup.find(cmd)->second.desc);
         } else
             fmt::print("{}", helpstr);
@@ -221,7 +221,7 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
     }
 
     case Command::DELBREAK: {
-        auto index = Util::strconv(args[0]);
+        auto index = str::conv(args[0]);
         if (!index || index >= dbg.breakpoints().size())
             fmt::print("Invalid index: {}.\n", args[0]);
         else {
@@ -359,7 +359,7 @@ void CliDebugger::print_cpu_status()
 
 void CliDebugger::print_ppu_status()
 {
-    using Util::getbit;
+    using util::getbit;
     auto onoff = [](auto val) { return val ? "ON" : "OFF"; };
     uint8 ctrl = dbg.ppudbg.getreg(PPUDebugger::Reg::CTRL);
     fmt::print("PPUCTRL ($2000): {:08b}:\n"

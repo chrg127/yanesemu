@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-namespace Util {
+namespace util {
 
 void seed();
 uint8_t random8();

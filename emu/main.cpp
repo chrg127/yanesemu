@@ -75,7 +75,7 @@ public:
     void join() { th.join(); }
 };
 
-bool open_rom(Util::MappedFile &romfile)
+bool open_rom(io::MappedFile &romfile)
 {
     auto opt_cart = Core::parse_cartridge(romfile);
     if (!opt_cart) {
@@ -112,13 +112,13 @@ void rendering_thread(MainThread &mainthread, Video::Context &ctx, Video::Textur
 
 
 
-static const std::vector<Util::Argument> cmdflags = {
+static const std::vector<cmdline::Argument> cmdflags = {
     { 'h', "help",     "Print this help text and quit" },
     { 'v', "version",  "Shows the program's version"   },
     { 'd', "debugger", "Use command-line debugger"     },
 };
 
-int cli_interface(Util::ArgResult &flags)
+int cli_interface(cmdline::Result &flags)
 {
     if (flags.items.size() < 1) {
         error("ROM file not specified\n");
@@ -128,7 +128,7 @@ int cli_interface(Util::ArgResult &flags)
 
     // because we map the file in memory, it must be in scope for the entirety
     // of the emulator's lifetime.
-    auto optfile = Util::MappedFile::open(flags.items[0]);
+    auto optfile = io::MappedFile::open(flags.items[0]);
     if (optfile) {
         if (!open_rom(optfile.value()))
             return 1;
@@ -192,14 +192,14 @@ int main(int argc, char *argv[])
 
     if (argc < 2) {
         fmt::print("Usage: {} [args...] romfile\n", progname);
-        Util::print_args(cmdflags);
+        cmdline::print_args(cmdflags);
         return 1;
     }
 
-    Util::ArgResult flags = Util::argparse(argc, argv, cmdflags);
+    cmdline::Result flags = cmdline::argparse(argc, argv, cmdflags);
     if (flags.has['h']) {
         fmt::print("Usage: {} [args...] romfile\n", progname);
-        Util::print_args(cmdflags);
+        cmdline::print_args(cmdflags);
         return 0;
     }
     if (flags.has['v']) {

@@ -5,24 +5,25 @@
 #include <fmt/core.h>
 #include <emu/util/debug.hpp>
 
-namespace Util {
+namespace cmdline {
 
 /* Returns an iterator inside of valid_args */
 template <typename T>
-static auto find_arg(const T arg, const ValidArgStruct &valid_args)
+static auto find_arg(const T arg, const std::vector<Argument> &args)
 {
-    static_assert(std::is_same<T, char>::value || std::is_same<T, std::string_view>::value,
+    static_assert(std::is_same<T,             char>::value
+               || std::is_same<T, std::string_view>::value,
                   "T must be std::string_view, const char * or char");
     if constexpr(std::is_same<T, char>::value) {
-        return std::find_if(valid_args.begin(), valid_args.end(), [arg](const auto &valid_arg) { return valid_arg.short_opt == arg; });
+        return std::find_if(args.begin(), args.end(), [arg](const auto &a) { return a.short_opt == arg; });
     } else if constexpr(std::is_same<T, std::string_view>::value) {
-        return std::find_if(valid_args.begin(), valid_args.end(), [arg](const auto &valid_arg) { return valid_arg.long_opt == arg; });
+        return std::find_if(args.begin(), args.end(), [arg](const auto &a) { return a.long_opt == arg; });
     }
 }
 
-ArgResult argparse(const std::vector<std::string_view> &args, const std::vector<Argument> &valid_args)
+Result argparse(const std::vector<std::string_view> &args, const std::vector<Argument> &valid_args)
 {
-    ArgResult res;
+    Result res;
 
     for (const auto &arg : valid_args) {
         res.has[arg.short_opt] = false;

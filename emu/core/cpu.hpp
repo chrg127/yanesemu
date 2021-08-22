@@ -1,7 +1,6 @@
 #pragma once
 
 #include <functional>
-#include <string>
 #include <emu/core/const.hpp>
 #include <emu/core/bus.hpp>
 #include <emu/util/bits.hpp>
@@ -62,7 +61,7 @@ class CPU {
     };
 
     struct {
-        Util::Word pc  = 0;
+        util::Word pc  = 0;
         uint8 acc = 0;
         uint8 x   = 0;
         uint8 y   = 0;
@@ -85,7 +84,7 @@ class CPU {
     } dma;
 
     Bus<CPUBUS_SIZE> *bus = nullptr;
-    Util::Word opargs = 0;
+    util::Word opargs = 0;
     std::function<void(uint16, char)> fetch_callback;
     std::function<void(uint8, uint16)> error_callback;
 

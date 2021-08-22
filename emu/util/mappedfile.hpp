@@ -6,7 +6,7 @@
 #include <string_view>
 #include <emu/util/uint.hpp>
 
-namespace Util {
+namespace io {
 
 class MappedFile {
     uint8 *ptr = nullptr;

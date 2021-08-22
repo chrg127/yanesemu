@@ -143,7 +143,7 @@ void Debugger::trace()
 
 bool Debugger::start_tracing(std::string_view pathname)
 {
-    tracefile = Util::File::open(pathname, Util::Access::WRITE);
+    tracefile = io::File::open(pathname, io::Access::WRITE);
     return !!tracefile;
 }
 
@@ -182,7 +182,7 @@ std::optional<Debugger::Loc> str_to_memsrc(const std::string &str)
         { "vram", Debugger::Loc::VRAM },
         { "oam", Debugger::Loc::OAM },
     };
-    return Util::map_lookup(srcmap, str);
+    return util::map_lookup(srcmap, str);
 }
 
 } // namespace Debugger

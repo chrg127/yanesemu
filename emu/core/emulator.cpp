@@ -1,8 +1,6 @@
-#include <emu/core/emulator.hpp>
+#include "emulator.hpp"
 
-#include <emu/util/uint.hpp>
-
-using namespace Core;
+namespace Core {
 
 Emulator::Emulator()
 {
@@ -78,3 +76,4 @@ void Emulator::insert_rom(Cartridge::Data &&cartdata)
     map(cartdata.mirroring);
 }
 
+} // namespace Core

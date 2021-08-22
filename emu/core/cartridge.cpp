@@ -4,9 +4,9 @@
 #include <emu/util/file.hpp>
 #include <emu/util/bits.hpp>
 
-using Util::getbits;
-using Util::getbit;
-using Util::bitmask;
+using util::getbits;
+using util::getbit;
+using util::bitmask;
 
 namespace Core {
 
@@ -27,7 +27,7 @@ std::string Cartridge::Data::to_string() const
     );
 }
 
-std::optional<Cartridge::Data> parse_cartridge(Util::MappedFile &romfile)
+std::optional<Cartridge::Data> parse_cartridge(io::MappedFile &romfile)
 {
     static const uint8 constants[] = { 'N', 'E', 'S', 0x1A };
     static_assert(sizeof(constants) == 4);
@@ -72,7 +72,7 @@ std::optional<Cartridge::Data> parse_cartridge(Util::MappedFile &romfile)
     // - in some uncommon cases there may be both CHR ROM and CHR RAM.
 
     if (cart.format == Cartridge::Format::INES) {
-        cart.chrram_size = cart.has.chrram ? Util::to_kib(8) : 0;
+        cart.chrram_size = cart.has.chrram ? util::to_kib(8) : 0;
         cart.nes20_data = std::nullopt;
     } else {
         Cartridge::Data::NES20Data data;
@@ -99,9 +99,9 @@ std::optional<Cartridge::Data> parse_cartridge(Util::MappedFile &romfile)
 
     if (cart.has.trainer)
         cart.trainer = read(512);
-    cart.prgrom = read(prgrom_size * Util::to_kib(16));
+    cart.prgrom = read(prgrom_size * util::to_kib(16));
     if (!cart.has.chrram)
-        cart.chrrom = read(chrrom_size * Util::to_kib(8));
+        cart.chrrom = read(chrrom_size * util::to_kib(8));
     return cart;
 }
 

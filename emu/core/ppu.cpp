@@ -178,11 +178,11 @@ void PPU::writereg(uint16 addr, uint8 data)
     // PPUSCROLL
     case 0x2005:
         if (!io.scroll_latch) {
-            vram.tmp.coarse_x = Util::getbits(data, 3, 5);
-            vram.fine_x       = Util::getbits(data, 0, 3);
+            vram.tmp.coarse_x = util::getbits(data, 3, 5);
+            vram.fine_x       = util::getbits(data, 0, 3);
         } else {
-            vram.tmp.coarse_y = Util::getbits(data, 3, 5);
-            vram.tmp.fine_y   = Util::getbits(data, 0, 3);
+            vram.tmp.coarse_y = util::getbits(data, 3, 5);
+            vram.tmp.fine_y   = util::getbits(data, 0, 3);
         }
         io.scroll_latch ^= 1;
         break;
@@ -190,9 +190,9 @@ void PPU::writereg(uint16 addr, uint8 data)
     // PPUADDR
     case 0x2006:
         if (io.scroll_latch == 0)
-            vram.tmp.v = Util::setbits(vram.tmp.v, 8, 8, data & 0x3F);
+            vram.tmp.v = util::setbits(vram.tmp.v, 8, 8, data & 0x3F);
         else {
-            vram.tmp = Util::setbits(vram.tmp.v, 0, 8, data);
+            vram.tmp = util::setbits(vram.tmp.v, 0, 8, data);
             vram.addr = vram.tmp;
         }
         io.scroll_latch ^= 1;
@@ -215,14 +215,14 @@ void PPU::writereg(uint16 addr, uint8 data)
 void PPU::copy_v_horzpos()
 {
     vram.addr.coarse_x = vram.tmp.coarse_x;
-    vram.addr.nt = Util::setbit(vram.addr.nt, 0, vram.tmp.nt & 1);
+    vram.addr.nt = util::setbit(vram.addr.nt, 0, vram.tmp.nt & 1);
 }
 
 void PPU::copy_v_vertpos()
 {
     vram.addr.coarse_y = vram.tmp.coarse_y;
     vram.addr.fine_y = vram.tmp.fine_y;
-    vram.addr.nt = Util::setbit(vram.addr.nt, 1, vram.tmp.nt >> 1 & 1);
+    vram.addr.nt = util::setbit(vram.addr.nt, 1, vram.tmp.nt >> 1 & 1);
 }
 
 /*
@@ -271,7 +271,7 @@ uint8 PPU::fetch_pt_sprite(bool sp_size, uint8 nt, bool bitplane, unsigned row)
         return 0;
     if (!sp_size)
         return fetch_pt(io.sp_pt_addr, nt, bitplane, row);
-    unsigned bit = Util::getbit(row, 3);
+    unsigned bit = util::getbit(row, 3);
     return fetch_pt(nt & 1, (nt & 0xFE) + bit, bitplane, row - 8*bit);
 }
 
@@ -281,22 +281,22 @@ void PPU::background_shift_run()
     shift.pt_high   <<= 1;
     shift.attr_low  <<= 1;
     shift.attr_high <<= 1;
-    shift.attr_low  = Util::setbit(shift.attr_low,  0, shift.feed_low );
-    shift.attr_high = Util::setbit(shift.attr_high, 0, shift.feed_high);
+    shift.attr_low  = util::setbit(shift.attr_low,  0, shift.feed_low );
+    shift.attr_high = util::setbit(shift.attr_high, 0, shift.feed_high);
 }
 
 void PPU::background_shift_fill()
 {
-    shift.pt_low  = Util::setbits(shift.pt_low,  0, 8, tile.pt_low);
-    shift.pt_high = Util::setbits(shift.pt_high, 0, 8, tile.pt_high);
+    shift.pt_low  = util::setbits(shift.pt_low,  0, 8, tile.pt_low);
+    shift.pt_high = util::setbits(shift.pt_high, 0, 8, tile.pt_high);
 
     // these are, respectively, bit 1 and 6 of vram.addr
-    unsigned bit1 = Util::getbit(vram.addr.coarse_x, 1);
-    unsigned bit2 = Util::getbit(vram.addr.coarse_y, 1);
+    unsigned bit1 = util::getbit(vram.addr.coarse_x, 1);
+    unsigned bit2 = util::getbit(vram.addr.coarse_y, 1);
     // (00,01,10,11) -> (0,2,4,6)
     unsigned bitno = (bit2 << 1 | bit1) * 2;
 
-    uint2 bits = Util::getbits(tile.attr, bitno, 2);
+    uint2 bits = util::getbits(tile.attr, bitno, 2);
     shift.feed_high = bits >> 1 & 1;
     shift.feed_low  = bits & 1;
 }
@@ -352,11 +352,11 @@ std::tuple<uint2, uint2, uint8> PPU::sprite_output(unsigned x)
     for (uint8 i = 0; i < 8; i++) {
         if (oam.xpos[i] != 0)
             continue;
-        bool low  = Util::getbit(oam.pt_low[i],  7);
-        bool high = Util::getbit(oam.pt_high[i], 7);
+        bool low  = util::getbit(oam.pt_low[i],  7);
+        bool high = util::getbit(oam.pt_high[i], 7);
         if (low != 0 || high != 0)
             return std::make_tuple(
-                Util::getbits(oam.attrs[i], 0, 2),
+                util::getbits(oam.attrs[i], 0, 2),
                 high << 1 | low,
                 i
             );
@@ -400,7 +400,7 @@ uint8 PPU::output(unsigned x)
             io.sp_zero_hit = true;
             oam.sp0_curr = 0;
         }
-        bool priority = Util::getbit(oam.attrs[sp_num], 5);
+        bool priority = util::getbit(oam.attrs[sp_num], 5);
         return priority ? getcolor(bg_row, bg_ind, 0)
                         : getcolor(sp_row, sp_ind, 1);
     }
