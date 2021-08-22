@@ -14,6 +14,9 @@ namespace str {
 
 /* Splits a string into a vector of strings. */
 std::vector<std::string> split(const std::string &s, int delim = ',');
+std::vector<std::string> split_lines(const std::string &s, int col);
+std::string trim(const std::string &s);
+void trim_inplace(std::string &s);
 
 /* Converts a string to a number. */
 template <typename T = int>

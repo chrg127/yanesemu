@@ -1,6 +1,8 @@
 #pragma once
 
+#include <functional>
 #include <optional>
+#include <map>
 #include <unordered_map>
 #include <vector>
 
@@ -24,6 +26,15 @@ const V &map_lookup_withdef(const std::unordered_map<K, V> &m,
 
 template <typename K, typename V>
 std::optional<V> map_lookup(const std::unordered_map<K, V> &m, const K &key)
+{
+    auto it = m.find(key);
+    if (it == m.end())
+       return std::nullopt;
+    return it->second;
+}
+
+template <typename K, typename V>
+std::optional<V> map_lookup(const std::map<K, V> &m, const K &key)
 {
     auto it = m.find(key);
     if (it == m.end())
