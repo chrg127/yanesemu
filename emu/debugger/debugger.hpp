@@ -14,6 +14,14 @@ namespace core {
 
 namespace Debugger {
 
+enum class MemorySource {
+    RAM,
+    VRAM,
+    OAM,
+};
+
+std::optional<MemorySource> string_to_memsource(const std::string &str);
+
 class CPUDebugger {
     core::CPU *cpu;
 
@@ -91,10 +99,6 @@ struct Debugger {
         STEP, NEXT, FRAME, NONE,
     };
 
-    enum class Loc {
-        RAM, VRAM, OAM
-    };
-
 private:
     core::Emulator *emu;
     std::function<void (Event &&)> report_callback;
@@ -112,11 +116,8 @@ public:
     void run(StepType step_type);
 
     uint8 read_ram(uint16 addr);
-    uint8 read_vram(uint14 addr);
-    uint8 read_oam(uint8 addr);
-    void write_ram(uint16 addr, uint8 data);
-    void write_vram(uint14 addr, uint8 data);
-    void write_oam(uint8 addr, uint8 data);
+    std::function<uint8(uint16)>       read_from(MemorySource source);
+    std::function<void(uint16, uint8)> write_to(MemorySource source);
 
     void step()          { run(StepType::STEP); }
     void next()          { run(StepType::NEXT); }
@@ -133,9 +134,5 @@ public:
 private:
     void trace();
 };
-
-std::function<uint8(Debugger *, uint16)> get_read_fn(Debugger::Loc loc);
-std::function<void(Debugger *, uint16, uint8)> get_write_fn(Debugger::Loc loc);
-std::optional<Debugger::Loc> str_to_memsrc(const std::string &str);
 
 } // namespace core

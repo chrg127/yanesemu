@@ -15,7 +15,7 @@
 namespace Debugger {
 
 //  name                abbrev  enum           min args max args    description
-#define O(X) \
+#define ENUM_COMMANDS(X) \
     X("help",           "h",    HELP,          0,       1,          "prints this help text") \
     X("continue",       "c",    CONTINUE,      0,       0,          "start/continue execution") \
     X("runframe",       "nmi",  RUNFRAME,      0,       0,          "run entire frame, stop at nmi handler") \
@@ -31,15 +31,14 @@ namespace Debugger {
     X("block",          "bl",   BLOCK,         2,       3,          "read block") \
     X("disassemble",    "dis",  DISASSEMBLE,   1,       3,          "disassemble the current instruction") \
     X("disblock",       "db",   DISBLOCK,      2,       2,          "disassemble a given block") \
-    X("trace",          "tr",   TRACE,         1,       1,          "") \
-    X("stoptrace",      "str",  STOP_TRACE,    0,       0,          "") \
-    X("reset",          "res",  RESET,         0,       0,          "reset the machine") \
+    X("trace",          "tr",   TRACE,         1,       1,          "trace and log instructions to file") \
+    X("stoptrace",      "str",  STOP_TRACE,    0,       0,          "stop tracing instructions") \
+    X("reset",          "res",  RESET,         0,       0,          "reset the emulator") \
     X("quit",           "q",    QUIT,          0,       0,          "quit the emulator") \
 
-#define X(name, abbrev, enumname, minargs, maxargs, desc) { name, enumname }, { abbrev, enumname },
-static const std::unordered_map<std::string, Command> name_lookup = {
-    O(X)
-};
+#define X(name, abbrev, enumname, minargs, maxargs, desc) \
+    { name, enumname }, { abbrev, enumname },
+static const std::unordered_map<std::string, Command> name_lookup = { ENUM_COMMANDS(X) };
 #undef X
 
 struct CommandInfo {
@@ -50,90 +49,95 @@ struct CommandInfo {
     unsigned maxargs;
 };
 
-#define X(name, abbrev, enumname, minargs, maxargs, desc) { enumname, CommandInfo{ name, desc, abbrev, minargs, maxargs } },
-static const std::unordered_map<Command, CommandInfo> info_lookup = {
-    O(X)
-};
+#define X(name, abbrev, enumname, minargs, maxargs, desc) \
+    { enumname, CommandInfo{ name, desc, abbrev, minargs, maxargs } },
+static const std::unordered_map<Command, CommandInfo> info_lookup = { ENUM_COMMANDS(X) };
 #undef X
 
-static const std::string helpstr = R"(help, h:            prints this help text
-continue, c:        start/continue execution
-runframe, nmi:      run entire frame, stop at nmi handler
-break, b:           set a breakpoint
-listbreaks, lb:     list breakpoints
-deletebreak, dlb:   delete a breakpoint
-backtrace, bt:      prints the backtrace
-next, n:            run next instruction
-step, s:            step next instruction
-status, st:         print current status
-read, rd:           read address
-write, wr:          write address
-block, bl:          read block
-disassemble, dis:   disassemble the current instruction
-disblock, disb:     disassemble a given block
-trace, tr:          enable tracing
-stoptrace, str:     stop tracing
-reset, res:         reset the machine
-quit, q:            quit the emulator
-)";
+static const std::string get_helpstr()
+{
+#define X(name, abbrev, enumname, minargs, maxargs, desc) \
+    CommandInfo{ name, desc, abbrev, minargs, maxargs },
+    static const std::vector<CommandInfo> v = { ENUM_COMMANDS(X) };
+#undef X
+    auto it = std::max_element(v.begin(), v.end(), [](const auto &a, const auto &b) {
+        return a.name.size() + a.abbrev.size() < b.name.size() + b.abbrev.size();
+    });
+    auto size = it->name.size() + it->abbrev.size() + 3;
+    std::string result;
+    for (const auto &entry : v) {
+        auto tmp = fmt::format("{}, {}:", entry.name, entry.abbrev);
+        result += fmt::format("{:{}} {}\n", tmp, size, entry.desc);
+    }
+    return result;
+}
 
-static bool check_addr_ranges(uint16 start, uint16 end, Debugger::Loc loc)
+#undef ENUM_COMMANDS
+
+static const std::string helpstr = get_helpstr();
+
+static bool check_addr_ranges(uint16 start, uint16 end, MemorySource source)
 {
     if (end < start) {
         fmt::print("Invalid range: {:04X}-{:04X}.", start, end);
         return false;
-    } else if (loc == Debugger::Loc::VRAM && (start > 0x4000 || end > 0x4000)) {
-        fmt::print("Invalid range for VRAM.\n");
+    } else if (source == MemorySource::VRAM && (start > 0x4000 || end > 0x4000)) {
+        fmt::print("Invalid range for source VRAM.\n");
         return false;
-    } else if (loc == Debugger::Loc::OAM && (start > 0xFF || end > 0xFF)) {
+    } else if (source == MemorySource::OAM && (start > 0xFF || end > 0xFF)) {
         fmt::print("Invalid range for source OAM.\n");
         return false;
     }
     return true;
 }
 
-static void read_block(Debugger &dbg, uint16 start, uint16 end, Debugger::Loc loc)
+static void read_block(Debugger &dbg, uint16 start, uint16 end, MemorySource source)
 {
-    if (!check_addr_ranges(start, end, loc))
+    if (!check_addr_ranges(start, end, source))
         return;
-    auto readfn = get_read_fn(loc);
+    auto readfn = dbg.read_from(source);
     for (int i = 0; i <= (end - start); ) {
         fmt::print("${:04X}: ", start + i);
         for (int j = 0; j < 16 && i + start <= end; i++, j++)
-            fmt::print("{:02X} ", readfn(&dbg, start + i));
+            fmt::print("{:02X} ", readfn(start + i));
         fmt::print("\n");
     }
 }
 
-static void write_block(Debugger &dbg, uint16 start, uint16 end, uint8 data, Debugger::Loc loc)
+static void write_block(Debugger &dbg, uint16 start, uint16 end, uint8 data, MemorySource source)
 {
-    if (!check_addr_ranges(start, end, loc))
+    if (!check_addr_ranges(start, end, source))
         return;
-    auto writefn = get_write_fn(loc);
+    auto writefn = dbg.write_to(source);
     for (uint16 curr = start; curr <= (end-start); curr++)
-        writefn(&dbg, curr, data);
+        writefn(curr, data);
 }
 
 static std::optional<uint16> parse_addr(const std::string &str)
 {
     auto addr = str::conv<uint16>(str, 16);
-    if (!addr) fmt::print("Invalid address: {}\n", str);
+    if (!addr)
+        fmt::print("Invalid address: {}\n", str);
     return addr;
 }
 
 static std::optional<uint8> parse_data(const std::string &str)
 {
     auto data = str::conv<uint8>(str, 8);
-    if (!data) fmt::print("Invalid value: {}\n", str);
+    if (!data)
+        fmt::print("Invalid value: {}\n", str);
     return data;
 }
 
-static std::optional<Debugger::Loc> parse_mem_loc(const std::string &str)
+static std::optional<MemorySource> parse_memsource(const std::string &str)
 {
-    auto loc = str_to_memsrc(str);
-    if (!loc) fmt::print("Unrecognized memory source: {}\n", str);
-    return loc;
+    auto source = string_to_memsource(str);
+    if (!source)
+        fmt::print("Unrecognized memory source: {}\n", str);
+    return source;
 }
+
+
 
 CliDebugger::CliDebugger(core::Emulator *emu)
     : dbg(emu)
@@ -146,15 +150,16 @@ bool CliDebugger::repl()
     io::File input = io::File::assoc(stdin);
     std::string cmdstr, argsstr;
 
-    fmt::print("[NESDBG]> ");
+    fmt::print(">>> ");
     if (!input.getword(cmdstr) || !input.getline(argsstr)) {
         quit = true;
         return quit;
     }
+
     if (cmdstr.empty())
         eval(last_cmd, last_args);
-    else if (auto optcmd = util::map_lookup(name_lookup, cmdstr); optcmd) {
-        last_cmd  = optcmd.value();
+    else if (auto cmd = util::map_lookup(name_lookup, cmdstr); cmd) {
+        last_cmd  = cmd.value();
         last_args = str::split(argsstr, ' ');
         eval(last_cmd, last_args);
     } else
@@ -242,8 +247,7 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
         break;
     }
 
-    case Command::BACKTRACE: {
-    }
+    case Command::BACKTRACE: break;
 
     case Command::DISASSEMBLE: {
         auto id = parse_data(args[0]);
@@ -262,29 +266,29 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
         break;
 
     case Command::READ_ADDR: {
-        auto addr = parse_addr(args[0]);
-        auto loc = parse_mem_loc(args.size() == 2 ? args[1] : "");
-        if (addr && loc)
-            read_block(dbg, addr.value(), addr.value(), loc.value());
+        auto addr   = parse_addr(args[0]);
+        auto source = parse_memsource(args.size() == 2 ? args[1] : "");
+        if (addr && source)
+            read_block(dbg, addr.value(), addr.value(), source.value());
         break;
     }
 
     case Command::WRITE_ADDR: {
-        auto addr = parse_addr(args[0]);
-        auto val  = parse_data(args[1]);
-        auto loc  = parse_mem_loc(args.size() == 3 ? args[2] : "");
-        if (addr && val && loc) {
-            if (loc.value() == Debugger::Loc::RAM && addr.value() >= core::CARTRIDGE_START)
+        auto addr   = parse_addr(args[0]);
+        auto val    = parse_data(args[1]);
+        auto source = parse_memsource(args.size() == 3 ? args[2] : "");
+        if (addr && val && source) {
+            if (source.value() == MemorySource::RAM && addr.value() >= core::CARTRIDGE_START)
                 fmt::print("Warning: writes to ROM have no effects\n");
-            write_block(dbg, addr.value(), addr.value(), val.value(), loc.value());
+            write_block(dbg, addr.value(), addr.value(), val.value(), source.value());
         }
         break;
     }
 
     case Command::BLOCK: {
         auto start = parse_addr(args[0]);
-        auto end = parse_addr(args[1]);
-        auto loc = parse_mem_loc(args.size() == 3 ? args[2] : "");
+        auto end   = parse_addr(args[1]);
+        auto loc   = parse_memsource(args.size() == 3 ? args[2] : "");
         if (start && end && loc)
             read_block(dbg, start.value(), end.value(), loc.value());
         break;
@@ -293,9 +297,9 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
     case Command::DISBLOCK: {
         auto start = parse_addr(args[0]);
         auto end   = parse_addr(args[1]);
-        if (start && end && check_addr_ranges(start.value(), end.value(), Debugger::Loc::RAM)) {
+        if (start && end && check_addr_ranges(start.value(), end.value(), MemorySource::RAM)) {
             core::disassemble_block(start.value(), end.value(),
-                [&](uint16 addr)                  { return dbg.read_ram(addr); },
+                [&](uint16 addr)                    { return dbg.read_ram(addr); },
                 [ ](uint16 addr, std::string &&str) { fmt::print("${:04X}: {}\n", addr, str); });
         }
         break;
