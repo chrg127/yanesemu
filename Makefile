@@ -21,7 +21,7 @@ CFLAGS := -I. -std=c11
 CXXFLAGS := -I. -std=c++20 -Wall -Wextra -pipe \
 		 -Wcast-align -Wcast-qual -Wpointer-arith \
 		 -Wformat=2 -Wmissing-include-dirs -Wno-unused-parameter \
-		 -fno-exceptions -fno-rtti -fconcepts
+		 -fno-rtti -fconcepts
 flags_deps = -MMD -MP -MF $(@:.o=.d)
 
 # can be: linux, mingw64
