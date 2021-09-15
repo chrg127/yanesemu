@@ -18,19 +18,22 @@
 inline void error(std::string_view fmtstr, auto&&... args)
 {
     fmt::print(stderr, "error: ");
-    fmt::print(stderr, fmt::runtime(fmtstr), args...);
+    // fmt::print(stderr, fmt::runtime(fmtstr), args...);
+    fmt::print(stderr, fmtstr, args...);
 }
 
 inline void warning(std::string_view fmtstr, auto&&... args)
 {
     fmt::print(stderr, "warning: ");
-    fmt::print(stderr, fmt::runtime(fmtstr), args...);
+    // fmt::print(stderr, fmt::runtime(fmtstr), args...);
+    fmt::print(stderr, fmtstr, args...);
 }
 
 [[noreturn]] inline void panic(std::string_view fmtstr, auto&&... args)
 {
     fmt::print(stderr, "panic: ");
-    fmt::print(stderr, fmt::runtime(fmtstr), args...);
+    // fmt::print(stderr, fmt::runtime(fmtstr), args...);
+    fmt::print(stderr, fmtstr, args...);
     std::exit(1);
 }
 
