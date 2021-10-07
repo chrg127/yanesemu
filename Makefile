@@ -1,20 +1,18 @@
 programname := emu
 
 # can be: debug, release
-profile := debug
+build := debug
 
-_objs_main := \
-	emulator.o cartridge.o cpu.o ppu.o instrinfo.o memory.o screen.o \
-	debugger.o clidbg.o cpudebugger.o ppudebugger.o \
-	cmdline.o conf.o easyrandom.o file.o string.o mappedfile.o \
-	video.o opengl.o \
-	glad.o stb_image.o \
-	main.o
-_objs_video_test := video_test.o video.o opengl.o glad.o
-_objs_ppu_test := ppu_test.o cpu.o ppu.o bus.o video.o opengl.o glad.o cartridge.o file.o easyrandom.o
-libs := -lm -lSDL2 -lfmt
+_objs := \
+	emulator.cpp cartridge.cpp cpu.cpp ppu.cpp instrinfo.cpp memory.cpp screen.cpp \
+	debugger.cpp clidbg.cpp cpudebugger.cpp ppudebugger.cpp \
+	cmdline.cpp conf.cpp easyrandom.cpp file.cpp string.cpp mappedfile.cpp \
+	video.cpp opengl.cpp \
+	glad.c stb_image.c
+_objs_main := main.cpp
+_tests :=
 
-VPATH := emu:emu/core:emu/util:emu/io:emu/video:emu/debugger:tests
+VPATH := emu:emu/core:emu/util:emu/io:emu/video:emu/debugger:external/glad:external/stb
 CC := gcc
 CXX := g++
 CFLAGS := -I. -std=c11
@@ -22,82 +20,66 @@ CXXFLAGS := -I. -std=c++20 -Wall -Wextra -pipe \
 		 -Wcast-align -Wcast-qual -Wpointer-arith \
 		 -Wformat=2 -Wmissing-include-dirs -Wno-unused-parameter \
 		 -fno-rtti -fconcepts
+LDLIBS := -lm -lSDL2 -lfmt
 flags_deps = -MMD -MP -MF $(@:.o=.d)
 
 # can be: linux, mingw64
 platform := linux
 
-ifeq ($(profile),debug)
+ifeq ($(build),debug)
     outdir := debug
     CFLAGS += -g -DDEBUG
     CXXFLAGS += -g -DDEBUG
-else
+else ifeq ($(build),release)
     outdir := release
     CFLAGS += -O3
     CXXFLAGS += -O3
+else
+	$(error error: invalid value for profile)
 endif
 
 ifeq ($(platform),linux)
-    libs += -lpthread -ldl -lGL
+    LDLIBS += -lpthread -ldl -lGL
 else ifeq ($(platform),mingw64)
-    libs += -lopengl32 -lmingw32 -lSDL2main -lSDL2
+    LDLIBS += -lopengl32 -lmingw32 -lSDL2main -lSDL2
 else
     $(error error: platform not supported)
 endif
 
-# setup objs variables with outdir
-objs_main := $(patsubst %,$(outdir)/%,$(_objs_main))
-objs_video_test := $(patsubst %,$(outdir)/%,$(_objs_video_test))
-objs_ppu_test := $(patsubst %,$(outdir)/%,$(_objs_ppu_test))
+objs := $(patsubst %,$(outdir)/%.o,$(_objs))
+objs_main := $(patsubst %,$(outdir)/%.o,$(_objs_main))
+test_programs := $(patsubst %,debug/test/%,$(_tests))
 
-# rules
-all: $(outdir) $(outdir)/$(programname)
+all: $(outdir)/$(programname)
 
-$(outdir)/$(programname): $(objs_main)
+$(outdir)/$(programname): $(outdir) $(objs) $(objs_main)
 	$(info Linking $@ ...)
-	$(CXX) $(objs_main) -o $@ $(libs)
+	@$(CXX) $(objs) $(objs_main) -o $@ $(LDLIBS)
 
-# tests
-$(outdir)/video_test: $(objs_video_test)
-	$(info Linking $@ ...)
-	$(CXX) $(objs_video_test) -o $@ $(libs)
+debug/test/%_test: debug/%_test.cpp.o debug/test $(objs)
+	$(info Linking test $@ ...)
+	$(CXX) $< $(objs) -o $@ $(LDLIBS)
 
-$(outdir)/ppu_test: $(objs_ppu_test)
-	$(info Linking $@ ...)
-	$(CXX) $(objs_ppu_test) -o $@ $(libs)
-
-# This should require a bit of explanation.
-# At first pass, no *.d exist, so we just build all files
-# (every *.cpp file always match the %.o: %.cpp file). Note that
-# the general matching rule does not depend on anything other than
-# the corresponding .cpp file. That means, with no other rule,
-# we would simply never re-compile anything unless a .cpp file
-# changed.
-# But there are other rules! it's those .d files. When they're
-# created and included, we automatically get header file information,
-# thus we are able to re-compile even when some header file changes,
-# and we re-compile only what's needed.
 -include $(outdir)/*.d
 
-$(outdir)/%.o: %.cpp
+$(outdir)/%.cpp.o: %.cpp
 	$(info Compiling $< ...)
 	@$(CXX) $(CXXFLAGS) $(flags_deps) -c $< -o $@
 
-$(outdir)/glad.o: external/glad/glad.c
-	$(info Compiling $< ...)
-	@$(CC) $(CFLAGS) $(flags_deps) -c $< -o $@
-
-$(outdir)/stb_image.o: external/stb/stb_image.c
+$(outdir)/%.c.o: %.c
 	$(info Compiling $< ...)
 	@$(CC) $(CFLAGS) $(flags_deps) -c $< -o $@
 
 $(outdir):
 	mkdir -p $(outdir)
 
+debug/test:
+	mkdir -p debug
+	mkdir -p debug/test
+
 .PHONY: clean tests
 
-tests: $(outdir)/video_test $(outdir)/ppu_test
+tests: $(test_programs)
 
 clean:
 	rm -rf $(outdir)
-
