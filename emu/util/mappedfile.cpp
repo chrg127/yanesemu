@@ -1,6 +1,6 @@
 #include "mappedfile.hpp"
 
-#include <emu/util/platform.hpp>
+#include <emu/util/os.hpp>
 
 #ifdef PLATFORM_LINUX
 #include <fcntl.h>
