@@ -10,7 +10,7 @@
 #include <emu/util/cmdline.hpp>
 #include <emu/util/debug.hpp>
 #include <emu/util/mappedfile.hpp>
-#include <emu/util/platform.hpp>
+#include <emu/util/os.hpp>
 #include <emu/video/video.hpp>
 
 static core::Emulator emu;
@@ -90,23 +90,15 @@ bool open_rom(io::MappedFile &romfile)
 void rendering_thread(MainThread &mainthread, video::Context &ctx, video::Texture &screen)
 {
     while (mainthread.running()) {
-        for (SDL_Event ev; SDL_PollEvent(&ev) != 0; ) {
-            switch (ev.type) {
-            case SDL_QUIT:
-                mainthread.end();
-                break;
-            case SDL_WINDOWEVENT:
-                if (ev.window.event == SDL_WINDOWEVENT_RESIZED)
-                    ctx.resize(ev.window.data1, ev.window.data2);
-            }
-        }
-
+        ctx.poll();
+        if (ctx.has_quit())
+            mainthread.end();
         mainthread.run_on_frame_pending([&]() {
             ctx.update_texture(screen, emu.get_screen());
         });
-
-        ctx.use_texture(screen);
-        ctx.draw();
+        ctx.clear();
+        ctx.draw_texture(screen, 0, 0);
+        ctx.swap();
     }
 }
 
@@ -123,27 +115,28 @@ int cli_interface(cmdline::Result &flags)
     if (flags.items.size() < 1) {
         error("ROM file not specified\n");
         return 1;
-    } else if (flags.items.size() > 1)
+    } else if (flags.items.size() > 1) {
         warning("multiple ROM files specified, first found will be used\n");
+    }
 
     // because we map the file in memory, it must be in scope for the entirety
     // of the emulator's lifetime.
-    auto optfile = io::MappedFile::open(flags.items[0]);
-    if (optfile) {
-        if (!open_rom(optfile.value()))
+    auto rom = io::MappedFile::open(flags.items[0]);
+    if (rom) {
+        if (!open_rom(rom.value()))
             return 1;
     } else {
         std::perror(fmt::format("error: {}", flags.items[0]).c_str());
         return 1;
     }
 
-    auto context = video::Context::create(video::Context::Type::OPENGL);
+    auto context = video::Context::create(video::Type::SDL);
     if (!context) {
         error("can't initialize video\n");
         return 1;
     }
-    video::Texture tex = context->create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
 
+    video::Texture tex = context->create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
     MainThread mainthread;
 
     if (!flags.has['d']) {
@@ -166,9 +159,8 @@ int cli_interface(cmdline::Result &flags)
         {
             emu.power();
             Debugger::CliDebugger clidbg{&emu};
-            bool quit = false;
             clidbg.print_instr();
-            while (!quit && mainthread.running())
+            for (bool quit = false; !quit && mainthread.running(); )
                 quit = clidbg.repl();
             mainthread.end();
         });

@@ -79,4 +79,9 @@ std::function<R(Args...)> member_fn(T *obj, R (T::*fn)(Args...))
     return [=](Args&&... args) -> R { return (obj->*fn)(args...); };
 }
 
-} // namespace Util
+template <typename T>
+concept ContainerType = requires(T t) {
+    t.data();
+};
+
+} // namespace util

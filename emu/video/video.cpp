@@ -7,7 +7,6 @@
 #pragma GCC diagnostic ignored "-Wcast-qual"
 #include <external/stb/stb_image.h>
 #pragma GCC diagnostic pop
-#include <emu/util/uint.hpp>
 #include <emu/util/debug.hpp>
 
 #include "opengl.hpp"
@@ -19,7 +18,7 @@ std::optional<Context> Context::create(Type type)
     const auto create_ptr = [](Type type)
     {
         switch (type) {
-        case Type::OPENGL: return std::make_unique<video::OpenGL>(); break;
+        case Type::SDL: return std::make_unique<video::OpenGL>(); break;
         default:
            panic("unknown type supplied to create_context()\n");
            break;
@@ -33,18 +32,14 @@ std::optional<Context> Context::create(Type type)
     return context;
 }
 
-ImageTexture::ImageTexture(const char *pathname)
+Texture Context::create_texture(std::string_view pathname)
 {
     int width, height, channels;
-    data = stbi_load(pathname, &width, &height, &channels, 0);
+    unsigned char *data = stbi_load(pathname.data(), &width, &height, &channels, 0);
     assert(data != nullptr && channels == 4);
-    tw = width;
-    th = height;
-}
-
-ImageTexture::~ImageTexture()
-{
-    stbi_image_free(data);
+    Texture tex = create_texture(width, height);
+    update_texture(tex, data);
+    return tex;
 }
 
 } // namespace video

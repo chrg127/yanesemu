@@ -9,18 +9,23 @@ class OpenGL : public Context::Impl {
     bool initialized = false;
     SDL_Window *window = nullptr;
     SDL_GLContext context;
-    unsigned progid;
+    unsigned prog_id;
     unsigned vbo, vao, ebo;
+    bool quit = false;
 
 public:
     ~OpenGL() override;
 
     bool init() override;
-    void resize(int width, int height) override;
-    unsigned create_texture(std::size_t texw, std::size_t texh, const void *data = nullptr) override;
-    void update_texture(unsigned id, std::size_t texw, std::size_t texh, const void *data) override;
-    void use_texture(unsigned id) override;
-    void draw() override;
+    void set_title(std::string_view title) override;
+    void resize(std::size_t width, std::size_t height) override;
+    Texture create_texture(std::size_t width, std::size_t height) override;
+    void update_texture(Texture &tex, const void *data) override;
+    void draw_texture(const Texture &tex, std::size_t x, std::size_t y) override;
+    void clear() override;
+    void swap() override;
+    void poll() override;
+    bool has_quit() override;
 };
 
 } // namespace video
