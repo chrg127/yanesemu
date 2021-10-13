@@ -15,7 +15,7 @@ class OpenGL : public Video::Impl {
 public:
     ~OpenGL() override;
 
-    void init() override;
+    void init(std::size_t width, std::size_t height) override;
     void set_title(std::string_view title) override;
     void resize(std::size_t width, std::size_t height) override;
     Texture create_texture(std::size_t width, std::size_t height) override;

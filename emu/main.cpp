@@ -119,11 +119,14 @@ void cli_interface(cmdline::Result &flags)
         warning("multiple ROM files specified, first one will be used\n");
 
     auto rom = open_rom(flags.items[0]);
-    auto context = platform::Video::create(platform::Type::SDL);
-    platform::Texture tex = context.create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
+    auto context = platform::Video::create(platform::Type::SDL, core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
+    const int VIEWPORT_SIZE = 2;
+    context.resize(core::SCREEN_WIDTH*VIEWPORT_SIZE, core::SCREEN_HEIGHT*VIEWPORT_SIZE);
+    auto screen = context.create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
     MainThread mainthread;
 
     if (!flags.has['d']) {
+        context.set_title(progname);
         emu.on_cpu_error([&](uint8 id, uint16 addr)
         {
             fmt::print(stderr, "The CPU has found an invalid instruction of ID ${:02X} at address ${:02X}. Stopping.\n", id, addr);
@@ -139,6 +142,7 @@ void cli_interface(cmdline::Result &flags)
             }
         });
     } else {
+        context.set_title(std::string(progname) + " (debugger)");
         mainthread.run([&]()
         {
             emu.power();
@@ -150,7 +154,7 @@ void cli_interface(cmdline::Result &flags)
         });
     }
 
-    rendering_thread(mainthread, context, tex);
+    rendering_thread(mainthread, context, screen);
 
     mainthread.join();
 }

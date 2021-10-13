@@ -139,15 +139,12 @@ OpenGL::~OpenGL()
     SDL_Quit();
 }
 
-const int WIDTH = 256;
-const int HEIGHT = 240;
-
-void OpenGL::init()
+void OpenGL::init(std::size_t width, std::size_t height)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         throw std::runtime_error(fmt::format("can't initialize platform, SDL2 error: {}", SDL_GetError()));
     window = SDL_CreateWindow("Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                              WIDTH, HEIGHT,
+                              width, height,
                               SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
@@ -161,7 +158,7 @@ void OpenGL::init()
     glClearColor(0.0f, 0.0f, 0.4f, 1.0f);
     glUseProgram(prog_id);
     glUniform1i(glGetUniformLocation(prog_id, "tex"), 0);
-    glm::mat4 projection = glm::ortho(0.0f, (float) WIDTH, (float) HEIGHT,  0.0f);
+    glm::mat4 projection = glm::ortho(0.0f, (float) width, (float) height,  0.0f);
     glUniformMatrix4fv(glGetUniformLocation(prog_id, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 }
 
@@ -172,6 +169,7 @@ void OpenGL::set_title(std::string_view title)
 
 void OpenGL::resize(std::size_t width, std::size_t height)
 {
+    SDL_SetWindowSize(window, width, height);
     glViewport(0, 0, width, height);
 }
 
@@ -239,7 +237,7 @@ void OpenGL::poll()
             break;
         case SDL_WINDOWEVENT:
             if (ev.window.event == SDL_WINDOWEVENT_RESIZED)
-                resize(ev.window.data1, ev.window.data2);
+                glViewport(0, 0, ev.window.data1, ev.window.data2);
         }
     }
 }

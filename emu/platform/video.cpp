@@ -13,7 +13,7 @@
 
 namespace platform {
 
-Video Video::create(Type type)
+Video Video::create(Type type, std::size_t width, std::size_t height)
 {
     auto p = [&]() {
         switch (type) {
@@ -23,7 +23,7 @@ Video Video::create(Type type)
            break;
         }
     }();
-    p->init();
+    p->init(width, height);
     Video context;
     context.ptr = std::move(p);
     return context;
