@@ -4,6 +4,8 @@
 #include <string_view>
 #include <optional>
 #include <emu/util/stlutil.hpp>
+#include <emu/util/conf.hpp>
+#include <emu/platform/input.hpp>
 
 namespace platform {
 
@@ -22,13 +24,17 @@ struct Video {
         virtual void init(std::size_t width, std::size_t height) = 0;
         virtual void set_title(std::string_view title) = 0;
         virtual void resize(std::size_t width, std::size_t height) = 0;
+        virtual void poll() = 0;
+        virtual bool has_quit() = 0;
+
         virtual Texture create_texture(std::size_t width, std::size_t height) = 0;
         virtual void update_texture(Texture &tex, const void *data) = 0;
         virtual void draw_texture(const Texture &tex, std::size_t x, std::size_t y) = 0;
         virtual void clear() = 0;
         virtual void swap() = 0;
-        virtual void poll() = 0;
-        virtual bool has_quit() = 0;
+
+        virtual void map_keys(const conf::Configuration &conf) = 0;
+        virtual void update_keys(input::Keys &keys) = 0;
     };
 
 private:

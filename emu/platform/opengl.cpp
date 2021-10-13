@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <emu/util/os.hpp>
+#include <emu/util/stlutil.hpp>
 
 #ifdef PLATFORM_LINUX
 #   define GL_GLEXT_PROTOTYPES
@@ -173,6 +174,36 @@ void OpenGL::resize(std::size_t width, std::size_t height)
     glViewport(0, 0, width, height);
 }
 
+void OpenGL::poll()
+{
+    curr_keys.clear();
+    for (SDL_Event ev; SDL_PollEvent(&ev); ) {
+        switch (ev.type) {
+        case SDL_QUIT:
+            this->quit = true;
+            break;
+        case SDL_WINDOWEVENT:
+            if (ev.window.event == SDL_WINDOWEVENT_RESIZED)
+                glViewport(0, 0, ev.window.data1, ev.window.data2);
+            break;
+        case SDL_KEYDOWN:
+        case SDL_KEYUP: {
+            auto btn = util::map_lookup(keymap, ev.key.keysym.sym);
+            if (!btn)
+                continue;
+            curr_keys.set(btn.value());
+            break;
+        }
+        }
+    }
+    curr_keys.dump();
+}
+
+bool OpenGL::has_quit()
+{
+    return quit;
+}
+
 Texture OpenGL::create_texture(std::size_t width, std::size_t height)
 {
     unsigned id;
@@ -228,23 +259,27 @@ void OpenGL::swap()
     SDL_GL_SwapWindow(window);
 }
 
-void OpenGL::poll()
+void OpenGL::map_keys(const conf::Configuration &conf)
 {
-    for (SDL_Event ev; SDL_PollEvent(&ev); ) {
-        switch (ev.type) {
-        case SDL_QUIT:
-            this->quit = true;
-            break;
-        case SDL_WINDOWEVENT:
-            if (ev.window.event == SDL_WINDOWEVENT_RESIZED)
-                glViewport(0, 0, ev.window.data1, ev.window.data2);
-        }
+    using namespace std::literals;
+    using namespace input;
+    for (auto p : { std::pair{"JumpKey"s,  Button::JUMP},
+                    std::pair{"RunKey"s,   Button::RUN},
+                    std::pair{"UpKey"s,    Button::UP},
+                    std::pair{"DownKey"s,  Button::DOWN},
+                    std::pair{"LeftKey"s,  Button::LEFT},
+                    std::pair{"RightKey"s, Button::RIGHT} }) {
+        auto entry = util::map_lookup(conf, p.first);
+        std::string s = entry.value().as<std::string>();
+        s.erase(s.begin(), s.begin() + 4);
+        int key = SDL_GetKeyFromName(s.c_str());
+        keymap[key] = p.second;
     }
 }
 
-bool OpenGL::has_quit()
+void OpenGL::update_keys(input::Keys &keys)
 {
-    return quit;
+    keys = curr_keys;
 }
 
 } // namespace platform
