@@ -127,7 +127,7 @@ void create_objects(unsigned &vao, unsigned &vbo, unsigned &ebo)
 
 
 
-namespace video {
+namespace platform {
 
 OpenGL::~OpenGL()
 {
@@ -145,7 +145,7 @@ const int HEIGHT = 240;
 void OpenGL::init()
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
-        throw std::runtime_error(fmt::format("can't initialize video, SDL2 error: {}", SDL_GetError()));
+        throw std::runtime_error(fmt::format("can't initialize platform, SDL2 error: {}", SDL_GetError()));
     window = SDL_CreateWindow("Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                               WIDTH, HEIGHT,
                               SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
@@ -249,4 +249,4 @@ bool OpenGL::has_quit()
     return quit;
 }
 
-} // namespace video
+} // namespace platform

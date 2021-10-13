@@ -12,7 +12,7 @@
 #include <emu/util/debug.hpp>
 #include <emu/util/mappedfile.hpp>
 #include <emu/util/os.hpp>
-#include <emu/video/video.hpp>
+#include <emu/platform/video.hpp>
 
 static core::Emulator emu;
 
@@ -90,7 +90,7 @@ io::MappedFile open_rom(std::string_view rompath)
     return std::move(romfile.value());
 }
 
-void rendering_thread(MainThread &mainthread, video::Context &ctx, video::Texture &screen)
+void rendering_thread(MainThread &mainthread, platform::Video &ctx, platform::Texture &screen)
 {
     while (mainthread.running()) {
         ctx.poll();
@@ -119,8 +119,8 @@ void cli_interface(cmdline::Result &flags)
         warning("multiple ROM files specified, first one will be used\n");
 
     auto rom = open_rom(flags.items[0]);
-    auto context = video::Context::create(video::Type::SDL);
-    video::Texture tex = context.create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
+    auto context = platform::Video::create(platform::Type::SDL);
+    platform::Texture tex = context.create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
     MainThread mainthread;
 
     if (!flags.has['d']) {

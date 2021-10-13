@@ -1,4 +1,4 @@
-#include <emu/video/video.hpp>
+#include "video.hpp"
 
 #include <cassert>
 #include <fmt/core.h>
@@ -11,25 +11,25 @@
 
 #include "opengl.hpp"
 
-namespace video {
+namespace platform {
 
-Context Context::create(Type type)
+Video Video::create(Type type)
 {
     auto p = [&]() {
         switch (type) {
-        case Type::SDL: return std::make_unique<video::OpenGL>(); break;
+        case Type::SDL: return std::make_unique<platform::OpenGL>(); break;
         default:
            panic("unknown type supplied to create_context()\n");
            break;
         }
     }();
     p->init();
-    Context context;
+    Video context;
     context.ptr = std::move(p);
     return context;
 }
 
-Texture Context::create_texture(std::string_view pathname)
+Texture Video::create_texture(std::string_view pathname)
 {
     int width, height, channels;
     unsigned char *data = stbi_load(pathname.data(), &width, &height, &channels, 0);
@@ -39,4 +39,4 @@ Texture Context::create_texture(std::string_view pathname)
     return tex;
 }
 
-} // namespace video
+} // namespace platform

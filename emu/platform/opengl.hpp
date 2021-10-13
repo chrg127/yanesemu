@@ -1,11 +1,11 @@
 #pragma once
 
 #include <SDL2/SDL.h>
-#include <emu/video/video.hpp>
+#include <emu/platform/video.hpp>
 
-namespace video {
+namespace platform {
 
-class OpenGL : public Context::Impl {
+class OpenGL : public Video::Impl {
     SDL_Window *window = nullptr;
     SDL_GLContext context;
     unsigned prog_id;
@@ -27,4 +27,4 @@ public:
     bool has_quit() override;
 };
 
-} // namespace video
+} // namespace platform

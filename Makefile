@@ -12,7 +12,7 @@ _objs := \
 _objs_main := main.cpp
 _tests :=
 
-VPATH := emu:emu/core:emu/util:emu/io:emu/video:emu/debugger:external/glad:external/stb
+VPATH := emu:emu/core:emu/util:emu/io:emu/platform:emu/debugger:external/glad:external/stb
 CC := gcc
 CXX := g++
 CFLAGS := -I. -std=c11

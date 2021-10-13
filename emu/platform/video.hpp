@@ -5,7 +5,7 @@
 #include <optional>
 #include <emu/util/stlutil.hpp>
 
-namespace video {
+namespace platform {
 
 struct Texture {
     unsigned id;
@@ -16,7 +16,7 @@ enum class Type {
     SDL,
 };
 
-struct Context {
+struct Video {
     struct Impl {
         virtual ~Impl() = default;
         virtual void init() = 0;
@@ -35,7 +35,7 @@ private:
     std::unique_ptr<Impl> ptr = nullptr;
 
 public:
-    static Context create(Type type);
+    static Video create(Type type);
 
     void set_title(std::string_view title)                        { ptr->set_title(title); }
     void resize(int width, int height)                            { ptr->resize(width, height); }
@@ -56,4 +56,4 @@ public:
     }
 };
 
-} // namespace video
+} // namespace platform
