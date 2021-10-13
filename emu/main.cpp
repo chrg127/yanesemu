@@ -1,6 +1,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <stdexcept>
 #include <fmt/core.h>
 #include <SDL2/SDL.h>
 #include <emu/version.hpp>
@@ -75,16 +76,18 @@ public:
     void join() { th.join(); }
 };
 
-bool open_rom(io::MappedFile &romfile)
+[[nodiscard]]
+io::MappedFile open_rom(std::string_view rompath)
 {
-    auto opt_cart = core::parse_cartridge(romfile);
-    if (!opt_cart) {
-        error("not a real NES ROM: {}\n", romfile.filename());
-        return false;
-    }
-    fmt::print("{}\n", opt_cart.value().to_string());
-    emu.insert_rom(std::move(opt_cart.value()));
-    return true;
+    auto romfile = io::MappedFile::open(rompath);
+    if (!romfile)
+        throw std::runtime_error(fmt::format("couldn't open {}: {}", rompath, util::system_error_string()));
+    auto cart = core::parse_cartridge(romfile.value());
+    if (!cart)
+        throw std::runtime_error(fmt::format("not a real NES ROM: {}", romfile.value().filename()));
+    fmt::print("{}\n", cart.value().to_string());
+    emu.insert_rom(std::move(cart.value()));
+    return std::move(romfile.value());
 }
 
 void rendering_thread(MainThread &mainthread, video::Context &ctx, video::Texture &screen)
@@ -102,47 +105,28 @@ void rendering_thread(MainThread &mainthread, video::Context &ctx, video::Textur
     }
 }
 
-
-
 static const std::vector<cmdline::Argument> cmdflags = {
     { 'h', "help",     "Print this help text and quit" },
     { 'v', "version",  "Shows the program's version"   },
     { 'd', "debugger", "Use command-line debugger"     },
 };
 
-int cli_interface(cmdline::Result &flags)
+void cli_interface(cmdline::Result &flags)
 {
-    if (flags.items.size() < 1) {
-        error("ROM file not specified\n");
-        return 1;
-    } else if (flags.items.size() > 1) {
-        warning("multiple ROM files specified, first found will be used\n");
-    }
+    if (flags.items.size() < 1)
+        throw std::runtime_error("ROM file not specified");
+    if (flags.items.size() > 1)
+        warning("multiple ROM files specified, first one will be used\n");
 
-    // because we map the file in memory, it must be in scope for the entirety
-    // of the emulator's lifetime.
-    auto rom = io::MappedFile::open(flags.items[0]);
-    if (rom) {
-        if (!open_rom(rom.value()))
-            return 1;
-    } else {
-        std::perror(fmt::format("error: {}", flags.items[0]).c_str());
-        return 1;
-    }
-
+    auto rom = open_rom(flags.items[0]);
     auto context = video::Context::create(video::Type::SDL);
-    if (!context) {
-        error("can't initialize video\n");
-        return 1;
-    }
-
-    video::Texture tex = context->create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
+    video::Texture tex = context.create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
     MainThread mainthread;
 
     if (!flags.has['d']) {
         emu.on_cpu_error([&](uint8 id, uint16 addr)
         {
-            fmt::print("The CPU has found an invalid instruction of ID ${:02X} at address ${:02X}. Stopping.\n", id, addr);
+            fmt::print(stderr, "The CPU has found an invalid instruction of ID ${:02X} at address ${:02X}. Stopping.\n", id, addr);
             mainthread.end();
         });
 
@@ -166,11 +150,9 @@ int cli_interface(cmdline::Result &flags)
         });
     }
 
-    rendering_thread(mainthread, context.value(), tex);
+    rendering_thread(mainthread, context, tex);
 
     mainthread.join();
-
-    return 0;
 }
 
 int main(int argc, char *argv[])
@@ -183,22 +165,29 @@ int main(int argc, char *argv[])
 #endif
 
     if (argc < 2) {
-        fmt::print("Usage: {} [args...] romfile\n", progname);
+        fmt::print(stderr, "Usage: {} [args...] romfile\n", progname);
         cmdline::print_args(cmdflags);
         return 1;
     }
 
     cmdline::Result flags = cmdline::argparse(argc, argv, cmdflags);
     if (flags.has['h']) {
-        fmt::print("Usage: {} [args...] romfile\n", progname);
+        fmt::print(stderr, "Usage: {} [args...] romfile\n", progname);
         cmdline::print_args(cmdflags);
         return 0;
     }
+
     if (flags.has['v']) {
-        fmt::print("{} version: {}\n", progname, version);
+        fmt::print(stderr, "{} version: {}\n", progname, version);
         return 0;
     }
 
-    return cli_interface(flags);
-}
+    try {
+        cli_interface(flags);
+    } catch(const std::runtime_error &err) {
+        fmt::print(stderr, "error: {}\n", err.what());
+        return 1;
+    }
 
+    return 0;
+}

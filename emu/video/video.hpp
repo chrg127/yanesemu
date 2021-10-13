@@ -19,7 +19,7 @@ enum class Type {
 struct Context {
     struct Impl {
         virtual ~Impl() = default;
-        virtual bool init() = 0;
+        virtual void init() = 0;
         virtual void set_title(std::string_view title) = 0;
         virtual void resize(std::size_t width, std::size_t height) = 0;
         virtual Texture create_texture(std::size_t width, std::size_t height) = 0;
@@ -35,7 +35,7 @@ private:
     std::unique_ptr<Impl> ptr = nullptr;
 
 public:
-    static std::optional<Context> create(Type type);
+    static Context create(Type type);
 
     void set_title(std::string_view title)                        { ptr->set_title(title); }
     void resize(int width, int height)                            { ptr->resize(width, height); }

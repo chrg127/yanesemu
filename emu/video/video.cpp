@@ -13,20 +13,17 @@
 
 namespace video {
 
-std::optional<Context> Context::create(Type type)
+Context Context::create(Type type)
 {
-    const auto create_ptr = [](Type type)
-    {
+    auto p = [&]() {
         switch (type) {
         case Type::SDL: return std::make_unique<video::OpenGL>(); break;
         default:
            panic("unknown type supplied to create_context()\n");
            break;
         }
-    };
-    auto p = create_ptr(type);
-    if (!p->init())
-        return std::nullopt;
+    }();
+    p->init();
     Context context;
     context.ptr = std::move(p);
     return context;

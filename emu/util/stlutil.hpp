@@ -1,13 +1,11 @@
 #pragma once
 
+#include <cstring>
 #include <functional>
 #include <optional>
 #include <map>
 #include <unordered_map>
 #include <vector>
-
-/* STL collections utilities.
- * These were made for fixing some dumb problems in standard collections. */
 
 namespace util {
 
@@ -83,5 +81,10 @@ template <typename T>
 concept ContainerType = requires(T t) {
     t.data();
 };
+
+inline std::string_view system_error_string()
+{
+    return std::strerror(errno);
+}
 
 } // namespace util

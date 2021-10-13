@@ -6,7 +6,6 @@
 namespace video {
 
 class OpenGL : public Context::Impl {
-    bool initialized = false;
     SDL_Window *window = nullptr;
     SDL_GLContext context;
     unsigned prog_id;
@@ -16,7 +15,7 @@ class OpenGL : public Context::Impl {
 public:
     ~OpenGL() override;
 
-    bool init() override;
+    void init() override;
     void set_title(std::string_view title) override;
     void resize(std::size_t width, std::size_t height) override;
     Texture create_texture(std::size_t width, std::size_t height) override;

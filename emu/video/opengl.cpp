@@ -131,9 +131,6 @@ namespace video {
 
 OpenGL::~OpenGL()
 {
-    if (!initialized)
-        return;
-    initialized = false;
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
     glDeleteBuffers(1, &ebo);
@@ -145,12 +142,10 @@ OpenGL::~OpenGL()
 const int WIDTH = 256;
 const int HEIGHT = 240;
 
-bool OpenGL::init()
+void OpenGL::init()
 {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        error("can't initialize video, SDL2 error: {}\n", SDL_GetError());
-        return false;
-    }
+    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+        throw std::runtime_error(fmt::format("can't initialize video, SDL2 error: {}", SDL_GetError()));
     window = SDL_CreateWindow("Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                               WIDTH, HEIGHT,
                               SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
@@ -168,9 +163,6 @@ bool OpenGL::init()
     glUniform1i(glGetUniformLocation(prog_id, "tex"), 0);
     glm::mat4 projection = glm::ortho(0.0f, (float) WIDTH, (float) HEIGHT,  0.0f);
     glUniformMatrix4fv(glGetUniformLocation(prog_id, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-
-    initialized = true;
-    return true;
 }
 
 void OpenGL::set_title(std::string_view title)

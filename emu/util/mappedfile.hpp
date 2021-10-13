@@ -23,7 +23,7 @@ public:
     MappedFile(const MappedFile &) = delete;
     MappedFile(MappedFile &&m) { operator=(std::move(m)); }
     MappedFile & operator=(const MappedFile &) = delete;
-    MappedFile & operator=(MappedFile &&m)
+    MappedFile & operator=(MappedFile &&m) noexcept
     {
         std::swap(ptr, m.ptr);
         std::swap(len, m.len);
