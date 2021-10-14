@@ -4,7 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <emu/util/os.hpp>
-#include <emu/util/stlutil.hpp>
+#include <emu/util/utility.hpp>
 
 #ifdef PLATFORM_LINUX
 #   define GL_GLEXT_PROTOTYPES

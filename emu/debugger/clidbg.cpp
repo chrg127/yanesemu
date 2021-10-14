@@ -9,7 +9,7 @@
 #include <emu/util/uint.hpp>
 #include <emu/util/string.hpp>
 #include <emu/util/file.hpp>
-#include <emu/util/stlutil.hpp>
+#include <emu/util/utility.hpp>
 #include <emu/util/debug.hpp>
 
 namespace Debugger {

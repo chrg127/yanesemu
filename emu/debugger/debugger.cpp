@@ -5,7 +5,7 @@
 #include <emu/core/instrinfo.hpp>
 #include <emu/util/file.hpp>
 #include <emu/util/debug.hpp>
-#include <emu/util/stlutil.hpp>
+#include <emu/util/utility.hpp>
 
 namespace Debugger {
 

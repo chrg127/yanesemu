@@ -37,7 +37,7 @@ public:
     bool is_pressed(Button button) const    { return buttons_pressed[static_cast<int>(button)]; }
     void dump()
     {
-        for (int i = 0; i < buttons_pressed.size(); i++) {
+        for (std::size_t i = 0; i < buttons_pressed.size(); i++) {
             Button button = static_cast<Button>(i);
             auto str = button_to_string(button);
             fmt::print("key: {}, pressed: {}\n", str, buttons_pressed[i]);

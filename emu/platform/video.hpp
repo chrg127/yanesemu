@@ -3,7 +3,7 @@
 #include <memory>
 #include <string_view>
 #include <optional>
-#include <emu/util/stlutil.hpp>
+#include <emu/util/utility.hpp>
 #include <emu/util/conf.hpp>
 #include <emu/platform/input.hpp>
 
