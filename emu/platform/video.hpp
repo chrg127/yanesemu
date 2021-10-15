@@ -24,7 +24,7 @@ struct Video {
         virtual void init(std::size_t width, std::size_t height) = 0;
         virtual void set_title(std::string_view title) = 0;
         virtual void resize(std::size_t width, std::size_t height) = 0;
-        virtual void poll() = 0;
+        virtual void poll(input::Keys &keys) = 0;
         virtual bool has_quit() = 0;
 
         virtual Texture create_texture(std::size_t width, std::size_t height) = 0;
@@ -34,11 +34,11 @@ struct Video {
         virtual void swap() = 0;
 
         virtual void map_keys(const conf::Configuration &conf) = 0;
-        virtual void update_keys(input::Keys &keys) = 0;
     };
 
 private:
     std::unique_ptr<Impl> ptr = nullptr;
+    input::Keys curr_keys;
 
 public:
     static Video create(Type type, std::size_t width, std::size_t height);
@@ -50,8 +50,9 @@ public:
     void draw_texture(const Texture &tex, std::size_t x, std::size_t y) { ptr->draw_texture(tex, x, y); }
     void clear()                                                  { ptr->clear(); }
     void swap()                                                   { ptr->swap(); }
-    void poll()                                                   { ptr->poll(); }
+    void poll()                                                   { ptr->poll(curr_keys); }
     bool has_quit()                                               { return ptr->has_quit(); }
+    void map_keys(const conf::Configuration &conf)                { ptr->map_keys(conf); }
 
     Texture create_texture(std::string_view pathname);
 

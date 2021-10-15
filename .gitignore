@@ -9,3 +9,4 @@ test/smbdis.asm
 testrom/smbdis.asm
 .idea
 notes
+yanesemu.conf

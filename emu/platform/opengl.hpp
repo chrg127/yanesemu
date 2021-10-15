@@ -13,7 +13,6 @@ class OpenGL : public Video::Impl {
     unsigned prog_id;
     unsigned vbo, vao, ebo;
     std::unordered_map<int, input::Button> keymap;
-    input::Keys curr_keys;
     bool quit = false;
 
 public:
@@ -22,7 +21,7 @@ public:
     void init(std::size_t width, std::size_t height) override;
     void set_title(std::string_view title) override;
     void resize(std::size_t width, std::size_t height) override;
-    void poll() override;
+    void poll(input::Keys &keys) override;
     bool has_quit() override;
 
     Texture create_texture(std::size_t width, std::size_t height) override;
@@ -32,7 +31,6 @@ public:
     void swap() override;
 
     void map_keys(const conf::Configuration &conf);
-    void update_keys(input::Keys &keys);
 };
 
 } // namespace platform

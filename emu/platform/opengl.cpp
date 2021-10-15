@@ -174,9 +174,9 @@ void OpenGL::resize(std::size_t width, std::size_t height)
     glViewport(0, 0, width, height);
 }
 
-void OpenGL::poll()
+void OpenGL::poll(input::Keys &keys)
 {
-    curr_keys.clear();
+    keys.clear();
     for (SDL_Event ev; SDL_PollEvent(&ev); ) {
         switch (ev.type) {
         case SDL_QUIT:
@@ -191,12 +191,13 @@ void OpenGL::poll()
             auto btn = util::map_lookup(keymap, ev.key.keysym.sym);
             if (!btn)
                 continue;
-            curr_keys.set(btn.value());
+            keys.set(btn.value());
+            // fmt::print("key {}\n", ev.key.keysym.sym);
             break;
         }
         }
     }
-    curr_keys.dump();
+    keys.dump();
 }
 
 bool OpenGL::has_quit()
@@ -275,11 +276,6 @@ void OpenGL::map_keys(const conf::Configuration &conf)
         int key = SDL_GetKeyFromName(s.c_str());
         keymap[key] = p.second;
     }
-}
-
-void OpenGL::update_keys(input::Keys &keys)
-{
-    keys = curr_keys;
 }
 
 } // namespace platform

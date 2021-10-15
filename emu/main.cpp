@@ -12,9 +12,29 @@
 #include <emu/util/debug.hpp>
 #include <emu/util/mappedfile.hpp>
 #include <emu/util/os.hpp>
+#include <emu/util/conf.hpp>
 #include <emu/platform/video.hpp>
 
 static core::Emulator emu;
+
+static const std::vector<cmdline::Argument> cmdflags = {
+    { 'h', "help",     "Print this help text and quit" },
+    { 'v', "version",  "Shows the program's version"   },
+    { 'd', "debugger", "Use command-line debugger"     },
+};
+
+static const conf::ValidConf valid_conf = {
+    { "JumpKey",    { conf::Type::STRING, "Key_z" } },
+    { "RunKey",     { conf::Type::STRING, "Key_x" } },
+    { "UpKey",      { conf::Type::STRING, "Key_Up" } },
+    { "DownKey",    { conf::Type::STRING, "Key_Down" } },
+    { "LeftKey",    { conf::Type::STRING, "Key_Left" } },
+    { "RightKey",   { conf::Type::STRING, "Key_Right" } },
+};
+
+static conf::Configuration config;
+
+
 
 class MainThread {
     enum State {
@@ -90,6 +110,21 @@ io::MappedFile open_rom(std::string_view rompath)
     return std::move(romfile.value());
 }
 
+static conf::Configuration make_config()
+{
+    static const char *filename = "yanesemu.conf";
+    auto conf = conf::parse(filename, valid_conf);
+    auto errors = conf::errors();
+    for (auto &err : errors) {
+        fmt::print(stderr, "error: ");
+        if (err.line != -1)
+            fmt::print(stderr, "line {}: ", err.line);
+        fmt::print("{}\n", err.msg);
+    }
+    conf::create(filename, conf);
+    return conf;
+}
+
 void rendering_thread(MainThread &mainthread, platform::Video &ctx, platform::Texture &screen)
 {
     while (mainthread.running()) {
@@ -105,12 +140,6 @@ void rendering_thread(MainThread &mainthread, platform::Video &ctx, platform::Te
     }
 }
 
-static const std::vector<cmdline::Argument> cmdflags = {
-    { 'h', "help",     "Print this help text and quit" },
-    { 'v', "version",  "Shows the program's version"   },
-    { 'd', "debugger", "Use command-line debugger"     },
-};
-
 void cli_interface(cmdline::Result &flags)
 {
     if (flags.items.size() < 1)
@@ -122,6 +151,7 @@ void cli_interface(cmdline::Result &flags)
     auto context = platform::Video::create(platform::Type::SDL, core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
     const int VIEWPORT_SIZE = 2;
     context.resize(core::SCREEN_WIDTH*VIEWPORT_SIZE, core::SCREEN_HEIGHT*VIEWPORT_SIZE);
+    context.map_keys(config);
     auto screen = context.create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
     MainThread mainthread;
 
@@ -185,6 +215,8 @@ int main(int argc, char *argv[])
         fmt::print(stderr, "{} version: {}\n", progname, version);
         return 0;
     }
+
+    config = make_config();
 
     try {
         cli_interface(flags);
