@@ -59,6 +59,7 @@ public:
     }
 
     T *data() { return arr; }
+    const T *data() const { return arr; }
     std::size_t width()  const { return Width; }
     std::size_t height() const { return Height; }
 };

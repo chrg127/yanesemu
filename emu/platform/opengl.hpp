@@ -30,7 +30,7 @@ public:
     void clear() override;
     void swap() override;
 
-    void map_keys(const conf::Configuration &conf);
+    void map_key(const std::string &name, input::Button button) override;
 };
 
 } // namespace platform

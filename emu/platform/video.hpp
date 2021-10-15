@@ -33,7 +33,7 @@ struct Video {
         virtual void clear() = 0;
         virtual void swap() = 0;
 
-        virtual void map_keys(const conf::Configuration &conf) = 0;
+        virtual void map_key(const std::string &name, input::Button button) = 0;
     };
 
 private:
@@ -52,15 +52,18 @@ public:
     void swap()                                                   { ptr->swap(); }
     void poll()                                                   { ptr->poll(curr_keys); }
     bool has_quit()                                               { return ptr->has_quit(); }
-    void map_keys(const conf::Configuration &conf)                { ptr->map_keys(conf); }
+    void map_key(const std::string &name, input::Button button)   { ptr->map_key(name, button); }
 
     Texture create_texture(std::string_view pathname);
+    void map_keys(const conf::Configuration &conf);
 
     template <util::ContainerType T>
     void update_texture(Texture &tex, const T &buf)
     {
         ptr->update_texture(tex, (const void *) buf.data());
     }
+
+    bool is_pressed(input::Button button) { return curr_keys[button]; }
 };
 
 } // namespace platform

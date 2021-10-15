@@ -39,4 +39,21 @@ Texture Video::create_texture(std::string_view pathname)
     return tex;
 }
 
+void Video::map_keys(const conf::Configuration &conf)
+{
+    using namespace std::literals;
+    using namespace input;
+    for (auto p : { std::pair{"JumpKey"s,  Button::JUMP},
+                    std::pair{"RunKey"s,   Button::RUN},
+                    std::pair{"UpKey"s,    Button::UP},
+                    std::pair{"DownKey"s,  Button::DOWN},
+                    std::pair{"LeftKey"s,  Button::LEFT},
+                    std::pair{"RightKey"s, Button::RIGHT} }) {
+        auto entry = util::map_lookup(conf, p.first);
+        std::string s = entry.value().as<std::string>();
+        s.erase(s.begin(), s.begin() + 4);
+        map_key(s, p.second);
+    }
+}
+
 } // namespace platform

@@ -33,8 +33,9 @@ class Keys {
     std::array<bool, NUM_BUTTONS> buttons_pressed;
 public:
     void clear()                            { std::fill(buttons_pressed.begin(), buttons_pressed.end(), false); }
-    void set(Button button)                 { buttons_pressed[static_cast<int>(button)] = true; }
-    bool is_pressed(Button button) const    { return buttons_pressed[static_cast<int>(button)]; }
+    // void set(Button button, bool value)     { buttons_pressed[static_cast<int>(button)] = value; }
+    // bool is_pressed(Button button) const    { return buttons_pressed[static_cast<int>(button)]; }
+    bool & operator[](Button button)        { return buttons_pressed[static_cast<int>(button)]; }
     void dump()
     {
         for (std::size_t i = 0; i < buttons_pressed.size(); i++) {

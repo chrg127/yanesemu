@@ -176,7 +176,7 @@ void OpenGL::resize(std::size_t width, std::size_t height)
 
 void OpenGL::poll(input::Keys &keys)
 {
-    keys.clear();
+    // keys.clear();
     for (SDL_Event ev; SDL_PollEvent(&ev); ) {
         switch (ev.type) {
         case SDL_QUIT:
@@ -186,18 +186,20 @@ void OpenGL::poll(input::Keys &keys)
             if (ev.window.event == SDL_WINDOWEVENT_RESIZED)
                 glViewport(0, 0, ev.window.data1, ev.window.data2);
             break;
+        case SDL_KEYUP:
         case SDL_KEYDOWN:
-        case SDL_KEYUP: {
+        {
             auto btn = util::map_lookup(keymap, ev.key.keysym.sym);
             if (!btn)
                 continue;
-            keys.set(btn.value());
+            keys[btn.value()] = ev.type == SDL_KEYDOWN;
+            // keys.set(btn.value(), ev.type == SDL_KEYDOWN)
             // fmt::print("key {}\n", ev.key.keysym.sym);
             break;
         }
         }
     }
-    keys.dump();
+    // keys.dump();
 }
 
 bool OpenGL::has_quit()
@@ -260,22 +262,10 @@ void OpenGL::swap()
     SDL_GL_SwapWindow(window);
 }
 
-void OpenGL::map_keys(const conf::Configuration &conf)
+void OpenGL::map_key(const std::string &name, input::Button button)
 {
-    using namespace std::literals;
-    using namespace input;
-    for (auto p : { std::pair{"JumpKey"s,  Button::JUMP},
-                    std::pair{"RunKey"s,   Button::RUN},
-                    std::pair{"UpKey"s,    Button::UP},
-                    std::pair{"DownKey"s,  Button::DOWN},
-                    std::pair{"LeftKey"s,  Button::LEFT},
-                    std::pair{"RightKey"s, Button::RIGHT} }) {
-        auto entry = util::map_lookup(conf, p.first);
-        std::string s = entry.value().as<std::string>();
-        s.erase(s.begin(), s.begin() + 4);
-        int key = SDL_GetKeyFromName(s.c_str());
-        keymap[key] = p.second;
-    }
+    int key = SDL_GetKeyFromName(name.c_str());
+    keymap[key] = button;
 }
 
 } // namespace platform
