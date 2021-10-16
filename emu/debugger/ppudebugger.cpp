@@ -40,14 +40,14 @@ uint8 PPUDebugger::getreg(uint16 addr) const
 uint8 PPUDebugger::getreg(Reg reg) const
 {
     switch (reg) {
-    case PPUDebugger::Reg::CTRL:        return getreg(0x2000); break;
-    case PPUDebugger::Reg::MASK:        return getreg(0x2001); break;
-    case PPUDebugger::Reg::STATUS:      return getreg(0x2002); break;
-    case PPUDebugger::Reg::OAMADDR:     return getreg(0x2003); break;
-    case PPUDebugger::Reg::OAMDATA:     return getreg(0x2004); break;
-    case PPUDebugger::Reg::PPUSCROLL:   return getreg(0x2005); break;
-    case PPUDebugger::Reg::PPUADDR:     return getreg(0x2006); break;
-    case PPUDebugger::Reg::PPUDATA:     return getreg(0x2007); break;
+    case PPUDebugger::Reg::Ctrl:        return getreg(0x2000); break;
+    case PPUDebugger::Reg::Mask:        return getreg(0x2001); break;
+    case PPUDebugger::Reg::Status:      return getreg(0x2002); break;
+    case PPUDebugger::Reg::OAMAddr:     return getreg(0x2003); break;
+    case PPUDebugger::Reg::OAMData:     return getreg(0x2004); break;
+    case PPUDebugger::Reg::PPUScroll:   return getreg(0x2005); break;
+    case PPUDebugger::Reg::PPUAddr:     return getreg(0x2006); break;
+    case PPUDebugger::Reg::PPUData:     return getreg(0x2007); break;
     default: return 0xFF;
     }
 }

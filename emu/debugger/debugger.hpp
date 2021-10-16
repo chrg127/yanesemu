@@ -26,12 +26,10 @@ class CPUDebugger {
     core::CPU *cpu;
 
 public:
-    CPUDebugger(core::CPU *c)
-        : cpu(c)
-    { }
+    explicit CPUDebugger(core::CPU *c) : cpu(c) { }
 
-    enum class Reg  { ACC, X, Y, PC, SP, };
-    enum class Flag { NEG, OV, DEC, INTDIS, ZERO, CARRY, };
+    enum class Reg  { Acc, X, Y, PC, SP, };
+    enum class Flag { Neg, Ov, Dec, IntDis, Zero, Carry, };
 
     struct Instruction {
         uint8 id, lo, hi;
@@ -52,11 +50,11 @@ class PPUDebugger {
     core::PPU *ppu;
 
 public:
-    PPUDebugger(core::PPU *p) : ppu(p) {}
+    explicit PPUDebugger(core::PPU *p) : ppu(p) {}
 
     enum class Reg {
-        CTRL,    MASK,      STATUS,  OAMADDR,
-        OAMDATA, PPUSCROLL, PPUADDR, PPUDATA,
+        Ctrl,    Mask,      Status,  OAMAddr,
+        OAMData, PPUScroll, PPUAddr, PPUData,
     };
 
     uint8 getreg(uint16 addr) const;
@@ -75,7 +73,7 @@ public:
 struct Debugger {
     struct Event {
         enum class Tag {
-            STEP, BREAK, INV_INSTR,
+            Step, Break, InvalidInstruction,
         } tag;
         union {
             unsigned bp_index;
@@ -90,13 +88,10 @@ struct Debugger {
         uint16 start;
         uint16 end;
         char mode;
-
-        // bool operator==(const Breakpoint &b) { return start == b.start && end == b.end && mode == b.mode; };
-        bool test(uint16 addr, char mode) const { return this->mode == mode && addr >= start && addr <= end; };
     };
 
     enum class StepType {
-        STEP, NEXT, FRAME, NONE,
+        Step, Next, Frame, None,
     };
 
 private:
@@ -119,10 +114,10 @@ public:
     std::function<uint8(uint16)>       read_from(MemorySource source);
     std::function<void(uint16, uint8)> write_to(MemorySource source);
 
-    void step()          { run(StepType::STEP); }
-    void next()          { run(StepType::NEXT); }
-    void advance()       { run(StepType::NONE); }
-    void advance_frame() { run(StepType::FRAME); }
+    void step()          { run(StepType::Step); }
+    void next()          { run(StepType::Next); }
+    void advance()       { run(StepType::None); }
+    void advance_frame() { run(StepType::Frame); }
 
     unsigned set_breakpoint(Breakpoint &&p);
     void delete_breakpoint(unsigned index);

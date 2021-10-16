@@ -6,13 +6,15 @@ using util::Word;
 
 #define call(f, ...) (this->*f)(__VA_ARGS__)
 
-/* All instructions have an impled cycle from fetching the instruction
+/*
+ * All instructions have an impled cycle from fetching the instruction
  * itself (The call is done in CPU::main()).
  *
  * For most instruction, the polling happens during the final cycle of the
  * instruction, before the opcode fetch of the next instruction. If polling
  * detects an interrupt, the interrupt sequence is executed as the next
- * "instruction". */
+ * "instruction".
+ */
 
 void CPU::addrmode_imm_read(InstrFuncRead f)
 {
@@ -307,29 +309,28 @@ void CPU::instr_transfer(uint8 from, uint8 &to)
 
 
 
-// NOTE: all instruction functions.
-void CPU::instr_lda(const uint8 val)
+void CPU::instr_lda(uint8 val)
 {
     r.acc = val;
     r.flags.zero = r.acc == 0;
     r.flags.neg  = r.acc & 0x80;
 }
 
-void CPU::instr_ldx(const uint8 val)
+void CPU::instr_ldx(uint8 val)
 {
     r.x = val;
     r.flags.zero = r.x == 0;
     r.flags.neg  = r.x & 0x80;
 }
 
-void CPU::instr_ldy(const uint8 val)
+void CPU::instr_ldy(uint8 val)
 {
     r.y = val;
     r.flags.zero = r.y == 0;
     r.flags.neg  = r.y & 0x80;
 }
 
-void CPU::instr_cmp(const uint8 val)
+void CPU::instr_cmp(uint8 val)
 {
     int res = r.acc-val;
     r.flags.zero     = res == 0;
@@ -337,7 +338,7 @@ void CPU::instr_cmp(const uint8 val)
     r.flags.carry    = res >= 0;
 }
 
-void CPU::instr_cpx(const uint8 val)
+void CPU::instr_cpx(uint8 val)
 {
     int res = r.x-val;
     r.flags.zero     = res == 0;
@@ -345,7 +346,7 @@ void CPU::instr_cpx(const uint8 val)
     r.flags.carry    = res >= 0;
 }
 
-void CPU::instr_cpy(const uint8 val)
+void CPU::instr_cpy(uint8 val)
 {
     int res = r.y-val;
     r.flags.zero     = res == 0;
@@ -353,7 +354,7 @@ void CPU::instr_cpy(const uint8 val)
     r.flags.carry    = res >= 0;
 }
 
-void CPU::instr_adc(const uint8 val)
+void CPU::instr_adc(uint8 val)
 {
     int sum = r.acc + val + r.flags.carry;
     r.flags.zero     = (uint8) sum == 0;
@@ -363,7 +364,7 @@ void CPU::instr_adc(const uint8 val)
     r.acc = sum;
 }
 
-void CPU::instr_sbc(const uint8 val)
+void CPU::instr_sbc(uint8 val)
 {
     uint8 tmp = ~val;
     int sum = r.acc + tmp + r.flags.carry;
@@ -374,28 +375,28 @@ void CPU::instr_sbc(const uint8 val)
     r.acc = sum;
 }
 
-void CPU::instr_ora(const uint8 val)
+void CPU::instr_ora(uint8 val)
 {
     r.acc |= val;
     r.flags.neg  = r.acc & 0x80;
     r.flags.zero = r.acc == 0;
 }
 
-void CPU::instr_and(const uint8 val)
+void CPU::instr_and(uint8 val)
 {
     r.acc &= val;
     r.flags.neg  = r.acc & 0x80;
     r.flags.zero = r.acc == 0;
 }
 
-void CPU::instr_eor(const uint8 val)
+void CPU::instr_eor(uint8 val)
 {
     r.acc ^= val;
     r.flags.neg  = r.acc & 0x80;
     r.flags.zero = r.acc == 0;
 }
 
-void CPU::instr_bit(const uint8 val)
+void CPU::instr_bit(uint8 val)
 {
     r.flags.neg  = (r.acc & val) == 0;
     r.flags.zero = val == 0;

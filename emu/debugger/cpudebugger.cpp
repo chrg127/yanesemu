@@ -9,7 +9,7 @@ namespace Debugger {
 uint16 CPUDebugger::getreg(Reg reg) const
 {
     switch (reg) {
-    case Reg::ACC:   return cpu->r.acc;
+    case Reg::Acc:   return cpu->r.acc;
     case Reg::X:     return cpu->r.x;
     case Reg::Y:     return cpu->r.y;
     case Reg::PC:    return cpu->r.pc.v;
@@ -21,7 +21,7 @@ uint16 CPUDebugger::getreg(Reg reg) const
 void CPUDebugger::setreg(Reg reg, uint16 value)
 {
     switch (reg) {
-    case Reg::ACC:   cpu->r.acc  = value; break;
+    case Reg::Acc: cpu->r.acc  = value; break;
     case Reg::X:     cpu->r.x    = value; break;
     case Reg::Y:     cpu->r.y    = value; break;
     case Reg::PC:    cpu->r.pc   = value; break;
@@ -32,12 +32,12 @@ void CPUDebugger::setreg(Reg reg, uint16 value)
 bool CPUDebugger::getflag(Flag flag) const
 {
     switch (flag) {
-    case Flag::CARRY:  return cpu->r.flags.carry;
-    case Flag::ZERO:   return cpu->r.flags.zero;
-    case Flag::INTDIS: return cpu->r.flags.intdis;
-    case Flag::DEC:    return cpu->r.flags.decimal;
-    case Flag::OV:     return cpu->r.flags.ov;
-    case Flag::NEG:    return cpu->r.flags.neg;
+    case Flag::Carry:  return cpu->r.flags.carry;
+    case Flag::Zero:   return cpu->r.flags.zero;
+    case Flag::IntDis: return cpu->r.flags.intdis;
+    case Flag::Dec:    return cpu->r.flags.decimal;
+    case Flag::Ov:     return cpu->r.flags.ov;
+    case Flag::Neg:    return cpu->r.flags.neg;
     default: return 0;
     }
 }
@@ -45,12 +45,12 @@ bool CPUDebugger::getflag(Flag flag) const
 void CPUDebugger::setflag(Flag flag, bool value)
 {
     switch (flag) {
-    case Flag::CARRY:  cpu->r.flags.carry   = value; break;
-    case Flag::ZERO:   cpu->r.flags.zero    = value; break;
-    case Flag::INTDIS: cpu->r.flags.intdis  = value; break;
-    case Flag::DEC:    cpu->r.flags.decimal = value; break;
-    case Flag::OV:     cpu->r.flags.ov      = value; break;
-    case Flag::NEG:    cpu->r.flags.neg     = value; break;
+    case Flag::Carry: cpu->r.flags.carry   = value; break;
+    case Flag::Zero: cpu->r.flags.zero    = value; break;
+    case Flag::IntDis: cpu->r.flags.intdis  = value; break;
+    case Flag::Dec: cpu->r.flags.decimal = value; break;
+    case Flag::Ov: cpu->r.flags.ov      = value; break;
+    case Flag::Neg: cpu->r.flags.neg     = value; break;
     }
 }
 

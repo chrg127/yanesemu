@@ -10,9 +10,9 @@
 namespace conf {
 
 enum class Type {
-    INT,
-    BOOL,
-    STRING
+    Int,
+    Bool,
+    String
 };
 
 struct Value {
@@ -56,7 +56,7 @@ Configuration parse(std::string_view pathname, const ValidConf &valid);
 void create(
     std::string_view pathname,
     const Configuration &conf,
-    const std::unordered_map<std::string, std::string> comments = {}
+    const std::unordered_map<std::string, std::string> &comments = {}
 );
 std::vector<Error> errors();
 

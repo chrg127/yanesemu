@@ -11,14 +11,14 @@ using DecodeFn = uint16 (*)(uint16);
 static DecodeFn get_decode(Mirroring mirroring)
 {
     switch (mirroring) {
-    case Mirroring::HORZ:
+    case Mirroring::Horizontal:
         return [](uint16 addr) -> uint16
         {
             auto tmp = addr & 0xFFF;
             auto bits = util::getbits(tmp, 10, 2) >> 1;
             return util::setbits(tmp, 10, 2, bits);
         };
-    case Mirroring::VERT:
+    case Mirroring::Vertical:
         return [](uint16 addr) -> uint16 { return addr & 0x7FF; };
     default: exit(1);
         // panic("invalid value passed to get_decode\n");

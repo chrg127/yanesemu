@@ -76,14 +76,14 @@ void PPU::power(bool reset)
         io.sp_overflow = 0; // Util::random_between(0, 1);
         io.sp_zero_hit = 0; // Util::random_between(0, 1);
     }
-    // OAMADDR
+    // OAMAddr
     oam.addr = 0;
-    // PPUSCROLL and PPUADDR
+    // PPUScroll and PPUAddr
     if (!reset)
         vram.tmp = 0;
     vram.fine_x = 0;
     io.scroll_latch = 0;
-    // PPUDATA
+    // PPUData
     io.data_buf = 0;
     // other
     odd_frame = 0;
@@ -97,7 +97,7 @@ void PPU::power(bool reset)
 uint8 PPU::readreg(uint16 addr)
 {
     switch (addr) {
-    // PPUCTRL,       PPUMASK,     OAMADDR,     PPUSCROLL,   PPUADDR
+    // PPUCTRL,       PPUMASK,     OAMAddr,     PPUScroll,   PPUAddr
     case 0x2000: case 0x2001: case 0x2003: case 0x2005: case 0x2006:
         break;
 
@@ -108,12 +108,12 @@ uint8 PPU::readreg(uint16 addr)
         io.scroll_latch = 0;
         break;
 
-    // OAMDATA
+    // OAMData
     case 0x2004:
         io.latch = oam.mem[oam.addr];
         break;
 
-    // PPUDATA
+    // PPUData
     case 0x2007:
         if (vram.addr.v < 0x3F00) {
             io.latch = io.data_buf;
@@ -164,18 +164,18 @@ void PPU::writereg(uint16 addr, uint8 data)
     case 0x2002:
         break;
 
-    // OAMADDR
+    // OAMAddr
     case 0x2003:
         oam.addr = data;
         break;
 
-    // OAMDATA
+    // OAMData
     case 0x2004:
         if (lines > 239 && lines < 261)
             oam.mem[oam.addr++] = data;
         break;
 
-    // PPUSCROLL
+    // PPUScroll
     case 0x2005:
         if (!io.scroll_latch) {
             vram.tmp.coarse_x = util::getbits(data, 3, 5);
@@ -187,7 +187,7 @@ void PPU::writereg(uint16 addr, uint8 data)
         io.scroll_latch ^= 1;
         break;
 
-    // PPUADDR
+    // PPUAddr
     case 0x2006:
         if (io.scroll_latch == 0)
             vram.tmp.v = util::setbits(vram.tmp.v, 8, 8, data & 0x3F);
@@ -198,7 +198,7 @@ void PPU::writereg(uint16 addr, uint8 data)
         io.scroll_latch ^= 1;
         break;
 
-    // PPUDATA
+    // PPUData
     case 0x2007:
         bus->write(vram.addr.as_u14(), data);
         vram.addr += (1UL << 5*io.vram_inc);

@@ -16,12 +16,12 @@ std::string Cartridge::Data::to_string() const
         "{}: {}, mapper {}, {}x16k PRG ROM, {}x8k CHR ROM, "
         "{} CHR RAM, {}-Mirror{}{}",
         filename,
-        format == Format::INES ? "iNES" : "NES 2.0",
+        format == Format::iNES ? "iNES" : "NES 2.0",
         mapper,
         header[4],
         header[5],
         has.chrram ? chrram_size : 0,
-        mirroring == Mirroring::HORZ ? 'H' : mirroring == Mirroring::VERT ? 'V' : 'O',
+        mirroring == Mirroring::Horizontal ? 'H' : mirroring == Mirroring::Vertical ? 'V' : 'O',
         has.battery ? ", contains SRAM" : "",
         has.trainer ? ", contains Trainer" : ""
     );
@@ -41,13 +41,13 @@ std::optional<Cartridge::Data> parse_cartridge(io::MappedFile &romfile)
         return std::nullopt;
     cart.filename = romfile.filename();
     cart.format = (getbits(cart.header[7], 2, 2) == 2)
-                ? Cartridge::Format::NES20
-                : Cartridge::Format::INES;
+                ? Cartridge::Format::NES_2_0
+                : Cartridge::Format::iNES;
     uint32 prgrom_size = cart.header[4];
     uint32 chrrom_size = cart.header[5];
-    cart.mirroring = getbit(cart.header[6], 3) ? Mirroring::FOUR_SCREEN
-                   : getbit(cart.header[6], 0) ? Mirroring::VERT
-                   :                             Mirroring::HORZ;
+    cart.mirroring = getbit(cart.header[6], 3) ? Mirroring::FourScreen
+                   : getbit(cart.header[6], 0) ? Mirroring::Vertical
+                   :                             Mirroring::Horizontal;
     cart.mapper = (cart.header[7] & 0b11110000) | getbits(cart.header[6], 4, 4);
     cart.has.battery = getbit(cart.header[6], 1);
     cart.has.trainer = getbit(cart.header[6], 2);
@@ -57,9 +57,9 @@ std::optional<Cartridge::Data> parse_cartridge(io::MappedFile &romfile)
     {
         switch (bits) {
         case 0: return Cartridge::Console::NES;
-        case 1: return Cartridge::Console::VSSYSTEM;
-        case 2: return Cartridge::Console::PLAYCHOICE;
-        default: return Cartridge::Console::EXTENDED;
+        case 1: return Cartridge::Console::VsSystem;
+        case 2: return Cartridge::Console::Playchoice;
+        default: return Cartridge::Console::Extended;
         }
     };
     cart.console_type = detect_console(getbits(cart.header[7], 0, 2));
@@ -71,7 +71,7 @@ std::optional<Cartridge::Data> parse_cartridge(io::MappedFile &romfile)
     //   CHR ROM size is specified to be 0.
     // - in some uncommon cases there may be both CHR ROM and CHR RAM.
 
-    if (cart.format == Cartridge::Format::INES) {
+    if (cart.format == Cartridge::Format::iNES) {
         cart.chrram_size = cart.has.chrram ? util::to_kib(8) : 0;
         cart.nes20_data = std::nullopt;
     } else {
@@ -85,10 +85,10 @@ std::optional<Cartridge::Data> parse_cartridge(io::MappedFile &romfile)
         cart.chrram_size    = 64 << getbits(cart.header[11], 0, 4);
         data.chr_nvram_size = 64 << getbits(cart.header[11], 4, 4);
         data.timing_mode    = getbits(cart.header[12], 0, 2);
-        if (cart.console_type == Cartridge::Console::VSSYSTEM) {
+        if (cart.console_type == Cartridge::Console::VsSystem) {
             data.vs_ppu      = getbits(cart.header[13], 0, 4);
             data.vs_hardware = getbits(cart.header[13], 4, 4);
-        } else if (cart.console_type == Cartridge::Console::VSSYSTEM) {
+        } else if (cart.console_type == Cartridge::Console::VsSystem) {
             data.extended_console_type = getbits(cart.header[13], 0, 4);
         }
         data.misc_roms                = getbits(cart.header[14], 0, 2);

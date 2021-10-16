@@ -16,12 +16,12 @@ namespace Cartridge {
     const int TRAINER_SIZE = 512;
 
     enum class Format {
-        INES,
-        NES20,
+        iNES,
+        NES_2_0,
     };
 
     enum class Console {
-        NES, VSSYSTEM, PLAYCHOICE, EXTENDED
+        NES, VsSystem, Playchoice, Extended
     };
 
     struct Data {

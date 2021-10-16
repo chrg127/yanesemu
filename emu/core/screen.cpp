@@ -82,9 +82,9 @@ void Screen::output(unsigned x, unsigned y, uint6 value)
 
 void Screen::set_palette(Palette palette)
 {
-    pal = palette == Palette::PAL2C02 ? pal2C02
-        : palette == Palette::PAL2C03 ? pal2C03
-        : palette == Palette::RC2C03B ? pal_rc2C03b
+    pal = palette == Palette::Pal2C02 ? pal2C02
+        : palette == Palette::Pal2C03 ? pal2C03
+                                      : palette == Palette::RC2C03B ? pal_rc2C03b
         : pal2C02;
 }
 

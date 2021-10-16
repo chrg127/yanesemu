@@ -50,7 +50,7 @@ Result argparse(const std::vector<std::string_view> &args, const std::vector<Arg
         }
 
         auto arg = *argp;
-        if (arg.ptype == ParamType::MUST_HAVE && (next == "" || next[0] == '-')) {
+        if (arg.ptype == ParamType::MustHave && (next == "" || next[0] == '-')) {
             warning("argument {} must have a parameter\n", curr);
             continue;
         }
@@ -61,7 +61,7 @@ Result argparse(const std::vector<std::string_view> &args, const std::vector<Arg
         res.has[arg.short_opt] = true;
 
         // argument parameter handling
-        if (arg.ptype != ParamType::NONE && next != "" && next[0] != '-') {
+        if (arg.ptype != ParamType::None && next != "" && next[0] != '-') {
             if (!arg.validator(next)) {
                 warning("invalid parameter {} for argument {}\n", next, curr);
                 continue;

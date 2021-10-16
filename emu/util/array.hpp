@@ -16,16 +16,7 @@ class HeapArray {
 
 public:
     HeapArray() = default;
-    HeapArray(std::size_t s) { reset(s); }
-
-    template <typename It>
-    HeapArray(It first, It last)
-    {
-        reset(last - first);
-        std::size_t i = 0;
-        while (first != last)
-            ptr[i++] = *first++;
-    }
+    explicit HeapArray(std::size_t s) { reset(s); }
 
     T & operator[](std::size_t pos) { return ptr[pos]; }
     T *data()                       { return ptr.get(); }

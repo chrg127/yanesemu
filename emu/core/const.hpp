@@ -34,12 +34,11 @@ enum {
     PPU_MAX_LCYCLE  = 341,
 };
 
-// OTHER is usually mapper defined.
 enum class Mirroring {
-    VERT,
-    HORZ,
-    FOUR_SCREEN,
-    OTHER,
+    Vertical,
+    Horizontal,
+    FourScreen,
+    Mapper,
 };
 
 } // namespace core

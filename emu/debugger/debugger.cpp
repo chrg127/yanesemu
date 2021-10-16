@@ -29,7 +29,7 @@ Debugger::Debugger(core::Emulator *e)
     {
         got_error = true;
         Event ev;
-        ev.tag = Event::Tag::INV_INSTR;
+        ev.tag = Event::Tag::InvalidInstruction;
         ev.inv.id = id;
         ev.inv.addr = addr;
         report_callback(std::move(ev));
@@ -62,12 +62,12 @@ void Debugger::run(StepType step_type)
                 break;
             int bhit = test_breakpoints();
             if (bhit != -1) {
-                ev.tag = Event::Tag::BREAK;
+                ev.tag = Event::Tag::Break;
                 ev.bp_index = bhit;
                 break;
             }
             if (check_step()) {
-                ev.tag = Event::Tag::STEP;
+                ev.tag = Event::Tag::Step;
                 break;
             }
         }
@@ -75,10 +75,10 @@ void Debugger::run(StepType step_type)
     };
 
     switch (step_type) {
-    case StepType::STEP:
+    case StepType::Step:
         runloop([]() { return true; });
         break;
-    case StepType::NEXT: {
+    case StepType::Next: {
         int cont = 0;
         uint8 id = cpudbg.curr_instr().id;
         runloop(
@@ -93,12 +93,12 @@ void Debugger::run(StepType step_type)
             });
         break;
     }
-    case StepType::FRAME: {
+    case StepType::Frame: {
         uint16 addr = cpudbg.get_vector_addr(core::NMI_VEC);
         runloop([&]() { return cpudbg.getreg(CPUDebugger::Reg::PC) == addr; });
         break;
     }
-    case StepType::NONE:
+    case StepType::None:
         runloop([]() { return false; });
         break;
     }
@@ -157,12 +157,12 @@ void Debugger::trace()
         "V: {:04X}"
         " {}\n",
         cpudbg.getreg(CPUDebugger::Reg::PC),
-        cpudbg.getreg(CPUDebugger::Reg::ACC),
+        cpudbg.getreg(CPUDebugger::Reg::Acc),
         cpudbg.getreg(CPUDebugger::Reg::X),
         cpudbg.getreg(CPUDebugger::Reg::Y),
         cpudbg.getreg(CPUDebugger::Reg::SP),
         cpudbg.curr_flags_str(),
-        ppudbg.getreg(PPUDebugger::Reg::PPUADDR),
+        ppudbg.getreg(PPUDebugger::Reg::PPUAddr),
         cpudbg.curr_instr_str()
     );
 }

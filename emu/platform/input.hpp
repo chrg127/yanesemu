@@ -6,12 +6,12 @@
 namespace input {
 
 enum class Button {
-    JUMP,
-    RUN,
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
+    Jump,
+    Run,
+    Up,
+    Down,
+    Left,
+    Right,
 };
 
 const int NUM_BUTTONS = 6;
@@ -19,12 +19,12 @@ const int NUM_BUTTONS = 6;
 constexpr inline std::string_view button_to_string(Button button)
 {
     switch (button) {
-    case Button::JUMP:  return "jump";
-    case Button::RUN:   return "run";
-    case Button::UP:    return "up";
-    case Button::DOWN:  return "down";
-    case Button::LEFT:  return "left";
-    case Button::RIGHT: return "right";
+    case Button::Jump:  return "jump";
+    case Button::Run:   return "run";
+    case Button::Up:    return "up";
+    case Button::Down:  return "down";
+    case Button::Left:  return "left";
+    case Button::Right: return "right";
     default: return "";
     }
 }
@@ -39,7 +39,7 @@ public:
     void dump()
     {
         for (std::size_t i = 0; i < buttons_pressed.size(); i++) {
-            Button button = static_cast<Button>(i);
+            auto button = static_cast<Button>(i);
             auto str = button_to_string(button);
             fmt::print("key: {}, pressed: {}\n", str, buttons_pressed[i]);
         }

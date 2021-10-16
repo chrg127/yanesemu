@@ -13,16 +13,6 @@ namespace Debugger {
 
 namespace core {
 
-/* The CPU has 2 main states:
- * - When it is constructed, all members are initialized to 0, except
- *   for the following:
- *   - bus, which is not mapped;
- *   - fetch_callback, which is a function containing nothing
- * - On power(), every member is initialized as if a power signal was sent to
- *   the CPU.
- * To initialize the CPU, one therefore must first create a bus before creating
- * the CPU, then power() must be called.
- */
 class CPU {
     struct ProcStatus {
         bool carry   = 0;
@@ -123,7 +113,7 @@ private:
     void oamdma_loop(uint8 page);
 
     // instructions.cpp
-    using InstrFuncRead = void (CPU::*)(const uint8);
+    using InstrFuncRead = void (CPU::*)(uint8);
     using InstrFuncMod = uint8 (CPU::*)(uint8);
 
     void addrmode_imm_read(InstrFuncRead f);
@@ -159,18 +149,18 @@ private:
     void instr_branch(bool take);
     void instr_flag(bool &flag, bool v);
     void instr_transfer(uint8 from, uint8 &to);
-    void instr_lda(const uint8 val);
-    void instr_ldx(const uint8 val);
-    void instr_ldy(const uint8 val);
-    void instr_cmp(const uint8 val);
-    void instr_cpx(const uint8 val);
-    void instr_cpy(const uint8 val);
-    void instr_adc(const uint8 val);
-    void instr_sbc(const uint8 val);
-    void instr_ora(const uint8 val);
-    void instr_and(const uint8 val);
-    void instr_eor(const uint8 val);
-    void instr_bit(const uint8 val);
+    void instr_lda(uint8 val);
+    void instr_ldx(uint8 val);
+    void instr_ldy(uint8 val);
+    void instr_cmp(uint8 val);
+    void instr_cpx(uint8 val);
+    void instr_cpy(uint8 val);
+    void instr_adc(uint8 val);
+    void instr_sbc(uint8 val);
+    void instr_ora(uint8 val);
+    void instr_and(uint8 val);
+    void instr_eor(uint8 val);
+    void instr_bit(uint8 val);
     uint8 instr_inc(uint8 val);
     uint8 instr_dec(uint8 val);
     uint8 instr_asl(uint8 val);

@@ -73,10 +73,10 @@ private:
         bool sp_zero_hit;
         bool vblank;
 
-        // PPUSCROLL, PPUADDR
+        // PPUScroll, PPUAddr
         bool scroll_latch;
 
-        // PPUDATA
+        // PPUData
         uint8 data_buf;
     } io;
 

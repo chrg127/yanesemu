@@ -24,12 +24,12 @@ static const std::vector<cmdline::Argument> cmdflags = {
 };
 
 static const conf::ValidConf valid_conf = {
-    { "JumpKey",    { conf::Type::STRING, "Key_z" } },
-    { "RunKey",     { conf::Type::STRING, "Key_x" } },
-    { "UpKey",      { conf::Type::STRING, "Key_Up" } },
-    { "DownKey",    { conf::Type::STRING, "Key_Down" } },
-    { "LeftKey",    { conf::Type::STRING, "Key_Left" } },
-    { "RightKey",   { conf::Type::STRING, "Key_Right" } },
+    { "JumpKey",    { conf::Type::String, "Key_z" } },
+    { "RunKey",     { conf::Type::String, "Key_x" } },
+    { "UpKey",      { conf::Type::String, "Key_Up" } },
+    { "DownKey",    { conf::Type::String, "Key_Down" } },
+    { "LeftKey",    { conf::Type::String, "Key_Left" } },
+    { "RightKey",   { conf::Type::String, "Key_Right" } },
 };
 
 static conf::Configuration config;

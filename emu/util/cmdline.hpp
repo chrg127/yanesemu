@@ -8,7 +8,7 @@
 namespace cmdline {
 
 using ParamValidator = bool (*)(std::string_view);
-enum class ParamType { NONE, OPTIONAL, MUST_HAVE };
+enum class ParamType { None, Optional, MustHave };
 
 inline bool default_validator(std::string_view) { return true; }
 
@@ -22,7 +22,7 @@ struct Argument {
     char short_opt;
     std::string_view long_opt;
     std::string_view desc;
-    ParamType ptype = ParamType::NONE;
+    ParamType ptype = ParamType::None;
     ParamValidator validator = default_validator;
 };
 

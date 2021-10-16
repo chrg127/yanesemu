@@ -327,14 +327,14 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
 void CliDebugger::report_event(Debugger::Event &&ev)
 {
     switch (ev.tag) {
-    case Debugger::Event::Tag::STEP:
+    case Debugger::Event::Tag::Step:
         print_instr();
         break;
-    case Debugger::Event::Tag::BREAK:
+    case Debugger::Event::Tag::Break:
         fmt::print("Breakpoint #{} reached.\n", ev.bp_index);
         print_instr();
         break;
-    case Debugger::Event::Tag::INV_INSTR:
+    case Debugger::Event::Tag::InvalidInstruction:
         fmt::print("Found invalid instruction {:02X} at {:04X}.\n",
                    ev.inv.id, ev.inv.addr);
         break;
@@ -353,7 +353,7 @@ void CliDebugger::print_cpu_status()
                "Flags: [{}]\n"
                "Cycles: {}\n",
                dbg.cpudbg.getreg(CPUDebugger::Reg::PC),
-               dbg.cpudbg.getreg(CPUDebugger::Reg::ACC),
+               dbg.cpudbg.getreg(CPUDebugger::Reg::Acc),
                dbg.cpudbg.getreg(CPUDebugger::Reg::X),
                dbg.cpudbg.getreg(CPUDebugger::Reg::Y),
                dbg.cpudbg.getreg(CPUDebugger::Reg::SP),
@@ -365,28 +365,28 @@ void CliDebugger::print_ppu_status()
 {
     using util::getbit;
     auto onoff = [](auto val) { return val ? "ON" : "OFF"; };
-    uint8 ctrl = dbg.ppudbg.getreg(PPUDebugger::Reg::CTRL);
+    uint8 ctrl = dbg.ppudbg.getreg(PPUDebugger::Reg::Ctrl);
     fmt::print("PPUCTRL ($2000): {:08b}:\n"
                "    Base NT address: ${:04X}\n    VRAM address increment: {}\n    Sprite Pattern table address: ${:04X}\n"
                "    Background pattern table address: ${:04X}\n    Sprite size: {}\n    Master/slave: {}\n    NMI enabled: {}\n",
                ctrl, dbg.ppudbg.nt_base_addr(), (ctrl & 4) == 0 ? 1 : 32, getbit(ctrl, 4) * 0x1000,
                getbit(ctrl, 5) * 0x1000, (ctrl & 32) ? "8x16" : "8x8", (ctrl & 64) ? "output color" : "read backdrop",
                (ctrl & 128) ? "ON" : "OFF");
-    uint8 mask = dbg.ppudbg.getreg(PPUDebugger::Reg::MASK);
+    uint8 mask = dbg.ppudbg.getreg(PPUDebugger::Reg::Mask);
     fmt::print("PPUMASK ($2001): {:08b}:\n"
                "    Greyscale: {}\n    BG left: {}\n    Sprites left: {}\n    BG: {}\n    Sprites: {}\n"
                "    Emphasize red: {}\n    Emphasize green: {}\n    Emphasize blue: {}\n",
                mask, onoff(mask & 1),  onoff(mask & 2),  onoff(mask & 4),  onoff(mask & 8),
                      onoff(mask & 16), onoff(mask & 32), onoff(mask & 64), onoff(mask & 128));
-    uint8 status = dbg.ppudbg.getreg(PPUDebugger::Reg::STATUS);
+    uint8 status = dbg.ppudbg.getreg(PPUDebugger::Reg::Status);
     fmt::print("PPUSTATUS ($2002): {:08b}:\n"
                "    Sprite overflow: {}\n    Sprite 0 hit: {}\n    Vblank: {}\n",
                status, onoff(status & 32), onoff(status & 64), onoff(status & 128));
-    fmt::print("OAMADDR ($2003): ${:02X}\n", dbg.ppudbg.getreg(PPUDebugger::Reg::OAMADDR));
-    fmt::print("OAMDATA ($2004): ${:02X}\n", dbg.ppudbg.getreg(PPUDebugger::Reg::OAMDATA));
-    fmt::print("PPUSCROLL ($2005): ${:02X}\n", dbg.ppudbg.getreg(PPUDebugger::Reg::PPUSCROLL));
-    fmt::print("PPUADDR ($2006): ${:02X}\n", dbg.ppudbg.getreg(PPUDebugger::Reg::PPUADDR));
-    fmt::print("PPUDATA ($2007): ${:02X}\n", dbg.ppudbg.getreg(PPUDebugger::Reg::PPUDATA));
+    fmt::print("OAMAddr ($2003): ${:02X}\n", dbg.ppudbg.getreg(PPUDebugger::Reg::OAMAddr));
+    fmt::print("OAMData ($2004): ${:02X}\n", dbg.ppudbg.getreg(PPUDebugger::Reg::OAMData));
+    fmt::print("PPUScroll ($2005): ${:02X}\n", dbg.ppudbg.getreg(PPUDebugger::Reg::PPUScroll));
+    fmt::print("PPUAddr ($2006): ${:02X}\n", dbg.ppudbg.getreg(PPUDebugger::Reg::PPUAddr));
+    fmt::print("PPUData ($2007): ${:02X}\n", dbg.ppudbg.getreg(PPUDebugger::Reg::PPUData));
     auto [l, c] = dbg.ppudbg.pos();
     fmt::print("Line: {}; Cycle: {}\n", l, c);
     fmt::print("VRAM address: {:04X}\n", dbg.ppudbg.vram_addr());

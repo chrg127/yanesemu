@@ -18,15 +18,15 @@ static void add_error(int line, std::string &&msg)
 static std::optional<Value> check(const std::string &value, Type type)
 {
     switch (type) {
-    case Type::INT:
+    case Type::Int:
         if (auto r = str::conv(value); r)
             return r.value();
         return std::nullopt;
-    case Type::BOOL:
+    case Type::Bool:
         if (value == "true")  return true;
         if (value == "false") return false;
         return std::nullopt;
-    case Type::STRING:
+    case Type::String:
         if (value == "true")  return std::nullopt;
         if (value == "false") return std::nullopt;
         return Value(value);
@@ -85,7 +85,7 @@ Configuration parse(std::string_view pathname, const ValidConf &valid)
     return add_missing(parse_file(pathname, valid), valid);
 }
 
-void create(std::string_view pathname, const Configuration &conf, const std::unordered_map<std::string, std::string> comments)
+void create(std::string_view pathname, const Configuration &conf, const std::unordered_map<std::string, std::string> &comments)
 {
     auto file = io::File::open(pathname, io::Access::WRITE);
     if (!file) {
