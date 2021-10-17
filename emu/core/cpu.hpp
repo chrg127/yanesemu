@@ -75,7 +75,6 @@ class CPU {
 
     Bus<CPUBUS_SIZE> *bus = nullptr;
     util::Word opargs = 0;
-    std::function<void(uint16, char)> fetch_callback;
     std::function<void(uint8, uint16)> error_callback;
 
 public:
@@ -91,7 +90,6 @@ public:
     void fire_nmi();
 
     unsigned long cycles() const { return r.cycles; }
-    void on_fetch(auto &&f) { fetch_callback = f; }
     void on_error(auto &&f) { error_callback = f; }
 
     friend class Debugger::Debugger;

@@ -66,8 +66,6 @@ void CPU::fire_nmi()
 
 uint8 CPU::fetch()
 {
-    if (fetch_callback)
-        fetch_callback(r.pc.v, 'x');
     cycle();
     return bus->read(r.pc.v++);
 }
@@ -320,16 +318,12 @@ void CPU::nmipoll()
 
 uint8 CPU::readmem(uint16 addr)
 {
-    if (fetch_callback)
-        fetch_callback(addr, 'r');
     cycle();
     return bus->read(addr);
 }
 
 void CPU::writemem(uint16 addr, uint8 data)
 {
-    if (fetch_callback)
-        fetch_callback(addr, 'w');
     cycle();
     bus->write(addr, data);
 }

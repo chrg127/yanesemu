@@ -16,25 +16,24 @@ namespace Debugger {
 
 //  name                abbrev  enum           min args max args    description
 #define ENUM_COMMANDS(X) \
-    X("help",           "h",    HELP,          0,       1,          "prints this help text") \
-    X("continue",       "c",    CONTINUE,      0,       0,          "start/continue execution") \
-    X("runframe",       "nmi",  RUNFRAME,      0,       0,          "run entire frame, stop at nmi handler") \
-    X("break",          "b",    BREAK,         2,       3,          "set a breakpoint") \
-    X("listbreaks",     "lb",   LIST_BREAK,    0,       0,          "list breakpoints") \
-    X("deletebreak",    "dlb",  DELBREAK,      1,       1,          "delete a breakpoint") \
-    X("backtrace",      "bt",   BACKTRACE,     0,       0,          "prints the backtrace") \
-    X("next",           "n",    NEXT,          0,       0,          "run next instruction") \
-    X("step",           "s",    STEP,          0,       0,          "step next instruction") \
-    X("status",         "st",   STATUS,        0,       1,          "print current status") \
-    X("read",           "rd",   READ_ADDR,     1,       2,          "read address") \
-    X("write",          "wr",   WRITE_ADDR,    2,       3,          "write address") \
-    X("block",          "bl",   BLOCK,         2,       3,          "read block") \
-    X("disassemble",    "dis",  DISASSEMBLE,   1,       3,          "disassemble the current instruction") \
-    X("disblock",       "db",   DISBLOCK,      2,       2,          "disassemble a given block") \
-    X("trace",          "tr",   TRACE,         1,       1,          "trace and log instructions to file") \
-    X("stoptrace",      "str",  STOP_TRACE,    0,       0,          "stop tracing instructions") \
-    X("reset",          "res",  RESET,         0,       0,          "reset the emulator") \
-    X("quit",           "q",    QUIT,          0,       0,          "quit the emulator") \
+    X("help",           "h",    Help,          0,       1,          "prints this help text") \
+    X("continue",       "c",    Continue,      0,       0,          "start/continue execution") \
+    X("runframe",       "nmi",  RunFrame,      0,       0,          "run entire frame, stop at nmi handler") \
+    X("break",          "b",    Break,         1,       2,          "set a breakpoint") \
+    X("listbreaks",     "lb",   ListBreaks,    0,       0,          "list breakpoints") \
+    X("deletebreak",    "dlb",  DeleteBreak,   1,       1,          "delete a breakpoint") \
+    X("next",           "n",    Next,          0,       0,          "run next instruction") \
+    X("step",           "s",    Step,          0,       0,          "step next instruction") \
+    X("status",         "st",   Status,        0,       1,          "print current status") \
+    X("read",           "rd",   ReadAddr,      1,       2,          "read address") \
+    X("write",          "wr",   WriteAddr,     2,       3,          "write address") \
+    X("block",          "bl",   Block,         2,       3,          "read block") \
+    X("disassemble",    "dis",  Disassemble,   1,       3,          "disassemble the current instruction") \
+    X("disblock",       "db",   DisBlock,      2,       2,          "disassemble a given block") \
+    X("trace",          "tr",   Trace,         1,       1,          "trace and log instructions to file") \
+    X("stoptrace",      "str",  StopTrace,     0,       0,          "stop tracing instructions") \
+    X("reset",          "res",  Reset,         0,       0,          "reset the emulator") \
+    X("quit",           "q",    Quit,          0,       0,          "quit the emulator") \
 
 #define X(name, abbrev, enumname, minargs, maxargs, desc) \
     { name, enumname }, { abbrev, enumname },
@@ -142,12 +141,12 @@ static std::optional<MemorySource> parse_memsource(const std::string &str)
 CliDebugger::CliDebugger(core::Emulator *emu)
     : dbg(emu)
 {
-    dbg.on_report([this](Debugger::Event &&ev) { report_event(std::move(ev)); });
+    dbg.on_report([this](Debugger::Event ev) { report_event(ev); });
 }
 
 bool CliDebugger::repl()
 {
-    io::File input = io::File::assoc(stdin);
+    auto input = io::File::assoc(stdin);
     std::string cmdstr, argsstr;
 
     fmt::print(">>> ");
@@ -181,51 +180,46 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
 
     switch (cmd) {
 
-    case Command::HELP:
+    case Command::Help:
         if (args.size() == 1) {
-            auto cmd = util::map_lookup_withdef(name_lookup, args[0], Command::HELP);
+            auto cmd = util::map_lookup_withdef(name_lookup, args[0], Command::Help);
             fmt::print("{}\n", info_lookup.find(cmd)->second.desc);
         } else
             fmt::print("{}", helpstr);
         break;
 
-    case Command::CONTINUE:
+    case Command::Continue:
         fmt::print("Continuing.\n");
         dbg.advance();
         break;
 
-    case Command::RUNFRAME:
+    case Command::RunFrame:
         dbg.advance_frame();
         break;
 
-    case Command::NEXT:
+    case Command::Next:
         dbg.next();
         break;
 
-    case Command::STEP:
+    case Command::Step:
         dbg.step();
         break;
 
-    case Command::BREAK: {
-        char mode = args[0][0];
-        if (args[0].size() != 1 || (mode != 'r' && mode != 'w' && mode != 'x')) {
-            fmt::print("Invalid mode for breakpoint. Try 'help'.\n");
-            break;
-        }
-        auto start = parse_addr(args[1]);
-        auto end = args.size() > 2 ? parse_addr(args[2]) : start;
+    case Command::Break: {
+        auto start = parse_addr(args[0]);
+        auto end = args.size() > 1 ? parse_addr(args[1]) : start;
         if (start && end) {
             if (end.value() < start.value())
                 fmt::print("Invalid range.\n");
             else {
-                unsigned i = dbg.set_breakpoint({ .start = start.value(), .end = end.value(), .mode = mode });
+                unsigned i = dbg.set_breakpoint({ .start = start.value(), .end = end.value() });
                 fmt::print("Set breakpoint #{} to {:04X}-{:04X}.\n", i, start.value(), end.value());
             }
         }
         break;
     }
 
-    case Command::DELBREAK: {
+    case Command::DeleteBreak: {
         auto index = str::conv(args[0]);
         if (!index || index >= dbg.breakpoints().size())
             fmt::print("Invalid index: {}.\n", args[0]);
@@ -236,20 +230,17 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
         break;
     }
 
-    case Command::LIST_BREAK: {
+    case Command::ListBreaks: {
         const auto &breaks = dbg.breakpoints();
         for (std::size_t i = 0; i < breaks.size(); i++) {
-            if (breaks[i].mode == 'n')
+            if (breaks[i].erased)
                 continue;
-            fmt::print("#{}: {:04X}-{:04X}, mode: {}\n",
-                    i, breaks[i].start, breaks[i].end, breaks[i].mode);
+            fmt::print("#{}: {:04X}-{:04X}\n", i, breaks[i].start, breaks[i].end);
         }
         break;
     }
 
-    case Command::BACKTRACE: break;
-
-    case Command::DISASSEMBLE: {
+    case Command::Disassemble: {
         auto id = parse_data(args[0]);
         auto lo = args.size() >= 2 ? parse_data(args[1]) : 0;
         auto hi = args.size() >= 3 ? parse_data(args[2]) : 0;
@@ -258,14 +249,14 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
         break;
     }
 
-    case Command::STATUS:
+    case Command::Status:
         if (!args.empty() && args[0] == "ppu")
             print_ppu_status();
         else
             print_cpu_status();
         break;
 
-    case Command::READ_ADDR: {
+    case Command::ReadAddr: {
         auto addr   = parse_addr(args[0]);
         auto source = parse_memsource(args.size() == 2 ? args[1] : "");
         if (addr && source)
@@ -273,7 +264,7 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
         break;
     }
 
-    case Command::WRITE_ADDR: {
+    case Command::WriteAddr: {
         auto addr   = parse_addr(args[0]);
         auto val    = parse_data(args[1]);
         auto source = parse_memsource(args.size() == 3 ? args[2] : "");
@@ -285,7 +276,7 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
         break;
     }
 
-    case Command::BLOCK: {
+    case Command::Block: {
         auto start = parse_addr(args[0]);
         auto end   = parse_addr(args[1]);
         auto loc   = parse_memsource(args.size() == 3 ? args[2] : "");
@@ -294,7 +285,7 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
         break;
     }
 
-    case Command::DISBLOCK: {
+    case Command::DisBlock: {
         auto start = parse_addr(args[0]);
         auto end   = parse_addr(args[1]);
         if (start && end && check_addr_ranges(start.value(), end.value(), MemorySource::RAM)) {
@@ -305,38 +296,37 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
         break;
     }
 
-    case Command::TRACE: {
+    case Command::Trace: {
         if (!dbg.start_tracing(args[0]))
             std::perror("error");
         break;
     }
 
-    case Command::STOP_TRACE:
+    case Command::StopTrace:
         dbg.stop_tracing();
         break;
 
-    case Command::RESET:
+    case Command::Reset:
         break;
 
-    case Command::QUIT:
+    case Command::Quit:
         quit = true;
         break;
     }
 }
 
-void CliDebugger::report_event(Debugger::Event &&ev)
+void CliDebugger::report_event(Debugger::Event ev)
 {
-    switch (ev.tag) {
-    case Debugger::Event::Tag::Step:
+    switch (ev.type) {
+    case Debugger::Event::Type::Step:
         print_instr();
         break;
-    case Debugger::Event::Tag::Break:
-        fmt::print("Breakpoint #{} reached.\n", ev.bp_index);
+    case Debugger::Event::Type::Break:
+        fmt::print("Breakpoint #{} reached.\n", ev.point_num);
         print_instr();
         break;
-    case Debugger::Event::Tag::InvalidInstruction:
-        fmt::print("Found invalid instruction {:02X} at {:04X}.\n",
-                   ev.inv.id, ev.inv.addr);
+    case Debugger::Event::Type::InvalidInstruction:
+        fmt::print("Found invalid instruction {:02X} at {:04X}.\n", ev.inv.id, ev.inv.addr);
         break;
     }
 }

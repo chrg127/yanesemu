@@ -11,15 +11,13 @@ namespace Debugger {
 
 std::optional<MemorySource> string_to_memsource(const std::string &str)
 {
-    std::unordered_map<std::string, MemorySource> srcmap = {
-        { "",       MemorySource::RAM },
-        { "cpu",    MemorySource::RAM },
-        { "ram",    MemorySource::RAM },
-        { "ppu",    MemorySource::VRAM },
-        { "vram",   MemorySource::VRAM },
-        { "oam",    MemorySource::OAM },
-    };
-    return util::map_lookup(srcmap, str);
+    if (str == "")     return MemorySource::RAM;
+    if (str == "cpu")  return MemorySource::RAM;
+    if (str == "ram")  return MemorySource::RAM;
+    if (str == "ppu")  return MemorySource::VRAM;
+    if (str == "vram") return MemorySource::VRAM;
+    if (str == "oam")  return MemorySource::OAM;
+    return std::nullopt;
 }
 
 Debugger::Debugger(core::Emulator *e)
@@ -29,10 +27,10 @@ Debugger::Debugger(core::Emulator *e)
     {
         got_error = true;
         Event ev;
-        ev.tag = Event::Tag::InvalidInstruction;
+        ev.type = Event::Type::InvalidInstruction;
         ev.inv.id = id;
         ev.inv.addr = addr;
-        report_callback(std::move(ev));
+        report_callback(ev);
     });
 }
 
@@ -40,15 +38,10 @@ void Debugger::run(StepType step_type)
 {
     const auto test_breakpoints = [this]()
     {
-        const uint16 pc = cpudbg.getreg(CPUDebugger::Reg::PC);
-        auto it = std::find_if(break_list.begin(), break_list.end(),
-                [pc](const Breakpoint &b)
-                {
-                    switch (b.mode) {
-                    case 'x': return pc >= b.start && pc <= b.end;
-                    default: return false;
-                    }
-                });
+        uint16 pc = cpudbg.getreg(CPUDebugger::Reg::PC);
+        auto it = std::find_if(break_list.begin(), break_list.end(), [pc](const auto &b) {
+            return pc >= b.start && pc <= b.end;
+        });
         return it == break_list.end() ? -1 : it - break_list.begin();
     };
 
@@ -62,16 +55,16 @@ void Debugger::run(StepType step_type)
                 break;
             int bhit = test_breakpoints();
             if (bhit != -1) {
-                ev.tag = Event::Tag::Break;
-                ev.bp_index = bhit;
+                ev.type = Event::Type::Break;
+                ev.point_num = bhit;
                 break;
             }
             if (check_step()) {
-                ev.tag = Event::Tag::Step;
+                ev.type = Event::Type::Step;
                 break;
             }
         }
-        report_callback(std::move(ev));
+        report_callback(ev);
     };
 
     switch (step_type) {
@@ -130,22 +123,22 @@ std::function<void(uint16, uint8)> Debugger::write_to(MemorySource source)
     }
 }
 
-unsigned Debugger::set_breakpoint(Breakpoint &&bp)
+unsigned Debugger::set_breakpoint(Breakpoint point)
 {
     auto it = std::find_if(break_list.begin(), break_list.end(), [](const auto &b) {
-        return b.mode == 'n';
+        return b.erased;
     });
     if (it != break_list.end()) {
-        *it = bp;
+        *it = point;
         return it - break_list.begin();
     }
-    break_list.push_back(bp);
+    break_list.push_back(point);
     return break_list.size() - 1;
 }
 
 void Debugger::delete_breakpoint(unsigned index)
 {
-    break_list[index].mode = 'n';
+    break_list[index].erased = true;
 }
 
 void Debugger::trace()

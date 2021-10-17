@@ -3,6 +3,7 @@
 #include <functional>
 #include <optional>
 #include <vector>
+#include <span>
 #include <emu/util/uint.hpp>
 #include <emu/util/file.hpp>
 
@@ -72,11 +73,11 @@ public:
 
 struct Debugger {
     struct Event {
-        enum class Tag {
+        enum class Type {
             Step, Break, InvalidInstruction,
-        } tag;
+        } type;
         union {
-            unsigned bp_index;
+            unsigned point_num;
             struct {
                 uint8 id;
                 uint16 addr;
@@ -87,7 +88,7 @@ struct Debugger {
     struct Breakpoint {
         uint16 start;
         uint16 end;
-        char mode;
+        bool erased = false;
     };
 
     enum class StepType {
@@ -96,7 +97,7 @@ struct Debugger {
 
 private:
     core::Emulator *emu;
-    std::function<void (Event &&)> report_callback;
+    std::function<void(Event)> report_callback;
     std::vector<Breakpoint> break_list;
     std::optional<io::File> tracefile;
     bool got_error = false;
@@ -119,9 +120,9 @@ public:
     void advance()       { run(StepType::None); }
     void advance_frame() { run(StepType::Frame); }
 
-    unsigned set_breakpoint(Breakpoint &&p);
+    unsigned set_breakpoint(Breakpoint point);
     void delete_breakpoint(unsigned index);
-    std::vector<Breakpoint> breakpoints() const { return break_list; }
+    std::span<const Breakpoint> breakpoints() const { return break_list; }
 
     bool start_tracing(std::string_view pathname);
     void stop_tracing();

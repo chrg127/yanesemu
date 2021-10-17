@@ -147,13 +147,13 @@ void cli_interface(cmdline::Result &flags)
     if (flags.items.size() > 1)
         warning("multiple ROM files specified, first one will be used\n");
 
-    auto rom = open_rom(flags.items[0]);
     auto context = platform::Video::create(platform::Type::SDL, core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
     const int VIEWPORT_SIZE = 2;
     context.resize(core::SCREEN_WIDTH*VIEWPORT_SIZE, core::SCREEN_HEIGHT*VIEWPORT_SIZE);
     context.map_keys(config);
     auto screen = context.create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
     MainThread mainthread;
+    auto rom = open_rom(flags.items[0]);
 
     if (!flags.has['d']) {
         context.set_title(progname);

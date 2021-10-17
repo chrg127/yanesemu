@@ -9,11 +9,11 @@ namespace core { class Emulator; }
 namespace Debugger {
 
 enum Command {
-    HELP,       CONTINUE,       RUNFRAME,   NEXT,
-    STEP,       BREAK,          LIST_BREAK, DELBREAK,
-    BACKTRACE,  STATUS,         READ_ADDR,  WRITE_ADDR,
-    BLOCK,      DISASSEMBLE,    DISBLOCK,   TRACE,
-    STOP_TRACE, RESET,          QUIT,
+    Help,        Continue,  RunFrame,   Next,
+    Step,        Break,     ListBreaks, DeleteBreak,
+    Status,      ReadAddr,  WriteAddr,  Block,
+    Disassemble, DisBlock,  Trace,
+    StopTrace,   Reset,     Quit,
 };
 
 class CliDebugger {
@@ -29,7 +29,7 @@ public:
 
 private:
     void eval(Command cmd, std::vector<std::string> args);
-    void report_event(Debugger::Event &&ev);
+    void report_event(Debugger::Event ev);
     void print_cpu_status();
     void print_ppu_status();
     std::string format_flags();
