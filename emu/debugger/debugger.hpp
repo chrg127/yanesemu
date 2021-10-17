@@ -22,8 +22,6 @@ enum class MemorySource {
     OAM,
 };
 
-std::optional<MemorySource> string_to_memsource(std::string_view str);
-
 class CPUDebugger {
     core::CPU *cpu;
 
@@ -136,5 +134,20 @@ public:
 private:
     void trace();
 };
+
+std::optional<MemorySource> string_to_memsource(std::string_view str);
+std::string disassemble(const uint8 id, const uint8 oplow, const uint8 ophigh);
+unsigned num_bytes(uint8 id);
+
+inline void disassemble_block(uint16 start, uint16 end, auto &&readval, auto &&process)
+{
+    while (start <= end) {
+        uint8 id   = readval(start);
+        uint8 low  = readval(start + 1);
+        uint8 high = readval(start + 2);
+        process(start, disassemble(id, low, high));
+        start += num_bytes(id);
+    }
+}
 
 } // namespace core

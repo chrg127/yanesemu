@@ -1,8 +1,8 @@
-#include <emu/core/instrinfo.hpp>
+#include "debugger.hpp"
 
 #include <fmt/core.h>
 
-namespace core {
+namespace debugger {
 
 #define INSTR_MODE(X) \
     X(0x00, brk, impld) \
@@ -156,85 +156,24 @@ namespace core {
     X(0xFD, sbc, absx) \
     X(0xFE, inc, absx) \
 
-
-
-#define INSTR_DESC(X) \
-    X(adc, "", "") \
-    X(and, "", "") \
-    X(asl, "", "") \
-    X(bcc, "", "") \
-    X(bcs, "", "") \
-    X(beq, "", "") \
-    X(beq, "", "") \
-    X(bit, "", "") \
-    X(bmi, "", "") \
-    X(bne, "", "") \
-    X(bpl, "", "") \
-    X(brk, "", "") \
-    X(bvc, "", "") \
-    X(bvs, "", "") \
-    X(clc, "", "") \
-    X(cld, "", "") \
-    X(cli, "", "") \
-    X(clv, "", "") \
-    X(cmp, "", "") \
-    X(cpx, "", "") \
-    X(cpy, "", "") \
-    X(dec, "", "") \
-    X(dex, "", "") \
-    X(dey, "", "") \
-    X(eor, "", "") \
-    X(inc, "", "") \
-    X(inx, "", "") \
-    X(iny, "", "") \
-    X(jmp, "", "") \
-    X(jsr, "", "") \
-    X(lda, "", "") \
-    X(ldx, "", "") \
-    X(ldy, "", "") \
-    X(lsr, "", "") \
-    X(nop, "", "") \
-    X(ora, "", "") \
-    X(pha, "", "") \
-    X(php, "", "") \
-    X(pla, "", "") \
-    X(plp, "", "") \
-    X(rol, "", "") \
-    X(ror, "", "") \
-    X(rti, "", "") \
-    X(rts, "", "") \
-    X(sbc, "", "") \
-    X(sec, "", "") \
-    X(sed, "", "") \
-    X(sei, "", "") \
-    X(sta, "", "") \
-    X(stx, "", "") \
-    X(sty, "", "") \
-    X(tax, "", "") \
-    X(tay, "", "") \
-    X(tsx, "", "") \
-    X(txa, "", "") \
-    X(txs, "", "") \
-    X(tya, "", "") \
-
 std::string disassemble(const uint8 id, const uint8 oplow, const uint8 ophigh)
 {
-#define modefmt(mode, formt, numb, ...) \
-    const auto disass_##mode = [&](const char name[4]) { return fmt::format(formt, __VA_ARGS__); };
-
+#define modefmt(mode, frmt, ...) \
+    const auto disass_##mode = [&](const char name[4]) { return fmt::format(frmt, __VA_ARGS__); };
     const auto disass_impld = [&](const char name[4]) { return std::string(name); };
-    modefmt(accum,  "{} A",                 1, name);
-    modefmt(branch, "{} {:X}",              2, name, (int8_t) oplow);
-    modefmt(imm,    "{} #${:02X}",          2, name, oplow);
-    modefmt(zero,   "{} ${:02X}",           2, name, oplow);
-    modefmt(zerox,  "{} ${:02X},x",         2, name, oplow);
-    modefmt(zeroy,  "{} ${:02X},y",         2, name, oplow);
-    modefmt(indx,   "{} (${:02X},x)",       2, name, oplow);
-    modefmt(indy,   "{} (${:02X}),y",       2, name, oplow);
-    modefmt(abs,    "{} ${:02X}{:02X}",     3, name, ophigh, oplow);
-    modefmt(absx,   "{} ${:02X}{:02X},x",   3, name, ophigh, oplow);
-    modefmt(absy,   "{} ${:02X}{:02X},y",   3, name, ophigh, oplow);
-    modefmt(ind,    "{} (${:02X}{:02X})",   3, name, ophigh, oplow);
+    modefmt(accum,  "{} A",                 name);
+    modefmt(branch, "{} {:X}",              name, (int8_t) oplow);
+    modefmt(imm,    "{} #${:02X}",          name, oplow);
+    modefmt(zero,   "{} ${:02X}",           name, oplow);
+    modefmt(zerox,  "{} ${:02X},x",         name, oplow);
+    modefmt(zeroy,  "{} ${:02X},y",         name, oplow);
+    modefmt(indx,   "{} (${:02X},x)",       name, oplow);
+    modefmt(indy,   "{} (${:02X}),y",       name, oplow);
+    modefmt(abs,    "{} ${:02X}{:02X}",     name, ophigh, oplow);
+    modefmt(absx,   "{} ${:02X}{:02X},x",   name, ophigh, oplow);
+    modefmt(absy,   "{} ${:02X}{:02X},y",   name, ophigh, oplow);
+    modefmt(ind,    "{} (${:02X}{:02X})",   name, ophigh, oplow);
+#undef modefmt
 
 #define X(id, name, mode) case id: return disass_##mode(#name);
     switch(id) {
@@ -268,19 +207,4 @@ unsigned num_bytes(uint8 id)
 #undef X
 }
 
-/*
-#define X(name, title, desc) { #name, desc },
-static const std::unordered_map<std::string, std::string> desctab = {
-    INSTR_MODE(X)
-}
-#undef X
-
-std::string get_instr_desc(const std::string &s)
-{
-    auto it = desctab.find(s);
-    return it == desctab.end() ? "[Unknown instruction]", *it;
-}
-*/
-
-} // namespace core
-
+} // namespace debugger

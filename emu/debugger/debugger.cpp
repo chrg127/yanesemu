@@ -2,7 +2,7 @@
 
 #include <algorithm>
 #include <emu/core/emulator.hpp>
-#include <emu/core/instrinfo.hpp>
+#include <emu/debugger/instrinfo.hpp>
 #include <emu/util/file.hpp>
 #include <emu/util/debug.hpp>
 #include <emu/util/utility.hpp>

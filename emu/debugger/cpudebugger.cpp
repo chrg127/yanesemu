@@ -2,7 +2,7 @@
 
 #include <fmt/core.h>
 #include <emu/core/cpu.hpp>
-#include <emu/core/instrinfo.hpp>
+#include <emu/debugger/instrinfo.hpp>
 
 namespace debugger {
 
@@ -70,6 +70,9 @@ CPUDebugger::Instruction CPUDebugger::curr_instr() const
 
 std::string CPUDebugger::curr_instr_str() const
 {
+    auto is_branch      = [](uint8 id)            { return (id & 0x1F) == 0x10; };
+    auto branch_pointer = [](uint8 arg, uint8 pc) { return pc + 2 + (int8_t) arg; };
+
     const auto took_branch = [](uint8 id, const core::CPU::ProcStatus &ps)
     {
         switch (id) {
@@ -86,10 +89,10 @@ std::string CPUDebugger::curr_instr_str() const
     };
 
     Instruction instr = curr_instr();
-    std::string res = core::disassemble(instr.id, instr.lo, instr.hi);
-    if (core::is_branch(instr.id)) {
+    std::string res = disassemble(instr.id, instr.lo, instr.hi);
+    if (is_branch(instr.id)) {
         res += fmt::format(" [{:02X}] [{}]",
-                core::branch_pointer(instr.lo, cpu->r.pc.v),
+                branch_pointer(instr.lo, cpu->r.pc.v),
                 took_branch(instr.id, cpu->r.flags) ? "Branch taken" : "Branch not taken");
     }
     return res;

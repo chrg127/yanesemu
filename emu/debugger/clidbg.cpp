@@ -4,8 +4,8 @@
 #include <stdexcept>
 #include <fmt/core.h>
 #include <emu/core/const.hpp>
-#include <emu/core/instrinfo.hpp>
 #include <emu/debugger/debugger.hpp>
+#include <emu/debugger/instrinfo.hpp>
 #include <emu/util/bits.hpp>
 #include <emu/util/uint.hpp>
 #include <emu/util/string.hpp>
@@ -232,7 +232,7 @@ void CliDebugger::eval(Command *cmd, std::span<std::string> args)
         auto lo = args.size() >= 2 ? parse_to<uint8>(args[1]) : 0;
         auto hi = args.size() >= 3 ? parse_to<uint8>(args[2]) : 0;
         if (id && lo && hi)
-            fmt::print("{}\n", core::disassemble(id, lo, hi));
+            fmt::print("{}\n", disassemble(id, lo, hi));
         break;
     }
 
@@ -272,7 +272,7 @@ void CliDebugger::eval(Command *cmd, std::span<std::string> args)
         auto start = parse_to<uint16>(args[0]);
         auto end   = parse_to<uint16>(args[1]);
         check_addr_ranges(start, end, MemorySource::RAM);
-        core::disassemble_block(start, end,
+        disassemble_block(start, end,
             [&](uint16 addr)                    { return dbg.read_ram(addr); },
             [ ](uint16 addr, std::string &&str) { fmt::print("${:04X}: {}\n", addr, str); });
         break;
