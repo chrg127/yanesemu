@@ -176,10 +176,10 @@ void cli_interface(cmdline::Result &flags)
         mainthread.run([&]()
         {
             emu.power();
-            Debugger::CliDebugger clidbg{&emu};
-            clidbg.print_instr();
+            debugger::CliDebugger dbg{&emu};
+            dbg.print_instr();
             for (bool quit = false; !quit && mainthread.running(); )
-                quit = clidbg.repl();
+                quit = dbg.repl();
             mainthread.end();
         });
     }

@@ -2,7 +2,7 @@
 
 #include <emu/core/ppu.hpp>
 
-namespace Debugger {
+namespace debugger {
 
 uint8 PPUDebugger::getreg(uint16 addr) const
 {

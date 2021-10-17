@@ -1,6 +1,7 @@
 #include <emu/debugger/clidbg.hpp>
 
 #include <unordered_map>
+#include <stdexcept>
 #include <fmt/core.h>
 #include <emu/core/const.hpp>
 #include <emu/core/instrinfo.hpp>
@@ -10,9 +11,8 @@
 #include <emu/util/string.hpp>
 #include <emu/util/file.hpp>
 #include <emu/util/utility.hpp>
-#include <emu/util/debug.hpp>
 
-namespace Debugger {
+namespace debugger {
 
 //  name                abbrev  enum           min args max args    description
 #define ENUM_COMMANDS(X) \
@@ -36,28 +36,17 @@ namespace Debugger {
     X("quit",           "q",    Quit,          0,       0,          "quit the emulator") \
 
 #define X(name, abbrev, enumname, minargs, maxargs, desc) \
-    { name, enumname }, { abbrev, enumname },
-static const std::unordered_map<std::string, Command> name_lookup = { ENUM_COMMANDS(X) };
-#undef X
-
-struct CommandInfo {
-    std::string name;
-    std::string desc;
-    std::string abbrev;
-    unsigned minargs;
-    unsigned maxargs;
+    { name,   { CommandType::enumname, name, desc, abbrev, minargs, maxargs } }, \
+    { abbrev, { CommandType::enumname, name, desc, abbrev, minargs, maxargs } },
+static const std::unordered_map<std::string, Command> commands = {
+        ENUM_COMMANDS(X)
 };
-
-#define X(name, abbrev, enumname, minargs, maxargs, desc) \
-    { enumname, CommandInfo{ name, desc, abbrev, minargs, maxargs } },
-static const std::unordered_map<Command, CommandInfo> info_lookup = { ENUM_COMMANDS(X) };
 #undef X
 
-static const std::string get_helpstr()
+static std::string get_helpstr()
 {
-#define X(name, abbrev, enumname, minargs, maxargs, desc) \
-    CommandInfo{ name, desc, abbrev, minargs, maxargs },
-    static const std::vector<CommandInfo> v = { ENUM_COMMANDS(X) };
+#define X(name, abbrev, enumname, minargs, maxargs, desc) { CommandType::enumname, name, desc, abbrev, minargs, maxargs },
+    static const std::vector<Command> v = { ENUM_COMMANDS(X) };
 #undef X
     auto it = std::max_element(v.begin(), v.end(), [](const auto &a, const auto &b) {
         return a.name.size() + a.abbrev.size() < b.name.size() + b.abbrev.size();
@@ -71,29 +60,30 @@ static const std::string get_helpstr()
     return result;
 }
 
-#undef ENUM_COMMANDS
-
 static const std::string helpstr = get_helpstr();
 
-static bool check_addr_ranges(uint16 start, uint16 end, MemorySource source)
+struct CommandError : std::runtime_error {
+    using std::runtime_error::runtime_error;
+    using std::runtime_error::what;
+};
+
+
+
+namespace {
+
+void check_addr_ranges(uint16 start, uint16 end, MemorySource source)
 {
-    if (end < start) {
-        fmt::print("Invalid range: {:04X}-{:04X}.", start, end);
-        return false;
-    } else if (source == MemorySource::VRAM && (start > 0x4000 || end > 0x4000)) {
-        fmt::print("Invalid range for source VRAM.\n");
-        return false;
-    } else if (source == MemorySource::OAM && (start > 0xFF || end > 0xFF)) {
-        fmt::print("Invalid range for source OAM.\n");
-        return false;
-    }
-    return true;
+    if (end < start)
+        throw CommandError(fmt::format("Invalid range: {:04X}-{:04X}.", start, end));
+    if (source == MemorySource::VRAM && (start > 0x4000 || end > 0x4000))
+        throw CommandError(fmt::format("Invalid range for source VRAM."));
+    if (source == MemorySource::OAM && (start > 0xFF || end > 0xFF))
+        throw CommandError(fmt::format("Invalid range for source OAM."));
 }
 
-static void read_block(Debugger &dbg, uint16 start, uint16 end, MemorySource source)
+void read_block(Debugger &dbg, uint16 start, uint16 end, MemorySource source)
 {
-    if (!check_addr_ranges(start, end, source))
-        return;
+    check_addr_ranges(start, end, source);
     auto readfn = dbg.read_from(source);
     for (int i = 0; i <= (end - start); ) {
         fmt::print("${:04X}: ", start + i);
@@ -103,43 +93,36 @@ static void read_block(Debugger &dbg, uint16 start, uint16 end, MemorySource sou
     }
 }
 
-static void write_block(Debugger &dbg, uint16 start, uint16 end, uint8 data, MemorySource source)
+void write_block(Debugger &dbg, uint16 start, uint16 end, uint8 data, MemorySource source)
 {
-    if (!check_addr_ranges(start, end, source))
-        return;
+    check_addr_ranges(start, end, source);
     auto writefn = dbg.write_to(source);
     for (uint16 curr = start; curr <= (end-start); curr++)
         writefn(curr, data);
 }
 
-static std::optional<uint16> parse_addr(const std::string &str)
+template <typename T>
+T parse_to(std::string_view str)
 {
-    auto addr = str::conv<uint16>(str, 16);
-    if (!addr)
-        fmt::print("Invalid address: {}\n", str);
-    return addr;
+    std::optional<T> o;
+    if constexpr(std::is_same<T, MemorySource>::value)
+        o = string_to_memsource(str);
+    else
+        o = str::conv<T>(str, 16);
+    if (!o) {
+        if constexpr(std::is_same<T, MemorySource>::value) throw CommandError(fmt::format("Invalid memory source: {}", str));
+        if constexpr(std::is_same<T, uint8>::value)        throw CommandError(fmt::format("Invalid data: {}", str));
+        if constexpr(std::is_same<T, uint16>::value)       throw CommandError(fmt::format("Invalid address: {}", str));
+    }
+    return o.value();
 }
 
-static std::optional<uint8> parse_data(const std::string &str)
-{
-    auto data = str::conv<uint8>(str, 8);
-    if (!data)
-        fmt::print("Invalid value: {}\n", str);
-    return data;
-}
-
-static std::optional<MemorySource> parse_memsource(const std::string &str)
-{
-    auto source = string_to_memsource(str);
-    if (!source)
-        fmt::print("Unrecognized memory source: {}\n", str);
-    return source;
-}
+} // namespace
 
 
 
 CliDebugger::CliDebugger(core::Emulator *emu)
-    : dbg(emu)
+    : dbg(emu), last_cmd(nullptr), last_args({})
 {
     dbg.on_report([this](Debugger::Event ev) { report_event(ev); });
 }
@@ -155,74 +138,78 @@ bool CliDebugger::repl()
         return quit;
     }
 
-    if (cmdstr.empty())
-        eval(last_cmd, last_args);
-    else if (auto cmd = util::map_lookup(name_lookup, cmdstr); cmd) {
-        last_cmd  = cmd.value();
-        last_args = str::split(argsstr, ' ');
-        eval(last_cmd, last_args);
-    } else
-        fmt::print("Invalid command. Try 'help'.\n");
+    try {
+        if (cmdstr.empty())
+            eval(last_cmd, last_args);
+        else if (auto cmd = util::map_lookup(commands, cmdstr); cmd) {
+            last_cmd  = &cmd.value();
+            last_args = str::split(argsstr, ' ');
+            eval(last_cmd, last_args);
+        } else
+            fmt::print("Invalid command. Try 'help'.\n");
+    } catch (const CommandError &error) {
+        fmt::print(stderr, "{}\n", error.what());
+    }
 
     return quit;
 }
 
-void CliDebugger::eval(Command cmd, std::vector<std::string> args)
+void CliDebugger::eval(Command *cmd, std::span<std::string> args)
 {
-    const auto &info = info_lookup.find(cmd)->second;
-    if (args.size() < info.minargs ) {
-        fmt::print("Not enough arguments for command {}. Try 'help'.\n", info.name);
+    if (args.size() < cmd->minargs ) {
+        fmt::print("Not enough arguments for command {}. Try 'help'.\n", cmd->name);
         return;
-    } else if (args.size() > info.maxargs) {
-        fmt::print("Too many arguments for command {}. Try 'help'.\n", info.name);
+    } else if (args.size() > cmd->maxargs) {
+        fmt::print("Too many arguments for command {}. Try 'help'.\n", cmd->name);
         return;
     }
 
-    switch (cmd) {
+    switch (cmd->type) {
 
-    case Command::Help:
+    case CommandType::Help:
         if (args.size() == 1) {
-            auto cmd = util::map_lookup_withdef(name_lookup, args[0], Command::Help);
-            fmt::print("{}\n", info_lookup.find(cmd)->second.desc);
+            auto arg = util::map_lookup(commands, args[0]);
+            if (!arg)
+                fmt::print("not a command: {}\n", args[0]);
+            else
+                fmt::print("{}\n", arg.value().desc);
         } else
             fmt::print("{}", helpstr);
         break;
 
-    case Command::Continue:
+    case CommandType::Continue:
         fmt::print("Continuing.\n");
         dbg.advance();
         break;
 
-    case Command::RunFrame:
+    case CommandType::RunFrame:
         dbg.advance_frame();
         break;
 
-    case Command::Next:
+    case CommandType::Next:
         dbg.next();
         break;
 
-    case Command::Step:
+    case CommandType::Step:
         dbg.step();
         break;
 
-    case Command::Break: {
-        auto start = parse_addr(args[0]);
-        auto end = args.size() > 1 ? parse_addr(args[1]) : start;
-        if (start && end) {
-            if (end.value() < start.value())
-                fmt::print("Invalid range.\n");
-            else {
-                unsigned i = dbg.set_breakpoint({ .start = start.value(), .end = end.value() });
-                fmt::print("Set breakpoint #{} to {:04X}-{:04X}.\n", i, start.value(), end.value());
-            }
+    case CommandType::Break: {
+        auto start = parse_to<uint16>(args[0]);
+        auto end = args.size() > 1 ? parse_to<uint16>(args[1]) : start;
+        if (end < start)
+            throw CommandError(fmt::format("Invalid range."));
+        else {
+            unsigned i = dbg.set_breakpoint({ .start = start, .end = end });
+            fmt::print("Set breakpoint #{} to {:04X}-{:04X}.\n", i, start, end);
         }
         break;
     }
 
-    case Command::DeleteBreak: {
+    case CommandType::DeleteBreak: {
         auto index = str::conv(args[0]);
         if (!index || index >= dbg.breakpoints().size())
-            fmt::print("Invalid index: {}.\n", args[0]);
+            throw CommandError(fmt::format("Invalid index: {}.", args[0]));
         else {
             dbg.delete_breakpoint(index.value());
             fmt::print("Breakpoint #{} deleted.\n", index.value());
@@ -230,7 +217,7 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
         break;
     }
 
-    case Command::ListBreaks: {
+    case CommandType::ListBreaks: {
         const auto &breaks = dbg.breakpoints();
         for (std::size_t i = 0; i < breaks.size(); i++) {
             if (breaks[i].erased)
@@ -240,76 +227,71 @@ void CliDebugger::eval(Command cmd, std::vector<std::string> args)
         break;
     }
 
-    case Command::Disassemble: {
-        auto id = parse_data(args[0]);
-        auto lo = args.size() >= 2 ? parse_data(args[1]) : 0;
-        auto hi = args.size() >= 3 ? parse_data(args[2]) : 0;
+    case CommandType::Disassemble: {
+        auto id = parse_to<uint8>(args[0]);
+        auto lo = args.size() >= 2 ? parse_to<uint8>(args[1]) : 0;
+        auto hi = args.size() >= 3 ? parse_to<uint8>(args[2]) : 0;
         if (id && lo && hi)
-            fmt::print("{}\n", core::disassemble(id.value(), lo.value(), hi.value()));
+            fmt::print("{}\n", core::disassemble(id, lo, hi));
         break;
     }
 
-    case Command::Status:
+    case CommandType::Status:
         if (!args.empty() && args[0] == "ppu")
             print_ppu_status();
         else
             print_cpu_status();
         break;
 
-    case Command::ReadAddr: {
-        auto addr   = parse_addr(args[0]);
-        auto source = parse_memsource(args.size() == 2 ? args[1] : "");
-        if (addr && source)
-            read_block(dbg, addr.value(), addr.value(), source.value());
+    case CommandType::ReadAddr: {
+        auto addr   = parse_to<uint16>(args[0]);
+        auto source = parse_to<MemorySource>(args.size() == 2 ? args[1] : "");
+        read_block(dbg, addr, addr, source);
         break;
     }
 
-    case Command::WriteAddr: {
-        auto addr   = parse_addr(args[0]);
-        auto val    = parse_data(args[1]);
-        auto source = parse_memsource(args.size() == 3 ? args[2] : "");
-        if (addr && val && source) {
-            if (source.value() == MemorySource::RAM && addr.value() >= core::CARTRIDGE_START)
-                fmt::print("Warning: writes to ROM have no effects\n");
-            write_block(dbg, addr.value(), addr.value(), val.value(), source.value());
-        }
+    case CommandType::WriteAddr: {
+        auto addr   = parse_to<uint16>(args[0]);
+        auto val    = parse_to<uint8>(args[1]);
+        auto source = parse_to<MemorySource>(args.size() == 3 ? args[2] : "");
+        if (source == MemorySource::RAM && addr >= core::CARTRIDGE_START)
+            fmt::print("Warning: writes to ROM have no effects\n");
+        write_block(dbg, addr, addr, val, source);
         break;
     }
 
-    case Command::Block: {
-        auto start = parse_addr(args[0]);
-        auto end   = parse_addr(args[1]);
-        auto loc   = parse_memsource(args.size() == 3 ? args[2] : "");
-        if (start && end && loc)
-            read_block(dbg, start.value(), end.value(), loc.value());
+    case CommandType::Block: {
+        auto start = parse_to<uint16>(args[0]);
+        auto end   = parse_to<uint16>(args[1]);
+        auto loc   = parse_to<MemorySource>(args.size() == 3 ? args[2] : "");
+        read_block(dbg, start, end, loc);
         break;
     }
 
-    case Command::DisBlock: {
-        auto start = parse_addr(args[0]);
-        auto end   = parse_addr(args[1]);
-        if (start && end && check_addr_ranges(start.value(), end.value(), MemorySource::RAM)) {
-            core::disassemble_block(start.value(), end.value(),
-                [&](uint16 addr)                    { return dbg.read_ram(addr); },
-                [ ](uint16 addr, std::string &&str) { fmt::print("${:04X}: {}\n", addr, str); });
-        }
+    case CommandType::DisBlock: {
+        auto start = parse_to<uint16>(args[0]);
+        auto end   = parse_to<uint16>(args[1]);
+        check_addr_ranges(start, end, MemorySource::RAM);
+        core::disassemble_block(start, end,
+            [&](uint16 addr)                    { return dbg.read_ram(addr); },
+            [ ](uint16 addr, std::string &&str) { fmt::print("${:04X}: {}\n", addr, str); });
         break;
     }
 
-    case Command::Trace: {
+    case CommandType::Trace: {
         if (!dbg.start_tracing(args[0]))
             std::perror("error");
         break;
     }
 
-    case Command::StopTrace:
+    case CommandType::StopTrace:
         dbg.stop_tracing();
         break;
 
-    case Command::Reset:
+    case CommandType::Reset:
         break;
 
-    case Command::Quit:
+    case CommandType::Quit:
         quit = true;
         break;
     }
@@ -322,7 +304,7 @@ void CliDebugger::report_event(Debugger::Event ev)
         print_instr();
         break;
     case Debugger::Event::Type::Break:
-        fmt::print("Breakpoint #{} reached.\n", ev.point_num);
+        fmt::print("Breakpoint #{} reached.\n", ev.point_id);
         print_instr();
         break;
     case Debugger::Event::Type::InvalidInstruction:
@@ -337,7 +319,7 @@ void CliDebugger::print_instr()
                                 dbg.cpudbg.curr_instr_str());
 }
 
-void CliDebugger::print_cpu_status()
+void CliDebugger::print_cpu_status() const
 {
     fmt::print("PC: ${:02X} A: ${:02X} X: ${:02X} Y: ${:02X} S: ${:02X}\n"
                "Flags: [{}]\n"
@@ -351,7 +333,7 @@ void CliDebugger::print_cpu_status()
                dbg.cpudbg.cycles());
 }
 
-void CliDebugger::print_ppu_status()
+void CliDebugger::print_ppu_status() const
 {
     using util::getbit;
     auto onoff = [](auto val) { return val ? "ON" : "OFF"; };

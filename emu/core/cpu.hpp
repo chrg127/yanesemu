@@ -6,10 +6,7 @@
 #include <emu/util/bits.hpp>
 #include <emu/util/uint.hpp>
 
-namespace Debugger {
-    class Debugger;
-    class CPUDebugger;
-}
+namespace debugger { class CPUDebugger; }
 
 namespace core {
 
@@ -92,8 +89,7 @@ public:
     unsigned long cycles() const { return r.cycles; }
     void on_error(auto &&f) { error_callback = f; }
 
-    friend class Debugger::Debugger;
-    friend class Debugger::CPUDebugger;
+    friend class debugger::CPUDebugger;
 
 private:
     uint8 fetch();

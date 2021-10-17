@@ -4,6 +4,7 @@
 #include <optional>
 #include <vector>
 #include <span>
+#include <string_view>
 #include <emu/util/uint.hpp>
 #include <emu/util/file.hpp>
 
@@ -13,7 +14,7 @@ namespace core {
     class PPU;
 }
 
-namespace Debugger {
+namespace debugger {
 
 enum class MemorySource {
     RAM,
@@ -21,7 +22,7 @@ enum class MemorySource {
     OAM,
 };
 
-std::optional<MemorySource> string_to_memsource(const std::string &str);
+std::optional<MemorySource> string_to_memsource(std::string_view str);
 
 class CPUDebugger {
     core::CPU *cpu;
@@ -40,11 +41,11 @@ public:
     bool getflag(Flag flag) const;
     void setreg(Reg reg, uint16 value);
     void setflag(Flag flag, bool value);
-    uint16 get_vector_addr(uint16 vector);
-    Instruction curr_instr();
-    std::string curr_instr_str();
-    std::string curr_flags_str();
-    unsigned long cycles();
+    uint16 get_vector_addr(uint16 vector) const;
+    Instruction curr_instr() const;
+    std::string curr_instr_str() const;
+    std::string curr_flags_str() const;
+    unsigned long cycles() const;
 };
 
 class PPUDebugger {
@@ -77,7 +78,7 @@ struct Debugger {
             Step, Break, InvalidInstruction,
         } type;
         union {
-            unsigned point_num;
+            unsigned point_id;
             struct {
                 uint8 id;
                 uint16 addr;
@@ -86,9 +87,9 @@ struct Debugger {
     };
 
     struct Breakpoint {
-        uint16 start;
-        uint16 end;
-        bool erased = false;
+        uint16 start = 0;
+        uint16 end   = 0;
+        bool erased  = false;
     };
 
     enum class StepType {
@@ -121,11 +122,16 @@ public:
     void advance_frame() { run(StepType::Frame); }
 
     unsigned set_breakpoint(Breakpoint point);
-    void delete_breakpoint(unsigned index);
+    void delete_breakpoint(unsigned index)          { break_list[index].erased = true; }
     std::span<const Breakpoint> breakpoints() const { return break_list; }
 
-    bool start_tracing(std::string_view pathname);
-    void stop_tracing();
+    bool start_tracing(std::string_view pathname)
+    {
+        tracefile = io::File::open(pathname, io::Access::WRITE);
+        return bool(tracefile);
+    }
+
+    void stop_tracing() { tracefile = std::nullopt; }
 
 private:
     void trace();

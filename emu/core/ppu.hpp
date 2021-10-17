@@ -11,10 +11,7 @@
 
 class Screen;
 template <std::size_t Size> class Bus;
-namespace Debugger {
-    class Debugger;
-    class PPUDebugger;
-}
+namespace debugger { class PPUDebugger; }
 
 namespace core {
 
@@ -184,8 +181,7 @@ private:
     void vblank_begin();
     void vblank_end();
 
-    friend class Debugger::Debugger;
-    friend class Debugger::PPUDebugger;
+    friend class debugger::PPUDebugger;
 };
 
 } // namespace core

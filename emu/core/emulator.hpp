@@ -10,6 +10,8 @@
 #include <emu/core/memory.hpp>
 #include <emu/util/uint.hpp>
 
+namespace debugger { class Debugger; }
+
 namespace core {
 
 class Emulator {
@@ -37,7 +39,7 @@ public:
     uint32 *get_screen()         { return screen.data(); }
     void on_cpu_error(auto &&fn) { cpu.on_error(fn); }
 
-    friend class Debugger::Debugger;
+    friend class debugger::Debugger;
 };
 
 } // namespace core

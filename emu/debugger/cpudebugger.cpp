@@ -4,7 +4,7 @@
 #include <emu/core/cpu.hpp>
 #include <emu/core/instrinfo.hpp>
 
-namespace Debugger {
+namespace debugger {
 
 uint16 CPUDebugger::getreg(Reg reg) const
 {
@@ -46,20 +46,20 @@ void CPUDebugger::setflag(Flag flag, bool value)
 {
     switch (flag) {
     case Flag::Carry: cpu->r.flags.carry   = value; break;
-    case Flag::Zero: cpu->r.flags.zero    = value; break;
-    case Flag::IntDis: cpu->r.flags.intdis  = value; break;
-    case Flag::Dec: cpu->r.flags.decimal = value; break;
-    case Flag::Ov: cpu->r.flags.ov      = value; break;
-    case Flag::Neg: cpu->r.flags.neg     = value; break;
+    case Flag::Zero: cpu->r.flags.zero     = value; break;
+    case Flag::IntDis: cpu->r.flags.intdis = value; break;
+    case Flag::Dec: cpu->r.flags.decimal   = value; break;
+    case Flag::Ov: cpu->r.flags.ov         = value; break;
+    case Flag::Neg: cpu->r.flags.neg       = value; break;
     }
 }
 
-uint16 CPUDebugger::get_vector_addr(uint16 vector)
+uint16 CPUDebugger::get_vector_addr(uint16 vector) const
 {
     return cpu->bus->read(vector+1) << 8 | cpu->bus->read(vector);
 }
 
-CPUDebugger::Instruction CPUDebugger::curr_instr()
+CPUDebugger::Instruction CPUDebugger::curr_instr() const
 {
     return {
         .id = cpu->bus->read(cpu->r.pc.v),
@@ -68,7 +68,7 @@ CPUDebugger::Instruction CPUDebugger::curr_instr()
     };
 }
 
-std::string CPUDebugger::curr_instr_str()
+std::string CPUDebugger::curr_instr_str() const
 {
     const auto took_branch = [](uint8 id, const core::CPU::ProcStatus &ps)
     {
@@ -95,7 +95,7 @@ std::string CPUDebugger::curr_instr_str()
     return res;
 }
 
-std::string CPUDebugger::curr_flags_str()
+std::string CPUDebugger::curr_flags_str() const
 {
     return fmt::format("{}{}{}{}{}{}{}{}",
         (cpu->r.flags.neg    ) ? 'N' : '.',
@@ -109,7 +109,7 @@ std::string CPUDebugger::curr_flags_str()
     );
 }
 
-unsigned long CPUDebugger::cycles()
+unsigned long CPUDebugger::cycles() const
 {
     return cpu->cycles();
 }
