@@ -18,102 +18,71 @@ using util::Word;
 
 void CPU::addrmode_imm_read(InstrFuncRead f)
 {
-    // cycles: 2
-    opargs.l = fetchop();
-    call(f, opargs.l);
+    uint8 op = fetch();
+    call(f, op);
     last_cycle();
 }
 
 void CPU::addrmode_zero_read(InstrFuncRead f)
 {
-    // cycles: 3
-    opargs.l = fetchop();
-    call(f, readmem(opargs.l));
+    uint8 op = fetch();
+    call(f, readmem(op));
     last_cycle();
 }
 
-void CPU::addrmode_zerox_read(InstrFuncRead f)
+void CPU::addrmode_zero_ind_read(InstrFuncRead f, uint8 reg)
 {
-    // cycles: 4
-    opargs.l = fetchop();
-    call(f, readmem(opargs.l + r.x));
+    uint8 op = fetch();
+    call(f, readmem(op + reg));
     // increment due to indexed addressing
-    cycle();
-    last_cycle();
-}
-
-void CPU::addrmode_zeroy_read(InstrFuncRead f)
-{
-    // cycles: 4
-    opargs.l = fetchop();
-    call(f, readmem(opargs.l + r.y));
     cycle();
     last_cycle();
 }
 
 void CPU::addrmode_abs_read(InstrFuncRead f)
 {
-    // cycles: 4
-    opargs.l = fetchop();
-    opargs.h = fetchop();
-    call(f, readmem(opargs.v));
+    Word op;
+    op.l = fetch();
+    op.h = fetch();
+    call(f, readmem(op.v));
     last_cycle();
 }
 
-void CPU::addrmode_absx_read(InstrFuncRead f)
+void CPU::addrmode_abs_ind_read(InstrFuncRead f, uint8 reg)
 {
-    // cycles: 4+1
-    Word res;
-
-    opargs.l = fetchop();
-    // cycle 3 is second operand fetch + adding X to the v reg
-    opargs.h = fetchop();
-    res = readmem(opargs.v+r.x);
-    call(f, res.v);
-    if (opargs.h != res.h)
+    Word op;
+    op.l = fetch();
+    op.h = fetch();
+    uint8 tmp = op.h;
+    op.v += reg;
+    if (op.h != tmp)
         cycle();
-    last_cycle();
-}
-
-void CPU::addrmode_absy_read(InstrFuncRead f)
-{
-    // cycles: 4+1
-    Word res;
-
-    opargs.l = fetchop();
-    opargs.h = fetchop();
-    res = readmem(opargs.v+r.y);
-    call(f, res.v);
-    if (opargs.h != res.h)
-        cycle();
+    call(f, readmem(op.v));
     last_cycle();
 }
 
 void CPU::addrmode_indx_read(InstrFuncRead f)
 {
-    // cycles: 6
     Word res;
-
-    opargs.l = fetchop();
+    uint8 op = fetch();
     cycle();
-    res.l = readmem(opargs.l+r.x);
-    res.h = readmem(opargs.l+r.x+1);
+    res.l = readmem(op + r.x    );
+    res.h = readmem(op + r.x + 1);
     call(f, readmem(res.v));
     last_cycle();
 }
 
 void CPU::addrmode_indy_read(InstrFuncRead f)
 {
-    // cycles: 5+1
     Word res;
-
-    opargs.l = fetchop();
-    res.l = readmem(opargs.l);
-    res.h = readmem(opargs.l+1);
+    uint8 op = fetch();
+    res.l = readmem(op    );
+    res.h = readmem(op + 1);
+    uint8 tmp = res.h;
     res.v += r.y;
-    call(f, readmem(res.v));
-    if (opargs.h != res.h)
+    if (res.h != tmp)
         cycle();
+    call(f, readmem(res.v));
     last_cycle();
 }
 
@@ -121,7 +90,6 @@ void CPU::addrmode_indy_read(InstrFuncRead f)
 
 void CPU::addrmode_accum_modify(InstrFuncMod f)
 {
-    // cycles: 2
     cycle();
     r.acc = call(f, r.acc);
     last_cycle();
@@ -129,56 +97,46 @@ void CPU::addrmode_accum_modify(InstrFuncMod f)
 
 void CPU::addrmode_zero_modify(InstrFuncMod f)
 {
-    //cycles: 5
-    Word res;
-
-    opargs.l = fetchop();
-    res = call(f, readmem(opargs.l));
+    uint8 op = fetch();
+    uint8 res = call(f, readmem(op));
     // the cpu uses a cycle to write back an unmodified value
     cycle();
-    writemem(opargs.l, res.v);
+    writemem(op, res);
     last_cycle();
 }
 
 void CPU::addrmode_zerox_modify(InstrFuncMod f)
 {
-    // cycles: 6
-    Word res;
-
-    opargs.l = fetchop();
+    uint8 op = fetch();
     cycle();
-    res = call(f, readmem(opargs.l + r.x));
+    uint8 res = call(f, readmem(op + r.x));
     cycle();
-    writemem(opargs.l + r.x, res.v);
+    writemem(op + r.x, res);
     last_cycle();
 }
 
 void CPU::addrmode_abs_modify(InstrFuncMod f)
 {
-    // cycles: 6
-    Word res;
-
-    opargs.l = fetchop();
-    opargs.h = fetchop();
-    res = call(f, readmem(opargs.v));
+    Word op;
+    op.l = fetch();
+    op.h = fetch();
+    uint8 res = call(f, readmem(op.v));
     cycle();
-    writemem(opargs.v, res.v);
+    writemem(op.v, res);
     last_cycle();
 }
 
 void CPU::addrmode_absx_modify(InstrFuncMod f)
 {
-    // cycles: 7
-    Word res;
-
-    opargs.l = fetchop();
-    opargs.h = fetchop();
-    res = call(f, readmem(opargs.v + r.x));
+    Word op;
+    op.l = fetch();
+    op.h = fetch();
+    uint8 res = call(f, readmem(op.v + r.x));
     // reread from effective address
     cycle();
     // write the value back to effective address
     cycle();
-    writemem(opargs.v + r.x, res.v);
+    writemem(op.v + r.x, res);
     last_cycle();
 }
 
@@ -188,81 +146,56 @@ void CPU::addrmode_absx_modify(InstrFuncMod f)
 
 void CPU::addrmode_zero_write(uint8 val)
 {
-    // cycles: 3
-    opargs.l = fetchop();
-    writemem(opargs.l, val);
+    uint8 op = fetch();
+    writemem(op, val);
     last_cycle();
 }
 
-void CPU::addrmode_zerox_write(uint8 val)
+void CPU::addrmode_zero_ind_write(uint8 val, uint8 reg)
 {
-    // cycles: 4
-    opargs.l = fetchop();
+    uint8 op = fetch();
     cycle();
-    writemem(opargs.l + r.x, val);
-    last_cycle();
-}
-
-void CPU::addrmode_zeroy_write(uint8 val)
-{
-    // cycles: 4
-    opargs.l = fetchop();
-    cycle();
-    writemem(opargs.l + r.y, val);
+    writemem(op + reg, val);
     last_cycle();
 }
 
 void CPU::addrmode_abs_write(uint8 val)
 {
-    // cycles: 4
-    opargs.l = fetchop();
-    opargs.h = fetchop();
-    writemem(opargs.v, val);
+    Word op;
+    op.l = fetch();
+    op.h = fetch();
+    writemem(op.v, val);
     last_cycle();
 }
 
-void CPU::addrmode_absx_write(uint8 val)
+void CPU::addrmode_abs_ind_write(uint8 val, uint8 reg)
 {
-    // cycles: 5
-    opargs.l = fetchop();
-    opargs.h = fetchop();
+    Word op;
+    op.l = fetch();
+    op.h = fetch();
     cycle();
-    writemem(opargs.v + r.x, val);
-    last_cycle();
-}
-
-void CPU::addrmode_absy_write(uint8 val)
-{
-    // cycles: 5
-    opargs.l = fetchop();
-    opargs.h = fetchop();
-    cycle();
-    writemem(opargs.v + r.y, val);
+    writemem(op.v + r.x, val);
     last_cycle();
 }
 
 void CPU::addrmode_indx_write(uint8 val)
 {
-    // cycles: 6
-    Word res;
-
-    opargs.l = fetchop();
-    // read from addres, add X to it
+    uint8 op = fetch();
+    // read from address, add x to it
     cycle();
-    res.l = readmem(opargs.l+r.x);
-    res.h = readmem(opargs.l+r.x+1);
+    Word res;
+    res.l = readmem(op + r.x    );
+    res.h = readmem(op + r.x + 1);
     writemem(res.v, val);
     last_cycle();
 }
 
 void CPU::addrmode_indy_write(uint8 val)
 {
-    // cycles: 6
+    uint8 op = fetch();
     Word res;
-
-    opargs.l = fetchop();
-    res.l = readmem(opargs.l);
-    res.h = readmem(opargs.l+1);
+    res.l = readmem(op    );
+    res.h = readmem(op + 1);
     res.v += r.y;
     cycle();
     writemem(res.v, val);
@@ -274,16 +207,13 @@ void CPU::addrmode_indy_write(uint8 val)
 
 void CPU::instr_branch(bool take)
 {
-    // cycles: 2+1+1
-    Word tmp;
-
     last_cycle();
-    opargs.l = fetchop();
-    tmp = r.pc;
+    uint8 op = fetch();
     if (!take)
         return;
     cycle();
-    r.pc.v += (int8_t) opargs.l;
+    Word tmp = r.pc;
+    r.pc.v += (int8_t) op;
     last_cycle();
     if (tmp.h != r.pc.h)
         cycle();
@@ -291,7 +221,6 @@ void CPU::instr_branch(bool take)
 
 void CPU::instr_flag(bool &flag, bool v)
 {
-    // cycles: 2
     last_cycle();
     cycle();
     flag = v;
@@ -299,7 +228,6 @@ void CPU::instr_flag(bool &flag, bool v)
 
 void CPU::instr_transfer(uint8 from, uint8 &to)
 {
-    // cycles: 2
     last_cycle();
     cycle();
     to = from;
@@ -309,50 +237,28 @@ void CPU::instr_transfer(uint8 from, uint8 &to)
 
 
 
-void CPU::instr_lda(uint8 val)
+void CPU::instr_load(uint8 val, uint8 &reg)
 {
-    r.acc = val;
-    r.flags.zero = r.acc == 0;
-    r.flags.neg  = r.acc & 0x80;
+    reg = val;
+    r.flags.zero = reg == 0;
+    r.flags.neg  = reg & 0x80;
 }
 
-void CPU::instr_ldx(uint8 val)
-{
-    r.x = val;
-    r.flags.zero = r.x == 0;
-    r.flags.neg  = r.x & 0x80;
-}
+void CPU::instr_lda(uint8 val) { instr_load(val, r.acc); }
+void CPU::instr_ldx(uint8 val) { instr_load(val, r.x); }
+void CPU::instr_ldy(uint8 val) { instr_load(val, r.y); }
 
-void CPU::instr_ldy(uint8 val)
+void CPU::instr_compare(uint8 val, uint8 reg)
 {
-    r.y = val;
-    r.flags.zero = r.y == 0;
-    r.flags.neg  = r.y & 0x80;
-}
-
-void CPU::instr_cmp(uint8 val)
-{
-    int res = r.acc-val;
+    int res = reg - val;
     r.flags.zero     = res == 0;
     r.flags.neg      = res & 0x80;
     r.flags.carry    = res >= 0;
 }
 
-void CPU::instr_cpx(uint8 val)
-{
-    int res = r.x-val;
-    r.flags.zero     = res == 0;
-    r.flags.neg      = res & 0x80;
-    r.flags.carry    = res >= 0;
-}
-
-void CPU::instr_cpy(uint8 val)
-{
-    int res = r.y-val;
-    r.flags.zero     = res == 0;
-    r.flags.neg      = res & 0x80;
-    r.flags.carry    = res >= 0;
-}
+void CPU::instr_cmp(uint8 val) { instr_compare(val, r.acc); }
+void CPU::instr_cpx(uint8 val) { instr_compare(val, r.x); }
+void CPU::instr_cpy(uint8 val) { instr_compare(val, r.y); }
 
 void CPU::instr_adc(uint8 val)
 {
@@ -374,6 +280,8 @@ void CPU::instr_sbc(uint8 val)
     r.flags.ov       = (r.acc^sum) & ~(r.acc^val) & 0x80;
     r.acc = sum;
 }
+
+
 
 void CPU::instr_ora(uint8 val)
 {
@@ -402,8 +310,6 @@ void CPU::instr_bit(uint8 val)
     r.flags.zero = val == 0;
     r.flags.ov   = val & 0x40;
 }
-
-
 
 uint8 CPU::instr_inc(uint8 val)
 {
@@ -441,9 +347,9 @@ uint8 CPU::instr_lsr(uint8 val)
 
 uint8 CPU::instr_rol(uint8 val)
 {
-    bool c = r.flags.carry;
+    bool carry = r.flags.carry;
     r.flags.carry = val & 0x80;
-    val = val << 1 | c;
+    val = val << 1 | carry;
     r.flags.zero = val == 0;
     r.flags.neg  = val & 0x80;
     return val;
@@ -460,45 +366,31 @@ uint8 CPU::instr_ror(uint8 val)
 }
 
 
-void CPU::instr_inx()
+void CPU::instr_inc_reg(uint8 &reg)
 {
     cycle();
-    r.x++;
-    r.flags.zero = (r.x == 0);
-    r.flags.neg  = (r.x & 0x80);
+    reg++;
+    r.flags.zero = (reg == 0);
+    r.flags.neg  = (reg & 0x80);
     last_cycle();
 }
 
-void CPU::instr_iny()
+void CPU::instr_dec_reg(uint8 &reg)
 {
     cycle();
-    r.y++;
-    r.flags.zero = (r.y == 0);
-    r.flags.neg  = (r.y & 0x80);
+    reg--;
+    r.flags.zero = (reg == 0);
+    r.flags.neg  = (reg & 0x80);
     last_cycle();
 }
 
-void CPU::instr_dex()
-{
-    cycle();
-    r.x--;
-    r.flags.zero = (r.x == 0);
-    r.flags.neg  = (r.x & 0x80);
-    last_cycle();
-}
-
-void CPU::instr_dey()
-{
-    cycle();
-    r.y--;
-    r.flags.zero = (r.y == 0);
-    r.flags.neg  = (r.y & 0x80);
-    last_cycle();
-}
+void CPU::instr_inx() { instr_inc_reg(r.x); }
+void CPU::instr_iny() { instr_inc_reg(r.y); }
+void CPU::instr_dex() { instr_dec_reg(r.x); }
+void CPU::instr_dey() { instr_dec_reg(r.y); }
 
 void CPU::instr_php()
 {
-    // cycles: 3
     // one cycle for reading next instruction and throwing away
     cycle();
     r.flags.breakf = 1;
@@ -509,7 +401,6 @@ void CPU::instr_php()
 
 void CPU::instr_pha()
 {
-    // cycles: 3
     // one cycle for reading next instruction and throwing away
     cycle();
     push(r.acc);
@@ -518,7 +409,6 @@ void CPU::instr_pha()
 
 void CPU::instr_plp()
 {
-    // cycles: 4
     // one cycle for reading next instruction, one for incrementing S
     cycle();
     cycle();
@@ -530,7 +420,6 @@ void CPU::instr_plp()
 
 void CPU::instr_pla()
 {
-    // cycles: 4
     // one cycle for reading next instruction, one for incrementing S
     cycle();
     cycle();
@@ -542,58 +431,45 @@ void CPU::instr_pla()
 
 void CPU::instr_jsr()
 {
-    // cycles: 6
-    opargs.l = fetchop();
-    // also, http://nesdev.com/6502_cpu.txt says that first the l byte is
-    // copargsied, then the h byte is fetched. doing the opargss in this order is
-    // wrong and a bug, fetch the h byte first before doing whatever with pc.
-    opargs.h = fetchop();
-    r.pc.v--;
-    // internal opargseration, 1 cycle
+    uint8 low = fetch();
+    // internal operation
     cycle();
     push(r.pc.h);
     push(r.pc.l);
-    // the original hardware technically fetches the next opargserand right into the pc's h byte.
-    // I save it in opargs.h first to enable disassembling.
-    r.pc.l = opargs.l;
-    r.pc.h = opargs.h;
-    // r.pc = opargs.v; would be better!
-    last_cycle();
+    r.pc.h = fetch();
+    r.pc.l = low;
 }
 
 void CPU::instr_jmp()
 {
-    // cycles: 3
-    opargs.l = fetchop();
-    opargs.h = fetchop();
-    r.pc = opargs.v;
+    uint8 op = fetch();
+    r.pc.h = fetch();
+    r.pc.l = op;
     last_cycle();
 }
 
-// We could have another addressing mode function for this... but I decided I'd rather
-// have 1 less function and call this one directly as it's used by one instruction
 void CPU::instr_jmp_ind()
 {
-    // cycles: 5
-    opargs.l = fetchop();
-    opargs.h = fetchop();
+    Word op;
+    op.l = fetch();
+    op.h = fetch();
     // hardware bug
-    if (opargs.l == 0xFF) {
-        r.pc.l = readmem(opargs.v);
+    if (op.l == 0xFF) {
+        r.pc.l = readmem(op.v);
         // reset the l byte, e.g. $02FF -> $0200
-        r.pc.h = readmem(opargs.v & 0xFF00);
+        r.pc.h = readmem(op.v & 0xFF00);
     } else {
-        r.pc.l = readmem(opargs.v);
-        r.pc.h = readmem(opargs.v+1);
+        r.pc.l = readmem(op.v);
+        r.pc.h = readmem(op.v+1);
     }
     last_cycle();
 }
 
 void CPU::instr_rts()
 {
-    // cycles: 6
-    // one for read of the next instruction, one for incrementing S
+    // one for useless read of the next instruction
     cycle();
+    // one for incrementing S
     cycle();
     r.pc.l = pull();
     r.pc.h = pull();
@@ -603,19 +479,11 @@ void CPU::instr_rts()
     last_cycle();
 }
 
-void CPU::instr_brk()
-{
-    r.flags.breakf = 1;
-    // cycles are counted in the interrupt function
-    interrupt();
-    // the break flag will be reset in the interrupt
-}
-
 void CPU::instr_rti()
 {
-    // cycles: 6
-    // one for read of the next instruction, one for incrementing S
+    // one for useless read of the next instruction
     cycle();
+    // one for incrementing S
     cycle();
     r.flags = pull();
     // reset this just to be sure
@@ -623,6 +491,14 @@ void CPU::instr_rti()
     r.pc.l = pull();
     r.pc.h = pull();
     last_cycle();
+}
+
+void CPU::instr_brk()
+{
+    r.flags.breakf = 1;
+    // cycles are counted in the interrupt function
+    interrupt();
+    // the break flag will be reset in the interrupt
 }
 
 void CPU::instr_nop()

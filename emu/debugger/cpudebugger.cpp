@@ -73,17 +73,17 @@ std::string CPUDebugger::curr_instr_str() const
     auto is_branch      = [](uint8 id)            { return (id & 0x1F) == 0x10; };
     auto branch_pointer = [](uint8 arg, uint8 pc) { return pc + 2 + (int8_t) arg; };
 
-    const auto took_branch = [](uint8 id, const core::CPU::ProcStatus &ps)
+    const auto took_branch = [](uint8 id, const auto &flags)
     {
         switch (id) {
-        case 0x10: return ps.neg == 0;
-        case 0x30: return ps.neg == 1;
-        case 0x50: return ps.ov == 0;
-        case 0x70: return ps.ov == 1;
-        case 0x90: return ps.carry == 0;
-        case 0xB0: return ps.carry == 1;
-        case 0xD0: return ps.zero == 0;
-        case 0xF0: return ps.zero == 1;
+        case 0x10: return !flags.neg;
+        case 0x30: return  flags.neg;
+        case 0x50: return !flags.ov;
+        case 0x70: return  flags.ov;
+        case 0x90: return !flags.carry;
+        case 0xB0: return  flags.carry;
+        case 0xD0: return !flags.zero;
+        case 0xF0: return  flags.zero;
         default:   return false;
         }
     };
