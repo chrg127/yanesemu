@@ -25,6 +25,7 @@ class Emulator {
     std::span<uint8> chrrom;
     // this is internal to the emulator only and doesn't affect the cpu and ppu
     bool nmi = false;
+    bool emu_stop = false;
 
     void map(Mirroring mirroring);
 
@@ -38,6 +39,7 @@ public:
 
     uint32 *get_screen()         { return screen.data(); }
     void on_cpu_error(auto &&fn) { cpu.on_error(fn); }
+    void stop()                  { emu_stop = true; }
 
     friend class debugger::Debugger;
 };

@@ -20,6 +20,8 @@ void Emulator::power(bool reset)
 
 void Emulator::run()
 {
+    if (emu_stop)
+        return;
     unsigned long old_cycle = cpu.cycles();
     cpu.run();
     unsigned long delta = cpu.cycles() - old_cycle;
@@ -30,7 +32,7 @@ void Emulator::run()
 
 void Emulator::run_frame()
 {
-    while (!nmi)
+    while (!nmi && !emu_stop)
         run();
     nmi = false;
 }
