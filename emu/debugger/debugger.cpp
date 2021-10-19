@@ -20,6 +20,27 @@ std::optional<MemorySource> string_to_memsource(std::string_view str)
     return std::nullopt;
 }
 
+unsigned BreakList::add(Breakpoint point)
+{
+    auto it = std::find_if(list.begin(), list.end(), [](const auto &p) { return p.erased; });
+    if (it != list.end()) {
+        *it = point;
+        return it - list.begin();
+    }
+    list.push_back(point);
+    return list.size() - 1;
+}
+
+std::optional<unsigned> BreakList::test(uint16 addr)
+{
+    auto it = std::find_if(list.begin(), list.end(), [addr](const auto &p) {
+        return addr >= p.start && addr <= p.end;
+    });
+    if (it == list.end())
+        return std::nullopt;
+    return it - list.begin();
+}
+
 Debugger::Debugger(core::Emulator *e)
     : emu(e), cpudbg(&emu->cpu), ppudbg(&emu->ppu)
 {
@@ -35,15 +56,8 @@ Debugger::Debugger(core::Emulator *e)
 
 void Debugger::run(StepType step_type)
 {
-    const auto test_breakpoints = [this]() -> std::optional<unsigned>
-    {
-        uint16 pc = cpudbg.getreg(CPUDebugger::Reg::PC);
-        auto it = std::find_if(break_list.begin(), break_list.end(), [pc](const auto &b) {
-            return pc >= b.start && pc <= b.end;
-        });
-        if (it == break_list.end())
-            return std::nullopt;
-        return it - break_list.begin();
+    const auto test_breakpoints = [this]() {
+        return break_list.test(cpudbg.getreg(CPUDebugger::Reg::PC));
     };
 
     const auto runloop = [&](auto &&check_step)
@@ -118,19 +132,6 @@ std::function<void(uint16, uint8)> Debugger::write_to(MemorySource source)
     case MemorySource::OAM:  return util::member_fn(&ppudbg, &PPUDebugger::write_oam);
     default: panic("get_write_fn");
     }
-}
-
-unsigned Debugger::set_breakpoint(Breakpoint point)
-{
-    auto it = std::find_if(break_list.begin(), break_list.end(), [](const auto &b) {
-        return b.erased;
-    });
-    if (it != break_list.end()) {
-        *it = point;
-        return it - break_list.begin();
-    }
-    break_list.push_back(point);
-    return break_list.size() - 1;
 }
 
 void Debugger::trace()

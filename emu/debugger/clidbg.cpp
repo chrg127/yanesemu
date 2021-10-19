@@ -200,7 +200,7 @@ void CliDebugger::eval(Command *cmd, std::span<std::string> args)
         if (end < start)
             throw CommandError(fmt::format("Invalid range."));
         else {
-            unsigned i = dbg.set_breakpoint({ .start = start, .end = end });
+            unsigned i = dbg.breakpoints().add({ .start = start, .end = end });
             fmt::print("Set breakpoint #{} to {:04X}-{:04X}.\n", i, start, end);
         }
         break;
@@ -211,18 +211,18 @@ void CliDebugger::eval(Command *cmd, std::span<std::string> args)
         if (!index || index >= dbg.breakpoints().size())
             throw CommandError(fmt::format("Invalid index: {}.", args[0]));
         else {
-            dbg.delete_breakpoint(index.value());
+            dbg.breakpoints().erase(index.value());
             fmt::print("Breakpoint #{} deleted.\n", index.value());
         }
         break;
     }
 
     case CommandType::ListBreaks: {
-        const auto &breaks = dbg.breakpoints();
-        for (std::size_t i = 0; i < breaks.size(); i++) {
-            if (breaks[i].erased)
+        const auto &list = dbg.breakpoints();
+        for (std::size_t i = 0; i < list.size(); i++) {
+            if (list[i].erased)
                 continue;
-            fmt::print("#{}: {:04X}-{:04X}\n", i, breaks[i].start, breaks[i].end);
+            fmt::print("#{}: {:04X}-{:04X}\n", i, list[i].start, list[i].end);
         }
         break;
     }

@@ -70,6 +70,23 @@ public:
     void write_oam(uint8 addr, uint8 data);
 };
 
+struct Breakpoint {
+    uint16 start = 0, end = 0;
+    bool erased = false;
+};
+
+class BreakList {
+    std::vector<Breakpoint> list;
+public:
+    unsigned add(Breakpoint point);
+    void erase(unsigned i) { list[i].erased = true; }
+    auto begin() const     { return list.begin(); }
+    auto end() const       { return list.end(); }
+    auto size() const      { return list.size(); }
+    auto & operator[](std::size_t i) const { return list[i]; }
+    std::optional<unsigned> test(uint16 addr);
+};
+
 struct Debugger {
     struct Event {
         enum class Type {
@@ -84,12 +101,6 @@ struct Debugger {
         };
     };
 
-    struct Breakpoint {
-        uint16 start = 0;
-        uint16 end   = 0;
-        bool erased  = false;
-    };
-
     enum class StepType {
         Step, Next, Frame, None,
     };
@@ -97,7 +108,7 @@ struct Debugger {
 private:
     core::Emulator *emu;
     std::function<void(Event)> report_callback;
-    std::vector<Breakpoint> break_list;
+    BreakList break_list;
     std::optional<io::File> tracefile;
     bool got_error = false;
 
@@ -119,9 +130,7 @@ public:
     void advance()       { run(StepType::None); }
     void advance_frame() { run(StepType::Frame); }
 
-    unsigned set_breakpoint(Breakpoint point);
-    void delete_breakpoint(unsigned index)          { break_list[index].erased = true; }
-    std::span<const Breakpoint> breakpoints() const { return break_list; }
+    BreakList & breakpoints() { return break_list; }
 
     bool start_tracing(std::string_view pathname)
     {
