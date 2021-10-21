@@ -17,7 +17,7 @@
 
 static core::Emulator emu;
 
-static const std::vector<cmdline::Argument> cmdflags = {
+static const cmdline::ArgumentList cmdflags = {
     { 'h', "help",     "Print this help text and quit" },
     { 'v', "version",  "Shows the program's version"   },
     { 'd', "debugger", "Use command-line debugger"     },
@@ -142,7 +142,7 @@ void rendering_thread(MainThread &mainthread, platform::Video &ctx, platform::Te
 
 void cli_interface(cmdline::Result &flags)
 {
-    if (flags.items.size() < 1)
+    if (flags.items.empty())
         throw std::runtime_error("ROM file not specified");
     if (flags.items.size() > 1)
         warning("multiple ROM files specified, first one will be used\n");
@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    cmdline::Result flags = cmdline::argparse(argc, argv, cmdflags);
+    cmdline::Result flags = cmdline::parse(argc, argv, cmdflags);
     if (flags.has['h']) {
         fmt::print(stderr, "Usage: {} [args...] romfile\n", progname);
         cmdline::print_args(cmdflags);
