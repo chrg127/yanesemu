@@ -18,9 +18,9 @@ void PPU::background_fetch_cycle()
     if constexpr(Cycle == 2) tile.nt      = vram.buf;
     if constexpr(Cycle == 3) vram.buf     = fetch_attr(vram.addr.nt, vram.addr.coarse_y, vram.addr.coarse_x);
     if constexpr(Cycle == 4) tile.attr    = vram.buf;
-    if constexpr(Cycle == 5) vram.buf     = fetch_pt(io.bg_pt_addr, tile.nt, 0, uint8(vram.addr.fine_y));
+    if constexpr(Cycle == 5) vram.buf     = fetch_pt(io.bg_pt_addr, tile.nt, 0, u8(vram.addr.fine_y));
     if constexpr(Cycle == 6) tile.pt_low  = vram.buf;
-    if constexpr(Cycle == 7) vram.buf     = fetch_pt(io.bg_pt_addr, tile.nt, 1, uint8(vram.addr.fine_y));
+    if constexpr(Cycle == 7) vram.buf     = fetch_pt(io.bg_pt_addr, tile.nt, 1, u8(vram.addr.fine_y));
     if constexpr(Cycle == 0) tile.pt_high = vram.buf;
 }
 

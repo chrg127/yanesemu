@@ -31,9 +31,9 @@ std::optional<typename M::mapped_type> map_lookup(const M &m, const typename M::
 /* Makes an std::function from a member function without having
  * to throw readability away.
  * Example:
- *      struct MyStruct { uint8 read(uint16); };
+ *      struct MyStruct { u8 read(u16); };
  *      mymemfn = member_fn(&my_struct_instance, &MyStruct::read);
- *      uint8 res = mymemfn(0);
+ *      u8 res = mymemfn(0);
  */
 template <typename T, typename R, typename... Args>
 std::function<R(Args...)> member_fn(T *obj, R (T::*fn)(Args...))

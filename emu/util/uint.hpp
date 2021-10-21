@@ -8,18 +8,18 @@
 #include <cstdint>
 #include <type_traits>
 
-using uint8  = uint8_t;
-using uint16 = uint16_t;
-using uint32 = uint32_t;
-using uint64 = uint64_t;
+using u8  = uint8_t;
+using u16 = uint16_t;
+using u32 = uint32_t;
+using u64 = uint64_t;
 
 template <unsigned Bits>
 struct UInt {
     static_assert(Bits <= 64);
-    using inttype = std::conditional_t<Bits <= 8 , uint8,
-                    std::conditional_t<Bits <= 16, uint16,
-                    std::conditional_t<Bits <= 32, uint32,
-                    std::conditional_t<Bits <= 64, uint64,
+    using inttype = std::conditional_t<Bits <= 8 , u8,
+                    std::conditional_t<Bits <= 16, u16,
+                    std::conditional_t<Bits <= 32, u32,
+                    std::conditional_t<Bits <= 64, u64,
                     void>>>>;
 private:
     inttype num = 0;
@@ -62,28 +62,28 @@ inline UInt<Bits> operator&(UInt<Bits> n, T val)
 }
 
 // Helpers.
-using uint1 = UInt<1>; using uint2 = UInt<2>; using uint3 = UInt<3>;
-using uint4 = UInt<4>; using uint5 = UInt<5>; using uint6 = UInt<6>;
-using uint7 = UInt<7>;
+using u1 = UInt<1>; using u2 = UInt<2>; using u3 = UInt<3>;
+using u4 = UInt<4>; using u5 = UInt<5>; using u6 = UInt<6>;
+using u7 = UInt<7>;
 
-using uint9 = UInt<9>;   using uint10 = UInt<10>; using uint11 = UInt<11>;
-using uint12 = UInt<12>; using uint13 = UInt<13>; using uint14 = UInt<14>;
-using uint15 = UInt<15>;
+using u9  = UInt<9>;  using u10 = UInt<10>; using u11 = UInt<11>;
+using u12 = UInt<12>; using u13 = UInt<13>; using u14 = UInt<14>;
+using u15 = UInt<15>;
 
-using uint17 = UInt<17>; using uint18 = UInt<18>; using uint19 = UInt<19>;
-using uint20 = UInt<20>; using uint21 = UInt<21>; using uint22 = UInt<22>;
-using uint23 = UInt<23>; using uint24 = UInt<24>; using uint25 = UInt<25>;
-using uint26 = UInt<26>; using uint27 = UInt<27>; using uint28 = UInt<28>;
-using uint29 = UInt<29>; using uint30 = UInt<30>; using uint31 = UInt<31>;
+using u17 = UInt<17>; using u18 = UInt<18>; using u19 = UInt<19>;
+using u20 = UInt<20>; using u21 = UInt<21>; using u22 = UInt<22>;
+using u23 = UInt<23>; using u24 = UInt<24>; using u25 = UInt<25>;
+using u26 = UInt<26>; using u27 = UInt<27>; using u28 = UInt<28>;
+using u29 = UInt<29>; using u30 = UInt<30>; using u31 = UInt<31>;
 
-using uint33 = UInt<33>; using uint34 = UInt<34>; using uint35 = UInt<35>;
-using uint36 = UInt<36>; using uint37 = UInt<37>; using uint38 = UInt<38>;
-using uint39 = UInt<39>; using uint40 = UInt<40>; using uint41 = UInt<41>;
-using uint42 = UInt<42>; using uint43 = UInt<43>; using uint44 = UInt<44>;
-using uint45 = UInt<45>; using uint46 = UInt<46>; using uint47 = UInt<47>;
-using uint48 = UInt<48>; using uint49 = UInt<49>; using uint50 = UInt<50>;
-using uint51 = UInt<51>; using uint52 = UInt<52>; using uint53 = UInt<53>;
-using uint54 = UInt<54>; using uint55 = UInt<55>; using uint56 = UInt<56>;
-using uint57 = UInt<57>; using uint58 = UInt<58>; using uint59 = UInt<59>;
-using uint60 = UInt<60>; using uint61 = UInt<61>; using uint62 = UInt<62>;
-using uint63 = UInt<63>;
+using u33 = UInt<33>; using u34 = UInt<34>; using u35 = UInt<35>;
+using u36 = UInt<36>; using u37 = UInt<37>; using u38 = UInt<38>;
+using u39 = UInt<39>; using u40 = UInt<40>; using u41 = UInt<41>;
+using u42 = UInt<42>; using u43 = UInt<43>; using u44 = UInt<44>;
+using u45 = UInt<45>; using u46 = UInt<46>; using u47 = UInt<47>;
+using u48 = UInt<48>; using u49 = UInt<49>; using u50 = UInt<50>;
+using u51 = UInt<51>; using u52 = UInt<52>; using u53 = UInt<53>;
+using u54 = UInt<54>; using u55 = UInt<55>; using u56 = UInt<56>;
+using u57 = UInt<57>; using u58 = UInt<58>; using u59 = UInt<59>;
+using u60 = UInt<60>; using u61 = UInt<61>; using u62 = UInt<62>;
+using u63 = UInt<63>;

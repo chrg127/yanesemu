@@ -45,30 +45,30 @@ void Emulator::map(Mirroring mirroring)
     memory.map(rambus, vrambus, mirroring);
 
     rambus.map(APU_START, CARTRIDGE_START,
-        [this](uint16 addr)             { return cpu.readreg(addr); },
-        [this](uint16 addr, uint8 data) { cpu.writereg(addr, data); });
+        [this](u16 addr)             { return cpu.readreg(addr); },
+        [this](u16 addr, u8 data) { cpu.writereg(addr, data); });
 
     rambus.map(PPUREG_START, APU_START,
-        [this](uint16 addr)             { return ppu.readreg(0x2000 + (addr & 0x7)); },
-        [this](uint16 addr, uint8 data) { ppu.writereg(0x2000 + (addr & 0x7), data); });
+        [this](u16 addr)             { return ppu.readreg(0x2000 + (addr & 0x7)); },
+        [this](u16 addr, u8 data) { ppu.writereg(0x2000 + (addr & 0x7), data); });
 
     rambus.map(CARTRIDGE_START, 0x8000,
-        [](uint16 addr)             { return 0; },
-        [](uint16 addr, uint8 data) { /**/ });
+        [](u16 addr)             { return 0; },
+        [](u16 addr, u8 data) { /**/ });
 
     rambus.map(0x8000, CPUBUS_SIZE,
-        [this](uint16 addr)
+        [this](u16 addr)
         {
-            uint16 offset = addr - 0x8000;
-            uint16 start = prgrom.size() - 0x8000;
-            uint16 eff_addr = start + offset;
+            u16 offset = addr - 0x8000;
+            u16 start = prgrom.size() - 0x8000;
+            u16 eff_addr = start + offset;
             return prgrom[eff_addr];
         },
-        [](uint16 addr, uint8 data) { /**/ });
+        [](u16 addr, u8 data) { /**/ });
 
     vrambus.map(PT_START, NT_START,
-        [this](uint16 addr)         { return chrrom[addr]; },
-        [](uint16 addr, uint8 data) { /**/ });
+        [this](u16 addr)         { return chrrom[addr]; },
+        [](u16 addr, u8 data) { /**/ });
 }
 
 void Emulator::insert_rom(Cartridge::Data &&cartdata)

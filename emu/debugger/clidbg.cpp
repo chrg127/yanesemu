@@ -71,7 +71,7 @@ struct CommandError : std::runtime_error {
 
 namespace {
 
-void check_addr_ranges(uint16 start, uint16 end, MemorySource source)
+void check_addr_ranges(u16 start, u16 end, MemorySource source)
 {
     if (end < start)
         throw CommandError(fmt::format("Invalid range: {:04X}-{:04X}.", start, end));
@@ -81,7 +81,7 @@ void check_addr_ranges(uint16 start, uint16 end, MemorySource source)
         throw CommandError(fmt::format("Invalid range for source OAM."));
 }
 
-void read_block(Debugger &dbg, uint16 start, uint16 end, MemorySource source)
+void read_block(Debugger &dbg, u16 start, u16 end, MemorySource source)
 {
     check_addr_ranges(start, end, source);
     auto readfn = dbg.read_from(source);
@@ -93,11 +93,11 @@ void read_block(Debugger &dbg, uint16 start, uint16 end, MemorySource source)
     }
 }
 
-void write_block(Debugger &dbg, uint16 start, uint16 end, uint8 data, MemorySource source)
+void write_block(Debugger &dbg, u16 start, u16 end, u8 data, MemorySource source)
 {
     check_addr_ranges(start, end, source);
     auto writefn = dbg.write_to(source);
-    for (uint16 curr = start; curr <= (end-start); curr++)
+    for (u16 curr = start; curr <= (end - start); curr++)
         writefn(curr, data);
 }
 
@@ -111,8 +111,8 @@ T parse_to(std::string_view str)
         o = str::conv<T>(str, 16);
     if (!o) {
         if constexpr(std::is_same<T, MemorySource>::value) throw CommandError(fmt::format("Invalid memory source: {}", str));
-        if constexpr(std::is_same<T, uint8>::value)        throw CommandError(fmt::format("Invalid data: {}", str));
-        if constexpr(std::is_same<T, uint16>::value)       throw CommandError(fmt::format("Invalid address: {}", str));
+        if constexpr(std::is_same<T, u8>::value)        throw CommandError(fmt::format("Invalid data: {}", str));
+        if constexpr(std::is_same<T, u16>::value)       throw CommandError(fmt::format("Invalid address: {}", str));
     }
     return o.value();
 }
@@ -195,8 +195,8 @@ void CliDebugger::eval(Command *cmd, std::span<std::string> args)
         break;
 
     case CommandType::Break: {
-        auto start = parse_to<uint16>(args[0]);
-        auto end = args.size() > 1 ? parse_to<uint16>(args[1]) : start;
+        auto start = parse_to<u16>(args[0]);
+        auto end = args.size() > 1 ? parse_to<u16>(args[1]) : start;
         if (end < start)
             throw CommandError(fmt::format("Invalid range."));
         else {
@@ -228,9 +228,9 @@ void CliDebugger::eval(Command *cmd, std::span<std::string> args)
     }
 
     case CommandType::Disassemble: {
-        auto id = parse_to<uint8>(args[0]);
-        auto lo = args.size() >= 2 ? parse_to<uint8>(args[1]) : 0;
-        auto hi = args.size() >= 3 ? parse_to<uint8>(args[2]) : 0;
+        auto id = parse_to<u8>(args[0]);
+        auto lo = args.size() >= 2 ? parse_to<u8>(args[1]) : 0;
+        auto hi = args.size() >= 3 ? parse_to<u8>(args[2]) : 0;
         if (id && lo && hi)
             fmt::print("{}\n", disassemble(id, lo, hi));
         break;
@@ -244,15 +244,15 @@ void CliDebugger::eval(Command *cmd, std::span<std::string> args)
         break;
 
     case CommandType::ReadAddr: {
-        auto addr   = parse_to<uint16>(args[0]);
+        auto addr   = parse_to<u16>(args[0]);
         auto source = parse_to<MemorySource>(args.size() == 2 ? args[1] : "");
         read_block(dbg, addr, addr, source);
         break;
     }
 
     case CommandType::WriteAddr: {
-        auto addr   = parse_to<uint16>(args[0]);
-        auto val    = parse_to<uint8>(args[1]);
+        auto addr   = parse_to<u16>(args[0]);
+        auto val    = parse_to<u8>(args[1]);
         auto source = parse_to<MemorySource>(args.size() == 3 ? args[2] : "");
         if (source == MemorySource::RAM && addr >= core::CARTRIDGE_START)
             fmt::print("Warning: writes to ROM have no effects\n");
@@ -261,20 +261,20 @@ void CliDebugger::eval(Command *cmd, std::span<std::string> args)
     }
 
     case CommandType::Block: {
-        auto start = parse_to<uint16>(args[0]);
-        auto end   = parse_to<uint16>(args[1]);
+        auto start = parse_to<u16>(args[0]);
+        auto end   = parse_to<u16>(args[1]);
         auto loc   = parse_to<MemorySource>(args.size() == 3 ? args[2] : "");
         read_block(dbg, start, end, loc);
         break;
     }
 
     case CommandType::DisBlock: {
-        auto start = parse_to<uint16>(args[0]);
-        auto end   = parse_to<uint16>(args[1]);
+        auto start = parse_to<u16>(args[0]);
+        auto end   = parse_to<u16>(args[1]);
         check_addr_ranges(start, end, MemorySource::RAM);
         disassemble_block(start, end,
-            [&](uint16 addr)                    { return dbg.read_ram(addr); },
-            [ ](uint16 addr, std::string &&str) { fmt::print("${:04X}: {}\n", addr, str); });
+            [&](u16 addr)                    { return dbg.read_ram(addr); },
+            [ ](u16 addr, std::string &&str) { fmt::print("${:04X}: {}\n", addr, str); });
         break;
     }
 
@@ -337,20 +337,20 @@ void CliDebugger::print_ppu_status() const
 {
     using util::getbit;
     auto onoff = [](auto val) { return val ? "ON" : "OFF"; };
-    uint8 ctrl = dbg.ppudbg.getreg(PPUDebugger::Reg::Ctrl);
+    u8 ctrl = dbg.ppudbg.getreg(PPUDebugger::Reg::Ctrl);
     fmt::print("PPUCTRL ($2000): {:08b}:\n"
                "    Base NT address: ${:04X}\n    VRAM address increment: {}\n    Sprite Pattern table address: ${:04X}\n"
                "    Background pattern table address: ${:04X}\n    Sprite size: {}\n    Master/slave: {}\n    NMI enabled: {}\n",
                ctrl, dbg.ppudbg.nt_base_addr(), (ctrl & 4) == 0 ? 1 : 32, getbit(ctrl, 4) * 0x1000,
                getbit(ctrl, 5) * 0x1000, (ctrl & 32) ? "8x16" : "8x8", (ctrl & 64) ? "output color" : "read backdrop",
                (ctrl & 128) ? "ON" : "OFF");
-    uint8 mask = dbg.ppudbg.getreg(PPUDebugger::Reg::Mask);
+    u8 mask = dbg.ppudbg.getreg(PPUDebugger::Reg::Mask);
     fmt::print("PPUMASK ($2001): {:08b}:\n"
                "    Greyscale: {}\n    BG left: {}\n    Sprites left: {}\n    BG: {}\n    Sprites: {}\n"
                "    Emphasize red: {}\n    Emphasize green: {}\n    Emphasize blue: {}\n",
                mask, onoff(mask & 1),  onoff(mask & 2),  onoff(mask & 4),  onoff(mask & 8),
                      onoff(mask & 16), onoff(mask & 32), onoff(mask & 64), onoff(mask & 128));
-    uint8 status = dbg.ppudbg.getreg(PPUDebugger::Reg::Status);
+    u8 status = dbg.ppudbg.getreg(PPUDebugger::Reg::Status);
     fmt::print("PPUSTATUS ($2002): {:08b}:\n"
                "    Sprite overflow: {}\n    Sprite 0 hit: {}\n    Vblank: {}\n",
                status, onoff(status & 32), onoff(status & 64), onoff(status & 128));

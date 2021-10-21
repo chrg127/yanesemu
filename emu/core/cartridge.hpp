@@ -28,13 +28,13 @@ namespace Cartridge {
         std::string filename;
         Format format;
         Mirroring mirroring;
-        uint32 mapper;
-        uint32 chrram_size;
+        u32 mapper;
+        u32 chrram_size;
         Console console_type;
-        std::span<uint8> prgrom;
-        std::span<uint8> chrrom;
-        std::span<uint8> header;
-        std::span<uint8> trainer;
+        std::span<u8> prgrom;
+        std::span<u8> chrrom;
+        std::span<u8> header;
+        std::span<u8> trainer;
 
         struct {
             bool battery;
@@ -44,10 +44,10 @@ namespace Cartridge {
 
         struct NES20Data {
             bool has_prgram;
-            uint32 prgram_size;
-            uint32 submapper;
-            uint32 prg_nvram_size;
-            uint32 chr_nvram_size;
+            u32 prgram_size;
+            u32 submapper;
+            u32 prg_nvram_size;
+            u32 chr_nvram_size;
             uint2 timing_mode;
             uint4 vs_ppu;
             uint4 vs_hardware;

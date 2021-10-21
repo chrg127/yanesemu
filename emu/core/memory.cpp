@@ -7,19 +7,19 @@
 
 namespace core {
 
-using DecodeFn = uint16 (*)(uint16);
+using DecodeFn = u16 (*)(u16);
 static DecodeFn get_decode(Mirroring mirroring)
 {
     switch (mirroring) {
     case Mirroring::Horizontal:
-        return [](uint16 addr) -> uint16
+        return [](u16 addr) -> u16
         {
             auto tmp = addr & 0xFFF;
             auto bits = util::getbits(tmp, 10, 2) >> 1;
             return util::setbits(tmp, 10, 2, bits);
         };
     case Mirroring::Vertical:
-        return [](uint16 addr) -> uint16 { return addr & 0x7FF; };
+        return [](u16 addr) -> u16 { return addr & 0x7FF; };
     default: exit(1);
         // panic("invalid value passed to get_decode\n");
     }
@@ -28,16 +28,16 @@ static DecodeFn get_decode(Mirroring mirroring)
 void Memory::map(Bus<CPUBUS_SIZE> &rambus, Bus<PPUBUS_SIZE> &vrambus, Mirroring mirroring)
 {
     rambus.map(RAM_START, PPUREG_START,
-        [this](uint16 addr)             { return rammem[addr & 0x7FF]; },
-        [this](uint16 addr, uint8 data) { rammem[addr & 0x7FF] = data; });
+        [this](u16 addr)             { return rammem[addr & 0x7FF]; },
+        [this](u16 addr, u8 data) { rammem[addr & 0x7FF] = data; });
 
     vrambus.map(PAL_START, 0x4000,
-        [this](uint16 addr)
+        [this](u16 addr)
         {
             assert((addr & 0x1F) < PAL_SIZE);
             return palmem[addr & 0x1F];
         },
-        [this](uint16 addr, uint8 data)
+        [this](u16 addr, u8 data)
         {
             assert((addr & 0x1F) < PAL_SIZE);
             palmem[addr & 0x1F] = data;
@@ -45,13 +45,13 @@ void Memory::map(Bus<CPUBUS_SIZE> &rambus, Bus<PPUBUS_SIZE> &vrambus, Mirroring 
 
     const auto decode = get_decode(mirroring);
     vrambus.map(NT_START, PAL_START,
-        [this, decode](uint16 addr)
+        [this, decode](u16 addr)
         {
             addr = decode(addr);
             assert(addr < VRAM_SIZE);
             return vrammem[addr];
         },
-        [this, decode](uint16 addr, uint8 data)
+        [this, decode](u16 addr, u8 data)
         {
             addr = decode(addr);
             assert(addr < VRAM_SIZE);

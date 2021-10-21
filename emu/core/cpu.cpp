@@ -25,7 +25,7 @@ void CPU::power(bool reset)
     dma.page = 0;
 
     if (!reset) {
-        for (uint16 i = 0; i < 0x800; i++)
+        for (u16 i = 0; i < 0x800; i++)
             bus->write(i, 0);
     }
 
@@ -65,13 +65,13 @@ void CPU::fire_nmi()
     status.nmi_pending = true;
 }
 
-uint8 CPU::fetch()
+u8 CPU::fetch()
 {
     cycle();
     return bus->read(r.pc.v++);
 }
 
-void CPU::execute(uint8 instr)
+void CPU::execute(u8 instr)
 {
 #define INSTR_IMPLIED(id, func) \
     case id: instr_##func(); return;
@@ -250,14 +250,14 @@ void CPU::interrupt()
     cycle();
     push(r.pc.h);
     push(r.pc.l);
-    push(uint8(r.flags));
+    push(u8(r.flags));
     // reset this here just in case
     r.flags.breakf = 0;
     r.flags.intdis = 1;
     // interrupt hijacking
     // reset is put at the top so that it will always run. i'm not sure if
     // this is the actual behavior - nesdev says nothing about it.
-    uint16 vec;
+    u16 vec;
     if (status.reset_pending) {
         status.reset_pending = false;
         vec = RESET_VEC;
@@ -273,13 +273,13 @@ void CPU::interrupt()
     r.pc.h = readmem(vec+1);
 }
 
-void CPU::push(uint8 val)
+void CPU::push(u8 val)
 {
     writemem(r.sp + STACK_BASE, val);
     r.sp--;
 }
 
-uint8 CPU::pull()
+u8 CPU::pull()
 {
     r.sp++;
     return readmem(r.sp + STACK_BASE);
@@ -309,20 +309,20 @@ void CPU::nmipoll()
         status.exec_nmi = true;
 }
 
-uint8 CPU::readmem(uint16 addr)
+u8 CPU::readmem(u16 addr)
 {
     cycle();
     return bus->read(addr);
 }
 
-void CPU::writemem(uint16 addr, uint8 data)
+void CPU::writemem(u16 addr, u8 data)
 {
     cycle();
     bus->write(addr, data);
 }
 
 /* These two functions read the registers located between 0x4000 - 0x4020. */
-uint8 CPU::readreg(uint16 addr)
+u8 CPU::readreg(u16 addr)
 {
     switch (addr) {
     case 0x4000: case 0x4001: case 0x4002: case 0x4003: case 0x4004: case 0x4005: case 0x4006: case 0x4007:
@@ -334,7 +334,7 @@ uint8 CPU::readreg(uint16 addr)
     }
 }
 
-void CPU::writereg(uint16 addr, uint8 data)
+void CPU::writereg(u16 addr, u8 data)
 {
     switch (addr) {
 
@@ -437,10 +437,10 @@ void CPU::writereg(uint16 addr, uint8 data)
     }
 }
 
-void CPU::oamdma_loop(uint8 page)
+void CPU::oamdma_loop(u8 page)
 {
-    uint16 start = uint16(page) << 8;
-    uint16 end = uint16(page) << 8 | 0xFF;
+    u16 start = u16(page) << 8;
+    u16 end = u16(page) << 8 | 0xFF;
     cycle();
     if (cpu_cycles % 2 == 1)
         cycle();
