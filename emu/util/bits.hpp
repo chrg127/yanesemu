@@ -106,4 +106,4 @@ inline constexpr unsigned long long to_mibit(unsigned long long bytes) { return 
 inline constexpr unsigned long long to_gibit(unsigned long long bytes) { return bytes*1024*1024*1024/8; }
 inline constexpr unsigned long long to_tibit(unsigned long long bytes) { return bytes*1024*1024*1024*1024/8; }
 
-} // namespace Util
+} // namespace util

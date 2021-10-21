@@ -1,18 +1,16 @@
 #include "string.hpp"
 
 #include <algorithm>
-#include <utility>
+//#include <utility>
 
 namespace str {
 
-std::vector<std::string> split(const std::string &s, int delim)
+std::vector<std::string> split(const std::string &s, char delim)
 {
-    std::size_t i = 0, p = 0;
     std::vector<std::string> res;
-
-    while (i != s.size()) {
+    for (std::size_t i = 0, p = 0; i != s.size(); i = p+1) {
         p = s.find(delim, i);
-        if (p == s.npos) {
+        if (p == std::string::npos) {
             // no delimiter found: end
             res.emplace_back(s.begin() + i, s.end());
             break;
@@ -42,7 +40,7 @@ std::string trim(const std::string &s)
 {
     auto i = std::find_if_not(s.begin(),  s.end(),  is_space);
     auto j = std::find_if_not(s.rbegin(), s.rend(), is_space).base();
-    return std::string(i, j);
+    return {i, j};
 }
 
 void trim_inplace(std::string &s)
@@ -53,4 +51,4 @@ void trim_inplace(std::string &s)
     s.erase(s.begin(), i);
 }
 
-} // namespace Util
+} // namespace str

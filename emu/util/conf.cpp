@@ -36,7 +36,8 @@ static std::optional<Value> check(const std::string &value, Type type)
 
 static Configuration parse_file(std::string_view pathname, const ValidConf &valid)
 {
-    std::optional<io::File> file = io::File::open(pathname, io::Access::READ);
+    collected_errors.clear();
+    auto file = io::File::open(pathname, io::Access::READ);
     if (!file)
         return {};
 
@@ -44,7 +45,7 @@ static Configuration parse_file(std::string_view pathname, const ValidConf &vali
     int linenum = 1;
     for (std::string line; file->getline(line); linenum++) {
         // skip comments
-        if (line == "" || line[0] == '#')
+        if (line.empty() || line[0] == '#')
             continue;
 
         auto keyval = str::split(line, '=');
@@ -80,6 +81,8 @@ static Configuration add_missing(Configuration &&conf, const ValidConf &valid)
     return conf;
 }
 
+
+
 Configuration parse(std::string_view pathname, const ValidConf &valid)
 {
     return add_missing(parse_file(pathname, valid), valid);
@@ -110,9 +113,7 @@ void create(std::string_view pathname, const Configuration &conf, const std::uno
 
 std::vector<Error> errors()
 {
-    auto tmp = collected_errors;
-    collected_errors.clear();
-    return tmp;
+    return collected_errors;
 }
 
-} // namespace Util
+} // namespace conf

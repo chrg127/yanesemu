@@ -44,6 +44,7 @@ std::function<R(Args...)> member_fn(T *obj, R (T::*fn)(Args...))
 template <typename T>
 concept ContainerType = requires(T t) {
     t.data();
+    t.size();
 };
 
 inline std::string_view system_error_string()

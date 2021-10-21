@@ -47,4 +47,4 @@ public:
     std::size_t height() const { return Height; }
 };
 
-} // namespace Util
+} // namespace util
