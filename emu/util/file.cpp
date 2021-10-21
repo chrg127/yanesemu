@@ -77,15 +77,5 @@ bool File::getline(std::string &str, int delim)
     return !(c == EOF);
 }
 
-std::string File::getall()
-{
-    std::string contents;
-    int c;
-    contents.reserve(filesize());
-    while (c = getc(), c != EOF)
-        contents += c;
-    return contents;
-}
-
-} // namespace Util
+} // namespace io
 

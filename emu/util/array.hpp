@@ -29,14 +29,6 @@ public:
         ptr = std::make_unique<T[]>(s);
         len = s;
     }
-
-    void shrink(std::size_t newlen)
-    {
-        auto newptr = std::make_unique<T[]>(newlen);
-        std::memcpy(newptr.get(), ptr.get(), newlen);
-        ptr = std::move(newptr);
-        len = newlen;
-    }
 };
 
 template <typename T, std::size_t Width, std::size_t Height>
