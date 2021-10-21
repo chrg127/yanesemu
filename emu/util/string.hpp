@@ -12,8 +12,9 @@
 
 namespace str {
 
-/* Splits a string into a vector of strings. */
-std::vector<std::string> split(const std::string &s, int delim = ',');
+// Splits a string into a vector of strings
+std::vector<std::string> split(const std::string &s, char delim = ',');
+
 std::vector<std::string> split_lines(const std::string &s, int col);
 std::string trim(const std::string &s);
 void trim_inplace(std::string &s);
@@ -45,4 +46,4 @@ inline bool is_space(int c)
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
-} // namespace Util
+} // namespace str

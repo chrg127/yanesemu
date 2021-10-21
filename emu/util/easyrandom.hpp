@@ -1,8 +1,6 @@
 #pragma once
 
-/* Basically a wrapper API around <random>.
- * It's thread-safe, or at least it's supposed to be.
- * Call seed() in main().  */
+/* Basically a wrapper API around <random>. It's lazy initialized and thread-safe. */
 
 #include <cstdint>
 

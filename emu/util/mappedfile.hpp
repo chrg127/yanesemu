@@ -20,9 +20,7 @@ class MappedFile {
 public:
     ~MappedFile();
 
-    MappedFile(const MappedFile &) = delete;
-    MappedFile(MappedFile &&m) { operator=(std::move(m)); }
-    MappedFile & operator=(const MappedFile &) = delete;
+    MappedFile(MappedFile &&m) noexcept { operator=(std::move(m)); }
     MappedFile & operator=(MappedFile &&m) noexcept
     {
         std::swap(ptr, m.ptr);
@@ -39,8 +37,7 @@ public:
     uint8 *data() const                 { return ptr; }
     std::size_t size() const            { return len; }
     std::string filename() const        { return name; }
-    std::span<uint8> slice(std::size_t start, std::size_t len) { return {ptr+start, len}; }
-    std::span<uint8> contents()                                { return {ptr, len}; }
+    std::span<uint8> slice(std::size_t start, std::size_t length) { return {ptr+start, length}; }
 };
 
-} // namespace Util
+} // namespace io
