@@ -24,7 +24,7 @@ std::optional<MappedFile> MappedFile::open(std::string_view pathname)
     int err = fstat(fd, &statbuf);
     if (err < 0)
         return std::nullopt;
-    auto *ptr = (uint8 *) mmap(nullptr, statbuf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    auto *ptr = (u8 *) mmap(nullptr, statbuf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (ptr == MAP_FAILED)
         return std::nullopt;
     close(fd);

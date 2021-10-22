@@ -6,7 +6,7 @@
 
 namespace debugger {
 
-uint16 CPUDebugger::getreg(Reg reg) const
+u16 CPUDebugger::getreg(Reg reg) const
 {
     switch (reg) {
     case Reg::Acc:   return cpu->r.acc;
@@ -18,7 +18,7 @@ uint16 CPUDebugger::getreg(Reg reg) const
     }
 }
 
-void CPUDebugger::setreg(Reg reg, uint16 value)
+void CPUDebugger::setreg(Reg reg, u16 value)
 {
     switch (reg) {
     case Reg::Acc: cpu->r.acc  = value; break;
@@ -54,7 +54,7 @@ void CPUDebugger::setflag(Flag flag, bool value)
     }
 }
 
-uint16 CPUDebugger::get_vector_addr(uint16 vector) const
+u16 CPUDebugger::get_vector_addr(u16 vector) const
 {
     return cpu->bus->read(vector+1) << 8 | cpu->bus->read(vector);
 }
@@ -70,10 +70,10 @@ CPUDebugger::Instruction CPUDebugger::curr_instr() const
 
 std::string CPUDebugger::curr_instr_str() const
 {
-    auto is_branch      = [](uint8 id)            { return (id & 0x1F) == 0x10; };
-    auto branch_pointer = [](uint8 arg, uint8 pc) { return pc + 2 + (int8_t) arg; };
+    auto is_branch      = [](u8 id)            { return (id & 0x1F) == 0x10; };
+    auto branch_pointer = [](u8 arg, u8 pc) { return pc + 2 + (int8_t) arg; };
 
-    const auto took_branch = [](uint8 id, const auto &flags)
+    const auto took_branch = [](u8 id, const auto &flags)
     {
         switch (id) {
         case 0x10: return !flags.neg;

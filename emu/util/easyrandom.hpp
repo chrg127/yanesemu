@@ -9,4 +9,4 @@ namespace util {
 void seed();
 uint8_t random8();
 
-} // namespace Util
+} // namespace util

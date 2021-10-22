@@ -1,7 +1,5 @@
 #pragma once
 
-/* Common string routines. */
-
 #include <cstring>
 #include <charconv>
 #include <optional>

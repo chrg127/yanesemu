@@ -4,7 +4,7 @@
 
 namespace debugger {
 
-uint8 PPUDebugger::getreg(uint16 addr) const
+u8 PPUDebugger::getreg(u16 addr) const
 {
     switch (addr) {
     case 0x2000: return ppu->vram.tmp.nt
@@ -37,7 +37,7 @@ uint8 PPUDebugger::getreg(uint16 addr) const
     }
 }
 
-uint8 PPUDebugger::getreg(Reg reg) const
+u8 PPUDebugger::getreg(Reg reg) const
 {
     switch (reg) {
     case PPUDebugger::Reg::Ctrl:        return getreg(0x2000); break;
@@ -52,7 +52,7 @@ uint8 PPUDebugger::getreg(Reg reg) const
     }
 }
 
-// void PPUDebugger::setreg(Reg reg, uint8 data)
+// void PPUDebugger::setreg(Reg reg, u8 data)
 // {
 // }
 
@@ -61,22 +61,22 @@ std::pair<unsigned long, unsigned long> PPUDebugger::pos() const
     return { ppu->lines, ppu->cycles };
 }
 
-uint16 PPUDebugger::nt_base_addr() const
+u16 PPUDebugger::nt_base_addr() const
 {
     return 0x2000 + ppu->vram.tmp.nt * 0x400;
 }
 
-uint16 PPUDebugger::vram_addr() const
+u16 PPUDebugger::vram_addr() const
 {
     return ppu->vram.addr.v;
 }
 
-uint16 PPUDebugger::tmp_addr() const
+u16 PPUDebugger::tmp_addr() const
 {
     return ppu->vram.tmp.v;
 }
 
-uint8 PPUDebugger::fine_x() const
+u8 PPUDebugger::fine_x() const
 {
     return ppu->vram.fine_x;
 }
@@ -86,12 +86,12 @@ std::pair<int, int> PPUDebugger::screen_coords() const
     return { ppu->vram.vx(), ppu->vram.vy() };
 }
 
-uint8 PPUDebugger::read_oam(uint8 addr)
+u8 PPUDebugger::read_oam(u8 addr)
 {
     return ppu->oam.mem[addr];
 }
 
-void PPUDebugger::write_oam(uint8 addr, uint8 data)
+void PPUDebugger::write_oam(u8 addr, u8 data)
 {
     ppu->oam.mem[addr] = data;
 }

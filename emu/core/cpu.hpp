@@ -14,10 +14,10 @@ namespace core {
 class CPU {
     struct {
         util::Word pc = 0;
-        uint8 acc = 0;
-        uint8 x   = 0;
-        uint8 y   = 0;
-        uint8 sp  = 0;
+        u8 acc = 0;
+        u8 x   = 0;
+        u8 y   = 0;
+        u8 sp  = 0;
         struct {
             bool carry   = 0;
             bool zero    = 0;
@@ -28,13 +28,13 @@ class CPU {
             bool ov      = 0;
             bool neg     = 0;
 
-            explicit operator uint8() const
+            explicit operator u8() const
             {
                 return carry  << 0  | zero   << 1  | intdis << 2 | decimal << 3 |
                        breakf << 4  | unused << 5  | ov     << 6 | neg     << 7;
             }
 
-            void operator=(uint8 data)
+            void operator=(u8 data)
             {
                 carry   = data & (1 << 0); zero    = data & (1 << 1); intdis  = data & (1 << 2);
                 decimal = data & (1 << 3); breakf  = data & (1 << 4); unused  = data & (1 << 5);
@@ -52,8 +52,8 @@ class CPU {
     } status;
 
     struct {
-        bool flag  = false;
-        uint8 page = 0;
+        bool flag = false;
+        u8 page   = 0;
     } dma;
 
     struct {
@@ -64,15 +64,15 @@ class CPU {
     Bus<CPUBUS_SIZE> *bus = nullptr;
     ControllerPort *port1  = nullptr;
 
-    std::function<void(uint8, uint16)> error_callback;
+    std::function<void(u8, u16)> error_callback;
 
 public:
     explicit CPU(Bus<CPUBUS_SIZE> *b, ControllerPort *p) : bus(b), port1(p) { }
 
     void power(bool reset = false);
     void run();
-    uint8 readreg(uint16 addr);
-    void writereg(uint16 addr, uint8 data);
+    u8 readreg(u16 addr);
+    void writereg(u16 addr, u8 data);
     void fire_irq();
     void fire_nmi();
 
@@ -82,29 +82,29 @@ public:
     friend class debugger::CPUDebugger;
 
 private:
-    uint8 fetch();
-    uint8 fetchop();
-    void execute(uint8 instr);
+    u8 fetch();
+    u8 fetchop();
+    void execute(u8 instr);
     void interrupt();
-    void push(uint8 val);
-    uint8 pull();
+    void push(u8 val);
+    u8 pull();
     void irqpoll();
     void nmipoll();
     void cycle();
     void last_cycle();
-    uint8 readmem(uint16 addr);
-    void writemem(uint16 addr, uint8 data);
-    void oamdma_loop(uint8 page);
+    u8 readmem(u16 addr);
+    void writemem(u16 addr, u8 data);
+    void oamdma_loop(u8 page);
 
     // instructions.cpp
-    using InstrFuncRead = void (CPU::*)(uint8);
-    using InstrFuncMod = uint8 (CPU::*)(uint8);
+    using InstrFuncRead = void (CPU::*)(u8);
+    using InstrFuncMod = u8 (CPU::*)(u8);
 
     void addrmode_imm_read(InstrFuncRead f);
     void addrmode_zero_read(InstrFuncRead f);
-    void addrmode_zero_ind_read(InstrFuncRead f, uint8 reg);
+    void addrmode_zero_ind_read(InstrFuncRead f, u8 reg);
     void addrmode_abs_read(InstrFuncRead f);
-    void addrmode_abs_ind_read(InstrFuncRead f, uint8 reg);
+    void addrmode_abs_ind_read(InstrFuncRead f, u8 reg);
     void addrmode_indx_read(InstrFuncRead f);
     void addrmode_indy_read(InstrFuncRead f);
 
@@ -115,44 +115,44 @@ private:
     void addrmode_absx_modify(InstrFuncMod f);
 
     // used by sta, stx and sty
-    void addrmode_zero_write(uint8 val);
-    void addrmode_zero_ind_write(uint8 val, uint8 reg);
-    void addrmode_abs_write(uint8 val);
-    void addrmode_abs_ind_write(uint8 val, uint8 reg);
-    void addrmode_indx_write(uint8 val);
-    void addrmode_indy_write(uint8 val);
+    void addrmode_zero_write(u8 val);
+    void addrmode_zero_ind_write(u8 val, u8 reg);
+    void addrmode_abs_write(u8 val);
+    void addrmode_abs_ind_write(u8 val, u8 reg);
+    void addrmode_indx_write(u8 val);
+    void addrmode_indy_write(u8 val);
 
     /* instruction functions missing (as they are not needed):
      * - sta, stx, sty (use addrmode_write functions directly)
      * - beq, bne, bmi, bpl, bvc, bvs, bcc, bcs (use instr_branch)
      * - tax, txa, tay, tya, txs, tsx (use instr_transfer)
      * - sec, clc, sei, cli, clv, cld (use instr_flag) */
-    void instr_load(uint8 val, uint8 &reg);
-    void instr_compare(uint8 val, uint8 reg);
-    void instr_inc_reg(uint8 &reg);
-    void instr_dec_reg(uint8 &reg);
+    void instr_load(u8 val, u8 &reg);
+    void instr_compare(u8 val, u8 reg);
+    void instr_inc_reg(u8 &reg);
+    void instr_dec_reg(u8 &reg);
 
     void instr_branch(bool take);
     void instr_flag(bool &flag, bool v);
-    void instr_transfer(uint8 from, uint8 &to);
-    void instr_lda(uint8 val);
-    void instr_ldx(uint8 val);
-    void instr_ldy(uint8 val);
-    void instr_cmp(uint8 val);
-    void instr_cpx(uint8 val);
-    void instr_cpy(uint8 val);
-    void instr_adc(uint8 val);
-    void instr_sbc(uint8 val);
-    void instr_ora(uint8 val);
-    void instr_and(uint8 val);
-    void instr_eor(uint8 val);
-    void instr_bit(uint8 val);
-    uint8 instr_inc(uint8 val);
-    uint8 instr_dec(uint8 val);
-    uint8 instr_asl(uint8 val);
-    uint8 instr_lsr(uint8 val);
-    uint8 instr_rol(uint8 val);
-    uint8 instr_ror(uint8 val);
+    void instr_transfer(u8 from, u8 &to);
+    void instr_lda(u8 val);
+    void instr_ldx(u8 val);
+    void instr_ldy(u8 val);
+    void instr_cmp(u8 val);
+    void instr_cpx(u8 val);
+    void instr_cpy(u8 val);
+    void instr_adc(u8 val);
+    void instr_sbc(u8 val);
+    void instr_ora(u8 val);
+    void instr_and(u8 val);
+    void instr_eor(u8 val);
+    void instr_bit(u8 val);
+    u8 instr_inc(u8 val);
+    u8 instr_dec(u8 val);
+    u8 instr_asl(u8 val);
+    u8 instr_lsr(u8 val);
+    u8 instr_rol(u8 val);
+    u8 instr_ror(u8 val);
 
     // these instruction are called directly
     void instr_inx();

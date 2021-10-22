@@ -157,7 +157,7 @@ void cli_interface(cmdline::Result &flags)
 
     if (!flags.has['d']) {
         context.set_title(progname);
-        emu.on_cpu_error([&](uint8 id, uint16 addr)
+        emu.on_cpu_error([&](u8 id, u16 addr)
         {
             fmt::print(stderr, "The CPU has found an invalid instruction of ID ${:02X} at address ${:04X}. Stopping.\n", id, addr);
             emu.stop();

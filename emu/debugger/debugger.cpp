@@ -31,7 +31,7 @@ unsigned BreakList::add(Breakpoint point)
     return list.size() - 1;
 }
 
-std::optional<unsigned> BreakList::test(uint16 addr)
+std::optional<unsigned> BreakList::test(u16 addr)
 {
     auto it = std::find_if(list.begin(), list.end(), [addr](const auto &p) {
         return addr >= p.start && addr <= p.end;
@@ -44,7 +44,7 @@ std::optional<unsigned> BreakList::test(uint16 addr)
 Debugger::Debugger(core::Emulator *e)
     : emu(e), cpudbg(&emu->cpu), ppudbg(&emu->ppu)
 {
-    emu->on_cpu_error([this](uint8 id, uint16 addr)
+    emu->on_cpu_error([this](u8 id, u16 addr)
     {
         got_error = true;
         report_callback((Event) {
@@ -88,7 +88,7 @@ void Debugger::run(StepType step_type)
         break;
     case StepType::Next: {
         int cont = 0;
-        uint8 id = cpudbg.curr_instr().id;
+        u8 id = cpudbg.curr_instr().id;
         runloop([&]() {
             if (id == 0x20) cont++;
             if (id == 0x60) cont--;
@@ -98,7 +98,7 @@ void Debugger::run(StepType step_type)
         break;
     }
     case StepType::Frame: {
-        uint16 addr = cpudbg.get_vector_addr(core::NMI_VEC);
+        u16 addr = cpudbg.get_vector_addr(core::NMI_VEC);
         runloop([&]() { return cpudbg.getreg(CPUDebugger::Reg::PC) == addr; });
         break;
     }
@@ -108,27 +108,27 @@ void Debugger::run(StepType step_type)
     }
 }
 
-uint8 Debugger::read_ram(uint16 addr)
+u8 Debugger::read_ram(u16 addr)
 {
     return (addr >= 0x2000 && addr <= 0x3FFF) ? ppudbg.getreg(0x2000 + (addr & 0x7))
                                               : emu->rambus.read(addr);
 }
 
-std::function<uint8(uint16)> Debugger::read_from(MemorySource source)
+std::function<u8(u16)> Debugger::read_from(MemorySource source)
 {
     switch (source) {
     case MemorySource::RAM:  return util::member_fn(this, &Debugger::read_ram);
-    case MemorySource::VRAM: return [&](uint16 addr) { return emu->vrambus.read(addr); };
+    case MemorySource::VRAM: return [&](u16 addr) { return emu->vrambus.read(addr); };
     case MemorySource::OAM:  return util::member_fn(&ppudbg, &PPUDebugger::read_oam);
     default: panic("get_read_fn");
     }
 }
 
-std::function<void(uint16, uint8)> Debugger::write_to(MemorySource source)
+std::function<void(u16, u8)> Debugger::write_to(MemorySource source)
 {
     switch (source) {
-    case MemorySource::RAM:  return [&](uint16 addr, uint8 data) { return emu->rambus.write(addr, data); };
-    case MemorySource::VRAM: return [&](uint16 addr, uint8 data) { return emu->vrambus.write(addr, data); };
+    case MemorySource::RAM:  return [&](u16 addr, u8 data) { return emu->rambus.write(addr, data); };
+    case MemorySource::VRAM: return [&](u16 addr, u8 data) { return emu->vrambus.write(addr, data); };
     case MemorySource::OAM:  return util::member_fn(&ppudbg, &PPUDebugger::write_oam);
     default: panic("get_write_fn");
     }

@@ -32,7 +32,7 @@ static PPU::VRAMAddress inc_v_vertpos(PPU::VRAMAddress addr)
         ++addr.fine_y;
     else {
         addr.fine_y = 0;
-        uint16 y = addr.coarse_y;
+        u16 y = addr.coarse_y;
         if (y == 29) {
             y = 0;
             addr.nt ^= 2;
@@ -94,7 +94,7 @@ void PPU::power(bool reset)
     std::fill(secondary_oam.mem.begin(), secondary_oam.mem.end(), 0);
 }
 
-uint8 PPU::readreg(uint16 addr)
+u8 PPU::readreg(u16 addr)
 {
     switch (addr) {
     // PPUCTRL,       PPUMASK,     OAMAddr,     PPUScroll,   PPUAddr
@@ -132,7 +132,7 @@ uint8 PPU::readreg(uint16 addr)
     return io.latch;
 }
 
-void PPU::writereg(uint16 addr, uint8 data)
+void PPU::writereg(u16 addr, u8 data)
 {
     io.latch = data;
     switch (addr) {
@@ -232,9 +232,9 @@ void PPU::copy_v_vertpos()
  * in rendering, you can think of the fine y and the rest of the address
  * as separate, where fine y of course indicates the row of the tile.
  */
-uint8 PPU::fetch_nt(uint15 vram_addr)
+u8 PPU::fetch_nt(uint15 vram_addr)
 {
-    uint16 addr = 0x2000 | (vram_addr & 0x0FFF);
+    u16 addr = 0x2000 | (vram_addr & 0x0FFF);
     return bus->read(addr);
 }
 
@@ -243,9 +243,9 @@ uint8 PPU::fetch_nt(uint15 vram_addr)
  * NN 1111 YYY XXX
  * where YYY/XXX are the highest bits of coarse x/y.
  */
-uint8 PPU::fetch_attr(uint16 nt, uint16 coarse_y, uint16 coarse_x)
+u8 PPU::fetch_attr(u16 nt, u16 coarse_y, u16 coarse_x)
 {
-    uint16 addr = 0x23C0 | nt << 10 | (coarse_y & 0x1C) << 1 | (coarse_x & 0x1C) >> 2;
+    u16 addr = 0x23C0 | nt << 10 | (coarse_y & 0x1C) << 1 | (coarse_x & 0x1C) >> 2;
     return bus->read(addr);
 }
 
@@ -258,14 +258,14 @@ uint8 PPU::fetch_attr(uint16 nt, uint16 coarse_y, uint16 coarse_x)
  * P - bit plane. 0 = get the low byte, 1 = get the high byte.
  * TTT - row. A tile is composed of 8 rows, these 3 bits decide which one.
  */
-uint8 PPU::fetch_pt(bool base, uint8 nt, bool bitplane, uint3 fine_y)
+u8 PPU::fetch_pt(bool base, u8 nt, bool bitplane, uint3 fine_y)
 {
-    uint16 addr = base << 12 | nt << 4 | bitplane << 3 | fine_y;
+    u16 addr = base << 12 | nt << 4 | bitplane << 3 | fine_y;
     return bus->read(addr);
 }
 
 // This function checks for sprite size and row before fetching from the pattern table
-uint8 PPU::fetch_pt_sprite(bool sp_size, uint8 nt, bool bitplane, unsigned row)
+u8 PPU::fetch_pt_sprite(bool sp_size, u8 nt, bool bitplane, unsigned row)
 {
     if (row > 16)
         return 0;
@@ -345,11 +345,11 @@ void PPU::sprite_shift_run()
     }
 }
 
-std::tuple<uint2, uint2, uint8> PPU::sprite_output(unsigned x)
+std::tuple<uint2, uint2, u8> PPU::sprite_output(unsigned x)
 {
     if (!io.sp_show)
         return std::make_tuple(0, 0, 0);
-    for (uint8 i = 0; i < 8; i++) {
+    for (u8 i = 0; i < 8; i++) {
         if (oam.xpos[i] != 0)
             continue;
         bool low  = util::getbit(oam.pt_low[i],  7);
@@ -378,12 +378,12 @@ std::tuple<uint2, uint2, uint8> PPU::sprite_output(unsigned x)
  * Furthermore, any object with palette index 0 will automatically use the color
  * from $3F00 regardless of palette row.
  */
-uint8 PPU::output(unsigned x)
+u8 PPU::output(unsigned x)
 {
     auto [bg_row, bg_ind]         = background_output();
     auto [sp_row, sp_ind, sp_num] = sprite_output(x);
 
-    auto getcolor = [this](uint2 row, uint2 ind, bool select) -> uint8
+    auto getcolor = [this](uint2 row, uint2 ind, bool select) -> u8
     {
         uint5 n = select << 4 | row << 2 | ind;
         return bus->read(0x3F00 + n);
@@ -410,7 +410,7 @@ uint8 PPU::output(unsigned x)
 void PPU::render()
 {
     auto x = cycles;
-    uint8 pixel = output(x);
+    u8 pixel = output(x);
     auto y = lines;
     assert(y <= 239 && x <= 256);
     screen->output(x-1, y, pixel);

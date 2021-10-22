@@ -18,19 +18,19 @@ namespace core {
 class PPU {
 public:
     union VRAMAddress {
-        uint16 v = 0;
-        util::BitField<uint16, 12, 3> fine_y;
-        util::BitField<uint16, 10, 2> nt;
-        util::BitField<uint16, 5,  5> coarse_y;
-        util::BitField<uint16, 0,  5> coarse_x;
+        u16 v = 0;
+        util::BitField<u16, 12, 3> fine_y;
+        util::BitField<u16, 10, 2> nt;
+        util::BitField<u16, 5,  5> coarse_y;
+        util::BitField<u16, 0,  5> coarse_x;
 
         VRAMAddress() = default;
-        VRAMAddress(uint16 data) : v(data) { }
+        VRAMAddress(u16 data) : v(data) { }
         VRAMAddress(const VRAMAddress &a)             { operator=(a); }
         VRAMAddress & operator=(const VRAMAddress &a) { v = a.v; return *this; }
 
-        explicit operator uint16() const   { return v; }
-        VRAMAddress & operator+=(uint16 n) { v += n; v = util::getbits(v, 0, 15); return *this; }
+        explicit operator u16() const   { return v; }
+        VRAMAddress & operator+=(u16 n) { v += n; v = util::getbits(v, 0, 15); return *this; }
 
         uint14 as_u14() { return v; }
     };
@@ -45,13 +45,13 @@ private:
 
     struct {
         // used as internal buffer with regs I/O
-        uint8 latch = 0;
+        u8 latch = 0;
 
         // PPUCTRL
         bool vram_inc;
         bool sp_pt_addr;
         bool bg_pt_addr;
-        uint8 sp_size;
+        u8 sp_size;
         bool ext_bus_dir; // this one is weird
         bool nmi_enabled;
 
@@ -74,62 +74,62 @@ private:
         bool scroll_latch;
 
         // PPUData
-        uint8 data_buf;
+        u8 data_buf;
     } io;
 
     struct {
         VRAMAddress addr;
         VRAMAddress tmp;
         uint3 fine_x;
-        uint8 buf; // buffer used during background and sprite fetches while rendering
+        u8 buf; // buffer used during background and sprite fetches while rendering
         // simply indicates the VRAM address position. not used anywhere in the PPU though.
-        uint16 vx() const { return fine_x      | addr.coarse_x << 3 | (addr.nt & 1) << 8; }
-        uint8 vy() const  { return addr.fine_y | addr.coarse_y << 3 | (addr.nt & 2) << 8; }
+        u16 vx() const { return fine_x | addr.coarse_x << 3 | (addr.nt & 1) << 8; }
+        u8 vy() const  { return addr.fine_y | addr.coarse_y << 3 | (addr.nt & 2) << 8; }
     } vram;
 
     struct {
-        uint8 nt;
-        uint8 attr;
-        uint8 pt_low;
-        uint8 pt_high;
+        u8 nt;
+        u8 attr;
+        u8 pt_low;
+        u8 pt_high;
     } tile;
 
     struct {
-        uint8  attr_low, attr_high;
+        u8  attr_low, attr_high;
         bool   feed_low, feed_high;
-        uint16 pt_low, pt_high;
+        u16 pt_low, pt_high;
     } shift;
 
     struct {
-        uint8 addr;
-        uint8 data;
+        u8 addr;
+        u8 data;
         uint2 sp_counter = 0; // if sp_counter == 0, then mem[addr] points to a sprite's y byte
         bool inrange = 0;
         bool read_ff = 0;
         bool addr_overflow = 0;
         bool sp0_next = 0;
         bool sp0_curr = 0;
-        uint8 pt_low[8], pt_high[8], attrs[8], xpos[8];
-        std::array<uint8, OAM_SIZE> mem;
+        u8 pt_low[8], pt_high[8], attrs[8], xpos[8];
+        std::array<u8, OAM_SIZE> mem;
 
         void inc()  { ++addr; ++sp_counter; }
-        uint8 read() { return read_ff ? 0xFF : mem[addr]; }
+        u8 read() { return read_ff ? 0xFF : mem[addr]; }
     } oam;
 
     struct {
-        uint8 index = 0;
-        std::array<uint8, 8*4> mem;
+        u8 index = 0;
+        std::array<u8, 8 * 4> mem;
 
         bool full()           { return index == 32; }
-        void write(uint8 val) { if (!full()) mem[index] = val; }
+        void write(u8 val) { if (!full()) mem[index] = val; }
         void inc()            { if (!full()) index++; }
     } secondary_oam;
 
     struct {
-        uint8 y;
-        uint8 nt;
-        uint8 attr;
-        uint8 x;
+        u8 y;
+        u8 nt;
+        u8 attr;
+        u8 x;
     } sprite;
 
 public:
@@ -138,8 +138,8 @@ public:
     { }
 
     void power(bool reset);
-    uint8 readreg(uint16 addr);
-    void writereg(uint16 addr, uint8 data);
+    u8 readreg(u16 addr);
+    void writereg(u16 addr, u8 data);
     void on_nmi(auto &&callback) { nmi_callback = callback; }
 
     // ppumain.cpp
@@ -156,10 +156,10 @@ private:
     void copy_v_horzpos();
     void copy_v_vertpos();
 
-    uint8 fetch_nt(uint15 vram_addr);
-    uint8 fetch_attr(uint16 nt, uint16 coarse_y, uint16 coarse_x);
-    uint8 fetch_pt(bool base, uint8 nt, bool bitplane, uint3 fine_y);
-    uint8 fetch_pt_sprite(bool sp_size, uint8 nt, bool bitplane, unsigned row);
+    u8 fetch_nt(uint15 vram_addr);
+    u8 fetch_attr(u16 nt, u16 coarse_y, u16 coarse_x);
+    u8 fetch_pt(bool base, u8 nt, bool bitplane, uint3 fine_y);
+    u8 fetch_pt_sprite(bool sp_size, u8 nt, bool bitplane, unsigned row);
 
     void background_shift_run();
     void background_shift_fill();
@@ -167,9 +167,9 @@ private:
 
     void sprite_shift_run();
     void sprite_update_flags(unsigned line);
-    std::tuple<uint2, uint2, uint8> sprite_output(unsigned x);
+    std::tuple<uint2, uint2, u8> sprite_output(unsigned x);
 
-    uint8 output(unsigned x);
+    u8 output(unsigned x);
     void render();
 
     // ppumain.cpp

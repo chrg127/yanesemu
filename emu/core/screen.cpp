@@ -1,7 +1,7 @@
 #include "screen.hpp"
 
 // refer to http://wiki.nesdev.com/w/index.php/PPU_palettes for details on these palettes.
-static uint32 pal2C02[] = {
+static u32 pal2C02[] = {
     0x545454FF, 0x001E74FF, 0x081090FF, 0x300088FF,
     0x440064FF, 0x5C0030FF, 0x540400FF, 0x3C1800FF,
     0x202A00FF, 0x083A00FF, 0x004000FF, 0x003C00FF,
@@ -23,7 +23,7 @@ static uint32 pal2C02[] = {
     0xA0D6E4FF, 0xA0A2A0FF, 0x000000FF, 0x000000FF,
 };
 
-static uint32 pal2C03[] = {
+static u32 pal2C03[] = {
     0x6D6D6DFF, 0x002491FF, 0x0000DAFF, 0x6D48DAFF,
     0x91006DFF, 0xB6006DFF, 0xB62400FF, 0x914800FF,
     0x6D4800FF, 0x244800FF, 0x006D24FF, 0x009100FF,
@@ -45,7 +45,7 @@ static uint32 pal2C03[] = {
     0x91DAFFFF, 0x000000FF, 0x000000FF, 0x000000FF,
 };
 
-static uint32 pal_rc2C03b[] = {
+static u32 pal_rc2C03b[] = {
     0x6D6D6DFF, 0x002491FF, 0x0000DAFF, 0x6D48DAFF,
     0x91006DFF, 0xB6006DFF, 0xB62400FF, 0x914800FF,
     0x6D4800FF, 0x240000FF, 0x006D24FF, 0x009100FF,

@@ -29,7 +29,7 @@ std::string Cartridge::Data::to_string() const
 
 std::optional<Cartridge::Data> parse_cartridge(io::MappedFile &romfile)
 {
-    static const uint8 constants[] = { 'N', 'E', 'S', 0x1A };
+    static const u8 constants[] = { 'N', 'E', 'S', 0x1A };
     static_assert(sizeof(constants) == 4);
 
     Cartridge::Data cart;
@@ -43,8 +43,8 @@ std::optional<Cartridge::Data> parse_cartridge(io::MappedFile &romfile)
     cart.format = (getbits(cart.header[7], 2, 2) == 2)
                 ? Cartridge::Format::NES_2_0
                 : Cartridge::Format::iNES;
-    uint32 prgrom_size = cart.header[4];
-    uint32 chrrom_size = cart.header[5];
+    u32 prgrom_size = cart.header[4];
+    u32 chrrom_size = cart.header[5];
     cart.mirroring = getbit(cart.header[6], 3) ? Mirroring::FourScreen
                    : getbit(cart.header[6], 0) ? Mirroring::Vertical
                    :                             Mirroring::Horizontal;
