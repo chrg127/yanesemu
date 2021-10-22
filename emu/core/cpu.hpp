@@ -3,6 +3,7 @@
 #include <functional>
 #include <emu/core/const.hpp>
 #include <emu/core/bus.hpp>
+#include <emu/core/controller.hpp>
 #include <emu/util/bits.hpp>
 #include <emu/util/uint.hpp>
 
@@ -11,7 +12,6 @@ namespace debugger { class CPUDebugger; }
 namespace core {
 
 class CPU {
-
     struct {
         util::Word pc = 0;
         uint8 acc = 0;
@@ -52,17 +52,22 @@ class CPU {
     } status;
 
     struct {
-        bool flag;
-        uint8 page;
+        bool flag  = false;
+        uint8 page = 0;
     } dma;
+
+    struct {
+        bool strobe = false;
+    } input;
 
     unsigned long cpu_cycles = 0;
     Bus<CPUBUS_SIZE> *bus = nullptr;
-    util::Word opargs = 0;
+    ControllerPort *port1  = nullptr;
+
     std::function<void(uint8, uint16)> error_callback;
 
 public:
-    explicit CPU(Bus<CPUBUS_SIZE> *rambus) : bus(rambus) { }
+    explicit CPU(Bus<CPUBUS_SIZE> *b, ControllerPort *p) : bus(b), port1(p) { }
 
     void power(bool reset = false);
     void run();

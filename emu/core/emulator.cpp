@@ -16,6 +16,7 @@ void Emulator::power(bool reset)
     cpu.power(reset);
     ppu.power(reset);
     memory.power(reset);
+    port.load(Controller::Type::Gamepad);
 }
 
 void Emulator::run()

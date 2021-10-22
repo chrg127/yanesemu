@@ -4,7 +4,7 @@ programname := emu
 build := debug
 
 _objs := \
-	emulator.cpp cartridge.cpp cpu.cpp ppu.cpp disassemble.cpp memory.cpp screen.cpp \
+	emulator.cpp cartridge.cpp cpu.cpp ppu.cpp disassemble.cpp memory.cpp screen.cpp controller.cpp \
 	debugger.cpp clidbg.cpp cpudebugger.cpp ppudebugger.cpp \
 	cmdline.cpp conf.cpp easyrandom.cpp file.cpp string.cpp mappedfile.cpp \
 	video.cpp opengl.cpp \

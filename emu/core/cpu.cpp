@@ -327,7 +327,11 @@ uint8 CPU::readreg(uint16 addr)
     switch (addr) {
     case 0x4000: case 0x4001: case 0x4002: case 0x4003: case 0x4004: case 0x4005: case 0x4006: case 0x4007:
     case 0x4008: case 0x400A: case 0x400B: case 0x400C: case 0x400E: case 0x400F: case 0x4010: case 0x4011:
-    case 0x4012: case 0x4013: case 0x4014: case 0x4015: case 0x4016: case 0x4017:
+    case 0x4012: case 0x4013: case 0x4014: case 0x4015:
+        return 0;
+    case 0x4016:
+        return port1->device->read();
+    case 0x4017:
         return 0;
     default:
         return 0;
@@ -422,6 +426,7 @@ void CPU::writereg(uint16 addr, uint8 data)
 
     // JOY1
     case 0x4016:
+        port1->device->latch(data & 1);
         break;
 
     // JOY2
@@ -431,7 +436,7 @@ void CPU::writereg(uint16 addr, uint8 data)
     default:
 #ifdef DEBUG
         if (addr < 0x4000 || addr > 0x4020)
-            panic("wrong address passed to {}", __PRETTY_FUNCTION__);
+            panic("at {}\n", __func__);
 #endif
         break;
     }
