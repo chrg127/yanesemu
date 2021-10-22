@@ -1,19 +1,20 @@
-; constants
-MAPPER = 0
-MIRROR = 1
-SRAM   = 0
+MAPPER_NUM = 0
+MIRRORING  = 1 ; vertical mirroring
+USE_SRAM   = 0
 
+;; header
+; PRG size: 16 KiB, CHR size: 8 KiB
 .segment "HEADER"
-.byte 'N', 'E', 'S', $1A ; ID
-.byte $02                ; 16kib PRG chunk count
-.byte $01                ; 8kib CHR chunk count
-.byte MIRROR | (SRAM << 1) | ((MAPPER & $f) << 4)
-.byte (MAPPER & %11110000)
+.byte 'N', 'E', 'S', $1A
+.byte $02
+.byte $01
+.byte MIRRORING | (USE_SRAM << 1) | ((MAPPER_NUM & $f) << 4)
+.byte (MAPPER_NUM & $f0)
 .byte $0, $0, $0, $0, $0, $0, $0, $0
 
 .segment "TILES"
-.incbin "testbg.chr"
-.incbin "testspr.chr"
+.incbin "background.chr"
+.incbin "sprite.chr"
 
 .segment "VECTORS"
 .word nmi
@@ -29,26 +30,26 @@ tmp5:           .res 1
 tmp6:           .res 1
 tmp7:           .res 1
 tmp8:           .res 1
-scroll_y:       .res 1      ; x scroll position
-scroll_x:       .res 1      ; y scroll position
+scroll_y:       .res 1 ; x scroll position
+scroll_x:       .res 1 ; y scroll position
 nmi_flag:       .res 1
+buttons:        .res 1 ; bit vector storing pressed buttons. format: ABSSUDLR
 
 .segment "RAM"
-spritebuf:      .res 256        ; sprite data to be uploaded by DMA
-nmt_update:     .res 256        ; nametable update entry buffer for PPU update
-palette:        .res 32         ; palette buffer for PPU update
+spritebuf:      .res 256
 
 .segment "RODATA"
 paltab:
-.byte $13,$15,$26,$37 ; bg0 purple/pink
+.byte $0F,$15,$26,$37 ; bg0 purple/pink
 .byte $0F,$09,$19,$29 ; bg1 green
 .byte $0F,$01,$11,$21 ; bg2 blue
 .byte $0F,$00,$10,$30 ; bg3 greyscale
-.byte $13,$18,$28,$38 ; sp0 yellow
+.byte $0F,$18,$28,$38 ; sp0 yellow
 .byte $0F,$14,$24,$34 ; sp1 purple
 .byte $0F,$1B,$2B,$3B ; sp2 teal
 .byte $0F,$12,$22,$32 ; sp3 marine
-hellostring: .byte $04, $04, $04, $09, $0A, $00, $0B, $0A, $0C, $09, $0D
+message_string: .byte "press a button"
+button_string:  .byte "abssudlr" ;.byte $61, $62, $73, $73, $75, $64, $6C, $72
 
 .segment "CODE"
 reset:
@@ -84,44 +85,25 @@ resetram:
     jsr waitvblank
     jsr clear_spbuf
     jsr clearnt
-
-    lda $2002   ; reset latch
-    lda #$3F
-    sta $2006   ; set v = 3F00
-    lda #$00
-    sta $2006
-    ldx #0
-loadpal_loop:   ; fill background palette
-    lda paltab,x
-    sta $2007
-    inx
-    cpx #32
-    bne loadpal_loop
-
-    lda #$20    ; reset v
-    sta $2006
-    lda #$00
-    sta $2006
+    jsr loadpal
 
     lda #$00
     sta scroll_y
     sta scroll_x
-    jsr write_helloworld    ; and write a 'hello world'
-    jsr create_sprites
     jsr waitvblank
+    jsr game_init
     lda #$20
     sta $2006
     lda #$00
     sta $2006
     sta $2005
-    lda #%10100000
+    lda #%10100000 ; enable nmi, set sprite height as 16
     sta $2000
-    lda #%00011110
+    lda #%00011110 ; enable rendering of background and sprites
     sta $2001
 
 mainloop:
     jsr waitnmi
-    ; jsr wait_sprite_zero_hit
     jsr joypad_poll
     jsr gamecode
     jmp mainloop
@@ -148,15 +130,15 @@ waitvblank:
 
 clear_spbuf:
     ldx #$00
-    lda #$ff                ;y = ff, below bottom of screen
-clear_spbuf_loop:        ;puts all sprites off screen
+    lda #$ff ; put all sprites below screen
+clear_spbuf_loop:
     sta spritebuf, x
     inx
     bne clear_spbuf_loop
     rts
 
 clearnt:
-    lda $2002   ; set v = 2000
+    lda $2002
     lda #$20
     sta $2006
     lda #$00
@@ -172,44 +154,91 @@ clearnt_loop:
     bne clearnt_loop
     rts
 
-joypad_poll:
-    rts
-
-gamecode:
-    ; dec scroll_y
-    inc scroll_x
-    rts
-
-; writes a hello world at the center of the screen
-; assumes we are at the start of the game
-write_helloworld:
-    lda #$20
-    sta $02
-    lda #$0A
-    sta $03
-    lda #<hellostring
-    sta $00
-    lda #>hellostring
-    sta $01
-    lda #12
-    sta $04
-    jsr write_string
-
+loadpal:
     lda $2002
-    lda #$23
+    lda #$3F
     sta $2006
     lda #$00
     sta $2006
-    ldx #$FF
-    lda #$aa
-pal_loop:
+    ldx #0
+loadpal_loop:
+    lda paltab,x
     sta $2007
-    dex
-    bne pal_loop
+    inx
+    cpx #32
+    bne loadpal_loop
+    rts
+
+; run before rendering is enabled
+game_init:
+    lda #<message_string
+    sta 0
+    lda #>message_string
+    sta 1
+    lda #$21
+    sta 2
+    lda #$48
+    sta 3
+    lda #14
+    sta 4
+    jsr write_string
+    lda #$23
+    sta $2006
+    lda #$c0
+    sta $2006
+    lda #$ff
+    ldx #0
+attr_loop:
+    sta $2007
+    inx
+    cpx #$40
+    bne attr_loop
+    rts
+
+joypad_poll:
+    lda #1
+    sta $4016
+    sta buttons
+    lsr a
+    sta $4016
+joypad_poll_loop:
+    lda $4016
+    lsr a
+    rol buttons
+    bcc joypad_poll_loop
+    rts
+
+gamecode:
+    jsr write_buttons
+    ; lda #0
+    ; sta $2005
+    ; sta $2005
+    rts
+
+write_buttons:
+    lda #$80
+    sta tmp1
+    ldy #0
+write_buttons_loop:
+    lda buttons
+    and tmp1
+    beq write_buttons_jump
+    lda button_string,y
+    jmp write_buttons_continue
+write_buttons_jump:
+    lda #0
+write_buttons_continue:
+    sta $0400,y
+    iny
+    lsr tmp1
+    bne write_buttons_loop
+    iny
+    lda #0
+    sta $0400,y
     rts
 
 ; 00 = pointer to string, 02: position, 04: string size (< 256)
-; void write_string(u8 *str, u8 pos[2], u8 size)
+; only usable during vblank
 write_string:
     lda $2002
     lda $02
@@ -223,31 +252,6 @@ write_string_loop:
     iny
     cpy $04
     bne write_string_loop
-    rts
-sprite1: .byte  0, 4, 1, 32
-sprite2: .byte  60, 2, 0, 8
-sprite3: .byte  60, 3, 0, 16
-sprite4: .byte  60, 4, 0, 24
-sprite5: .byte  60, 5, 0, 32
-sprite6: .byte  60, 6, 0, 40
-sprite7: .byte  60, 7, 0, 48
-sprite8: .byte  60, 8, 0, 56
-
-create_sprites:
-    ldx #0
-
-    lda #<sprite1
-    sta $00
-    lda #>sprite1
-    sta $01
-    jsr create_sprite
-
-    lda #<sprite2
-    sta $00
-    lda #>sprite2
-    sta $01
-    jsr create_sprite
-
     rts
 
 ; X = index into spritebuf, 01 = pointer to sprite
@@ -269,10 +273,23 @@ nmi:
     tya
     pha
     inc nmi_flag
-    lda #$00
+
+    lda #0       ; upload sprite data
     sta $2003
     lda #2
     sta $4014
+
+    lda #$04
+    sta 1
+    lda #0
+    sta 0
+    lda #$21
+    sta 2
+    lda #$8B
+    sta 3
+    lda #8
+    sta 4
+    jsr write_string
 
     lda scroll_y
     sta $2005
@@ -286,5 +303,3 @@ nmi:
     pla
 irq:
     rti
-
-
