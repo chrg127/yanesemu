@@ -232,7 +232,7 @@ void PPU::copy_v_vertpos()
  * in rendering, you can think of the fine y and the rest of the address
  * as separate, where fine y of course indicates the row of the tile.
  */
-u8 PPU::fetch_nt(uint15 vram_addr)
+u8 PPU::fetch_nt(u15 vram_addr)
 {
     u16 addr = 0x2000 | (vram_addr & 0x0FFF);
     return bus->read(addr);
@@ -258,7 +258,7 @@ u8 PPU::fetch_attr(u16 nt, u16 coarse_y, u16 coarse_x)
  * P - bit plane. 0 = get the low byte, 1 = get the high byte.
  * TTT - row. A tile is composed of 8 rows, these 3 bits decide which one.
  */
-u8 PPU::fetch_pt(bool base, u8 nt, bool bitplane, uint3 fine_y)
+u8 PPU::fetch_pt(bool base, u8 nt, bool bitplane, u3 fine_y)
 {
     u16 addr = base << 12 | nt << 4 | bitplane << 3 | fine_y;
     return bus->read(addr);
@@ -296,12 +296,12 @@ void PPU::background_shift_fill()
     // (00,01,10,11) -> (0,2,4,6)
     unsigned bitno = (bit2 << 1 | bit1) * 2;
 
-    uint2 bits = util::getbits(tile.attr, bitno, 2);
+    u2 bits = util::getbits(tile.attr, bitno, 2);
     shift.feed_high = bits >> 1 & 1;
     shift.feed_low  = bits & 1;
 }
 
-std::pair<uint2, uint2> PPU::background_output()
+std::pair<u2, u2> PPU::background_output()
 {
     if (!io.bg_show)
         return std::make_pair(0, 0);
@@ -345,7 +345,7 @@ void PPU::sprite_shift_run()
     }
 }
 
-std::tuple<uint2, uint2, u8> PPU::sprite_output(unsigned x)
+std::tuple<u2, u2, u8> PPU::sprite_output(unsigned x)
 {
     if (!io.sp_show)
         return std::make_tuple(0, 0, 0);
@@ -383,9 +383,9 @@ u8 PPU::output(unsigned x)
     auto [bg_row, bg_ind]         = background_output();
     auto [sp_row, sp_ind, sp_num] = sprite_output(x);
 
-    auto getcolor = [this](uint2 row, uint2 ind, bool select) -> u8
+    auto getcolor = [this](u2 row, u2 ind, bool select) -> u8
     {
-        uint5 n = select << 4 | row << 2 | ind;
+        u5 n = select << 4 | row << 2 | ind;
         return bus->read(0x3F00 + n);
     };
 

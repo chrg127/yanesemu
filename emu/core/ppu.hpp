@@ -32,7 +32,7 @@ public:
         explicit operator u16() const   { return v; }
         VRAMAddress & operator+=(u16 n) { v += n; v = util::getbits(v, 0, 15); return *this; }
 
-        uint14 as_u14() { return v; }
+        u14 as_u14() { return v; }
     };
 
 private:
@@ -80,7 +80,7 @@ private:
     struct {
         VRAMAddress addr;
         VRAMAddress tmp;
-        uint3 fine_x;
+        u3 fine_x;
         u8 buf; // buffer used during background and sprite fetches while rendering
         // simply indicates the VRAM address position. not used anywhere in the PPU though.
         u16 vx() const { return fine_x | addr.coarse_x << 3 | (addr.nt & 1) << 8; }
@@ -103,7 +103,7 @@ private:
     struct {
         u8 addr;
         u8 data;
-        uint2 sp_counter = 0; // if sp_counter == 0, then mem[addr] points to a sprite's y byte
+        u2 sp_counter = 0; // if sp_counter == 0, then mem[addr] points to a sprite's y byte
         bool inrange = 0;
         bool read_ff = 0;
         bool addr_overflow = 0;
@@ -156,25 +156,25 @@ private:
     void copy_v_horzpos();
     void copy_v_vertpos();
 
-    u8 fetch_nt(uint15 vram_addr);
+    u8 fetch_nt(u15 vram_addr);
     u8 fetch_attr(u16 nt, u16 coarse_y, u16 coarse_x);
-    u8 fetch_pt(bool base, u8 nt, bool bitplane, uint3 fine_y);
+    u8 fetch_pt(bool base, u8 nt, bool bitplane, u3 fine_y);
     u8 fetch_pt_sprite(bool sp_size, u8 nt, bool bitplane, unsigned row);
 
     void background_shift_run();
     void background_shift_fill();
-    std::pair<uint2, uint2> background_output();
+    std::pair<u2, u2> background_output();
 
     void sprite_shift_run();
     void sprite_update_flags(unsigned line);
-    std::tuple<uint2, uint2, u8> sprite_output(unsigned x);
+    std::tuple<u2, u2, u8> sprite_output(unsigned x);
 
     u8 output(unsigned x);
     void render();
 
     // ppumain.cpp
     template <unsigned Cycle> void background_fetch_cycle();
-    template <unsigned Cycle> void sprite_fetch_cycle(uint3 n, unsigned line);
+    template <unsigned Cycle> void sprite_fetch_cycle(u3 n, unsigned line);
     template <unsigned Cycle> void sprite_read_secondary();
     template <unsigned Cycle> void cycle(unsigned line);
     template <unsigned Line>  void line(unsigned cycle, void (PPU::*)(unsigned));

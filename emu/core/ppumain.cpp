@@ -25,7 +25,7 @@ void PPU::background_fetch_cycle()
 }
 
 template <unsigned Cycle>
-void PPU::sprite_fetch_cycle(uint3 n, unsigned line)
+void PPU::sprite_fetch_cycle(u3 n, unsigned line)
 {
     if constexpr(Cycle == 1) vram.buf       = fetch_nt(0);
     // nothing happens on cycle 2
@@ -82,7 +82,7 @@ void PPU::cycle(unsigned line)
             sprite_shift_run();
         if constexpr(Cycle >= 257 && Cycle <= 320) {
             if constexpr(Cycle == 257) secondary_oam.index = 0;
-            uint3 sprite_num = util::getbits(secondary_oam.index, 2, 3);
+            u3 sprite_num = util::getbits(secondary_oam.index, 2, 3);
             sprite_read_secondary<Cycle % 8>();
             sprite_fetch_cycle<Cycle % 8>(sprite_num, line);
             oam.addr = 0;

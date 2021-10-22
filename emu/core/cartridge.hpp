@@ -48,12 +48,12 @@ namespace Cartridge {
             u32 submapper;
             u32 prg_nvram_size;
             u32 chr_nvram_size;
-            uint2 timing_mode;
-            uint4 vs_ppu;
-            uint4 vs_hardware;
-            uint4 extended_console_type;
-            uint2 misc_roms;
-            uint6 default_expansion_device;
+            u2 timing_mode;
+            u4 vs_ppu;
+            u4 vs_hardware;
+            u4 extended_console_type;
+            u2 misc_roms;
+            u6 default_expansion_device;
         };
         std::optional<NES20Data> nes20_data;
 

@@ -20,15 +20,15 @@ struct Controller {
     enum class Type {
         Gamepad,
     };
-    virtual uint8 read() = 0;
+    virtual u8 read() = 0;
     virtual void latch(bool state) = 0;
 };
 
 struct Gamepad : public Controller {
     bool latched = 0;
-    uint8 buttons;
+    u8 buttons;
 
-    uint8 read();
+    u8 read();
     void latch(bool state);
 };
 

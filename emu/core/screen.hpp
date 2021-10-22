@@ -28,7 +28,7 @@ public:
 
     Screen();
 
-    void output(unsigned x, unsigned y, uint6 value);
+    void output(unsigned x, unsigned y, u6 value);
     void set_palette(Palette palette);
 
     u32 *data() { return (u32 *) buf.data(); }

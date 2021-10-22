@@ -156,7 +156,7 @@ namespace debugger {
     X(0xFD, sbc, absx) \
     X(0xFE, inc, absx) \
 
-std::string disassemble(const uint8 id, const uint8 oplow, const uint8 ophigh)
+std::string disassemble(const u8 id, const u8 oplow, const u8 ophigh)
 {
 #define modefmt(mode, frmt, ...) \
     const auto disass_##mode = [&](const char name[4]) { return fmt::format(frmt, __VA_ARGS__); };
@@ -184,7 +184,7 @@ std::string disassemble(const uint8 id, const uint8 oplow, const uint8 ophigh)
 #undef X
 }
 
-unsigned num_bytes(uint8 id)
+unsigned num_bytes(u8 id)
 {
     constexpr unsigned nb_impld  = 1;
     constexpr unsigned nb_accum  = 1;

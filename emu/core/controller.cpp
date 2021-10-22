@@ -8,7 +8,7 @@ namespace core {
 
 // bool poll_input(Button button);
 
-uint8 Gamepad::read()
+u8 Gamepad::read()
 {
     return 1;
     // if (latched == 0)

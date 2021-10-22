@@ -53,7 +53,7 @@ std::optional<Cartridge::Data> parse_cartridge(io::MappedFile &romfile)
     cart.has.trainer = getbit(cart.header[6], 2);
     cart.has.chrram = cart.header[5] == 0;
 
-    const auto detect_console = [](uint2 bits)
+    const auto detect_console = [](u2 bits)
     {
         switch (bits) {
         case 0: return Cartridge::Console::NES;

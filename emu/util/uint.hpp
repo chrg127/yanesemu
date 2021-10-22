@@ -76,19 +76,6 @@ using u23 = UInt<23>; using u24 = UInt<24>; using u25 = UInt<25>;
 using u26 = UInt<26>; using u27 = UInt<27>; using u28 = UInt<28>;
 using u29 = UInt<29>; using u30 = UInt<30>; using u31 = UInt<31>;
 
-<<<<<<< HEAD
-using uint33 = UInt<33>; using uint34 = UInt<34>; using uint35 = UInt<35>;
-using uint36 = UInt<36>; using uint37 = UInt<37>; using uint38 = UInt<38>;
-using uint39 = UInt<39>; using uint40 = UInt<40>; using uint41 = UInt<41>;
-using uint42 = UInt<42>; using uint43 = UInt<43>; using uint44 = UInt<44>;
-using uint45 = UInt<45>; using uint46 = UInt<46>; using uint47 = UInt<47>;
-using uint48 = UInt<48>; using uint49 = UInt<49>; using uint50 = UInt<50>;
-using uint51 = UInt<51>; using uint52 = UInt<52>; using uint53 = UInt<53>;
-using uint54 = UInt<54>; using uint55 = UInt<55>; using uint56 = UInt<56>;
-using uint57 = UInt<57>; using uint58 = UInt<58>; using uint59 = UInt<59>;
-using uint60 = UInt<60>; using uint61 = UInt<61>; using uint62 = UInt<62>;
-using uint63 = UInt<63>;
-=======
 using u33 = UInt<33>; using u34 = UInt<34>; using u35 = UInt<35>;
 using u36 = UInt<36>; using u37 = UInt<37>; using u38 = UInt<38>;
 using u39 = UInt<39>; using u40 = UInt<40>; using u41 = UInt<41>;
@@ -100,4 +87,3 @@ using u54 = UInt<54>; using u55 = UInt<55>; using u56 = UInt<56>;
 using u57 = UInt<57>; using u58 = UInt<58>; using u59 = UInt<59>;
 using u60 = UInt<60>; using u61 = UInt<61>; using u62 = UInt<62>;
 using u63 = UInt<63>;
->>>>>>> master

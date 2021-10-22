@@ -75,7 +75,7 @@ Screen::Screen()
     pal = pal2C02;
 }
 
-void Screen::output(unsigned x, unsigned y, uint6 value)
+void Screen::output(unsigned x, unsigned y, u6 value)
 {
     buf[y][x] = pal[value];
 }
