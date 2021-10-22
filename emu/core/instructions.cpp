@@ -174,7 +174,7 @@ void CPU::addrmode_abs_ind_write(uint8 val, uint8 reg)
     op.l = fetch();
     op.h = fetch();
     cycle();
-    writemem(op.v + r.x, val);
+    writemem(op.v + reg, val);
     last_cycle();
 }
 
