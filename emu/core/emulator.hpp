@@ -47,4 +47,6 @@ public:
     friend class debugger::Debugger;
 };
 
+extern Emulator emulator;
+
 } // namespace core

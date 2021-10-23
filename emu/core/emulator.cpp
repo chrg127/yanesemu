@@ -1,11 +1,16 @@
 #include "emulator.hpp"
 
+#include <emu/program.hpp>
+
 namespace core {
+
+Emulator emulator;
 
 Emulator::Emulator()
 {
     ppu.on_nmi([this](bool nmi_enabled) {
         nmi = true;
+        program.video_frame(screen.data());
         if (nmi_enabled)
             cpu.fire_nmi();
     });

@@ -8,7 +8,8 @@ _objs := \
 	debugger.cpp clidbg.cpp cpudebugger.cpp ppudebugger.cpp \
 	cmdline.cpp conf.cpp easyrandom.cpp file.cpp string.cpp mappedfile.cpp \
 	video.cpp opengl.cpp \
-	glad.c stb_image.c
+	program.cpp \
+	stb_image.c
 _objs_main := main.cpp
 _tests :=
 

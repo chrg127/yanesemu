@@ -176,7 +176,6 @@ void OpenGL::resize(std::size_t width, std::size_t height)
 
 void OpenGL::poll(input::Keys &keys)
 {
-    // keys.clear();
     for (SDL_Event ev; SDL_PollEvent(&ev); ) {
         switch (ev.type) {
         case SDL_QUIT:
@@ -193,13 +192,11 @@ void OpenGL::poll(input::Keys &keys)
             if (!btn)
                 continue;
             keys[btn.value()] = ev.type == SDL_KEYDOWN;
-            // keys.set(btn.value(), ev.type == SDL_KEYDOWN)
-            // fmt::print("key {}\n", ev.key.keysym.sym);
+            // fmt::print("{}\n", input::button_to_string(btn.value()));
             break;
         }
         }
     }
-    // keys.dump();
 }
 
 bool OpenGL::has_quit()

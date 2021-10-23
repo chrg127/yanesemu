@@ -3,7 +3,6 @@
 #include <condition_variable>
 #include <stdexcept>
 #include <fmt/core.h>
-#include <SDL2/SDL.h>
 #include <emu/version.hpp>
 #include <emu/core/cartridge.hpp>
 #include <emu/core/emulator.hpp>
@@ -13,9 +12,9 @@
 #include <emu/util/mappedfile.hpp>
 #include <emu/util/os.hpp>
 #include <emu/util/conf.hpp>
-#include <emu/platform/video.hpp>
+#include <emu/program.hpp>
 
-static core::Emulator emu;
+// static core::Emulator emu;
 
 static const cmdline::ArgumentList cmdflags = {
     { 'h', "help",     "Print this help text and quit" },
@@ -24,12 +23,14 @@ static const cmdline::ArgumentList cmdflags = {
 };
 
 static const conf::ValidConf valid_conf = {
-    { "JumpKey",    { conf::Type::String, "Key_z" } },
-    { "RunKey",     { conf::Type::String, "Key_x" } },
-    { "UpKey",      { conf::Type::String, "Key_Up" } },
-    { "DownKey",    { conf::Type::String, "Key_Down" } },
-    { "LeftKey",    { conf::Type::String, "Key_Left" } },
-    { "RightKey",   { conf::Type::String, "Key_Right" } },
+    { "AKey",     { conf::Type::String, "Key_z" } },
+    { "BKey",     { conf::Type::String, "Key_x" } },
+    { "UpKey",    { conf::Type::String, "Key_Up" } },
+    { "DownKey",  { conf::Type::String, "Key_Down" } },
+    { "LeftKey",  { conf::Type::String, "Key_Left" } },
+    { "RightKey", { conf::Type::String, "Key_Right" } },
+    { "StartKey", { conf::Type::String, "Key_s" } },
+    { "SelectKey",{ conf::Type::String, "Key_a" } },
 };
 
 static conf::Configuration config;
@@ -106,7 +107,7 @@ io::MappedFile open_rom(std::string_view rompath)
     if (!cart)
         throw std::runtime_error(fmt::format("not a real NES ROM: {}", romfile.value().filename()));
     fmt::print("{}\n", cart.value().to_string());
-    emu.insert_rom(std::move(cart.value()));
+    core::emulator.insert_rom(std::move(cart.value()));
     return std::move(romfile.value());
 }
 
@@ -127,17 +128,17 @@ static conf::Configuration make_config()
 
 void rendering_thread(MainThread &mainthread, platform::Video &ctx, platform::Texture &screen)
 {
-    while (mainthread.running()) {
-        ctx.poll();
-        if (ctx.has_quit())
-            mainthread.end();
-        mainthread.run_on_frame_pending([&]() {
-            ctx.update_texture(screen, emu.get_screen());
-        });
-        ctx.clear();
-        ctx.draw_texture(screen, 0, 0);
-        ctx.swap();
-    }
+    // while (mainthread.running()) {
+    //     ctx.poll();
+    //     if (ctx.has_quit())
+    //         mainthread.end();
+    //     mainthread.run_on_frame_pending([&]() {
+    //         ctx.update_texture(screen, emu.get_screen());
+    //     });
+    //     ctx.clear();
+    //     ctx.draw_texture(screen, 0, 0);
+    //     ctx.swap();
+    // }
 }
 
 void cli_interface(cmdline::Result &flags)
@@ -147,47 +148,59 @@ void cli_interface(cmdline::Result &flags)
     if (flags.items.size() > 1)
         warning("multiple ROM files specified, first one will be used\n");
 
-    auto context = platform::Video::create(platform::Type::SDL, core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
-    const int VIEWPORT_SIZE = 2;
-    context.resize(core::SCREEN_WIDTH*VIEWPORT_SIZE, core::SCREEN_HEIGHT*VIEWPORT_SIZE);
-    context.map_keys(config);
-    auto screen = context.create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
-    MainThread mainthread;
     auto rom = open_rom(flags.items[0]);
-
-    if (!flags.has['d']) {
-        context.set_title(progname);
-        emu.on_cpu_error([&](u8 id, u16 addr)
-        {
+    bool debug_mode = flags.has['d'];
+    program.start_video(debug_mode);
+    program.set_window_scale(2);
+    program.use_config(config);
+    if (!debug_mode) {
+        core::emulator.on_cpu_error([&](u8 id, u16 addr) {
             fmt::print(stderr, "The CPU has found an invalid instruction of ID ${:02X} at address ${:04X}. Stopping.\n", id, addr);
-            emu.stop();
-            mainthread.end();
-        });
-
-        mainthread.run([&]()
-        {
-            emu.power();
-            while (mainthread.running()) {
-                emu.run_frame();
-                mainthread.new_frame();
-            }
-        });
-    } else {
-        context.set_title(std::string(progname) + " (debugger)");
-        mainthread.run([&]()
-        {
-            emu.power();
-            debugger::CliDebugger dbg{&emu};
-            dbg.print_instr();
-            for (bool quit = false; !quit && mainthread.running(); )
-                quit = dbg.repl();
-            mainthread.end();
+            core::emulator.stop();
+            program.stop();
         });
     }
+    core::emulator.power();
+    program.render_loop();
 
-    rendering_thread(mainthread, context, screen);
+    // auto context = platform::Video::create(platform::Type::SDL, core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
+    // const int VIEWPORT_SIZE = 2;
+    // context.resize(core::SCREEN_WIDTH*VIEWPORT_SIZE, core::SCREEN_HEIGHT*VIEWPORT_SIZE);
+    // context.map_keys(config);
+    // auto screen = context.create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
+    // MainThread mainthread;
+    // auto rom = open_rom(flags.items[0]);
 
-    mainthread.join();
+    // if (!flags.has['d']) {
+    //     context.set_title(progname);
+    //     emu.on_cpu_error([&](u8 id, u16 addr)
+    //     {
+    //     });
+
+    //     mainthread.run([&]()
+    //     {
+    //         emu.power();
+    //         while (mainthread.running()) {
+    //             emu.run_frame();
+    //             mainthread.new_frame();
+    //         }
+    //     });
+    // } else {
+    //     context.set_title(std::string(progname) + " (debugger)");
+    //     mainthread.run([&]()
+    //     {
+    //         emu.power();
+    //         debugger::CliDebugger dbg{&emu};
+    //         dbg.print_instr();
+    //         for (bool quit = false; !quit && mainthread.running(); )
+    //             quit = dbg.repl();
+    //         mainthread.end();
+    //     });
+    // }
+
+    // rendering_thread(mainthread, context, screen);
+
+    // mainthread.join();
 }
 
 int main(int argc, char *argv[])

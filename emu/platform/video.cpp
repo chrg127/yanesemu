@@ -43,14 +43,16 @@ void Video::map_keys(const conf::Configuration &conf)
 {
     using namespace std::literals;
     using namespace input;
-    for (auto p : { std::pair{"JumpKey"s,  Button::Jump},
-                    std::pair{"RunKey"s,   Button::Run},
-                    std::pair{"UpKey"s,    Button::Up},
-                    std::pair{"DownKey"s,  Button::Down},
-                    std::pair{"LeftKey"s,  Button::Left},
-                    std::pair{"RightKey"s, Button::Right} }) {
+    for (auto p : { std::pair{"AKey"s,      Button::A},
+                    std::pair{"BKey"s,      Button::B},
+                    std::pair{"UpKey"s,     Button::Up},
+                    std::pair{"DownKey"s,   Button::Down},
+                    std::pair{"LeftKey"s,   Button::Left},
+                    std::pair{"RightKey"s,  Button::Right},
+                    std::pair{"StartKey"s,  Button::Start},
+                    std::pair{"SelectKey"s, Button::Select} }) {
         auto entry = util::map_lookup(conf, p.first);
-        std::string s = entry.value().as<std::string>();
+        auto s = entry.value().as<std::string>();
         s.erase(s.begin(), s.begin() + 4);
         map_key(s, p.second);
     }

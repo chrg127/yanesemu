@@ -24,10 +24,10 @@ struct Controller {
     virtual void latch(bool state) = 0;
 };
 
-struct Gamepad : public Controller {
+class Gamepad : public Controller {
     bool latched = 0;
     u8 buttons;
-
+public:
     u8 read();
     void latch(bool state);
 };
