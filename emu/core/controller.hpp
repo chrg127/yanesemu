@@ -20,6 +20,7 @@ struct Controller {
     enum class Type {
         Gamepad,
     };
+    virtual ~Controller() = default;
     virtual u8 read() = 0;
     virtual void latch(bool state) = 0;
 };
