@@ -14,8 +14,6 @@
 #include <emu/util/conf.hpp>
 #include <emu/program.hpp>
 
-// static core::Emulator emu;
-
 static const cmdline::ArgumentList cmdflags = {
     { 'h', "help",     "Print this help text and quit" },
     { 'v', "version",  "Shows the program's version"   },
@@ -32,72 +30,10 @@ static const conf::ValidConf valid_conf = {
     { "StartKey",  { conf::Type::String, "Key_s"     } },
     { "SelectKey", { conf::Type::String, "Key_a"     } },
 };
+
 static conf::Configuration config;
 
 
-
-/*
-class MainThread {
-    enum State {
-        RUNNING,
-        EXITING,
-    } state = State::RUNNING;
-
-    std::thread th;
-    std::mutex frame_mutex;
-    std::mutex running_mutex;
-    std::condition_variable required_cond;
-    unsigned frame_pending = 0;
-    bool wait_for_frame_update = true;
-
-public:
-    void run(auto &&fn)
-    {
-        th = std::thread(fn);
-    }
-
-    bool running()
-    {
-        std::lock_guard<std::mutex> lock(running_mutex);
-        return state == State::RUNNING;
-    }
-
-    void new_frame()
-    {
-        // put this in video_frame
-        std::unique_lock<std::mutex> lock{frame_mutex};
-        frame_pending += 1;
-        do {
-            if (wait_for_frame_update)
-                required_cond.wait(lock);
-        } while (frame_pending != 0 && wait_for_frame_update);
-    }
-
-    void end()
-    {
-        std::lock_guard<std::mutex> lock(running_mutex);
-        std::lock_guard<std::mutex> lock2(frame_mutex);
-        if (state != State::RUNNING)
-            return;
-        state = State::EXITING;
-        wait_for_frame_update = false;
-        frame_pending = 0;
-        required_cond.notify_one();
-    }
-
-    void run_on_frame_pending(auto &&fn)
-    {
-        std::unique_lock<std::mutex> lock{frame_mutex};
-        if (frame_pending != 0) {
-            frame_pending = 0;
-            fn();
-        }
-        required_cond.notify_one();
-    }
-
-    void join() { th.join(); }
-};
-*/
 
 [[nodiscard]]
 io::MappedFile open_rom(std::string_view rompath)
@@ -160,65 +96,9 @@ void cli_interface(cmdline::Result &flags)
             program.stop();
         });
     }
+
     program.start();
 }
-
-// void rendering_thread(MainThread &mainthread, platform::Video &ctx, platform::Texture &screen)
-// {
-    // while (mainthread.running()) {
-    //     ctx.poll();
-    //     if (ctx.has_quit())
-    //         mainthread.end();
-    //     mainthread.run_on_frame_pending([&]() {
-    //         ctx.update_texture(screen, emu.get_screen());
-    //     });
-    //     ctx.clear();
-    //     ctx.draw_texture(screen, 0, 0);
-    //     ctx.swap();
-    // }
-// }
-
-// void cli_interface(cmdline::Result &flags)
-// {
-    // auto context = platform::Video::create(platform::Type::SDL, core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
-    // const int VIEWPORT_SIZE = 2;
-    // context.resize(core::SCREEN_WIDTH*VIEWPORT_SIZE, core::SCREEN_HEIGHT*VIEWPORT_SIZE);
-    // context.map_keys(config);
-    // auto screen = context.create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
-    // MainThread mainthread;
-    // auto rom = open_rom(flags.items[0]);
-
-    // if (!flags.has['d']) {
-    //     context.set_title(progname);
-    //     emu.on_cpu_error([&](u8 id, u16 addr)
-    //     {
-    //     });
-
-    //     mainthread.run([&]()
-    //     {
-    //         emu.power();
-    //         while (mainthread.running()) {
-    //             emu.run_frame();
-    //             mainthread.new_frame();
-    //         }
-    //     });
-    // } else {
-    //     context.set_title(std::string(progname) + " (debugger)");
-    //     mainthread.run([&]()
-    //     {
-    //         emu.power();
-    //         debugger::CliDebugger dbg{&emu};
-    //         dbg.print_instr();
-    //         for (bool quit = false; !quit && mainthread.running(); )
-    //             quit = dbg.repl();
-    //         mainthread.end();
-    //     });
-    // }
-
-    // rendering_thread(mainthread, context, screen);
-
-    // mainthread.join();
-// }
 
 int main(int argc, char *argv[])
 {

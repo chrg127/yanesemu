@@ -13,19 +13,14 @@ void Program::start_video(bool debug_mode)
     screen = video.create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
 }
 
-void Program::set_window_scale(int size)
-{
-    video.resize(core::SCREEN_WIDTH*size, core::SCREEN_HEIGHT*size);
-}
-
 void Program::use_config(const conf::Configuration &conf)
 {
     video.map_keys(conf);
 }
 
-void Program::start()
+void Program::set_window_scale(int size)
 {
-    render_loop();
+    video.resize(core::SCREEN_WIDTH*size, core::SCREEN_HEIGHT*size);
 }
 
 bool Program::poll_input(input::Button button)
@@ -37,7 +32,7 @@ void Program::render_loop()
 {
     auto on_pending = [&](auto &&fn) {
         std::unique_lock<std::mutex> lock{frame_mutex};
-        if (frame_pending == 1) {
+        if (frame_pending != 0) {
             frame_pending = 0;
             fn();
         }
@@ -67,20 +62,15 @@ void Program::video_frame(u32 *data)
     } while (frame_pending != 0 && wait_for_frame_update);
 }
 
-bool Program::running()
-{
-    std::lock_guard<std::mutex> lock(running_mutex);
-    return state == State::RUNNING;
-}
-
 void Program::stop()
 {
-    std::lock_guard<std::mutex> running_lock(running_mutex);
     std::lock_guard<std::mutex> frame_lock(frame_mutex);
-    if (state != State::RUNNING)
-        return;
-    state = State::EXITING;
-    wait_for_frame_update = false;
-    frame_pending = 0;
-    required_cond.notify_one();
+    state.access([&](State &s) {
+        if (s == State::Running) {
+            s = State::Exiting;
+            wait_for_frame_update = false;
+            frame_pending = 0;
+            required_cond.notify_one();
+        }
+    });
 }
