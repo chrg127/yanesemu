@@ -4,27 +4,32 @@
 #include <string_view>
 #include <fmt/core.h>
 
-constexpr inline void error(std::string_view fmtstr, auto&&... args)
+#if FMT_VERSION >= 80001
+#   define PRINT(str, args) fmt::print(stderr, fmt::runtime(str), args...)
+#else
+#   define PRINT(str, args) fmt::print(stderr, str, args...)
+#endif
+
+constexpr inline void error(std::string_view str, auto&&... args)
 {
     fmt::print(stderr, "error: ");
-    // fmt::print(stderr, fmt::runtime(fmtstr), args...);
-    fmt::print(stderr, fmtstr, args...);
+    PRINT(str, args);
 }
 
-constexpr inline void warning(std::string_view fmtstr, auto&&... args)
+constexpr inline void warning(std::string_view str, auto&&... args)
 {
     fmt::print(stderr, "warning: ");
-    // fmt::print(stderr, fmt::runtime(fmtstr), args...);
-    fmt::print(stderr, fmtstr, args...);
+    PRINT(str, args);
 }
 
-[[noreturn]] inline void panic(std::string_view fmtstr, auto&&... args)
+[[noreturn]] inline void panic(std::string_view str, auto&&... args)
 {
     fmt::print(stderr, "panic: ");
-    // fmt::print(stderr, fmt::runtime(fmtstr), args...);
-    fmt::print(stderr, fmtstr, args...);
+    PRINT(str, args);
     std::exit(1);
 }
+
+#undef PRINT
 
 #ifdef DEBUG
 
