@@ -23,17 +23,9 @@ void Program::use_config(const conf::Configuration &conf)
     video.map_keys(conf);
 }
 
-void Program::render_loop()
+void Program::start()
 {
-    while (running()) {
-        video.poll();
-        if (video.has_quit())
-            stop();
-        video.clear();
-        core::emulator.run_frame();
-        video.draw_texture(screen, 0, 0);
-        video.swap();
-    }
+    render_loop();
 }
 
 bool Program::poll_input(input::Button button)
@@ -41,7 +33,54 @@ bool Program::poll_input(input::Button button)
     return video.is_pressed(button);
 }
 
+void Program::render_loop()
+{
+    auto on_pending = [&](auto &&fn) {
+        std::unique_lock<std::mutex> lock{frame_mutex};
+        if (frame_pending == 1) {
+            frame_pending = 0;
+            fn();
+        }
+        required_cond.notify_one();
+    };
+
+    while (running()) {
+        video.poll();
+        if (video.has_quit())
+            stop();
+        video.clear();
+        on_pending([&]() { video.update_texture(screen, video_data); });
+        video.draw_texture(screen, 0, 0);
+        video.swap();
+    }
+    emulator_thread.join();
+}
+
 void Program::video_frame(u32 *data)
 {
-    video.update_texture(screen, data);
+    std::unique_lock<std::mutex> lock{frame_mutex};
+    frame_pending += 1;
+    video_data = data;
+    do {
+        if (wait_for_frame_update)
+            required_cond.wait(lock);
+    } while (frame_pending != 0 && wait_for_frame_update);
+}
+
+bool Program::running()
+{
+    std::lock_guard<std::mutex> lock(running_mutex);
+    return state == State::RUNNING;
+}
+
+void Program::stop()
+{
+    std::lock_guard<std::mutex> running_lock(running_mutex);
+    std::lock_guard<std::mutex> frame_lock(frame_mutex);
+    if (state != State::RUNNING)
+        return;
+    state = State::EXITING;
+    wait_for_frame_update = false;
+    frame_pending = 0;
+    required_cond.notify_one();
 }

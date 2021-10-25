@@ -23,20 +23,20 @@ static const cmdline::ArgumentList cmdflags = {
 };
 
 static const conf::ValidConf valid_conf = {
-    { "AKey",     { conf::Type::String, "Key_z" } },
-    { "BKey",     { conf::Type::String, "Key_x" } },
-    { "UpKey",    { conf::Type::String, "Key_Up" } },
-    { "DownKey",  { conf::Type::String, "Key_Down" } },
-    { "LeftKey",  { conf::Type::String, "Key_Left" } },
-    { "RightKey", { conf::Type::String, "Key_Right" } },
-    { "StartKey", { conf::Type::String, "Key_s" } },
-    { "SelectKey",{ conf::Type::String, "Key_a" } },
+    { "AKey",      { conf::Type::String, "Key_z"     } },
+    { "BKey",      { conf::Type::String, "Key_x"     } },
+    { "UpKey",     { conf::Type::String, "Key_Up"    } },
+    { "DownKey",   { conf::Type::String, "Key_Down"  } },
+    { "LeftKey",   { conf::Type::String, "Key_Left"  } },
+    { "RightKey",  { conf::Type::String, "Key_Right" } },
+    { "StartKey",  { conf::Type::String, "Key_s"     } },
+    { "SelectKey", { conf::Type::String, "Key_a"     } },
 };
-
 static conf::Configuration config;
 
 
 
+/*
 class MainThread {
     enum State {
         RUNNING,
@@ -64,6 +64,7 @@ public:
 
     void new_frame()
     {
+        // put this in video_frame
         std::unique_lock<std::mutex> lock{frame_mutex};
         frame_pending += 1;
         do {
@@ -96,6 +97,7 @@ public:
 
     void join() { th.join(); }
 };
+*/
 
 [[nodiscard]]
 io::MappedFile open_rom(std::string_view rompath)
@@ -126,21 +128,6 @@ static conf::Configuration make_config()
     return conf;
 }
 
-void rendering_thread(MainThread &mainthread, platform::Video &ctx, platform::Texture &screen)
-{
-    // while (mainthread.running()) {
-    //     ctx.poll();
-    //     if (ctx.has_quit())
-    //         mainthread.end();
-    //     mainthread.run_on_frame_pending([&]() {
-    //         ctx.update_texture(screen, emu.get_screen());
-    //     });
-    //     ctx.clear();
-    //     ctx.draw_texture(screen, 0, 0);
-    //     ctx.swap();
-    // }
-}
-
 void cli_interface(cmdline::Result &flags)
 {
     if (flags.items.empty())
@@ -153,16 +140,46 @@ void cli_interface(cmdline::Result &flags)
     program.start_video(debug_mode);
     program.set_window_scale(2);
     program.use_config(config);
+    core::emulator.power();
     if (!debug_mode) {
         core::emulator.on_cpu_error([&](u8 id, u16 addr) {
             fmt::print(stderr, "The CPU has found an invalid instruction of ID ${:02X} at address ${:04X}. Stopping.\n", id, addr);
             core::emulator.stop();
             program.stop();
         });
+        program.run([&]() {
+            while (program.running())
+                core::emulator.run_frame();
+        });
+    } else {
+        program.run([&]() {
+            debugger::CliDebugger debugger{&core::emulator};
+            debugger.print_instr();
+            for (bool quit = false; !quit && program.running(); )
+                quit = debugger.repl();
+            program.stop();
+        });
     }
-    core::emulator.power();
-    program.render_loop();
+    program.start();
+}
 
+// void rendering_thread(MainThread &mainthread, platform::Video &ctx, platform::Texture &screen)
+// {
+    // while (mainthread.running()) {
+    //     ctx.poll();
+    //     if (ctx.has_quit())
+    //         mainthread.end();
+    //     mainthread.run_on_frame_pending([&]() {
+    //         ctx.update_texture(screen, emu.get_screen());
+    //     });
+    //     ctx.clear();
+    //     ctx.draw_texture(screen, 0, 0);
+    //     ctx.swap();
+    // }
+// }
+
+// void cli_interface(cmdline::Result &flags)
+// {
     // auto context = platform::Video::create(platform::Type::SDL, core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
     // const int VIEWPORT_SIZE = 2;
     // context.resize(core::SCREEN_WIDTH*VIEWPORT_SIZE, core::SCREEN_HEIGHT*VIEWPORT_SIZE);
@@ -201,7 +218,7 @@ void cli_interface(cmdline::Result &flags)
     // rendering_thread(mainthread, context, screen);
 
     // mainthread.join();
-}
+// }
 
 int main(int argc, char *argv[])
 {
