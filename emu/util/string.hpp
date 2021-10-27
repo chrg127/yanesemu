@@ -41,7 +41,7 @@ std::optional<T> conv(const TStr &str, unsigned base = 10)
 // Check for space, no locale support.
 inline bool is_space(int c)
 {
-    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+    return c == ' ' || c == '\t' || c == '\r';
 }
 
 } // namespace str

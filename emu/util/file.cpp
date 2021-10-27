@@ -1,11 +1,7 @@
 #include "file.hpp"
 
 #include <cassert>
-
-static bool is_space(int c)
-{
-    return c == ' ' || c == '\t';
-}
+#include <emu/util/string.hpp> // is_space
 
 namespace io {
 
@@ -55,7 +51,7 @@ bool File::getword(std::string &str)
     int c;
 
     str.erase();
-    while (c = getc(), is_space(c) && c != EOF)
+    while (c = getc(), str::is_space(c) && c != EOF)
         ;
     ungetc(c);
     while (c = getc(), !isdelim(c) && c != EOF)
@@ -69,7 +65,7 @@ bool File::getline(std::string &str, int delim)
     int c;
 
     str.erase();
-    while (c = getc(), is_space(c) && c != EOF)
+    while (c = getc(), str::is_space(c) && c != EOF)
         ;
     ungetc(c);
     while (c = getc(), c != delim && c != EOF)
