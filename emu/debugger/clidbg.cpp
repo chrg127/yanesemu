@@ -364,9 +364,6 @@ void CliDebugger::print_ppu_status() const
     fmt::print("VRAM address: {:04X}\n", dbg.ppudbg.vram_addr());
     fmt::print("TMP address: {:04X}\n", dbg.ppudbg.tmp_addr());
     fmt::print("Fine X: {:X}\n", dbg.ppudbg.fine_x());
-    auto [x, y] = dbg.ppudbg.screen_coords();
-    fmt::print("Screen coordinates: X = {}, Y = {}\n", x, y);
 }
 
 } // namespace Debugger
-

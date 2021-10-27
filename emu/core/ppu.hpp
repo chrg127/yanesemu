@@ -82,9 +82,6 @@ private:
         VRAMAddress tmp;
         u3 fine_x;
         u8 buf; // buffer used during background and sprite fetches while rendering
-        // simply indicates the VRAM address position. not used anywhere in the PPU though.
-        u16 vx() const { return fine_x | addr.coarse_x << 3 | (addr.nt & 1) << 8; }
-        u8 vy() const  { return addr.fine_y | addr.coarse_y << 3 | (addr.nt & 2) << 8; }
     } vram;
 
     struct {

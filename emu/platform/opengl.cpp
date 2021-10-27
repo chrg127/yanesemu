@@ -192,7 +192,6 @@ void OpenGL::poll(input::Keys &keys)
             if (!btn)
                 continue;
             keys[btn.value()] = ev.type == SDL_KEYDOWN;
-            // fmt::print("{}\n", input::button_to_string(btn.value()));
             break;
         }
         }

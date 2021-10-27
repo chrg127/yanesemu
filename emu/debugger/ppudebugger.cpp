@@ -81,11 +81,6 @@ u8 PPUDebugger::fine_x() const
     return ppu->vram.fine_x;
 }
 
-std::pair<int, int> PPUDebugger::screen_coords() const
-{
-    return { ppu->vram.vx(), ppu->vram.vy() };
-}
-
 u8 PPUDebugger::read_oam(u8 addr)
 {
     return ppu->oam.mem[addr];

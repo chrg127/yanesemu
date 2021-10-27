@@ -1,20 +1,19 @@
 #pragma once
 
-/* Bit manipulation library. */
-
 #include <cstdint>
+#include <concepts>
 
 namespace util {
 
-/* Returns a mask usable to mask off a given number of bits.
- * For example: 3 -> 0b11; 6 -> 0b111111 */
+// Returns a mask usable to mask off a given number of bits.
+// For example: 3 -> 0b11; 6 -> 0b111111
 constexpr inline uint64_t bitmask(uint8_t nbits)
 {
     return (1UL << nbits) - 1UL;
 }
 
-/* Routines for getting/settings bits at once. More readable, and thus
- * preferable, than using naked bit operations. */
+// Routines for getting/settings bits at once. More readable, and thus
+// preferable, than using naked bit operations.
 constexpr inline uint64_t getbits(uint64_t num, uint8_t bitno, uint8_t nbits)
 {
     return num >> bitno & bitmask(nbits);
@@ -44,15 +43,17 @@ constexpr inline uint8_t reverse_bits(uint8_t n)
     return n;
 }
 
-/* A struct for portable bit-fields. Use it like so:
+/*
+ * A struct for portable bit-fields. Use it like so:
  * union {
  *     uint16_t full
  *     BitField<uint16_t, 1, 1> flag;
  *     BitField<uint16_t, 2, 3> flag_3bits;
  *     // ...
  * } data;
- * the types must necessarily be the same or else it won't work at all. */
-template <typename T, unsigned Bitno, unsigned Nbits = 1>
+ * the types must necessarily be the same or else it won't work at all.
+ */
+template <std::integral T, unsigned Bitno, unsigned Nbits = 1>
 struct BitField {
     T data;
 

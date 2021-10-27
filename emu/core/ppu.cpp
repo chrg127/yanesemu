@@ -416,4 +416,17 @@ void PPU::render()
     screen->output(x-1, y, pixel);
 }
 
+void PPU::vblank_begin()
+{
+    io.vblank = 1;
+    nmi_callback(io.nmi_enabled);
+}
+
+void PPU::vblank_end()
+{
+    io.vblank      = 0;
+    io.sp_zero_hit = 0;
+    io.sp_overflow = 0;
+}
+
 } // namespace core
