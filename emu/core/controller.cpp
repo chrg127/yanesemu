@@ -23,7 +23,7 @@ void Gamepad::latch(bool state)
     latched = state;
     if (latched == 0) {
         for (auto &button : { Button::Right,  Button::Left,  Button::Down, Button::Up,
-                              Button::Select, Button::Start, Button::A,    Button::B }) {
+                              Button::Select, Button::Start, Button::B,    Button::A }) {
             buttons <<= 1;
             buttons |= program.poll_input(button);
         }

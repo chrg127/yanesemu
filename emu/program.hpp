@@ -23,12 +23,15 @@ class Program {
     enum State { Running, Exiting, };
     util::Locked<State> state;
 
+    input::Keys holded_buttons;
+
     void render_loop();
 
 public:
     void start_video(bool debug_mode);
     void use_config(const conf::Configuration &conf);
     void set_window_scale(int size);
+    void hold_button(input::Button button, bool hold);
     void stop();
 
     void run(auto &&fn)             { emulator_thread = std::thread(fn); }
@@ -37,7 +40,6 @@ public:
 
     bool poll_input(input::Button button);
     void video_frame(u32 *data);
-
 };
 
 extern Program program;

@@ -1,9 +1,7 @@
-#include <thread>
-#include <mutex>
-#include <condition_variable>
 #include <stdexcept>
 #include <fmt/core.h>
 #include <emu/version.hpp>
+#include <emu/program.hpp>
 #include <emu/core/cartridge.hpp>
 #include <emu/core/emulator.hpp>
 #include <emu/debugger/clidbg.hpp>
@@ -12,7 +10,6 @@
 #include <emu/util/mappedfile.hpp>
 #include <emu/util/os.hpp>
 #include <emu/util/conf.hpp>
-#include <emu/program.hpp>
 
 static const cmdline::ArgumentList cmdflags = {
     { 'h', "help",     "Print this help text and quit" },
