@@ -27,21 +27,17 @@ struct Command {
 
 class CliDebugger {
     Debugger dbg;
-    Command *last_cmd = nullptr;
+    const Command *last_cmd = nullptr;
     std::vector<std::string> last_args{};
     bool quit = false;
 
 public:
-    explicit CliDebugger()
-    {
-        dbg.on_report([this](Debugger::Event ev) { report_event(ev); });
-    }
-
+    CliDebugger();
     bool repl();
     void print_instr();
 
 private:
-    void eval(Command *cmd, std::span<std::string> args);
+    void eval(const Command &cmd, std::span<std::string> args);
     void report_event(Debugger::Event ev);
     void print_cpu_status() const;
     void print_ppu_status() const;

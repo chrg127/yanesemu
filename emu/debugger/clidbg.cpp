@@ -11,6 +11,7 @@
 #include <emu/util/string.hpp>
 #include <emu/util/file.hpp>
 #include <emu/util/utility.hpp>
+#include <emu/util/debug.hpp>
 
 namespace debugger {
 
@@ -121,6 +122,11 @@ T parse_to(std::string_view str)
 
 
 
+CliDebugger::CliDebugger()
+{
+    dbg.on_report([this](Debugger::Event ev) { report_event(ev); });
+    // last_cmd = commands.find("help")->second;
+}
 
 bool CliDebugger::repl()
 {
@@ -133,13 +139,13 @@ bool CliDebugger::repl()
 
     try {
         if (!cmdstr.empty()) {
-            if (auto cmd = util::map_lookup(commands, cmdstr); cmd) {
-                last_cmd  = &cmd.value();
+            if (auto cmd = commands.find(cmdstr); cmd != commands.end()) {
+                last_cmd  = &cmd->second;
                 last_args = str::split(argsstr, ' ');
             } else
                 throw CommandError("Invalid command. Try 'help'.\n");
         }
-        eval(last_cmd, last_args);
+        eval(*last_cmd, last_args);
     } catch (const CommandError &error) {
         fmt::print(stderr, "{}\n", error.what());
     }
@@ -147,17 +153,17 @@ bool CliDebugger::repl()
     return quit;
 }
 
-void CliDebugger::eval(Command *cmd, std::span<std::string> args)
+void CliDebugger::eval(const Command &cmd, std::span<std::string> args)
 {
-    if (args.size() < cmd->minargs ) {
-        fmt::print("Not enough arguments for command {}. Try 'help'.\n", cmd->name);
+    if (args.size() < cmd.minargs ) {
+        fmt::print("Not enough arguments for command {}. Try 'help'.\n", cmd.name);
         return;
-    } else if (args.size() > cmd->maxargs) {
-        fmt::print("Too many arguments for command {}. Try 'help'.\n", cmd->name);
+    } else if (args.size() > cmd.maxargs) {
+        fmt::print("Too many arguments for command {}. Try 'help'.\n", cmd.name);
         return;
     }
 
-    switch (cmd->type) {
+    switch (cmd.type) {
 
     case CommandType::Help:
         if (args.size() == 1) {
