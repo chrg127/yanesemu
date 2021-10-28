@@ -30,6 +30,10 @@ enum class Component {
     CPU, PPU,
 };
 
+std::optional<MemorySource> string_to_memsource(std::string_view str);
+std::optional<Component> string_to_component(std::string_view str);
+std::optional<input::Button> string_to_button(std::string_view str);
+
 class CPUDebugger {
     core::CPU *cpu;
 
@@ -95,7 +99,20 @@ public:
     std::optional<unsigned> test(u16 addr);
 };
 
-struct Debugger {
+class Tracer {
+    std::optional<io::File> file;
+public:
+    bool start(std::string_view pathname)
+    {
+        file = io::File::open(pathname.data(), io::Access::WRITE);
+        return bool(file);
+    }
+    void stop() { file = std::nullopt; }
+    void trace(CPUDebugger &cpudbg, PPUDebugger &ppudbg);
+};
+
+class Debugger {
+protected:
     struct Event {
         enum class Type {
             Step, Break, InvalidInstruction,
@@ -116,47 +133,23 @@ struct Debugger {
 private:
     core::Emulator *emu;
     std::function<void(Event)> report_callback;
-    BreakList break_list;
-    std::optional<io::File> tracefile;
     bool got_error = false;
 
-public:
+protected:
     CPUDebugger cpudbg;
     PPUDebugger ppudbg;
+    BreakList break_list;
+    Tracer tracer;
 
     Debugger();
-
     void on_report(auto &&f) { report_callback = f; }
     void run(StepType step_type);
-
     u8 read_ram(u16 addr);
-    std::function<u8(u16)>       read_from(MemorySource source);
+    std::function<u8(u16)> read_from(MemorySource source);
     std::function<void(u16, u8)> write_to(MemorySource source);
-
-    void step()          { run(StepType::Step); }
-    void next()          { run(StepType::Next); }
-    void advance()       { run(StepType::None); }
-    void advance_frame() { run(StepType::Frame); }
-
-    BreakList & breakpoints() { return break_list; }
-
-    bool start_tracing(std::string_view pathname)
-    {
-        tracefile = io::File::open(pathname, io::Access::WRITE);
-        return bool(tracefile);
-    }
-
-    void stop_tracing() { tracefile = std::nullopt; }
-
     void reset_emulator();
-
-private:
-    void trace();
 };
 
-std::optional<MemorySource> string_to_memsource(std::string_view str);
-std::optional<Component> string_to_component(std::string_view str);
-std::optional<input::Button> string_to_button(std::string_view str);
 std::pair<std::string, int> disassemble(const u8 id, const u8 oplow, const u8 ophigh);
 
 inline void disassemble_block(u16 start, u16 end, auto &&readval, auto &&process)

@@ -25,8 +25,7 @@ struct Command {
     unsigned maxargs;
 };
 
-class CliDebugger {
-    Debugger dbg;
+class CliDebugger : public Debugger {
     const Command *last_cmd = nullptr;
     std::vector<std::string> last_args{};
     bool quit = false;
@@ -41,6 +40,8 @@ private:
     void report_event(Debugger::Event ev);
     void print_cpu_status() const;
     void print_ppu_status() const;
+    void read_block(u16 start, u16 end, MemorySource source);
+    void write_block(u16 start, u16 end, u8 data, MemorySource source);
 };
 
 } // namespace Debugger

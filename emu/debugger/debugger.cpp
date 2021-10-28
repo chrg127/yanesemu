@@ -62,6 +62,23 @@ std::optional<unsigned> BreakList::test(u16 addr)
     return it - list.begin();
 }
 
+void Tracer::trace(CPUDebugger &cpudbg, PPUDebugger &ppudbg)
+{
+    if (file) {
+        fmt::print(file.value().data(),
+            "PC: ${:04X} A: ${:02X} X: ${:02X} Y: ${:02X} SP: ${:02X} {} V: {:04X} {}\n",
+            cpudbg.getreg(CPUDebugger::Reg::PC),
+            cpudbg.getreg(CPUDebugger::Reg::Acc),
+            cpudbg.getreg(CPUDebugger::Reg::X),
+            cpudbg.getreg(CPUDebugger::Reg::Y),
+            cpudbg.getreg(CPUDebugger::Reg::SP),
+            cpudbg.curr_flags_str(),
+            ppudbg.getreg(PPUDebugger::Reg::PPUAddr),
+            cpudbg.curr_instr_str()
+        );
+    }
+}
+
 Debugger::Debugger()
     : emu(&core::emulator), cpudbg(&emu->cpu), ppudbg(&emu->ppu)
 {
@@ -85,7 +102,7 @@ void Debugger::run(StepType step_type)
     {
         for (;;) {
             emu->run();
-            trace();
+            tracer.trace(cpudbg, ppudbg);
             if (got_error)
                 break;
             auto hit = test_breakpoints();
@@ -153,23 +170,6 @@ std::function<void(u16, u8)> Debugger::write_to(MemorySource source)
     case MemorySource::OAM:  return util::member_fn(&ppudbg, &PPUDebugger::write_oam);
     default: panic("get_write_fn");
     }
-}
-
-void Debugger::trace()
-{
-    if (!tracefile)
-        return;
-    fmt::print(tracefile.value().data(),
-        "PC: ${:04X} A: ${:02X} X: ${:02X} Y: ${:02X} SP: ${:02X} {} V: {:04X} {}\n",
-        cpudbg.getreg(CPUDebugger::Reg::PC),
-        cpudbg.getreg(CPUDebugger::Reg::Acc),
-        cpudbg.getreg(CPUDebugger::Reg::X),
-        cpudbg.getreg(CPUDebugger::Reg::Y),
-        cpudbg.getreg(CPUDebugger::Reg::SP),
-        cpudbg.curr_flags_str(),
-        ppudbg.getreg(PPUDebugger::Reg::PPUAddr),
-        cpudbg.curr_instr_str()
-    );
 }
 
 void Debugger::reset_emulator()
