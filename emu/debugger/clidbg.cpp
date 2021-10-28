@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <stdexcept>
 #include <fmt/core.h>
+#include <emu/program.hpp>
 #include <emu/core/const.hpp>
 #include <emu/debugger/debugger.hpp>
 #include <emu/debugger/instrinfo.hpp>
@@ -33,6 +34,7 @@ namespace debugger {
     X("disblock",       "db",   DisBlock,      2,       2,          "disassemble a given block") \
     X("trace",          "tr",   Trace,         1,       1,          "trace and log instructions to file") \
     X("stoptrace",      "str",  StopTrace,     0,       0,          "stop tracing instructions") \
+    X("hold",           "hb",   HoldButton,    1,       1,          "select a button to hold automatically") \
     X("reset",          "res",  Reset,         0,       0,          "reset the emulator") \
     X("quit",           "q",    Quit,          0,       0,          "quit the emulator") \
 
@@ -287,7 +289,13 @@ void CliDebugger::eval(const Command &cmd, std::span<std::string> args)
         dbg.stop_tracing();
         break;
 
+    case CommandType::HoldButton:
+        if (auto button = debugger::string_to_button(args[0]); button)
+            program.hold_button(button.value(), true);
+        break;
+
     case CommandType::Reset:
+        dbg.reset_emulator();
         break;
 
     case CommandType::Quit:

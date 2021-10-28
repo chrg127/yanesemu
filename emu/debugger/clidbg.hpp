@@ -12,8 +12,8 @@ enum CommandType {
     Help,        Continue,  RunFrame,   Next,
     Step,        Break,     ListBreaks, DeleteBreak,
     Status,      ReadAddr,  WriteAddr,  Block,
-    Disassemble, DisBlock,  Trace,
-    StopTrace,   Reset,     Quit,
+    Disassemble, DisBlock,  Trace,      StopTrace,
+    HoldButton,  Reset,     Quit,
 };
 
 struct Command {

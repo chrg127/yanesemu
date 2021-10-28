@@ -2,7 +2,7 @@
 
 #include <algorithm>
 #include <emu/core/emulator.hpp>
-#include <emu/debugger/instrinfo.hpp>
+#include <emu/platform/input.hpp>
 #include <emu/util/file.hpp>
 #include <emu/util/debug.hpp>
 #include <emu/util/utility.hpp>
@@ -25,6 +25,19 @@ std::optional<Component> string_to_component(std::string_view str)
     if (str.empty()) return Component::CPU;
     if (str == "cpu") return Component::CPU;
     if (str == "ppu") return Component::PPU;
+    return std::nullopt;
+}
+
+std::optional<input::Button> string_to_button(std::string_view str)
+{
+    if (str == "a" || str == "A") return input::Button::A;
+    if (str == "b" || str == "B") return input::Button::A;
+    if (str == "select")          return input::Button::A;
+    if (str == "start")           return input::Button::A;
+    if (str == "up")              return input::Button::A;
+    if (str == "down")            return input::Button::A;
+    if (str == "left")            return input::Button::A;
+    if (str == "right")           return input::Button::A;
     return std::nullopt;
 }
 
@@ -159,5 +172,10 @@ void Debugger::trace()
     );
 }
 
-} // namespace Debugger
+void Debugger::reset_emulator()
+{
+    emu->power(/* reset = */ true);
+    report_callback((Event) { .type = Event::Type::Step, .point_id = 0 });
+}
 
+} // namespace Debugger

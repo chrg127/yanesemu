@@ -14,6 +14,9 @@ namespace core {
     class CPU;
     class PPU;
 }
+namespace input {
+    enum class Button;
+}
 
 namespace debugger {
 
@@ -145,12 +148,15 @@ public:
 
     void stop_tracing() { tracefile = std::nullopt; }
 
+    void reset_emulator();
+
 private:
     void trace();
 };
 
 std::optional<MemorySource> string_to_memsource(std::string_view str);
 std::optional<Component> string_to_component(std::string_view str);
+std::optional<input::Button> string_to_button(std::string_view str);
 std::pair<std::string, int> disassemble(const u8 id, const u8 oplow, const u8 ophigh);
 
 inline void disassemble_block(u16 start, u16 end, auto &&readval, auto &&process)
