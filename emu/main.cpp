@@ -86,7 +86,7 @@ void cli_interface(cmdline::Result &flags)
         });
     } else {
         program.run([&]() {
-            debugger::CliDebugger debugger{&core::emulator};
+            debugger::CliDebugger debugger;
             debugger.print_instr();
             for (bool quit = false; !quit && program.running(); )
                 quit = debugger.repl();
