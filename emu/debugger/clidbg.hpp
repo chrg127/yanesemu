@@ -27,12 +27,16 @@ struct Command {
 
 class CliDebugger {
     Debugger dbg;
-    Command *last_cmd;
-    std::vector<std::string> last_args;
+    Command *last_cmd = nullptr;
+    std::vector<std::string> last_args{};
     bool quit = false;
 
 public:
-    explicit CliDebugger(core::Emulator *emu);
+    explicit CliDebugger()
+    {
+        dbg.on_report([this](Debugger::Event ev) { report_event(ev); });
+    }
+
     bool repl();
     void print_instr();
 

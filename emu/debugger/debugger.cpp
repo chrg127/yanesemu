@@ -20,6 +20,14 @@ std::optional<MemorySource> string_to_memsource(std::string_view str)
     return std::nullopt;
 }
 
+std::optional<Component> string_to_component(std::string_view str)
+{
+    if (str.empty()) return Component::CPU;
+    if (str == "cpu") return Component::CPU;
+    if (str == "ppu") return Component::PPU;
+    return std::nullopt;
+}
+
 unsigned BreakList::add(Breakpoint point)
 {
     auto it = std::find_if(list.begin(), list.end(), [](const auto &p) { return p.erased; });
@@ -41,8 +49,8 @@ std::optional<unsigned> BreakList::test(u16 addr)
     return it - list.begin();
 }
 
-Debugger::Debugger(core::Emulator *e)
-    : emu(e), cpudbg(&emu->cpu), ppudbg(&emu->ppu)
+Debugger::Debugger()
+    : emu(&core::emulator), cpudbg(&emu->cpu), ppudbg(&emu->ppu)
 {
     emu->on_cpu_error([this](u8 id, u16 addr)
     {

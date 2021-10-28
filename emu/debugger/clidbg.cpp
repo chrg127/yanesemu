@@ -121,11 +121,6 @@ T parse_to(std::string_view str)
 
 
 
-CliDebugger::CliDebugger(core::Emulator *emu)
-    : dbg(emu), last_cmd(nullptr), last_args({})
-{
-    dbg.on_report([this](Debugger::Event ev) { report_event(ev); });
-}
 
 bool CliDebugger::repl()
 {
@@ -133,20 +128,18 @@ bool CliDebugger::repl()
     std::string cmdstr, argsstr;
 
     fmt::print(">>> ");
-    if (!input.getword(cmdstr) || !input.getline(argsstr)) {
-        quit = true;
-        return quit;
-    }
+    if (!input.getword(cmdstr) || !input.getline(argsstr))
+        return quit = true;
 
     try {
-        if (cmdstr.empty())
-            eval(last_cmd, last_args);
-        else if (auto cmd = util::map_lookup(commands, cmdstr); cmd) {
-            last_cmd  = &cmd.value();
-            last_args = str::split(argsstr, ' ');
-            eval(last_cmd, last_args);
-        } else
-            fmt::print("Invalid command. Try 'help'.\n");
+        if (!cmdstr.empty()) {
+            if (auto cmd = util::map_lookup(commands, cmdstr); cmd) {
+                last_cmd  = &cmd.value();
+                last_args = str::split(argsstr, ' ');
+            } else
+                throw CommandError("Invalid command. Try 'help'.\n");
+        }
+        eval(last_cmd, last_args);
     } catch (const CommandError &error) {
         fmt::print(stderr, "{}\n", error.what());
     }

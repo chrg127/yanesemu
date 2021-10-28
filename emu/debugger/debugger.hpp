@@ -22,6 +22,10 @@ enum class MemorySource {
     OAM,
 };
 
+enum class Component {
+    CPU, PPU,
+};
+
 class CPUDebugger {
     core::CPU *cpu;
 
@@ -116,7 +120,7 @@ public:
     CPUDebugger cpudbg;
     PPUDebugger ppudbg;
 
-    explicit Debugger(core::Emulator *e);
+    Debugger();
 
     void on_report(auto &&f) { report_callback = f; }
     void run(StepType step_type);
@@ -145,6 +149,7 @@ private:
 };
 
 std::optional<MemorySource> string_to_memsource(std::string_view str);
+std::optional<Component> string_to_component(std::string_view str);
 std::string disassemble(const u8 id, const u8 oplow, const u8 ophigh);
 unsigned num_bytes(u8 id);
 
