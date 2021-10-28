@@ -231,7 +231,7 @@ void CliDebugger::eval(const Command &cmd, std::span<std::string> args)
         auto lo = args.size() >= 2 ? parse_to<u8>(args[1]) : 0;
         auto hi = args.size() >= 3 ? parse_to<u8>(args[2]) : 0;
         if (id && lo && hi)
-            fmt::print("{}\n", disassemble(id, lo, hi));
+            fmt::print("{}\n", disassemble(id, lo, hi).first);
         break;
     }
 
@@ -272,8 +272,8 @@ void CliDebugger::eval(const Command &cmd, std::span<std::string> args)
         auto end   = parse_to<u16>(args[1]);
         check_addr_ranges(start, end, MemorySource::RAM);
         disassemble_block(start, end,
-            [&](u16 addr)                    { return dbg.read_ram(addr); },
-            [ ](u16 addr, std::string &&str) { fmt::print("${:04X}: {}\n", addr, str); });
+            [&](u16 addr)                       { return dbg.read_ram(addr); },
+            [ ](u16 addr, std::string_view str) { fmt::print("${:04X}: {}\n", addr, str); });
         break;
     }
 

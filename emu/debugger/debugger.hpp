@@ -5,6 +5,7 @@
 #include <vector>
 #include <span>
 #include <string_view>
+#include <utility>
 #include <emu/util/uint.hpp>
 #include <emu/util/file.hpp>
 
@@ -150,8 +151,7 @@ private:
 
 std::optional<MemorySource> string_to_memsource(std::string_view str);
 std::optional<Component> string_to_component(std::string_view str);
-std::string disassemble(const u8 id, const u8 oplow, const u8 ophigh);
-unsigned num_bytes(u8 id);
+std::pair<std::string, int> disassemble(const u8 id, const u8 oplow, const u8 ophigh);
 
 inline void disassemble_block(u16 start, u16 end, auto &&readval, auto &&process)
 {
@@ -159,8 +159,9 @@ inline void disassemble_block(u16 start, u16 end, auto &&readval, auto &&process
         u8 id   = readval(start);
         u8 low  = readval(start + 1);
         u8 high = readval(start + 2);
-        process(start, disassemble(id, low, high));
-        start += num_bytes(id);
+        auto [str, num_bytes] = disassemble(id, low, high);
+        process(start, str);
+        start += num_bytes;
     }
 }
 

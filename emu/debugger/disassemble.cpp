@@ -156,53 +156,31 @@ namespace debugger {
     X(0xFD, sbc, absx) \
     X(0xFE, inc, absx) \
 
-std::string disassemble(const u8 id, const u8 oplow, const u8 ophigh)
+std::pair<std::string, int> disassemble(const u8 id, const u8 oplow, const u8 ophigh)
 {
-#define modefmt(mode, frmt, ...) \
-    const auto disass_##mode = [&](const char name[4]) { return fmt::format(frmt, __VA_ARGS__); };
-    const auto disass_impld = [&](const char name[4]) { return std::string(name); };
-    modefmt(accum,  "{} A",                 name);
-    modefmt(branch, "{} {:X}",              name, (int8_t) oplow);
-    modefmt(imm,    "{} #${:02X}",          name, oplow);
-    modefmt(zero,   "{} ${:02X}",           name, oplow);
-    modefmt(zerox,  "{} ${:02X},x",         name, oplow);
-    modefmt(zeroy,  "{} ${:02X},y",         name, oplow);
-    modefmt(indx,   "{} (${:02X},x)",       name, oplow);
-    modefmt(indy,   "{} (${:02X}),y",       name, oplow);
-    modefmt(abs,    "{} ${:02X}{:02X}",     name, ophigh, oplow);
-    modefmt(absx,   "{} ${:02X}{:02X},x",   name, ophigh, oplow);
-    modefmt(absy,   "{} ${:02X}{:02X},y",   name, ophigh, oplow);
-    modefmt(ind,    "{} (${:02X}{:02X})",   name, ophigh, oplow);
+#define modefmt(mode, frmt, num_bytes, ...) \
+    const auto disass_##mode = [&](const char name[4]) { return std::make_pair(fmt::format(frmt, __VA_ARGS__), num_bytes); };
+
+    const auto disass_impld = [&](const char name[4]) { return std::make_pair(std::string(name), 1); };
+    modefmt(accum,  "{} A",                 1, name);
+    modefmt(branch, "{} {:X}",              2, name, (int8_t) oplow);
+    modefmt(imm,    "{} #${:02X}",          2, name, oplow);
+    modefmt(zero,   "{} ${:02X}",           2, name, oplow);
+    modefmt(zerox,  "{} ${:02X},x",         2, name, oplow);
+    modefmt(zeroy,  "{} ${:02X},y",         2, name, oplow);
+    modefmt(indx,   "{} (${:02X},x)",       2, name, oplow);
+    modefmt(indy,   "{} (${:02X}),y",       2, name, oplow);
+    modefmt(abs,    "{} ${:02X}{:02X}",     3, name, ophigh, oplow);
+    modefmt(absx,   "{} ${:02X}{:02X},x",   3, name, ophigh, oplow);
+    modefmt(absy,   "{} ${:02X}{:02X},y",   3, name, ophigh, oplow);
+    modefmt(ind,    "{} (${:02X}{:02X})",   3, name, ophigh, oplow);
 #undef modefmt
 
 #define X(id, name, mode) case id: return disass_##mode(#name);
     switch(id) {
         INSTR_MODE(X)
         default:
-            return "[Unknown]";
-    }
-#undef X
-}
-
-unsigned num_bytes(u8 id)
-{
-    constexpr unsigned nb_impld  = 1;
-    constexpr unsigned nb_accum  = 1;
-    constexpr unsigned nb_branch = 2;
-    constexpr unsigned nb_imm    = 2;
-    constexpr unsigned nb_zero   = 2;
-    constexpr unsigned nb_zerox  = 2;
-    constexpr unsigned nb_zeroy  = 2;
-    constexpr unsigned nb_indx   = 2;
-    constexpr unsigned nb_indy   = 2;
-    constexpr unsigned nb_abs    = 3;
-    constexpr unsigned nb_absx   = 3;
-    constexpr unsigned nb_absy   = 3;
-    constexpr unsigned nb_ind    = 3;
-#define X(id, name, mode) case id: return nb_##mode;
-    switch (id) {
-        INSTR_MODE(X)
-        default: return 1;
+            return std::make_pair("[Unknown]", 1);
     }
 #undef X
 }

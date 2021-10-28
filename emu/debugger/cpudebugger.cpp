@@ -89,7 +89,7 @@ std::string CPUDebugger::curr_instr_str() const
     };
 
     Instruction instr = curr_instr();
-    std::string res = disassemble(instr.id, instr.lo, instr.hi);
+    std::string res = disassemble(instr.id, instr.lo, instr.hi).first;
     if (is_branch(instr.id)) {
         res += fmt::format(" [{:02X}] [{}]",
                 branch_pointer(instr.lo, cpu->r.pc.v),
