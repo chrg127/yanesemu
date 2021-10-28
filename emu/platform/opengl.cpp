@@ -174,7 +174,7 @@ void OpenGL::resize(std::size_t width, std::size_t height)
     glViewport(0, 0, width, height);
 }
 
-void OpenGL::poll(input::Keys &keys)
+void OpenGL::poll(input::ButtonArray &keys)
 {
     for (SDL_Event ev; SDL_PollEvent(&ev); ) {
         switch (ev.type) {

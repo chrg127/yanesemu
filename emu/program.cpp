@@ -6,10 +6,14 @@
 
 Program program;
 
-void Program::start_video(bool debug_mode)
+void Program::start_video(cmdline::Result &flags)
 {
-    video = platform::Video::create(platform::Type::SDL, core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
-    video.set_title(std::string(progname) + (debug_mode ? " (debugger)" : ""));
+    video = platform::Video::create(
+        flags.has['n'] ? platform::Type::NoVideo : platform::Type::SDL,
+        core::SCREEN_WIDTH,
+        core::SCREEN_HEIGHT
+    );
+    video.set_title(std::string(progname) + (flags.has['d'] ? " (debugger)" : ""));
     screen = video.create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
 }
 
@@ -25,12 +29,12 @@ void Program::set_window_scale(int size)
 
 void Program::hold_button(input::Button button, bool hold)
 {
-    holded_buttons[button] = hold;
+    video.hold_button(button, hold);
 }
 
 bool Program::poll_input(input::Button button)
 {
-    return video.is_pressed(button) || holded_buttons[button];
+    return video.is_pressed(button);
 }
 
 void Program::render_loop()

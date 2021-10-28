@@ -33,10 +33,10 @@ constexpr inline std::string_view button_to_string(Button button)
     }
 }
 
-class Keys {
+class ButtonArray {
     std::array<bool, NUM_BUTTONS> buttons_pressed;
 public:
-    Keys()                           { clear(); }
+    ButtonArray()                    { clear(); }
     void clear()                     { std::fill(buttons_pressed.begin(), buttons_pressed.end(), false); }
     bool & operator[](Button button) { return buttons_pressed[static_cast<int>(button)]; }
     void dump()

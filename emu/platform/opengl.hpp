@@ -21,7 +21,7 @@ public:
     void init(std::size_t width, std::size_t height) override;
     void set_title(std::string_view title) override;
     void resize(std::size_t width, std::size_t height) override;
-    void poll(input::Keys &keys) override;
+    void poll(input::ButtonArray &keys) override;
     bool has_quit() override;
 
     Texture create_texture(std::size_t width, std::size_t height) override;

@@ -15,6 +15,7 @@ static const cmdline::ArgumentList cmdflags = {
     { 'h', "help",     "Print this help text and quit" },
     { 'v', "version",  "Shows the program's version"   },
     { 'd', "debugger", "Use command-line debugger"     },
+    { 'n', "no-video", "Start without a window"        },
 };
 
 static const conf::ValidConf valid_conf = {
@@ -69,12 +70,11 @@ void cli_interface(cmdline::Result &flags)
         warning("multiple ROM files specified, first one will be used\n");
 
     auto rom = open_rom(flags.items[0]);
-    bool debug_mode = flags.has['d'];
-    program.start_video(debug_mode);
+    program.start_video(flags);
     program.set_window_scale(2);
     program.use_config(config);
     core::emulator.power();
-    if (!debug_mode) {
+    if (!flags.has['d']) {
         core::emulator.on_cpu_error([&](u8 id, u16 addr) {
             fmt::print(stderr, "The CPU has found an invalid instruction of ID ${:02X} at address ${:04X}. Stopping.\n", id, addr);
             core::emulator.stop();

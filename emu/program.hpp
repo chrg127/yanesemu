@@ -8,6 +8,7 @@
 #include <emu/util/conf.hpp>
 #include <emu/util/uint.hpp>
 #include <emu/util/locked.hpp>
+#include <emu/util/cmdline.hpp>
 
 class Program {
     platform::Video video;
@@ -23,12 +24,10 @@ class Program {
     enum State { Running, Exiting, };
     util::Locked<State> state;
 
-    input::Keys holded_buttons;
-
     void render_loop();
 
 public:
-    void start_video(bool debug_mode);
+    void start_video(cmdline::Result &flags);
     void use_config(const conf::Configuration &conf);
     void set_window_scale(int size);
     void hold_button(input::Button button, bool hold);

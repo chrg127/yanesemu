@@ -15,9 +15,10 @@ namespace platform {
 
 Video Video::create(Type type, std::size_t width, std::size_t height)
 {
-    auto p = [&]() {
+    auto p = [&]() -> std::unique_ptr<Impl> {
         switch (type) {
         case Type::SDL: return std::make_unique<platform::OpenGL>(); break;
+        case Type::NoVideo: return std::make_unique<Impl>(); break;
         default:
            panic("unknown type supplied to create_context()\n");
            break;
@@ -56,6 +57,16 @@ void Video::map_keys(const conf::Configuration &conf)
         s.erase(s.begin(), s.begin() + 4);
         map_key(s, p.second);
     }
+}
+
+bool Video::is_pressed(input::Button button)
+{
+    return curr_keys[button] || holded_buttons[button];
+}
+
+void Video::hold_button(input::Button button, bool hold)
+{
+    holded_buttons[button] = hold;
 }
 
 } // namespace platform
