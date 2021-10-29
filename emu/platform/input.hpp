@@ -16,7 +16,7 @@ enum class Button {
     Right,
 };
 
-const int NUM_BUTTONS = 6;
+const int NUM_BUTTONS = 8;
 
 constexpr inline std::string_view button_to_string(Button button)
 {
