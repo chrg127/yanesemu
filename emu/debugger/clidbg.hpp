@@ -13,6 +13,7 @@ enum CommandType {
     Step,        Break,     ListBreaks, DeleteBreak,
     Status,      ReadAddr,  WriteAddr,  Block,
     Disassemble, DisBlock,  Trace,      StopTrace,
+    WriteRegCPU, WriteRegPPU,
     HoldButton,  Reset,     Quit,
 };
 

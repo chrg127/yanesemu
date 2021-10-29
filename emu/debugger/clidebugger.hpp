@@ -27,6 +27,8 @@ class CliDebugger : public Debugger {
     void read_addr_ram(u16 addr)                  { read_block(addr, addr, MemorySource::RAM); }
     void read_block_ram(u16 start, u16 end)       { read_block(start, end, MemorySource::RAM); }
     void write_addr_ram(u16 addr, u8 data)        { write_addr(addr, data, MemorySource::RAM); }
+    void write_reg_cpu(CPUDebugger::Reg reg, u16 data) { cpu.set_reg(reg, data); }
+    void write_reg_ppu(PPUDebugger::Reg reg, u16 data) { }
 
     void report_event(Debugger::Event ev);
     void print_cpu_status() const;

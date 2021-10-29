@@ -11,12 +11,9 @@ namespace debugger {
 
 std::optional<MemorySource> string_to_memsource(std::string_view str)
 {
-    if (str.empty())   return MemorySource::RAM;
-    if (str == "cpu")  return MemorySource::RAM;
-    if (str == "ram")  return MemorySource::RAM;
-    if (str == "ppu")  return MemorySource::VRAM;
-    if (str == "vram") return MemorySource::VRAM;
-    if (str == "oam")  return MemorySource::OAM;
+    if (str.empty() || str == "cpu" || str == "ram") return MemorySource::RAM;
+    if (str == "ppu" || str == "vram")               return MemorySource::VRAM;
+    if (str == "oam")                                return MemorySource::OAM;
     return std::nullopt;
 }
 
@@ -31,13 +28,37 @@ std::optional<Component> string_to_component(std::string_view str)
 std::optional<input::Button> string_to_button(std::string_view str)
 {
     if (str == "a" || str == "A") return input::Button::A;
-    if (str == "b" || str == "B") return input::Button::A;
-    if (str == "select")          return input::Button::A;
-    if (str == "start")           return input::Button::A;
-    if (str == "up")              return input::Button::A;
-    if (str == "down")            return input::Button::A;
-    if (str == "left")            return input::Button::A;
-    if (str == "right")           return input::Button::A;
+    if (str == "b" || str == "B") return input::Button::B;
+    if (str == "select")          return input::Button::Select;
+    if (str == "start")           return input::Button::Start;
+    if (str == "up")              return input::Button::Up;
+    if (str == "down")            return input::Button::Down;
+    if (str == "left")            return input::Button::Left;
+    if (str == "right")           return input::Button::Right;
+    return std::nullopt;
+}
+
+std::optional<CPUDebugger::Reg> string_to_cpu_reg(std::string_view str)
+{
+    if (str == "a"  || str == "A")  return CPUDebugger::Reg::Acc;
+    if (str == "x"  || str == "X")  return CPUDebugger::Reg::X;
+    if (str == "y"  || str == "Y")  return CPUDebugger::Reg::Y;
+    if (str == "pc" || str == "PC") return CPUDebugger::Reg::PC;
+    if (str == "sp" || str == "SP") return CPUDebugger::Reg::SP;
+    if (str == "flags")             return CPUDebugger::Reg::Flags;
+    return std::nullopt;
+}
+
+std::optional<PPUDebugger::Reg> string_to_ppu_reg(std::string_view str)
+{
+    if (str == "ctrl"    || str == "PPUCTRL")   return PPUDebugger::Reg::Ctrl;
+    if (str == "mask"    || str == "PPUMASK")   return PPUDebugger::Reg::Mask;
+    if (str == "status"  || str == "PPUSTATUS") return PPUDebugger::Reg::Status;
+    if (str == "oamaddr" || str == "OAMADDR")   return PPUDebugger::Reg::OAMAddr;
+    if (str == "oamdata" || str == "OAMDATA")   return PPUDebugger::Reg::OAMData;
+    if (str == "scroll"  || str == "PPUSCROLL") return PPUDebugger::Reg::PPUScroll;
+    if (str == "addr"    || str == "PPUADDR")   return PPUDebugger::Reg::PPUAddr;
+    if (str == "data"    || str == "PPUDATA")   return PPUDebugger::Reg::PPUData;
     return std::nullopt;
 }
 
@@ -67,20 +88,20 @@ void Tracer::trace(CPUDebugger &cpudbg, PPUDebugger &ppudbg)
     if (file) {
         fmt::print(file.value().data(),
             "PC: ${:04X} A: ${:02X} X: ${:02X} Y: ${:02X} SP: ${:02X} {} V: {:04X} {}\n",
-            cpudbg.getreg(CPUDebugger::Reg::PC),
-            cpudbg.getreg(CPUDebugger::Reg::Acc),
-            cpudbg.getreg(CPUDebugger::Reg::X),
-            cpudbg.getreg(CPUDebugger::Reg::Y),
-            cpudbg.getreg(CPUDebugger::Reg::SP),
-            cpudbg.curr_flags_str(),
-            ppudbg.getreg(PPUDebugger::Reg::PPUAddr),
-            cpudbg.curr_instr_str()
+                   cpudbg.reg(CPUDebugger::Reg::PC),
+                   cpudbg.reg(CPUDebugger::Reg::Acc),
+                   cpudbg.reg(CPUDebugger::Reg::X),
+                   cpudbg.reg(CPUDebugger::Reg::Y),
+                   cpudbg.reg(CPUDebugger::Reg::SP),
+                   cpudbg.flags_to_string(),
+                   ppudbg.reg(PPUDebugger::Reg::PPUAddr),
+                   cpudbg.curr_instr_to_string()
         );
     }
 }
 
 Debugger::Debugger()
-    : emu(&core::emulator), cpudbg(&emu->cpu), ppudbg(&emu->ppu)
+    : emu(&core::emulator), cpu(&emu->cpu), ppu(&emu->ppu)
 {
     emu->on_cpu_error([this](u8 id, u16 addr)
     {
@@ -95,14 +116,14 @@ Debugger::Debugger()
 void Debugger::run(StepType step_type)
 {
     const auto test_breakpoints = [this]() {
-        return break_list.test(cpudbg.getreg(CPUDebugger::Reg::PC));
+        return break_list.test(cpu.reg(CPUDebugger::Reg::PC));
     };
 
     const auto runloop = [&](auto &&check_step)
     {
         for (;;) {
             emu->run();
-            tracer.trace(cpudbg, ppudbg);
+            tracer.trace(cpu, ppu);
             if (got_error)
                 break;
             auto hit = test_breakpoints();
@@ -126,18 +147,18 @@ void Debugger::run(StepType step_type)
         break;
     case StepType::Next: {
         int cont = 0;
-        u8 id = cpudbg.curr_instr().id;
+        u8 id = cpu.curr_instr().id;
         runloop([&]() {
             if (id == 0x20) cont++;
             if (id == 0x60) cont--;
-            id = cpudbg.curr_instr().id;
+            id = cpu.curr_instr().id;
             return cont <= 0;
         });
         break;
     }
     case StepType::Frame: {
-        u16 addr = cpudbg.get_vector_addr(core::NMI_VEC);
-        runloop([&]() { return cpudbg.getreg(CPUDebugger::Reg::PC) == addr; });
+        u16 addr = cpu.vector_address(core::NMI_VEC);
+        runloop([&]() { return cpu.reg(CPUDebugger::Reg::PC) == addr; });
         break;
     }
     case StepType::None:
@@ -148,7 +169,7 @@ void Debugger::run(StepType step_type)
 
 u8 Debugger::read_ram(u16 addr)
 {
-    return (addr >= 0x2000 && addr <= 0x3FFF) ? ppudbg.getreg(0x2000 + (addr & 0x7))
+    return (addr >= 0x2000 && addr <= 0x3FFF) ? ppu.reg(0x2000 + (addr & 0x7))
                                               : emu->rambus.read(addr);
 }
 
@@ -157,7 +178,7 @@ std::function<u8(u16)> Debugger::read_from(MemorySource source)
     switch (source) {
     case MemorySource::RAM:  return util::member_fn(this, &Debugger::read_ram);
     case MemorySource::VRAM: return [&](u16 addr) { return emu->vrambus.read(addr); };
-    case MemorySource::OAM:  return util::member_fn(&ppudbg, &PPUDebugger::read_oam);
+    case MemorySource::OAM:  return util::member_fn(&ppu, &PPUDebugger::read_oam);
     default: panic("get_read_fn");
     }
 }
@@ -167,7 +188,7 @@ std::function<void(u16, u8)> Debugger::write_to(MemorySource source)
     switch (source) {
     case MemorySource::RAM:  return [&](u16 addr, u8 data) { return emu->rambus.write(addr, data); };
     case MemorySource::VRAM: return [&](u16 addr, u8 data) { return emu->vrambus.write(addr, data); };
-    case MemorySource::OAM:  return util::member_fn(&ppudbg, &PPUDebugger::write_oam);
+    case MemorySource::OAM:  return util::member_fn(&ppu, &PPUDebugger::write_oam);
     default: panic("get_write_fn");
     }
 }

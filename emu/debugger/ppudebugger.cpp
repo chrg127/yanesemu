@@ -4,7 +4,7 @@
 
 namespace debugger {
 
-u8 PPUDebugger::getreg(u16 addr) const
+u8 PPUDebugger::reg(u16 addr) const
 {
     switch (addr) {
     case 0x2000: return ppu->vram.tmp.nt
@@ -37,22 +37,22 @@ u8 PPUDebugger::getreg(u16 addr) const
     }
 }
 
-u8 PPUDebugger::getreg(Reg reg) const
+u8 PPUDebugger::reg(Reg r) const
 {
-    switch (reg) {
-    case PPUDebugger::Reg::Ctrl:        return getreg(0x2000); break;
-    case PPUDebugger::Reg::Mask:        return getreg(0x2001); break;
-    case PPUDebugger::Reg::Status:      return getreg(0x2002); break;
-    case PPUDebugger::Reg::OAMAddr:     return getreg(0x2003); break;
-    case PPUDebugger::Reg::OAMData:     return getreg(0x2004); break;
-    case PPUDebugger::Reg::PPUScroll:   return getreg(0x2005); break;
-    case PPUDebugger::Reg::PPUAddr:     return getreg(0x2006); break;
-    case PPUDebugger::Reg::PPUData:     return getreg(0x2007); break;
+    switch (r) {
+    case PPUDebugger::Reg::Ctrl:        return reg(0x2000); break;
+    case PPUDebugger::Reg::Mask:        return reg(0x2001); break;
+    case PPUDebugger::Reg::Status:      return reg(0x2002); break;
+    case PPUDebugger::Reg::OAMAddr:     return reg(0x2003); break;
+    case PPUDebugger::Reg::OAMData:     return reg(0x2004); break;
+    case PPUDebugger::Reg::PPUScroll:   return reg(0x2005); break;
+    case PPUDebugger::Reg::PPUAddr:     return reg(0x2006); break;
+    case PPUDebugger::Reg::PPUData:     return reg(0x2007); break;
     default: return 0xFF;
     }
 }
 
-// void PPUDebugger::setreg(Reg reg, u8 data)
+// void PPUDebugger::set_reg(Reg reg, u8 data)
 // {
 // }
 

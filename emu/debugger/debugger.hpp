@@ -20,15 +20,8 @@ namespace input {
 
 namespace debugger {
 
-enum class MemorySource {
-    RAM,
-    VRAM,
-    OAM,
-};
-
-enum class Component {
-    CPU, PPU,
-};
+enum class MemorySource { RAM, VRAM, OAM, };
+enum class Component { CPU, PPU, };
 
 std::optional<MemorySource> string_to_memsource(std::string_view str);
 std::optional<Component> string_to_component(std::string_view str);
@@ -40,21 +33,18 @@ class CPUDebugger {
 public:
     explicit CPUDebugger(core::CPU *c) : cpu(c) { }
 
-    enum class Reg  { Acc, X, Y, PC, SP, };
-    enum class Flag { Neg, Ov, Dec, IntDis, Zero, Carry, };
+    enum class Reg  { Acc, X, Y, PC, SP, Flags };
 
     struct Instruction {
         u8 id, lo, hi;
     };
 
-    u16 getreg(Reg reg) const;
-    bool getflag(Flag flag) const;
-    void setreg(Reg reg, u16 value);
-    void setflag(Flag flag, bool value);
-    u16 get_vector_addr(u16 vector) const;
+    u16 reg(Reg reg) const;
+    void set_reg(Reg reg, u16 value);
+    std::string flags_to_string() const;
+    u16 vector_address(u16 vector) const;
     Instruction curr_instr() const;
-    std::string curr_instr_str() const;
-    std::string curr_flags_str() const;
+    std::string curr_instr_to_string() const;
     unsigned long cycles() const;
 };
 
@@ -69,18 +59,20 @@ public:
         OAMData, PPUScroll, PPUAddr, PPUData,
     };
 
-    u8 getreg(u16 addr) const;
-    u8 getreg(Reg reg) const;
-    // void setreg(Reg reg, u16 value);
+    u8 reg(u16 addr) const;
+    u8 reg(Reg reg) const;
+    // void set_reg(Reg reg, u16 value);
     std::pair<unsigned long, unsigned long> pos() const;
     u16 nt_base_addr() const;
     u16 vram_addr() const;
     u16 tmp_addr() const;
     u8 fine_x() const;
-    std::pair<int, int> screen_coords() const;
     u8 read_oam(u8 addr);
     void write_oam(u8 addr, u8 data);
 };
+
+std::optional<CPUDebugger::Reg> string_to_cpu_reg(std::string_view str);
+std::optional<PPUDebugger::Reg> string_to_ppu_reg(std::string_view str);
 
 struct Breakpoint {
     u16 start = 0, end = 0;
@@ -136,8 +128,8 @@ private:
     bool got_error = false;
 
 protected:
-    CPUDebugger cpudbg;
-    PPUDebugger ppudbg;
+    CPUDebugger cpu;
+    PPUDebugger ppu;
     BreakList break_list;
     Tracer tracer;
 
@@ -150,7 +142,7 @@ protected:
     void reset_emulator();
 };
 
-std::pair<std::string, int> disassemble(const u8 id, const u8 oplow, const u8 ophigh);
+std::pair<std::string, int> disassemble(u8 id, u8 oplow, u8 ophigh);
 
 inline void disassemble_block(u16 start, u16 end, auto &&readval, auto &&process)
 {

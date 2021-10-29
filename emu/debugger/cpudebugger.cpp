@@ -6,7 +6,7 @@
 
 namespace debugger {
 
-u16 CPUDebugger::getreg(Reg reg) const
+u16 CPUDebugger::reg(Reg reg) const
 {
     switch (reg) {
     case Reg::Acc:   return cpu->r.acc;
@@ -14,47 +14,24 @@ u16 CPUDebugger::getreg(Reg reg) const
     case Reg::Y:     return cpu->r.y;
     case Reg::PC:    return cpu->r.pc.v;
     case Reg::SP:    return cpu->r.sp;
+    case Reg::Flags: return u8(cpu->r.flags);
     default:    return 0;
     }
 }
 
-void CPUDebugger::setreg(Reg reg, u16 value)
+void CPUDebugger::set_reg(Reg reg, u16 value)
 {
     switch (reg) {
-    case Reg::Acc: cpu->r.acc  = value; break;
-    case Reg::X:     cpu->r.x    = value; break;
-    case Reg::Y:     cpu->r.y    = value; break;
-    case Reg::PC:    cpu->r.pc   = value; break;
-    case Reg::SP:    cpu->r.sp   = value; break;
+    case Reg::Acc:   cpu->r.acc   = value; break;
+    case Reg::X:     cpu->r.x     = value; break;
+    case Reg::Y:     cpu->r.y     = value; break;
+    case Reg::PC:    cpu->r.pc    = value; break;
+    case Reg::SP:    cpu->r.sp    = value; break;
+    case Reg::Flags: cpu->r.flags = value; break;
     }
 }
 
-bool CPUDebugger::getflag(Flag flag) const
-{
-    switch (flag) {
-    case Flag::Carry:  return cpu->r.flags.carry;
-    case Flag::Zero:   return cpu->r.flags.zero;
-    case Flag::IntDis: return cpu->r.flags.intdis;
-    case Flag::Dec:    return cpu->r.flags.decimal;
-    case Flag::Ov:     return cpu->r.flags.ov;
-    case Flag::Neg:    return cpu->r.flags.neg;
-    default: return 0;
-    }
-}
-
-void CPUDebugger::setflag(Flag flag, bool value)
-{
-    switch (flag) {
-    case Flag::Carry: cpu->r.flags.carry   = value; break;
-    case Flag::Zero: cpu->r.flags.zero     = value; break;
-    case Flag::IntDis: cpu->r.flags.intdis = value; break;
-    case Flag::Dec: cpu->r.flags.decimal   = value; break;
-    case Flag::Ov: cpu->r.flags.ov         = value; break;
-    case Flag::Neg: cpu->r.flags.neg       = value; break;
-    }
-}
-
-u16 CPUDebugger::get_vector_addr(u16 vector) const
+u16 CPUDebugger::vector_address(u16 vector) const
 {
     return cpu->bus->read(vector+1) << 8 | cpu->bus->read(vector);
 }
@@ -68,7 +45,7 @@ CPUDebugger::Instruction CPUDebugger::curr_instr() const
     };
 }
 
-std::string CPUDebugger::curr_instr_str() const
+std::string CPUDebugger::curr_instr_to_string() const
 {
     auto is_branch      = [](u8 id)            { return (id & 0x1F) == 0x10; };
     auto branch_pointer = [](u8 arg, u8 pc) { return pc + 2 + (int8_t) arg; };
@@ -98,7 +75,7 @@ std::string CPUDebugger::curr_instr_str() const
     return res;
 }
 
-std::string CPUDebugger::curr_flags_str() const
+std::string CPUDebugger::flags_to_string() const
 {
     return fmt::format("{}{}{}{}{}{}{}{}",
         (cpu->r.flags.neg    ) ? 'N' : '.',
@@ -118,4 +95,3 @@ unsigned long CPUDebugger::cycles() const
 }
 
 } // namespace core
-

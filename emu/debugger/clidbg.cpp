@@ -33,7 +33,9 @@ namespace debugger {
     X("disassemble",    "dis",  Disassemble,   1,       3,          "disassemble the current instruction") \
     X("disblock",       "db",   DisBlock,      2,       2,          "disassemble a given block") \
     X("trace",          "tr",   Trace,         1,       1,          "trace and log instructions to file") \
-    X("stoptrace",      "str",  StopTrace,     0,       0,          "stop tracing instructions") \
+    X("stoptrace",      "str",  StopTrace,     0,       0,          "stop tracing instructions")\
+    X("writeregcpu",    "wrcpu",WriteRegCPU,   2,       2,          "writes a value to a CPU register") \
+    X("writeregppu",    "wrppu",WriteRegPPU,   2,       2,          "writes a value to a PPU register") \
     X("hold",           "hb",   HoldButton,    1,       1,          "select a button to hold automatically") \
     X("reset",          "res",  Reset,         0,       0,          "reset the emulator") \
     X("quit",           "q",    Quit,          0,       0,          "quit the emulator") \
@@ -88,14 +90,17 @@ template <typename T>
 T parse_to(std::string_view str)
 {
     std::optional<T> o;
-    if constexpr(std::is_same<T, MemorySource>::value)
+    if constexpr(std::is_same_v<T, MemorySource>)
         o = string_to_memsource(str);
+    else if constexpr(std::is_same_v<T, CPUDebugger::Reg>)
+        o = string_to_cpu_reg(str);
     else
         o = str::conv<T>(str, 16);
     if (!o) {
-        if constexpr(std::is_same<T, MemorySource>::value) throw CommandError(fmt::format("Invalid memory source: {}", str));
-        if constexpr(std::is_same<T, u8>::value)        throw CommandError(fmt::format("Invalid data: {}", str));
-        if constexpr(std::is_same<T, u16>::value)       throw CommandError(fmt::format("Invalid address: {}", str));
+        if constexpr(std::is_same_v<T, MemorySource>) throw CommandError(fmt::format("Invalid memory source: {}", str));
+        if constexpr(std::is_same_v<T, u8>)           throw CommandError(fmt::format("Invalid data: {}", str));
+        if constexpr(std::is_same_v<T, u16>)          throw CommandError(fmt::format("Invalid address: {}", str));
+        if constexpr(std::is_same_v<T, CPUDebugger::Reg>)  throw CommandError(fmt::format("Invalid register: {}", str));
     }
     return o.value();
 }
@@ -254,6 +259,17 @@ void CliDebugger::eval(const Command &cmd, std::span<std::string> args)
         tracer.stop();
         break;
 
+    case CommandType::WriteRegCPU: {
+        auto reg = parse_to<CPUDebugger::Reg>(args[0]);
+        auto data = parse_to<u16>(args[1]);
+        cpu.set_reg(reg, data);
+        break;
+    }
+
+    case CommandType::WriteRegPPU: {
+        break;
+    }
+
     case CommandType::HoldButton:
         if (auto button = debugger::string_to_button(args[0]); button)
             program.hold_button(button.value(), true);
@@ -287,8 +303,7 @@ void CliDebugger::report_event(Debugger::Event ev)
 
 void CliDebugger::print_instr()
 {
-    fmt::print("${:04X}: {}\n", cpudbg.getreg(CPUDebugger::Reg::PC),
-                                cpudbg.curr_instr_str());
+    fmt::print("${:04X}: {}\n", cpu.reg(CPUDebugger::Reg::PC), cpu.curr_instr_to_string());
 }
 
 void CliDebugger::print_cpu_status() const
@@ -296,46 +311,45 @@ void CliDebugger::print_cpu_status() const
     fmt::print("PC: ${:02X} A: ${:02X} X: ${:02X} Y: ${:02X} S: ${:02X}\n"
                "Flags: [{}]\n"
                "Cycles: {}\n",
-               cpudbg.getreg(CPUDebugger::Reg::PC),
-               cpudbg.getreg(CPUDebugger::Reg::Acc),
-               cpudbg.getreg(CPUDebugger::Reg::X),
-               cpudbg.getreg(CPUDebugger::Reg::Y),
-               cpudbg.getreg(CPUDebugger::Reg::SP),
-               cpudbg.curr_flags_str(),
-               cpudbg.cycles());
+               cpu.reg(CPUDebugger::Reg::PC),
+               cpu.reg(CPUDebugger::Reg::Acc),
+               cpu.reg(CPUDebugger::Reg::X),
+               cpu.reg(CPUDebugger::Reg::Y),
+               cpu.reg(CPUDebugger::Reg::SP),
+               cpu.flags_to_string(),
+               cpu.cycles());
 }
 
 void CliDebugger::print_ppu_status() const
 {
-    using util::getbit;
     auto onoff = [](auto val) { return val ? "ON" : "OFF"; };
-    u8 ctrl = ppudbg.getreg(PPUDebugger::Reg::Ctrl);
-    u8 mask = ppudbg.getreg(PPUDebugger::Reg::Mask);
-    u8 status = ppudbg.getreg(PPUDebugger::Reg::Status);
-    auto [line, cycle] = ppudbg.pos();
+    u8 ctrl = ppu.reg(PPUDebugger::Reg::Ctrl);
+    u8 mask = ppu.reg(PPUDebugger::Reg::Mask);
+    u8 status = ppu.reg(PPUDebugger::Reg::Status);
+    auto [line, cycle] = ppu.pos();
     fmt::print("PPUCTRL ($2000): {:08b}:\n"
                "    Base NT address: ${:04X}\n    VRAM address increment: {}\n    Sprite Pattern table address: ${:04X}\n"
                "    Background pattern table address: ${:04X}\n    Sprite size: {}\n    Master/slave: {}\n    NMI enabled: {}\n",
-               ctrl, ppudbg.nt_base_addr(), (ctrl & 4) == 0 ? 1 : 32, getbit(ctrl, 4) * 0x1000,
-               getbit(ctrl, 5) * 0x1000, (ctrl & 32) ? "8x16" : "8x8", (ctrl & 64) ? "output color" : "read backdrop",
+               ctrl, ppu.nt_base_addr(), (ctrl & 4) == 0 ? 1 : 32, util::getbit(ctrl, 4) * 0x1000,
+               util::getbit(ctrl, 5) * 0x1000, (ctrl & 32) ? "8x16" : "8x8", (ctrl & 64) ? "output color" : "read backdrop",
                (ctrl & 128) ? "ON" : "OFF");
     fmt::print("PPUMASK ($2001): {:08b}:\n"
                "    Greyscale: {}\n    BG left: {}\n    Sprites left: {}\n    BG: {}\n    Sprites: {}\n"
                "    Emphasize red: {}\n    Emphasize green: {}\n    Emphasize blue: {}\n",
                mask, onoff(mask & 1),  onoff(mask & 2),  onoff(mask & 4),  onoff(mask & 8),
-                     onoff(mask & 16), onoff(mask & 32), onoff(mask & 64), onoff(mask & 128));
+               onoff(mask & 16), onoff(mask & 32), onoff(mask & 64), onoff(mask & 128));
     fmt::print("PPUSTATUS ($2002): {:08b}:\n"
                "    Sprite overflow: {}\n    Sprite 0 hit: {}\n    Vblank: {}\n",
                status, onoff(status & 32), onoff(status & 64), onoff(status & 128));
-    fmt::print("OAMAddr ($2003): ${:02X}\n", ppudbg.getreg(PPUDebugger::Reg::OAMAddr));
-    fmt::print("OAMData ($2004): ${:02X}\n", ppudbg.getreg(PPUDebugger::Reg::OAMData));
-    fmt::print("PPUScroll ($2005): ${:02X}\n", ppudbg.getreg(PPUDebugger::Reg::PPUScroll));
-    fmt::print("PPUAddr ($2006): ${:02X}\n", ppudbg.getreg(PPUDebugger::Reg::PPUAddr));
-    fmt::print("PPUData ($2007): ${:02X}\n", ppudbg.getreg(PPUDebugger::Reg::PPUData));
+    fmt::print("OAMAddr ($2003): ${:02X}\n", ppu.reg(PPUDebugger::Reg::OAMAddr));
+    fmt::print("OAMData ($2004): ${:02X}\n", ppu.reg(PPUDebugger::Reg::OAMData));
+    fmt::print("PPUScroll ($2005): ${:02X}\n", ppu.reg(PPUDebugger::Reg::PPUScroll));
+    fmt::print("PPUAddr ($2006): ${:02X}\n", ppu.reg(PPUDebugger::Reg::PPUAddr));
+    fmt::print("PPUData ($2007): ${:02X}\n", ppu.reg(PPUDebugger::Reg::PPUData));
     fmt::print("Line: {}; Cycle: {}\n", line, cycle);
-    fmt::print("VRAM address: {:04X}\n", ppudbg.vram_addr());
-    fmt::print("TMP address: {:04X}\n", ppudbg.tmp_addr());
-    fmt::print("Fine X: {:X}\n", ppudbg.fine_x());
+    fmt::print("VRAM address: {:04X}\n", ppu.vram_addr());
+    fmt::print("TMP address: {:04X}\n", ppu.tmp_addr());
+    fmt::print("Fine X: {:X}\n", ppu.fine_x());
 }
 
 void CliDebugger::read_block(u16 start, u16 end, MemorySource source)
@@ -358,4 +372,4 @@ void CliDebugger::write_block(u16 start, u16 end, u8 data, MemorySource source)
         writefn(curr, data);
 }
 
-} // namespace Debugger
+} // namespace debugger
