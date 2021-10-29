@@ -6,33 +6,27 @@
 
 namespace debugger {
 
-class CliDebugger {
-    Debugger dbg;
-    std::string last_name;
+class CliDebugger : public Debugger {
     std::vector<std::string> last_args{};
 
     void help();
-    void continue_exec();
-    void runframe();
-    void next();
-    void step();
-    void breakpoint_range(u16 start, u16 end);
-    void breakpoint(u16 addr);
-    void delete_break(int index);
+    void breakpoint(u16 start, u16 end);
+    void delete_breakpoint(int index);
     void list_breakpoints();
     void status(Component component);
-    void status_cpu();
-    void read_addr(u16 addr, MemorySource source);
-    void read_addr_ram(u16 addr);
     void write_addr(u16 addr, u8 data, MemorySource source);
-    void write_addr_ram(u16 addr, u8 data);
-    void block(u16 start, u16 end, MemorySource source);
-    void block_ram(u16 start, u16 end);
+    void read_block(u16 start, u16 end, MemorySource source);
+    void write_block(u16 start, u16 end, u8 data, MemorySource source);
     void disassemble(u8 id, u8 low, u8 high);
     void disassemble_block(u16 start, u16 end);
     void trace(std::string_view filename);
     void stop_tracing();
-    void reset();
+
+    void breakpoint_single(u16 addr)              { breakpoint(addr, addr); }
+    void read_addr(u16 addr, MemorySource source) { read_block(addr, addr, source); }
+    void read_addr_ram(u16 addr)                  { read_block(addr, addr, MemorySource::RAM); }
+    void read_block_ram(u16 start, u16 end)       { read_block(start, end, MemorySource::RAM); }
+    void write_addr_ram(u16 addr, u8 data)        { write_addr(addr, data, MemorySource::RAM); }
 
     void report_event(Debugger::Event ev);
     void print_cpu_status() const;
@@ -41,7 +35,7 @@ class CliDebugger {
 public:
     explicit CliDebugger()
     {
-        dbg.on_report([this](Debugger::Event ev) { report_event(ev); });
+        on_report([&](Debugger::Event ev) { report_event(ev); });
     }
 
     bool repl();

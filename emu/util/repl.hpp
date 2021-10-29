@@ -79,4 +79,9 @@ void call_command(std::string_view name, std::span<std::string> args, auto &&inv
         throw ParseError(invalid_fn(wrong_num_params ? 1 : 0, name, args.size()));
 }
 
+void call_command(std::span<std::string> args, auto &&invalid_fn, auto&&... commands)
+{
+    call_command(args[0], args.subspan(1, args.size()-1), invalid_fn, commands...);
+}
+
 } // namespace util
