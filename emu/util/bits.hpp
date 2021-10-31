@@ -77,6 +77,9 @@ struct BitField {
 
     BitField & operator++() { return *this = *this + 1; }
     BitField & operator--() { return *this = *this - 1; }
+
+    constexpr unsigned bitno() const { return Bitno; }
+    constexpr unsigned nbits() const { return Nbits; }
 };
 
 // A 16 number that can be accessed either through its full value and through its low and high byte.

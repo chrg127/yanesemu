@@ -18,28 +18,17 @@ class CPU {
         u8 x   = 0;
         u8 y   = 0;
         u8 sp  = 0;
-        struct {
-            bool carry   = 0;
-            bool zero    = 0;
-            bool intdis  = 0;
-            bool decimal = 0;
-            bool breakf  = 0;
-            bool unused  = 1;
-            bool ov      = 0;
-            bool neg     = 0;
-
-            explicit operator u8() const
-            {
-                return carry  << 0  | zero   << 1  | intdis << 2 | decimal << 3 |
-                       breakf << 4  | unused << 5  | ov     << 6 | neg     << 7;
-            }
-
-            void operator=(u8 data)
-            {
-                carry   = data & (1 << 0); zero    = data & (1 << 1); intdis  = data & (1 << 2);
-                decimal = data & (1 << 3); breakf  = data & (1 << 4); unused  = data & (1 << 5);
-                ov      = data & (1 << 6); neg     = data & (1 << 7);
-            }
+        union Flags {
+            u8 full = 0;
+            util::BitField<u8, 0> carry;
+            util::BitField<u8, 1> zero;
+            util::BitField<u8, 2> intdis;
+            util::BitField<u8, 3> decimal;
+            util::BitField<u8, 4> breakf;
+            util::BitField<u8, 5> unused;
+            util::BitField<u8, 6> ov;
+            util::BitField<u8, 7> neg;
+            void operator=(u8 value) { full = value; }
         } flags;
     } r;
 
@@ -55,10 +44,6 @@ class CPU {
         bool flag = false;
         u8 page   = 0;
     } dma;
-
-    struct {
-        bool strobe = false;
-    } input;
 
     unsigned long cpu_cycles = 0;
     Bus<CPUBUS_SIZE> *bus = nullptr;
@@ -76,10 +61,15 @@ public:
     void fire_irq();
     void fire_nmi();
 
+    // used for testing. when called, it'll write to the bus the parameters
+    // passed and run them, so a valid bus must be set up first.
+    void run_instr(u8 id, u8 low, u8 high);
+
     unsigned long cycles() const { return cpu_cycles; }
     void on_error(auto &&f) { error_callback = f; }
 
     friend class debugger::CPUDebugger;
+    friend class CPUTest;
 
 private:
     u8 fetch();
@@ -133,7 +123,7 @@ private:
     void instr_dec_reg(u8 &reg);
 
     void instr_branch(bool take);
-    void instr_flag(bool &flag, bool v);
+    void instr_flag(u8 &flags, unsigned which, u1 value);
     void instr_transfer(u8 from, u8 &to);
     void instr_lda(u8 val);
     void instr_ldx(u8 val);

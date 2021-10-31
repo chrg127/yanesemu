@@ -11,11 +11,11 @@ namespace core {
 void CPU::power(bool reset)
 {
     if (!reset) {
-        r.acc = 0;
-        r.x   = 0;
-        r.y   = 0;
-        r.sp  = 0;
-        r.pc  = 0;
+        r.acc   = 0;
+        r.x     = 0;
+        r.y     = 0;
+        r.sp    = 0;
+        r.pc    = 0;
         r.flags = 0;
         r.flags.unused = 1;
     }
@@ -71,6 +71,14 @@ u8 CPU::fetch()
     return bus->read(r.pc.v++);
 }
 
+void CPU::run_instr(u8 id, u8 low, u8 high)
+{
+    bus->write(r.pc.v,   id);
+    bus->write(r.pc.v+1, low);
+    bus->write(r.pc.v+2, high);
+    execute(fetch());
+}
+
 void CPU::execute(u8 instr)
 {
 #define INSTR_IMPLIED(id, func) \
@@ -96,7 +104,7 @@ void CPU::execute(u8 instr)
         INSTR_ADDRMODE(0x11, ora, indy, read)
         INSTR_ADDRMODE(0x15, ora, zero_ind, read, r.x)
         INSTR_ADDRMODE(0x16, asl, zerox, modify)
-        INSTR_OTHER   (0x18, clc, flag, r.flags.carry, false)
+        INSTR_OTHER   (0x18, clc, flag, r.flags.full, r.flags.carry.bitno(), 0)
         INSTR_ADDRMODE(0x19, ora, abs_ind, read, r.y)
         INSTR_ADDRMODE(0x1D, ora, abs_ind, read, r.x)
         INSTR_ADDRMODE(0x1E, asl, absx, modify)
@@ -115,7 +123,7 @@ void CPU::execute(u8 instr)
         INSTR_ADDRMODE(0x31, and, indy, read)
         INSTR_ADDRMODE(0x35, and, zero_ind, read, r.x)
         INSTR_ADDRMODE(0x36, rol, zerox, modify)
-        INSTR_OTHER   (0x38, sec, flag, r.flags.carry, true)
+        INSTR_OTHER   (0x38, sec, flag, r.flags.full, r.flags.carry.bitno(), 1)
         INSTR_ADDRMODE(0x39, and, abs_ind, read, r.y)
         INSTR_ADDRMODE(0x3D, and, abs_ind, read, r.x)
         INSTR_ADDRMODE(0x3E, rol, absx, modify)
@@ -133,7 +141,7 @@ void CPU::execute(u8 instr)
         INSTR_ADDRMODE(0x51, eor, indy, read)
         INSTR_ADDRMODE(0x55, eor, zero_ind, read, r.x)
         INSTR_ADDRMODE(0x56, lsr, zerox, modify)
-        INSTR_OTHER   (0x58, cli, flag, r.flags.intdis, false)
+        INSTR_OTHER   (0x58, cli, flag, r.flags.full, r.flags.intdis.bitno(), 0)
         INSTR_ADDRMODE(0x59, eor, abs_ind, read, r.y)
         INSTR_ADDRMODE(0x5D, eor, abs_ind, read, r.x)
         INSTR_ADDRMODE(0x5E, lsr, absx, modify)
@@ -151,7 +159,7 @@ void CPU::execute(u8 instr)
         INSTR_ADDRMODE(0x71, adc, indy, read)
         INSTR_ADDRMODE(0x75, adc, zero_ind, read, r.x)
         INSTR_ADDRMODE(0x76, ror, zerox, modify)
-        INSTR_OTHER   (0x78, sei, flag, r.flags.intdis, true)
+        INSTR_OTHER   (0x78, sei, flag, r.flags.full, r.flags.intdis.bitno(), 1)
         INSTR_ADDRMODE(0x79, adc, abs_ind, read, r.y)
         INSTR_ADDRMODE(0x7D, adc, abs_ind, read, r.x)
         INSTR_ADDRMODE(0x7E, ror, absx, modify)
@@ -190,7 +198,7 @@ void CPU::execute(u8 instr)
         INSTR_ADDRMODE(0xB4, ldy, zero_ind, read, r.x)
         INSTR_ADDRMODE(0xB5, lda, zero_ind, read, r.x)
         INSTR_ADDRMODE(0xB6, ldx, zero_ind, read, r.y)
-        INSTR_OTHER   (0xB8, clv, flag, r.flags.ov, false)
+        INSTR_OTHER   (0xB8, clv, flag, r.flags.full, r.flags.ov.bitno(), 0)
         INSTR_ADDRMODE(0xB9, lda, abs_ind, read, r.y)
         INSTR_OTHER   (0xBA, tsx, transfer, r.sp, r.x)
         INSTR_ADDRMODE(0xBC, ldy, abs_ind, read, r.x)
@@ -211,7 +219,7 @@ void CPU::execute(u8 instr)
         INSTR_ADDRMODE(0xD1, cmp, indy, read)
         INSTR_ADDRMODE(0xD5, cmp, zero_ind, read, r.x)
         INSTR_ADDRMODE(0xD6, dec, zerox, modify)
-        INSTR_OTHER   (0xD8, cld, flag, r.flags.decimal, false)
+        INSTR_OTHER   (0xD8, cld, flag, r.flags.full, r.flags.decimal.bitno(), 0)
         INSTR_ADDRMODE(0xD9, cmp, abs_ind, read, r.y)
         INSTR_ADDRMODE(0xDD, cmp, abs_ind, read, r.x)
         INSTR_ADDRMODE(0xDE, dec, absx, modify)
@@ -230,7 +238,7 @@ void CPU::execute(u8 instr)
         INSTR_ADDRMODE(0xF1, sbc, indy, read)
         INSTR_ADDRMODE(0xF5, sbc, zero_ind, read, r.x)
         INSTR_ADDRMODE(0xF6, inc, zerox, modify)
-        INSTR_OTHER   (0xF8, sed, flag, r.flags.decimal, true)
+        INSTR_OTHER   (0xF8, sed, flag, r.flags.full, r.flags.decimal.bitno(), 1)
         INSTR_ADDRMODE(0xF9, sbc, abs_ind, read, r.y)
         INSTR_ADDRMODE(0xFD, sbc, abs_ind, read, r.x)
         INSTR_ADDRMODE(0xFE, inc, absx, modify)
@@ -250,7 +258,7 @@ void CPU::interrupt()
     cycle();
     push(r.pc.h);
     push(r.pc.l);
-    push(u8(r.flags));
+    push(r.flags.full);
     // reset this here just in case
     r.flags.breakf = 0;
     r.flags.intdis = 1;

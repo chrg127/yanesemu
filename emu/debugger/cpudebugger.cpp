@@ -14,7 +14,7 @@ u16 CPUDebugger::reg(Reg reg) const
     case Reg::Y:     return cpu->r.y;
     case Reg::PC:    return cpu->r.pc.v;
     case Reg::SP:    return cpu->r.sp;
-    case Reg::Flags: return u8(cpu->r.flags);
+    case Reg::Flags: return cpu->r.flags.full;
     default:    return 0;
     }
 }
@@ -50,7 +50,7 @@ std::string CPUDebugger::curr_instr_to_string() const
     auto is_branch      = [](u8 id)            { return (id & 0x1F) == 0x10; };
     auto branch_pointer = [](u8 arg, u8 pc) { return pc + 2 + (int8_t) arg; };
 
-    const auto took_branch = [](u8 id, const auto &flags)
+    const auto took_branch = [](u8 id, const auto &flags) -> bool
     {
         switch (id) {
         case 0x10: return !flags.neg;
