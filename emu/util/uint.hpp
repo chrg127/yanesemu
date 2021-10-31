@@ -28,7 +28,9 @@ private:
 
 public:
     UInt() = default;
-    template <typename T> UInt(const T val) { operator=(val); }
+
+    template <std::integral T>
+    UInt(const T val) { operator=(val); }
 
     static constexpr IntType MAX = (~0ull >> (64 - Bits));
 

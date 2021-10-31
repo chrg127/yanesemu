@@ -5,6 +5,7 @@
 using util::Word;
 
 #define call(f, ...) (this->*f)(__VA_ARGS__)
+#define sign(x) (util::getbit((x), 7))
 
 /*
  * All instructions have an impled cycle from fetching the instruction
@@ -232,16 +233,14 @@ void CPU::instr_transfer(u8 from, u8 &to)
     cycle();
     to = from;
     r.flags.zero = to == 0;
-    r.flags.neg  = (to & 0x80) >> 7;
+    r.flags.neg  = sign(to);
 }
-
-
 
 void CPU::instr_load(u8 val, u8 &reg)
 {
     reg = val;
-    r.flags.zero = reg == 0;
-    r.flags.neg  = (reg & 0x80) >> 7;
+    r.flags.zero = val == 0;
+    r.flags.neg  = sign(val);
 }
 
 void CPU::instr_lda(u8 val) { instr_load(val, r.acc); }
@@ -252,7 +251,7 @@ void CPU::instr_compare(u8 val, u8 reg)
 {
     int res = reg - val;
     r.flags.zero     = res == 0;
-    r.flags.neg      = (res & 0x80) >> 7;
+    r.flags.neg      = sign(res);
     r.flags.carry    = res >= 0;
 }
 
@@ -260,37 +259,11 @@ void CPU::instr_cmp(u8 val) { instr_compare(val, r.acc); }
 void CPU::instr_cpx(u8 val) { instr_compare(val, r.x); }
 void CPU::instr_cpy(u8 val) { instr_compare(val, r.y); }
 
-// u8 adc(u8 source, u8 target, bool carry)
-// {
-//     u8 result   = target + source + carry;
-//     u8 carries  = target ^ source ^ result;
-//     u8 overflow = (target ^ result) & (source ^ result);
-
-//     r.flags.ov    = overflow & sign;
-//     r.flags.carry = (carries ^ overflow) & sign;
-//     r.flags.zero  = result == 0;
-//     r.flags.neg   = (result & 0x80) >> 7;
-
-//     return result;
-// }
-
-// auto sbc(natural target, natural source, boolean carry) -> uint8 {
-//   natural result   = target - source - !carry;
-//   natural carries  = target ^ ~source ^ result;
-//   natural overflow = (target ^ result) & (source ^ target);
-
-//   flag.overflow  = overflow & sign;
-//   flag.carry     = (carries ^ overflow) & sign;
-//   flag.halfCarry = carries & 16;  //Z80
-
-//   return result;
-// }
-
 void CPU::instr_adc(u8 val)
 {
     int sum = r.acc + val + int(r.flags.carry);
     r.flags.zero     = (u8) sum == 0;
-    r.flags.neg      = (sum & 0x80) >> 7;
+    r.flags.neg      = sign(sum);
     r.flags.carry    = sum > 0xFF;
     r.flags.ov       = ((r.acc^sum) & ~(r.acc^val) & 0x80) >> 7;
     r.acc = sum;
@@ -300,7 +273,7 @@ void CPU::instr_sbc(u8 val)
 {
     int sum = r.acc + ~val + r.flags.carry;
     r.flags.zero     = (u8) sum == 0;
-    r.flags.neg      = (sum & 0x80) >> 7;
+    r.flags.neg      = sign(sum);
     r.flags.carry    = sum > 0xFF;
     r.flags.ov       = ((r.acc^sum) & ~(r.acc^val) & 0x80) >> 7;
     r.acc = sum;
@@ -311,21 +284,21 @@ void CPU::instr_sbc(u8 val)
 void CPU::instr_ora(u8 val)
 {
     r.acc |= val;
-    r.flags.neg  = (r.acc & 0x80) >> 7;
+    r.flags.neg  = sign(r.acc);
     r.flags.zero = r.acc == 0;
 }
 
 void CPU::instr_and(u8 val)
 {
     r.acc &= val;
-    r.flags.neg  = (r.acc & 0x80) >> 7;
+    r.flags.neg  = sign(r.acc);
     r.flags.zero = r.acc == 0;
 }
 
 void CPU::instr_eor(u8 val)
 {
     r.acc ^= val;
-    r.flags.neg  = (r.acc & 0x80) >> 7;
+    r.flags.neg  = sign(r.acc);
     r.flags.zero = r.acc == 0;
 }
 
@@ -340,7 +313,7 @@ u8 CPU::instr_inc(u8 val)
 {
     val++;
     r.flags.zero = val == 0;
-    r.flags.neg  = (val & 0x80) >> 7;
+    r.flags.neg  = sign(val);
     return val;
 }
 
@@ -348,16 +321,16 @@ u8 CPU::instr_dec(u8 val)
 {
     val--;
     r.flags.zero = val == 0;
-    r.flags.neg  = (val & 0x80) >> 7;
+    r.flags.neg  = sign(val);
     return val;
 }
 
 u8 CPU::instr_asl(u8 val)
 {
-    r.flags.carry = (val & 0x80) >> 7;
+    r.flags.carry = sign(val);
     val <<= 1;
     r.flags.zero = val == 0;
-    r.flags.neg  = (val & 0x80) >> 7;
+    r.flags.neg  = sign(val);
     return val;
 }
 
@@ -366,17 +339,17 @@ u8 CPU::instr_lsr(u8 val)
     r.flags.carry = val & 1;
     val >>= 1;
     r.flags.zero = val == 0;
-    r.flags.neg  = (val & 0x80) >> 7;
+    r.flags.neg  = sign(val);
     return val;
 }
 
 u8 CPU::instr_rol(u8 val)
 {
-    bool carry = r.flags.carry;
-    r.flags.carry = (val & 0x80) >> 7;
+    u1 carry = u8(r.flags.carry);
+    r.flags.carry = sign(val);
     val = val << 1 | carry;
     r.flags.zero = val == 0;
-    r.flags.neg  = (val & 0x80) >> 7;
+    r.flags.neg  = sign(val);
     return val;
 }
 
@@ -386,7 +359,7 @@ u8 CPU::instr_ror(u8 val)
     r.flags.carry = val & 1;
     val = val >> 1 | c << 7;
     r.flags.zero = val == 0;
-    r.flags.neg  = (val & 0x80) >> 7;
+    r.flags.neg  = sign(val);
     return val;
 }
 
@@ -396,7 +369,7 @@ void CPU::instr_inc_reg(u8 &reg)
     cycle();
     reg++;
     r.flags.zero = reg == 0;
-    r.flags.neg  = (reg & 0x80) >> 7;
+    r.flags.neg  = sign(reg);
     last_cycle();
 }
 
@@ -405,7 +378,7 @@ void CPU::instr_dec_reg(u8 &reg)
     cycle();
     reg--;
     r.flags.zero = (reg == 0);
-    r.flags.neg  = (reg & 0x80) >> 7;
+    r.flags.neg  = sign(reg);
     last_cycle();
 }
 
@@ -450,7 +423,7 @@ void CPU::instr_pla()
     cycle();
     r.acc = pull();
     r.flags.zero = r.acc == 0;
-    r.flags.neg  = (r.acc & 0x80) >> 7;
+    r.flags.neg  = sign(r.acc);
     last_cycle();
 }
 
@@ -478,15 +451,10 @@ void CPU::instr_jmp_ind()
     Word op;
     op.l = fetch();
     op.h = fetch();
-    // hardware bug
-    if (op.l == 0xFF) {
-        r.pc.l = readmem(op.v);
-        // reset the l byte, e.g. $02FF -> $0200
-        r.pc.h = readmem(op.v & 0xFF00);
-    } else {
-        r.pc.l = readmem(op.v);
-        r.pc.h = readmem(op.v+1);
-    }
+    r.pc.l = readmem(op.v);
+    // increment only low byte due to hardware bug
+    op.l++;
+    r.pc.h = readmem(op.v);
     last_cycle();
 }
 
