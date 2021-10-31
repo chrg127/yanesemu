@@ -11,9 +11,9 @@ _objs := \
 	program.cpp \
 	stb_image.c
 _objs_main := main.cpp
-_tests :=
+_tests := cpu_test
 
-VPATH := emu:emu/core:emu/util:emu/io:emu/platform:emu/debugger:external/glad:external/stb
+VPATH := emu:emu/core:emu/util:emu/io:emu/platform:emu/debugger:external/stb:test
 CC := gcc
 CXX := g++
 CFLAGS := -I. -std=c11
@@ -23,6 +23,7 @@ CXXFLAGS := -I. -std=c++20 -Wall -Wextra -pipe \
 		 -fno-rtti -fconcepts
 LDLIBS := -lm -lSDL2 -lfmt
 flags_deps = -MMD -MP -MF $(@:.o=.d)
+libs_test := -lCatch2WithMain
 
 # can be: linux, mingw64
 platform := linux
@@ -47,8 +48,8 @@ else
     $(error error: platform not supported)
 endif
 
-objs := $(patsubst %,$(outdir)/%.o,$(_objs))
-objs_main := $(patsubst %,$(outdir)/%.o,$(_objs_main))
+objs 	      := $(patsubst %,$(outdir)/%.o,$(_objs))
+objs_main 	  := $(patsubst %,$(outdir)/%.o,$(_objs_main))
 test_programs := $(patsubst %,debug/test/%,$(_tests))
 
 all: $(outdir)/$(programname)
@@ -59,7 +60,7 @@ $(outdir)/$(programname): $(outdir) $(objs) $(objs_main)
 
 debug/test/%_test: debug/%_test.cpp.o debug/test $(objs)
 	$(info Linking test $@ ...)
-	$(CXX) $< $(objs) -o $@ $(LDLIBS)
+	$(CXX) $< $(objs) -o $@ $(LDLIBS) $(libs_test)
 
 -include $(outdir)/*.d
 

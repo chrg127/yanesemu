@@ -8,6 +8,7 @@
 #include <emu/util/uint.hpp>
 
 namespace debugger { class CPUDebugger; }
+class CPUTest;
 
 namespace core {
 
@@ -69,11 +70,10 @@ public:
     void on_error(auto &&f) { error_callback = f; }
 
     friend class debugger::CPUDebugger;
-    friend class CPUTest;
+    friend class ::CPUTest;
 
 private:
     u8 fetch();
-    u8 fetchop();
     void execute(u8 instr);
     void interrupt();
     void push(u8 val);

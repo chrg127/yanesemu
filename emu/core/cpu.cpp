@@ -259,7 +259,7 @@ void CPU::interrupt()
     push(r.pc.h);
     push(r.pc.l);
     push(r.flags.full);
-    // reset this here just in case
+    // reset break flag here just in case
     r.flags.breakf = 0;
     r.flags.intdis = 1;
     // interrupt hijacking
