@@ -6,7 +6,6 @@
 #include <emu/program.hpp>
 #include <emu/core/const.hpp>
 #include <emu/debugger/debugger.hpp>
-#include <emu/debugger/instrinfo.hpp>
 #include <emu/util/bits.hpp>
 #include <emu/util/uint.hpp>
 #include <emu/util/string.hpp>

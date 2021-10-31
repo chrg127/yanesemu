@@ -2,7 +2,6 @@
 
 #include <fmt/core.h>
 #include <emu/core/cpu.hpp>
-#include <emu/debugger/instrinfo.hpp>
 
 namespace debugger {
 
