@@ -227,13 +227,13 @@ void CPU::instr_flag(u8 &flags, unsigned which, u1 value)
     flags = util::setbit(flags, which, value);
 }
 
-void CPU::instr_transfer(u8 from, u8 &to)
+void CPU::instr_transfer(u8 val, u8 &to)
 {
     last_cycle();
     cycle();
-    to = from;
-    r.flags.zero = to == 0;
-    r.flags.neg  = sign(to);
+    to = val;
+    r.flags.zero = (val == 0);
+    r.flags.neg  = sign(val);
 }
 
 void CPU::instr_load(u8 val, u8 &reg)
@@ -261,25 +261,15 @@ void CPU::instr_cpy(u8 val) { instr_compare(val, r.y); }
 
 void CPU::instr_adc(u8 val)
 {
-    int sum = r.acc + val + int(r.flags.carry);
-    r.flags.zero     = (u8) sum == 0;
+    int sum = r.acc + val + r.flags.carry;
+    r.flags.zero     = sum == 0;
     r.flags.neg      = sign(sum);
     r.flags.carry    = sum > 0xFF;
-    r.flags.ov       = ((r.acc^sum) & ~(r.acc^val) & 0x80) >> 7;
+    r.flags.ov       = sign(~(r.acc^val) & (r.acc^sum));
     r.acc = sum;
 }
 
-void CPU::instr_sbc(u8 val)
-{
-    int sum = r.acc + ~val + r.flags.carry;
-    r.flags.zero     = (u8) sum == 0;
-    r.flags.neg      = sign(sum);
-    r.flags.carry    = sum > 0xFF;
-    r.flags.ov       = ((r.acc^sum) & ~(r.acc^val) & 0x80) >> 7;
-    r.acc = sum;
-}
-
-
+void CPU::instr_sbc(u8 val) { instr_adc(~val); }
 
 void CPU::instr_ora(u8 val)
 {
@@ -306,7 +296,7 @@ void CPU::instr_bit(u8 val)
 {
     r.flags.neg  = (r.acc & val) == 0;
     r.flags.zero = val == 0;
-    r.flags.ov   = (val & 0x40) >> 6;
+    r.flags.ov   = util::getbit(val, 6);
 }
 
 u8 CPU::instr_inc(u8 val)
@@ -336,7 +326,7 @@ u8 CPU::instr_asl(u8 val)
 
 u8 CPU::instr_lsr(u8 val)
 {
-    r.flags.carry = val & 1;
+    r.flags.carry = util::getbit(val, 0);
     val >>= 1;
     r.flags.zero = val == 0;
     r.flags.neg  = sign(val);
@@ -345,7 +335,7 @@ u8 CPU::instr_lsr(u8 val)
 
 u8 CPU::instr_rol(u8 val)
 {
-    u1 carry = u8(r.flags.carry);
+    u8 carry = r.flags.carry;
     r.flags.carry = sign(val);
     val = val << 1 | carry;
     r.flags.zero = val == 0;
@@ -355,9 +345,9 @@ u8 CPU::instr_rol(u8 val)
 
 u8 CPU::instr_ror(u8 val)
 {
-    bool c = r.flags.carry;
-    r.flags.carry = val & 1;
-    val = val >> 1 | c << 7;
+    u8 carry = r.flags.carry;
+    r.flags.carry = util::getbit(val, 0);
+    val = val >> 1 | carry << 7;
     r.flags.zero = val == 0;
     r.flags.neg  = sign(val);
     return val;
