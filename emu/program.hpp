@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string_view>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -27,7 +28,7 @@ class Program {
     void render_loop();
 
 public:
-    void start_video(cmdline::Result &flags);
+    void start_video(std::string_view rom_name, cmdline::Result &flags);
     void use_config(const conf::Configuration &conf);
     void set_window_scale(int size);
     void hold_button(input::Button button, bool hold);

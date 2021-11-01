@@ -69,8 +69,9 @@ void cli_interface(cmdline::Result &flags)
     if (flags.items.size() > 1)
         warning("multiple ROM files specified, first one will be used\n");
 
-    auto rom = open_rom(flags.items[0]);
-    program.start_video(flags);
+    auto name = flags.items[0];
+    auto rom = open_rom(name);
+    program.start_video(name, flags);
     program.set_window_scale(2);
     program.use_config(config);
     core::emulator.power();
