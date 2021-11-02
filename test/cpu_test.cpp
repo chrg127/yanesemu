@@ -26,9 +26,12 @@ struct CPUTest {
     }
 
     void test_cycles();
+    void adc_sbc();
 };
 
-METHOD_AS_TEST_CASE(CPUTest::test_cycles, "cycles");
+METHOD_AS_TEST_CASE(CPUTest::test_cycles, "Cycles");
+METHOD_AS_TEST_CASE(CPUTest::adc_sbc,     "Behavior of ADC and SBC instructions");
+
 void CPUTest::test_cycles()
 {
     REQUIRE(get_cycles(0x00, 0, 0) == 7); // brk
@@ -192,4 +195,50 @@ void CPUTest::test_cycles()
     cpu.r.flags.zero  = 0; REQUIRE(get_cycles(0xD0, 0, 0) == 3); // bne
     cpu.r.flags.zero  = 0; REQUIRE(get_cycles(0xF0, 0, 0) == 2); // beq
     cpu.r.flags.zero  = 1; REQUIRE(get_cycles(0xF0, 0, 0) == 3); // beq
+}
+
+void CPUTest::adc_sbc()
+{
+#define ADC(x) cpu.run_instr(0x69, (x), 0);
+#define SBC(x) cpu.run_instr(0xe9, (x), 0);
+#define FT(f, x) REQUIRE(cpu.r.flags.f == (x))
+
+    auto adc_res = [&](u8 acc, u8 data, int carry) -> int {
+        cpu.r.acc = acc;
+        cpu.r.flags.carry = carry;
+        ADC(data);
+        return cpu.r.acc;
+    };
+    auto sbc_res = [&](u8 acc, u8 data, int carry) -> int {
+        cpu.r.acc = acc;
+        cpu.r.flags.carry = carry;
+        SBC(data);
+        return cpu.r.acc;
+    };
+
+    REQUIRE(adc_res(0,       0,    0) == 0);    FT(zero, 1); FT(neg, 0); FT(carry, 0); FT(ov, 0);
+    REQUIRE(adc_res(0,       1,    0) == 1);    FT(zero, 0); FT(neg, 0); FT(carry, 0); FT(ov, 0);
+    REQUIRE(adc_res(0,       1,    1) == 2);    FT(zero, 0); FT(neg, 0); FT(carry, 0); FT(ov, 0);
+    REQUIRE(adc_res(0xfe,    1,    0) == 0xff); FT(zero, 0); FT(neg, 1); FT(carry, 0); FT(ov, 0);
+    REQUIRE(adc_res(0xff,    1,    0) == 0);    FT(zero, 1); FT(neg, 0); FT(carry, 1); FT(ov, 0);
+    REQUIRE(adc_res(0x7f,    1,    0) == 0x80); FT(zero, 0); FT(neg, 1); FT(carry, 0); FT(ov, 1);
+    REQUIRE(adc_res(0x80, 0x7f,    0) == 0xff); FT(zero, 0); FT(neg, 1); FT(carry, 0); FT(ov, 0);
+    REQUIRE(adc_res(0x80, 0x80,    0) == 0);    FT(zero, 1); FT(neg, 0); FT(carry, 1); FT(ov, 1);
+    REQUIRE(adc_res(0xff, 0xff,    0) == 0xfe); FT(zero, 0); FT(neg, 1); FT(carry, 1); FT(ov, 0);
+    REQUIRE(adc_res(0x80, 0xff,    0) == 0x7f); FT(zero, 0); FT(neg, 0); FT(carry, 1); FT(ov, 1);
+
+    REQUIRE(sbc_res(0,       0,    1) == 0);    FT(zero, 1); FT(neg, 0); FT(carry, 1); FT(ov, 0);
+    REQUIRE(sbc_res(0,       1,    1) == 0xff); FT(zero, 0); FT(neg, 1); FT(carry, 0); FT(ov, 0);
+    REQUIRE(sbc_res(0,       1,    0) == 0xfe); FT(zero, 0); FT(neg, 1); FT(carry, 0); FT(ov, 0);
+    REQUIRE(sbc_res(0xfe,    1,    1) == 0xfd); FT(zero, 0); FT(neg, 1); FT(carry, 1); FT(ov, 0);
+    REQUIRE(sbc_res(0xff,    1,    1) == 0xfe); FT(zero, 0); FT(neg, 1); FT(carry, 1); FT(ov, 0);
+    REQUIRE(sbc_res(0x7f,    1,    1) == 0x7e); FT(zero, 0); FT(neg, 0); FT(carry, 1); FT(ov, 0);
+    // REQUIRE(sbc_res(0x80, 0x7f,    0) == 0xff); FT(zero, 0); FT(neg, 1); FT(carry, 0); FT(ov, 0);
+    // REQUIRE(sbc_res(0x80, 0x80,    0) == 0);    FT(zero, 1); FT(neg, 0); FT(carry, 0); FT(ov, 0);
+    // REQUIRE(sbc_res(0xff, 0xff,    0) == 0);    FT(zero, 1); FT(neg, 0); FT(carry, 0); FT(ov, 0);
+    // REQUIRE(sbc_res(0x80, 0xff,    1) == 0x7f); FT(zero, 0); FT(neg, 0); FT(carry, 1); FT(ov, 1);
+
+#undef FLAGTEST
+#undef SBC
+#undef ADC
 }

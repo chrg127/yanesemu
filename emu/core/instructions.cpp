@@ -262,7 +262,7 @@ void CPU::instr_cpy(u8 val) { instr_compare(val, r.y); }
 void CPU::instr_adc(u8 val)
 {
     int sum = r.acc + val + r.flags.carry;
-    r.flags.zero     = sum == 0;
+    r.flags.zero     = u8(sum) == 0;
     r.flags.neg      = sign(sum);
     r.flags.carry    = sum > 0xFF;
     r.flags.ov       = sign(~(r.acc^val) & (r.acc^sum));
