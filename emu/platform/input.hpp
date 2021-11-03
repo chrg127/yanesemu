@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string_view>
+#include <optional>
+#include <array>
 #include <fmt/core.h>
 
 namespace input {
@@ -32,6 +34,20 @@ constexpr inline std::string_view button_to_string(Button button)
     default:             return "";
     }
 }
+
+inline std::optional<input::Button> string_to_button(std::string_view str)
+{
+    if (str == "a" || str == "A") return input::Button::A;
+    if (str == "b" || str == "B") return input::Button::B;
+    if (str == "select")          return input::Button::Select;
+    if (str == "start")           return input::Button::Start;
+    if (str == "up")              return input::Button::Up;
+    if (str == "down")            return input::Button::Down;
+    if (str == "left")            return input::Button::Left;
+    if (str == "right")           return input::Button::Right;
+    return std::nullopt;
+}
+
 
 class ButtonArray {
     std::array<bool, NUM_BUTTONS> buttons_pressed;

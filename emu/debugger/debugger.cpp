@@ -1,6 +1,7 @@
 #include <emu/debugger/debugger.hpp>
 
 #include <algorithm>
+#include <emu/program.hpp>
 #include <emu/core/emulator.hpp>
 #include <emu/platform/input.hpp>
 #include <emu/util/file.hpp>
@@ -11,30 +12,16 @@ namespace debugger {
 
 std::optional<MemorySource> string_to_memsource(std::string_view str)
 {
-    if (str.empty() || str == "cpu" || str == "ram") return MemorySource::RAM;
-    if (str == "ppu" || str == "vram")               return MemorySource::VRAM;
-    if (str == "oam")                                return MemorySource::OAM;
+    if (str == "ram")  return MemorySource::RAM;
+    if (str == "vram") return MemorySource::VRAM;
+    if (str == "oam")  return MemorySource::OAM;
     return std::nullopt;
 }
 
 std::optional<Component> string_to_component(std::string_view str)
 {
-    if (str.empty()) return Component::CPU;
     if (str == "cpu") return Component::CPU;
     if (str == "ppu") return Component::PPU;
-    return std::nullopt;
-}
-
-std::optional<input::Button> string_to_button(std::string_view str)
-{
-    if (str == "a" || str == "A") return input::Button::A;
-    if (str == "b" || str == "B") return input::Button::B;
-    if (str == "select")          return input::Button::Select;
-    if (str == "start")           return input::Button::Start;
-    if (str == "up")              return input::Button::Up;
-    if (str == "down")            return input::Button::Down;
-    if (str == "left")            return input::Button::Left;
-    if (str == "right")           return input::Button::Right;
     return std::nullopt;
 }
 
@@ -107,8 +94,8 @@ Debugger::Debugger()
     {
         got_error = true;
         report_callback((Event) {
-                .type = Event::Type::InvalidInstruction,
-                .inv = { .id = id, .addr = addr, },
+            .type = Event::Type::InvalidInstruction,
+            .u = { .inv = { .id = id, .addr = addr, } },
         });
     });
 }
@@ -121,7 +108,7 @@ void Debugger::run(StepType step_type)
 
     const auto runloop = [&](auto &&check_step)
     {
-        for (;;) {
+        for ( ; program.running(); ) {
             emu->run();
             tracer.trace(cpu, ppu);
             if (got_error)
@@ -130,12 +117,12 @@ void Debugger::run(StepType step_type)
             if (hit) {
                 report_callback((Event) {
                     .type = Event::Type::Break,
-                    .point_id = hit.value(),
+                    .u = { .point_id = hit.value() },
                 });
                 break;
             }
             if (check_step()) {
-                report_callback((Event) { .type = Event::Type::Step, .point_id = 0 });
+                report_callback((Event) { .type = Event::Type::Step, .u = { .point_id = 0 } });
                 break;
             }
         }
@@ -179,7 +166,7 @@ std::function<u8(u16)> Debugger::read_from(MemorySource source)
     case MemorySource::RAM:  return util::member_fn(this, &Debugger::read_ram);
     case MemorySource::VRAM: return [&](u16 addr) { return emu->vrambus.read(addr); };
     case MemorySource::OAM:  return util::member_fn(&ppu, &PPUDebugger::read_oam);
-    default: panic("get_read_fn");
+    default: panic("read_from");
     }
 }
 
@@ -189,14 +176,14 @@ std::function<void(u16, u8)> Debugger::write_to(MemorySource source)
     case MemorySource::RAM:  return [&](u16 addr, u8 data) { return emu->rambus.write(addr, data); };
     case MemorySource::VRAM: return [&](u16 addr, u8 data) { return emu->vrambus.write(addr, data); };
     case MemorySource::OAM:  return util::member_fn(&ppu, &PPUDebugger::write_oam);
-    default: panic("get_write_fn");
+    default: panic("write_to");
     }
 }
 
 void Debugger::reset_emulator()
 {
     emu->power(/* reset = */ true);
-    report_callback((Event) { .type = Event::Type::Step, .point_id = 0 });
+    report_callback((Event) { .type = Event::Type::Step, .u = { .point_id = 0 } });
 }
 
 } // namespace Debugger

@@ -1,8 +1,9 @@
 #include "clidebugger.hpp"
 
 #include <fmt/core.h>
+#include <emu/program.hpp>
 #include <emu/core/const.hpp>
-#include <emu/util/repl.hpp>
+#include <emu/util/callcommand.hpp>
 #include <emu/util/string.hpp>
 #include <emu/util/bits.hpp>
 
@@ -26,6 +27,11 @@ CONVERT_FUNC(debugger::MemorySource,     debugger::string_to_memsource(str), "In
 CONVERT_FUNC(debugger::Component,        debugger::string_to_component(str), "Invalid component: {}.");
 CONVERT_FUNC(debugger::CPUDebugger::Reg, debugger::string_to_cpu_reg(str),   "Invalid register: {}.");
 CONVERT_FUNC(debugger::PPUDebugger::Reg, debugger::string_to_ppu_reg(str),   "Invalid register: {}.");
+CONVERT_FUNC(input::Button,              input::string_to_button(str),       "Invalid button: {}.");
+
+template <> struct util::TryConvert<std::string_view> {
+    static std::string_view convert(std::string_view str) { return str; }
+};
 
 namespace debugger {
 
@@ -41,7 +47,26 @@ static void check_addr_ranges(u16 start, u16 end, MemorySource source)
 
 void CliDebugger::help()
 {
-    fmt::print("help\n");
+    fmt::print("help, h:            print this help text\n"
+               "continue, c:        start or continue execution\n"
+               "runframe, nmi:      run for an entire frame, stop at nmi handler\n"
+               "next, n:            run next instruction (will skip subroutines)\n"
+               "step, s:            step next instruction\n"
+               "break, b:           set a breakpoint at address or address range\n"
+               "listbreaks, lb      list breakpoints\n"
+               "deletebreak, delb   delete a breakpoint\n"
+               "status, st          print current status of a component. default: cpu.\n"
+               "read, rd            read value from address. source can be ram or vram.\n"
+               "write, wr           write a value to an address\n"
+               "block, bl           read a block of memory\n"
+               "disassemble, dis:   disassemble 3 bytes\n"
+               "disblock, db:       disassemble a block of memory\n"
+               "writecpureg:        writes a value to a cpu register\n"
+               "hold, hb:           select a button to hold automatically\n"
+               "trace, t:           trace and log instructions to a file\n"
+               "stoptrace, str:     stop tracing instructions\n"
+               "reset, r:           reset emulator\n",
+               "quit, q:            quit the debugger\n");
 }
 
 void CliDebugger::breakpoint(u16 start, u16 end)
@@ -75,11 +100,31 @@ void CliDebugger::status(Component component)
     }
 }
 
+void CliDebugger::read_block(u16 start, u16 end, MemorySource source)
+{
+    check_addr_ranges(start, end, source);
+    auto readfn = read_from(source);
+    for (int i = 0; i <= (end - start);) {
+        fmt::print("${:04X}: ", start + i);
+        for (int j = 0; j < 16 && i + start <= end; i++, j++)
+            fmt::print("{:02X} ", readfn(start + i));
+        fmt::print("\n");
+    }
+}
+
 void CliDebugger::write_addr(u16 addr, u8 value, MemorySource source)
 {
     if (source == MemorySource::RAM && addr >= core::CARTRIDGE_START)
         fmt::print("Warning: writes to ROM have no effects\n");
     write_block(addr, addr, value, source);
+}
+
+void CliDebugger::write_block(u16 start, u16 end, u8 data, MemorySource source)
+{
+    check_addr_ranges(start, end, source);
+    auto writefn = write_to(source);
+    for (u16 curr = start; curr <= (end - start); curr++)
+        writefn(curr, data);
 }
 
 void CliDebugger::disassemble(u8 id, u8 low, u8 high)
@@ -91,8 +136,13 @@ void CliDebugger::disassemble_block(u16 start, u16 end)
 {
     check_addr_ranges(start, end, MemorySource::RAM);
     debugger::disassemble_block(start, end,
-        [&](u16 addr)                    { return read_ram(addr); },
+        [&](u16 addr)                       { return read_ram(addr); },
         [ ](u16 addr, std::string_view str) { fmt::print("${:04X}: {}\n", addr, str); });
+}
+
+void CliDebugger::hold_button(input::Button button)
+{
+    program.hold_button(button, true);
 }
 
 void CliDebugger::trace(std::string_view filename)
@@ -103,11 +153,11 @@ void CliDebugger::trace(std::string_view filename)
 
 static std::string parse_error_message(int which, std::string_view name, int num_params)
 {
-    // 0 = command not found
-    // 1 = command found, wrong number of parameters
-    if (which == 1)
-        return fmt::format("Wrong number of parameters for command {} (got {})", name, num_params);
-    return fmt::format("Invalid command: {}.", name);
+    switch (which) {
+    case 0: return fmt::format("Invalid command: {}.", name);
+    case 1: return fmt::format("Wrong number of parameters for command {} (got {})", name, num_params);
+    default: return "";
+    }
 }
 
 bool CliDebugger::repl()
@@ -124,31 +174,31 @@ bool CliDebugger::repl()
         if (!line.empty())
             last_args = str::split(line, ' ');
         util::call_command(last_args, parse_error_message,
-            Command{ "help",        "h",    &CliDebugger::help,                         this },
-            Command{ "continue",    "c",    [&]() { run(Debugger::StepType::None); }         },
-            Command{ "runframe",    "nmi",  [&]() { run(Debugger::StepType::Frame); }        },
-            Command{ "next",        "n",    [&]() { run(Debugger::StepType::Next); }         },
-            Command{ "step",        "s",    [&]() { run(Debugger::StepType::Step); }         },
-            Command{ "break",       "b",    &CliDebugger::breakpoint_single,            this },
-            Command{ "break",       "b",    &CliDebugger::breakpoint,                   this },
-            Command{ "delbreak",    "db",   &CliDebugger::delete_breakpoint,            this },
-            Command{ "listbreak",   "lb",   &CliDebugger::list_breakpoints,             this },
-            Command{ "status",      "st",   &CliDebugger::status,                       this },
-            Command{ "status",      "st",   [&]() { status(Component::CPU); }                },
-            Command{ "read",        "rd",   &CliDebugger::read_addr,                    this },
-            Command{ "read",        "rd",   &CliDebugger::read_addr_ram,                this },
-            Command{ "write",       "wr",   &CliDebugger::write_addr,                   this },
-            Command{ "write",       "wr",   &CliDebugger::write_addr_ram,               this },
-            Command{ "block",       "bl",   &CliDebugger::read_block,                   this },
-            Command{ "block",       "bl",   &CliDebugger::read_block_ram,               this },
-            Command{ "writeregcpu", "wrcpu",&CliDebugger::write_reg_cpu,                this },
-            Command{ "writeregppu", "wrppu",&CliDebugger::write_reg_ppu,                this },
-            Command{ "disassemble", "dis",  &CliDebugger::disassemble,                  this },
-            Command{ "disblock",    "dsb",  &CliDebugger::disassemble_block,            this },
-            Command{ "trace",       "tr",   &CliDebugger::trace,                        this },
-            Command{ "stoptrace",   "str",  [&]() { tracer.stop(); }                         },
-            Command{ "reset",       "r",    [&]() { reset_emulator(); }                      },
-            Command{ "quit",        "q",    [&]() { quit = true; }                           }
+            Command{ "help",        "h",        &CliDebugger::help,                         this },
+            Command{ "continue",    "c",        [&]() { run(Debugger::StepType::None); }         },
+            Command{ "runframe",    "nmi",      [&]() { run(Debugger::StepType::Frame); }        },
+            Command{ "next",        "n",        [&]() { run(Debugger::StepType::Next); }         },
+            Command{ "step",        "s",        [&]() { run(Debugger::StepType::Step); }         },
+            Command{ "break",       "b",        &CliDebugger::breakpoint_single,            this },
+            Command{ "break",       "b",        &CliDebugger::breakpoint,                   this },
+            Command{ "listbreaks",  "lb",       &CliDebugger::list_breakpoints,             this },
+            Command{ "deletebreak", "delb",     &CliDebugger::delete_breakpoint,            this },
+            Command{ "status",      "st",       &CliDebugger::status,                       this },
+            Command{ "status",      "st",       [&]() { status(Component::CPU); }                },
+            Command{ "read",        "rd",       &CliDebugger::read_addr,                    this },
+            Command{ "read",        "rd",       &CliDebugger::read_addr_ram,                this },
+            Command{ "write",       "wr",       &CliDebugger::write_addr,                   this },
+            Command{ "write",       "wr",       &CliDebugger::write_addr_ram,               this },
+            Command{ "block",       "bl",       &CliDebugger::read_block,                   this },
+            Command{ "block",       "bl",       &CliDebugger::read_block_ram,               this },
+            Command{ "disassemble", "dis",      &CliDebugger::disassemble,                  this },
+            Command{ "disblock",    "db",       &CliDebugger::disassemble_block,            this },
+            Command{ "writecpureg", "wrcpu",    &CliDebugger::write_cpu_reg,                this },
+            Command{ "hold",        "hb",       &CliDebugger::hold_button,                  this },
+            Command{ "trace",       "t",        &CliDebugger::trace,                        this },
+            Command{ "stoptrace",   "str",      [&]() { tracer.stop(); }                         },
+            Command{ "reset",       "r",        [&]() { reset_emulator(); }                      },
+            Command{ "quit",        "q",        [&]() { quit = true; }                           }
         );
     } catch (const ParseError &error) {
         fmt::print("{}\n", error.what());
@@ -164,11 +214,11 @@ void CliDebugger::report_event(Debugger::Event ev)
         print_instr();
         break;
     case Debugger::Event::Type::Break:
-        fmt::print("Breakpoint #{} reached.\n", ev.point_id);
+        fmt::print("Breakpoint #{} reached.\n", ev.u.point_id);
         print_instr();
         break;
     case Debugger::Event::Type::InvalidInstruction:
-        fmt::print("Found invalid instruction {:02X} at {:04X}.\n", ev.inv.id, ev.inv.addr);
+        fmt::print("Found invalid instruction {:02X} at {:04X}.\n", ev.u.inv.id, ev.u.inv.addr);
         break;
     }
 }
@@ -222,26 +272,6 @@ void CliDebugger::print_ppu_status() const
     fmt::print("VRAM address: {:04X}\n", ppu.vram_addr());
     fmt::print("TMP address: {:04X}\n", ppu.tmp_addr());
     fmt::print("Fine X: {:X}\n", ppu.fine_x());
-}
-
-void CliDebugger::read_block(u16 start, u16 end, MemorySource source)
-{
-    check_addr_ranges(start, end, source);
-    auto readfn = read_from(source);
-    for (int i = 0; i <= (end - start);) {
-        fmt::print("${:04X}: ", start + i);
-        for (int j = 0; j < 16 && i + start <= end; i++, j++)
-            fmt::print("{:02X} ", readfn(start + i));
-        fmt::print("\n");
-    }
-}
-
-void CliDebugger::write_block(u16 start, u16 end, u8 data, MemorySource source)
-{
-    check_addr_ranges(start, end, source);
-    auto writefn = write_to(source);
-    for (u16 curr = start; curr <= (end - start); curr++)
-        writefn(curr, data);
 }
 
 } // namespace debugger

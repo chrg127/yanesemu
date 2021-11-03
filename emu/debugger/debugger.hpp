@@ -25,7 +25,6 @@ enum class Component { CPU, PPU, };
 
 std::optional<MemorySource> string_to_memsource(std::string_view str);
 std::optional<Component> string_to_component(std::string_view str);
-std::optional<input::Button> string_to_button(std::string_view str);
 
 class CPUDebugger {
     core::CPU *cpu;
@@ -109,13 +108,13 @@ protected:
         enum class Type {
             Step, Break, InvalidInstruction,
         } type;
-        union {
+        union Data {
             unsigned point_id;
-            struct {
+            struct InvData {
                 u8 id;
                 u16 addr;
             } inv;
-        };
+        } u;
     };
 
     enum class StepType {

@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include <emu/platform/input.hpp>
 #include <emu/debugger/debugger.hpp>
 
 namespace debugger {
@@ -14,11 +15,12 @@ class CliDebugger : public Debugger {
     void delete_breakpoint(int index);
     void list_breakpoints();
     void status(Component component);
-    void write_addr(u16 addr, u8 data, MemorySource source);
     void read_block(u16 start, u16 end, MemorySource source);
+    void write_addr(u16 addr, u8 data, MemorySource source);
     void write_block(u16 start, u16 end, u8 data, MemorySource source);
     void disassemble(u8 id, u8 low, u8 high);
     void disassemble_block(u16 start, u16 end);
+    void hold_button(input::Button button);
     void trace(std::string_view filename);
     void stop_tracing();
 
@@ -27,8 +29,7 @@ class CliDebugger : public Debugger {
     void read_addr_ram(u16 addr)                  { read_block(addr, addr, MemorySource::RAM); }
     void read_block_ram(u16 start, u16 end)       { read_block(start, end, MemorySource::RAM); }
     void write_addr_ram(u16 addr, u8 data)        { write_addr(addr, data, MemorySource::RAM); }
-    void write_reg_cpu(CPUDebugger::Reg reg, u16 data) { cpu.set_reg(reg, data); }
-    void write_reg_ppu(PPUDebugger::Reg reg, u16 data) { }
+    void write_cpu_reg(CPUDebugger::Reg reg, u16 data) { cpu.set_reg(reg, data); }
 
     void report_event(Debugger::Event ev);
     void print_cpu_status() const;

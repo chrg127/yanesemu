@@ -4,7 +4,7 @@
 #include <emu/program.hpp>
 #include <emu/core/cartridge.hpp>
 #include <emu/core/emulator.hpp>
-#include <emu/debugger/clidbg.hpp>
+#include <emu/debugger/clidebugger.hpp>
 #include <emu/util/cmdline.hpp>
 #include <emu/util/debug.hpp>
 #include <emu/util/mappedfile.hpp>

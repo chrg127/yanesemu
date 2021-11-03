@@ -1,6 +1,6 @@
 #pragma once
 
-// a library for gdb-style command line applications
+// a library for command parsing in a gdb-style command line application
 
 #include <functional>
 #include <string>
@@ -34,14 +34,6 @@ struct Command {
 
 template <typename T> struct TryConvert;
 
-template <>
-struct TryConvert<std::string_view> {
-    static std::string_view convert(std::string_view str)
-    {
-        return str;
-    }
-};
-
 namespace detail {
 
 template <typename T>
@@ -53,7 +45,7 @@ template<int N, typename... Ts>
 using NthTypeOf = typename std::tuple_element<N, std::tuple<Ts...>>::type;
 
 template <typename... P>
-auto call_one(std::string_view name, std::span<std::string> args, bool &wrong_num_params, Command<P...> &cmd)
+auto call_one(std::string_view name, std::span<std::string> args, bool &wrong_num_params, const Command<P...> &cmd)
 {
     auto call_forward = [&]<std::size_t... Is>(std::index_sequence<Is...> const&) {
         cmd.fn( detail::try_convert<NthTypeOf<Is, P...>>(std::string_view(args[Is]))... );
@@ -65,7 +57,6 @@ auto call_one(std::string_view name, std::span<std::string> args, bool &wrong_nu
         wrong_num_params = true;
         return false;
     }
-        // throw ParseError(fmt::format("command \"{}\" accepts {} arguments ({} passed)", name, sizeof...(P), args.size()));
     call_forward(std::index_sequence_for<P...>());
     return true;
 };
