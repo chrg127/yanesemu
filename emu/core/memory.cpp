@@ -20,8 +20,8 @@ static DecodeFn get_decode(Mirroring mirroring)
         };
     case Mirroring::Vertical:
         return [](u16 addr) -> u16 { return addr & 0x7FF; };
-    default: exit(1);
-        // panic("invalid value passed to get_decode\n");
+    default:
+        panic("invalid value passed to get_decode\n");
     }
 }
 

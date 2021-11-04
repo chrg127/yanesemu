@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <span>
 #include <emu/core/bus.hpp>
 #include <emu/core/const.hpp>
@@ -9,6 +10,7 @@
 #include <emu/core/screen.hpp>
 #include <emu/core/memory.hpp>
 #include <emu/core/controller.hpp>
+#include <emu/core/mapper.hpp>
 #include <emu/util/uint.hpp>
 
 namespace debugger { class Debugger; }
@@ -25,6 +27,7 @@ class Emulator {
     PPU ppu{&vrambus, &screen};
     std::span<u8> prgrom;
     std::span<u8> chrrom;
+    std::unique_ptr<Mapper> mapper;
     // this is internal to the emulator only and doesn't affect the cpu and ppu
     bool nmi = false;
     bool emu_stop = false;
@@ -37,7 +40,7 @@ public:
     void power(bool reset = false);
     void run();
     void run_frame();
-    void insert_rom(Cartridge::Data &&cartdata);
+    bool insert_rom(const Cartridge::Data &cartdata);
 
     void connect_controller(Controller::Type type) { port.load(type); }
     u32 *get_screen()            { return screen.data(); }

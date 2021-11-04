@@ -1,6 +1,7 @@
 #include "program.hpp"
 
 #include <filesystem>
+#include <ctime>
 #include <fmt/core.h>
 #include <emu/version.hpp>
 #include <emu/core/const.hpp>
@@ -74,6 +75,16 @@ void Program::video_frame(u32 *data)
         if (wait_for_frame_update)
             required_cond.wait(lock);
     } while (frame_pending != 0 && wait_for_frame_update);
+
+    // static unsigned frame_counter = 0;
+    // static u64 prev = 0, curr;
+    // frame_counter++;
+    // curr = ::time(nullptr);
+    // if (curr != prev) {
+    //     prev = curr;
+    //     fmt::print("{} fps\n", frame_counter);
+    //     frame_counter = 0;
+    // }
 }
 
 void Program::stop()

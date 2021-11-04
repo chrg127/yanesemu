@@ -43,7 +43,8 @@ io::MappedFile open_rom(std::string_view rompath)
     if (!cart)
         throw std::runtime_error(fmt::format("not a real NES ROM: {}", romfile.value().filename()));
     fmt::print("{}\n", cart.value().to_string());
-    core::emulator.insert_rom(std::move(cart.value()));
+    if (!core::emulator.insert_rom(cart.value()))
+        throw std::runtime_error(fmt::format("mapper {} not supported", cart.value().mapper));
     return std::move(romfile.value());
 }
 

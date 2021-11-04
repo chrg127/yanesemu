@@ -50,38 +50,29 @@ void Emulator::map(Mirroring mirroring)
 
     memory.map(rambus, vrambus, mirroring);
 
-    rambus.map(APU_START, CARTRIDGE_START,
-        [this](u16 addr)             { return cpu.readreg(addr); },
-        [this](u16 addr, u8 data) { cpu.writereg(addr, data); });
+    rambus.map(APU_START, CARTRIDGE_START, [this](u16 addr)          { return cpu.readreg(addr); },
+                                           [this](u16 addr, u8 data) { cpu.writereg(addr, data); });
+    rambus.map(PPUREG_START, APU_START, [this](u16 addr)          { return ppu.readreg(0x2000 + (addr & 0x7)); },
+                                        [this](u16 addr, u8 data) { ppu.writereg(0x2000 + (addr & 0x7), data); });
+    rambus.map(CARTRIDGE_START, 0x8000, [this](u16 addr)          { return mapper->read_wram(addr); },
+                                        [this](u16 addr, u8 data) { mapper->write_wram(addr, data); });
+    rambus.map(0x8000, CPUBUS_SIZE, [this](u16 addr)          { return mapper->read_rom(addr); },
+                                    [this](u16 addr, u8 data) { mapper->write_rom(addr, data); });
 
-    rambus.map(PPUREG_START, APU_START,
-        [this](u16 addr)             { return ppu.readreg(0x2000 + (addr & 0x7)); },
-        [this](u16 addr, u8 data) { ppu.writereg(0x2000 + (addr & 0x7), data); });
-
-    rambus.map(CARTRIDGE_START, 0x8000,
-        [](u16 addr)             { return 0; },
-        [](u16 addr, u8 data) { /**/ });
-
-    rambus.map(0x8000, CPUBUS_SIZE,
-        [this](u16 addr)
-        {
-            u16 offset = addr - 0x8000;
-            u16 start = prgrom.size() - 0x8000;
-            u16 eff_addr = start + offset;
-            return prgrom[eff_addr];
-        },
-        [](u16 addr, u8 data) { /**/ });
-
-    vrambus.map(PT_START, NT_START,
-        [this](u16 addr)         { return chrrom[addr]; },
-        [](u16 addr, u8 data) { /**/ });
+    vrambus.map(PT_START, NT_START, [this](u16 addr)          { return mapper->read_chr(addr); },
+                                    [this](u16 addr, u8 data) { mapper->write_chr(addr, data); });
 }
 
-void Emulator::insert_rom(Cartridge::Data &&cartdata)
+
+bool Emulator::insert_rom(const Cartridge::Data &cartdata)
 {
     prgrom = cartdata.prgrom;
     chrrom = cartdata.chrrom;
+    mapper = create_mapper(cartdata.mapper, prgrom, chrrom);
+    if (!mapper)
+        return false;
     map(cartdata.mirroring);
+    return true;
 }
 
 } // namespace core
