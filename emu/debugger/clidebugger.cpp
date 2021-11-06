@@ -197,7 +197,7 @@ bool CliDebugger::repl()
             Command{ "hold",        "hb",       &CliDebugger::hold_button,                  this },
             Command{ "trace",       "t",        &CliDebugger::trace,                        this },
             Command{ "stoptrace",   "str",      [&]() { tracer.stop(); }                         },
-            Command{ "reset",       "r",        [&]() { reset_emulator(); }                      },
+            Command{ "reset",       "r",        [&]() { reset_system(); }                        },
             Command{ "quit",        "q",        [&]() { quit = true; }                           }
         );
     } catch (const ParseError &error) {

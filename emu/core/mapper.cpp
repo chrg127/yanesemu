@@ -11,11 +11,11 @@ using util::setbit;
 
 namespace core {
 
-std::unique_ptr<Mapper> Mapper::create(unsigned number, std::span<u8> prg, std::span<u8> chr, Emulator *e)
+std::unique_ptr<Mapper> Mapper::create(unsigned number, System *s)
 {
     switch (number) {
-    case 0: return std::make_unique<NROM>(prg, chr, e);
-    case 1: return std::make_unique<MMC1>(prg, chr, e);
+    case 0: return std::make_unique<NROM>(s, s->prgrom, s->chrrom);
+    case 1: return std::make_unique<MMC1>(s, s->prgrom, s->chrrom);
     default: return nullptr;
     }
 }

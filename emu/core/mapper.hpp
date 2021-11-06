@@ -6,16 +6,16 @@
 
 namespace core {
 
-class Emulator;
+class System;
 
 struct Mapper {
 protected:
+    System *system;
     std::span<u8> prgrom, chrrom;
-    Emulator *emulator;
 
 public:
-    explicit Mapper(std::span<u8> prg, std::span<u8> chr, Emulator *m)
-        : prgrom(prg), chrrom(chr), emulator(m)
+    explicit Mapper(System *s, std::span<u8> prg, std::span<u8> chr)
+        : system(s), prgrom(prg), chrrom(chr)
     { }
 
     virtual ~Mapper() = default;
@@ -26,9 +26,8 @@ public:
     virtual void write_rom(u16 addr, u8 data) = 0;
     virtual void write_chr(u16 addr, u8 data) = 0;
 
-    static std::unique_ptr<Mapper> create(unsigned number, std::span<u8> prg, std::span<u8> chr, Emulator *e);
+    static std::unique_ptr<Mapper> create(unsigned number, System *s);
 };
-
 
 struct NROM : public Mapper {
     using Mapper::Mapper;

@@ -11,9 +11,11 @@
 
 namespace core {
     class Emulator;
+    class System;
     class CPU;
     class PPU;
 }
+
 namespace input {
     enum class Button;
 }
@@ -99,7 +101,7 @@ public:
         return bool(file);
     }
     void stop() { file = std::nullopt; }
-    void trace(CPUDebugger &cpudbg, PPUDebugger &ppudbg);
+    void trace(const CPUDebugger &cpudbg, const PPUDebugger &ppudbg);
 };
 
 class Debugger {
@@ -122,7 +124,7 @@ protected:
     };
 
 private:
-    core::Emulator *emu;
+    core::System *sys;
     std::function<void(Event)> report_callback;
     bool got_error = false;
 
@@ -138,7 +140,7 @@ protected:
     u8 read_ram(u16 addr);
     std::function<u8(u16)> read_from(MemorySource source);
     std::function<void(u16, u8)> write_to(MemorySource source);
-    void reset_emulator();
+    void reset_system();
 };
 
 std::pair<std::string, int> disassemble(u8 id, u8 oplow, u8 ophigh);

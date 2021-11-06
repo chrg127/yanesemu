@@ -70,27 +70,27 @@ std::optional<unsigned> BreakList::test(u16 addr)
     return it - list.begin();
 }
 
-void Tracer::trace(CPUDebugger &cpudbg, PPUDebugger &ppudbg)
+void Tracer::trace(const CPUDebugger &cpudbg, const PPUDebugger &ppudbg)
 {
     if (file) {
         fmt::print(file.value().data(),
             "PC: ${:04X} A: ${:02X} X: ${:02X} Y: ${:02X} SP: ${:02X} {} V: {:04X} {}\n",
-                   cpudbg.reg(CPUDebugger::Reg::PC),
-                   cpudbg.reg(CPUDebugger::Reg::Acc),
-                   cpudbg.reg(CPUDebugger::Reg::X),
-                   cpudbg.reg(CPUDebugger::Reg::Y),
-                   cpudbg.reg(CPUDebugger::Reg::SP),
-                   cpudbg.flags_to_string(),
-                   ppudbg.reg(PPUDebugger::Reg::PPUAddr),
-                   cpudbg.curr_instr_to_string()
+            cpudbg.reg(CPUDebugger::Reg::PC),
+            cpudbg.reg(CPUDebugger::Reg::Acc),
+            cpudbg.reg(CPUDebugger::Reg::X),
+            cpudbg.reg(CPUDebugger::Reg::Y),
+            cpudbg.reg(CPUDebugger::Reg::SP),
+            cpudbg.flags_to_string(),
+            ppudbg.reg(PPUDebugger::Reg::PPUAddr),
+            cpudbg.curr_instr_to_string()
         );
     }
 }
 
 Debugger::Debugger()
-    : emu(&core::emulator), cpu(&emu->cpu), ppu(&emu->ppu)
+    : sys(&core::emulator.system), cpu(&sys->cpu), ppu(&sys->ppu)
 {
-    emu->on_cpu_error([this](u8 id, u16 addr)
+    core::emulator.on_cpu_error([this](u8 id, u16 addr)
     {
         got_error = true;
         report_callback((Event) {
@@ -109,7 +109,7 @@ void Debugger::run(StepType step_type)
     const auto runloop = [&](auto &&check_step)
     {
         for ( ; program.running(); ) {
-            emu->run();
+            sys->run();
             tracer.trace(cpu, ppu);
             if (got_error)
                 break;
@@ -157,14 +157,14 @@ void Debugger::run(StepType step_type)
 u8 Debugger::read_ram(u16 addr)
 {
     return (addr >= 0x2000 && addr <= 0x3FFF) ? ppu.reg(0x2000 + (addr & 0x7))
-                                              : emu->rambus.read(addr);
+                                              : sys->rambus.read(addr);
 }
 
 std::function<u8(u16)> Debugger::read_from(MemorySource source)
 {
     switch (source) {
     case MemorySource::RAM:  return util::member_fn(this, &Debugger::read_ram);
-    case MemorySource::VRAM: return [&](u16 addr) { return emu->vrambus.read(addr); };
+    case MemorySource::VRAM: return [&](u16 addr) { return sys->vrambus.read(addr); };
     case MemorySource::OAM:  return util::member_fn(&ppu, &PPUDebugger::read_oam);
     default: panic("read_from");
     }
@@ -173,16 +173,16 @@ std::function<u8(u16)> Debugger::read_from(MemorySource source)
 std::function<void(u16, u8)> Debugger::write_to(MemorySource source)
 {
     switch (source) {
-    case MemorySource::RAM:  return [&](u16 addr, u8 data) { return emu->rambus.write(addr, data); };
-    case MemorySource::VRAM: return [&](u16 addr, u8 data) { return emu->vrambus.write(addr, data); };
+    case MemorySource::RAM:  return [&](u16 addr, u8 data) { return sys->rambus.write(addr, data); };
+    case MemorySource::VRAM: return [&](u16 addr, u8 data) { return sys->vrambus.write(addr, data); };
     case MemorySource::OAM:  return util::member_fn(&ppu, &PPUDebugger::write_oam);
     default: panic("write_to");
     }
 }
 
-void Debugger::reset_emulator()
+void Debugger::reset_system()
 {
-    emu->power(/* reset = */ true);
+    sys->power(/* reset = */ true);
     report_callback((Event) { .type = Event::Type::Step, .u = { .point_id = 0 } });
 }
 
