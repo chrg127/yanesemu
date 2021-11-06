@@ -43,11 +43,19 @@ struct NROM : public Mapper {
 struct MMC1 : public Mapper {
     int counter  = 0;
     u5 shift     = 0;
-    u2 prg_mode  = 3;
-    u2 chr_mode  = 0;
-    u5 prg_bank  = 0;
-    u5 chr_bank0 = 0;
-    u5 chr_bank1 = 0;
+
+    struct {
+        u5 bank  = 0;
+        u5 first = 0;
+        u5 last  = 1;
+        u8 magic = 14;
+        u5 *ptrs[2] = { &bank, &last };
+    } prg;
+
+    struct {
+        u2 mode = 0;
+        u2 banks[2] = { 0, 0 };
+    } chr;
 
 public:
     using Mapper::Mapper;
