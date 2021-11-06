@@ -38,6 +38,7 @@ enum class Mirroring {
     Vertical,
     Horizontal,
     FourScreen,
+    OneScreen,
     Mapper,
 };
 

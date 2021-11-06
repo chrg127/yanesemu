@@ -43,8 +43,8 @@ public:
     bool insert_rom(const Cartridge::Data &cartdata);
 
     void connect_controller(Controller::Type type) { port.load(type); }
-    u32 *get_screen()            { return screen.data(); }
     void on_cpu_error(auto &&fn) { cpu.on_error(fn); }
+    void change_mirroring(Mirroring mirroring) { memory.change_mirroring(mirroring, vrambus); }
     void stop()                  { emu_stop = true; }
 
     friend class debugger::Debugger;

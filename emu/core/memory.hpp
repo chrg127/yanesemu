@@ -11,6 +11,7 @@ class Memory {
     std::array<u8, core::PAL_SIZE> palmem;
 public:
     void map(Bus<CPUBUS_SIZE> &rambus, Bus<PPUBUS_SIZE> &vrambus, Mirroring mirroring);
+    void change_mirroring(Mirroring mirroring, Bus<PPUBUS_SIZE> &bus);
     void power(bool reset, char fillval = 0);
 };
 

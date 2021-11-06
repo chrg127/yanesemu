@@ -12,8 +12,7 @@ static DecodeFn get_decode(Mirroring mirroring)
 {
     switch (mirroring) {
     case Mirroring::Horizontal:
-        return [](u16 addr) -> u16
-        {
+        return [](u16 addr) -> u16 {
             auto tmp = addr & 0xFFF;
             auto bits = util::getbits(tmp, 10, 2) >> 1;
             return util::setbits(tmp, 10, 2, bits);
@@ -27,36 +26,18 @@ static DecodeFn get_decode(Mirroring mirroring)
 
 void Memory::map(Bus<CPUBUS_SIZE> &rambus, Bus<PPUBUS_SIZE> &vrambus, Mirroring mirroring)
 {
-    rambus.map(RAM_START, PPUREG_START,
-        [this](u16 addr)             { return rammem[addr & 0x7FF]; },
-        [this](u16 addr, u8 data) { rammem[addr & 0x7FF] = data; });
+    rambus.map(RAM_START, PPUREG_START, [this](u16 addr)          { return rammem[addr & 0x7FF]; },
+                                        [this](u16 addr, u8 data) { rammem[addr & 0x7FF] = data; });
+    vrambus.map(PAL_START, 0x4000, [this](u16 addr) { return palmem[addr & 0x1F]; },
+                                   [this](u16 addr, u8 data) { palmem[addr & 0x1F] = data; });
+    change_mirroring(mirroring, vrambus);
+}
 
-    vrambus.map(PAL_START, 0x4000,
-        [this](u16 addr)
-        {
-            assert((addr & 0x1F) < PAL_SIZE);
-            return palmem[addr & 0x1F];
-        },
-        [this](u16 addr, u8 data)
-        {
-            assert((addr & 0x1F) < PAL_SIZE);
-            palmem[addr & 0x1F] = data;
-        });
-
+void Memory::change_mirroring(Mirroring mirroring, Bus<PPUBUS_SIZE> &vrambus)
+{
     const auto decode = get_decode(mirroring);
-    vrambus.map(NT_START, PAL_START,
-        [this, decode](u16 addr)
-        {
-            addr = decode(addr);
-            assert(addr < VRAM_SIZE);
-            return vrammem[addr];
-        },
-        [this, decode](u16 addr, u8 data)
-        {
-            addr = decode(addr);
-            assert(addr < VRAM_SIZE);
-            vrammem[addr] = data;
-        });
+    vrambus.map(NT_START, PAL_START, [this, decode](u16 addr)          { return vrammem[decode(addr)]; },
+                                     [this, decode](u16 addr, u8 data) { vrammem[decode(addr)] = data; });
 }
 
 void Memory::power(bool reset, char fillval)
