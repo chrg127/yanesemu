@@ -32,35 +32,35 @@ public:
 struct NROM : public Mapper {
     using Mapper::Mapper;
     u8 read_wram(u16 addr)             { return 0; }
-    u8 read_rom(u16 addr)              { return prgrom[addr - 0x8000]; }
+    u8 read_rom(u16 addr)              { return prgrom[addr & (prgrom.size() - 1)]; }
     u8 read_chr(u16 addr)              { return chrrom[addr         ]; }
     void write_wram(u16 addr, u8 data) { }
     void write_rom(u16 addr, u8 data)  { }
     void write_chr(u16 addr, u8 data)  { }
 };
 
-struct MMC1 : public Mapper {
+class MMC1 : public Mapper {
     int counter  = 0;
     u5 shift     = 0;
 
     struct {
+        u8 mode  = 1;
         u5 bank  = 0;
         u5 first = 0;
         u5 last  = 1;
-        u8 magic = 14;
         u5 *ptrs[2] = { &bank, &last };
     } prg;
 
     struct {
-        u2 mode = 0;
-        u2 banks[2] = { 0, 0 };
+        u1 mode = 0;
+        u2 bank[2] = { 0, 0 };
     } chr;
 
 public:
     using Mapper::Mapper;
     u8 read_wram(u16 addr)             { return 0; }
     u8 read_rom(u16 addr);
-    u8 read_chr(u16 addr)              { return chrrom[addr]; }
+    u8 read_chr(u16 addr);
     void write_wram(u16 addr, u8 data) { }
     void write_rom(u16 addr, u8 data);
     void write_chr(u16 addr, u8 data)  { }
