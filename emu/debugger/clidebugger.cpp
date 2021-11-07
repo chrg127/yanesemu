@@ -123,7 +123,7 @@ void CliDebugger::write_block(u16 start, u16 end, u8 data, MemorySource source)
 {
     check_addr_ranges(start, end, source);
     auto writefn = write_to(source);
-    for (u16 curr = start; curr <= (end - start); curr++)
+    for (u16 curr = start; curr <= end; curr++)
         writefn(curr, data);
 }
 
