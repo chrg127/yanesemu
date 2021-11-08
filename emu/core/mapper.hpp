@@ -14,7 +14,7 @@ protected:
     std::span<u8> prgrom, chrrom;
 
 public:
-    explicit Mapper(System *s, std::span<u8> prg, std::span<u8> chr)
+    Mapper(System *s, std::span<u8> prg, std::span<u8> chr)
         : system(s), prgrom(prg), chrrom(chr)
     { }
 
@@ -44,21 +44,27 @@ class MMC1 : public Mapper {
     u5 shift     = 0;
 
     struct {
-        u8 mode  = 1;
-        u5 bank  = 0;
-        u5 first = 0;
-        u5 last  = 1;
-        u5 *ptrs[2] = { &bank, &last };
+        u2 mode  = 3;
+        // bank[0] always contains the value of the first bank
+        // bank[3] always contains the value of the last bank
+        // bank[1] and [2] act as if they're the same; they're mapper settable
+        u5 bank[4] = { 0, 0, 0, 0 };
     } prg;
 
     struct {
         u1 mode = 0;
-        u2 bank[2] = { 0, 0 };
+        u5 bank[2] = { 0, 0 };
     } chr;
 
+    u8 read(std::span<u8> rom, u16 addr, u5 *bank, u1 mode, u8 magic_start);
+
 public:
-    using Mapper::Mapper;
-    u8 read_wram(u16 addr)             { return 0; }
+    MMC1(System *s, std::span<u8> prgrom, std::span<u8> chr) : Mapper(s, prgrom, chr)
+    {
+        prg.bank[3] = prgrom.size() / (0x4000) - 1;
+    }
+
+    u8 read_wram(u16 addr) { return 0; }
     u8 read_rom(u16 addr);
     u8 read_chr(u16 addr);
     void write_wram(u16 addr, u8 data) { }
