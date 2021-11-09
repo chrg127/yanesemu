@@ -8,6 +8,7 @@
 #include <utility>
 #include <emu/util/uint.hpp>
 #include <emu/util/file.hpp>
+#include <emu/platform/input.hpp>
 
 namespace core {
     class Emulator;
@@ -141,6 +142,7 @@ protected:
     std::function<u8(u16)> read_from(MemorySource source);
     std::function<void(u16, u8)> write_to(MemorySource source);
     void reset_system();
+    void hold_button(input::Button button, bool value);
 };
 
 std::pair<std::string, int> disassemble(u8 id, u8 oplow, u8 ophigh);

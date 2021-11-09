@@ -40,7 +40,6 @@ struct Video {
 private:
     std::unique_ptr<Impl> ptr = nullptr;
     input::ButtonArray curr_keys;
-    input::ButtonArray holded_buttons;
 
 public:
     static Video create(Type type, std::size_t width, std::size_t height);
@@ -66,7 +65,6 @@ public:
 
     void map_keys(const conf::Configuration &conf);
     bool is_pressed(input::Button button);
-    void hold_button(input::Button button, bool hold);
 };
 
 } // namespace platform

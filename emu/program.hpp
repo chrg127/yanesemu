@@ -31,7 +31,6 @@ public:
     void start_video(std::string_view rom_name, cmdline::Result &flags);
     void use_config(const conf::Configuration &conf);
     void set_window_scale(int size);
-    void hold_button(input::Button button, bool hold);
     void stop();
 
     void run(auto &&fn)             { emulator_thread = std::thread(fn); }

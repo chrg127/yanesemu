@@ -1,7 +1,6 @@
 #include "controller.hpp"
 
 #include <emu/program.hpp>
-#include <emu/platform/input.hpp> // Button
 
 using input::Button;
 
@@ -25,7 +24,7 @@ void Gamepad::latch(bool state)
         for (auto &button : { Button::Right,  Button::Left,  Button::Down, Button::Up,
                               Button::Select, Button::Start, Button::B,    Button::A }) {
             buttons <<= 1;
-            buttons |= program.poll_input(button);
+            buttons |= program.poll_input(button) | hold_buttons[button];
         }
     }
 }

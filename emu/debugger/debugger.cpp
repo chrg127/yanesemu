@@ -186,4 +186,9 @@ void Debugger::reset_system()
     report_callback((Event) { .type = Event::Type::Step, .u = { .point_id = 0 } });
 }
 
+void Debugger::hold_button(input::Button button, bool value)
+{
+    sys->port.device->hold(button, value);
+}
+
 } // namespace Debugger

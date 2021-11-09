@@ -33,11 +33,6 @@ void Program::set_window_scale(int size)
     video.resize(core::SCREEN_WIDTH*size, core::SCREEN_HEIGHT*size);
 }
 
-void Program::hold_button(input::Button button, bool hold)
-{
-    video.hold_button(button, hold);
-}
-
 bool Program::poll_input(input::Button button)
 {
     return video.is_pressed(button);

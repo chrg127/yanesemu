@@ -61,12 +61,7 @@ void Video::map_keys(const conf::Configuration &conf)
 
 bool Video::is_pressed(input::Button button)
 {
-    return curr_keys[button] || holded_buttons[button];
-}
-
-void Video::hold_button(input::Button button, bool hold)
-{
-    holded_buttons[button] = hold;
+    return curr_keys[button];
 }
 
 } // namespace platform

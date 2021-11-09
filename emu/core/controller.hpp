@@ -3,6 +3,7 @@
 #include <memory>
 #include <emu/util/debug.hpp>
 #include <emu/util/uint.hpp>
+#include <emu/platform/input.hpp>
 
 /*
  * A NES has 2 controller ports (for player 1 and player 2). The CPU is
@@ -17,12 +18,17 @@
 namespace core {
 
 struct Controller {
+protected:
+    input::ButtonArray hold_buttons;
+public:
     enum class Type {
         Gamepad,
     };
     virtual ~Controller() = default;
     virtual u8 read() = 0;
     virtual void latch(bool state) = 0;
+
+    void hold(input::Button button, bool value) { hold_buttons[button] = value; }
 };
 
 class Gamepad : public Controller {

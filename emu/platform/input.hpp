@@ -48,7 +48,6 @@ inline std::optional<input::Button> string_to_button(std::string_view str)
     return std::nullopt;
 }
 
-
 class ButtonArray {
     std::array<bool, NUM_BUTTONS> buttons_pressed;
 public:

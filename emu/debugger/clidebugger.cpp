@@ -63,6 +63,7 @@ void CliDebugger::help()
                "disblock, db:       disassemble a block of memory\n"
                "writecpureg:        writes a value to a cpu register\n"
                "hold, hb:           select a button to hold automatically\n"
+               "unhold, uhb         stop holding button automatically\n"
                "trace, t:           trace and log instructions to a file\n"
                "stoptrace, str:     stop tracing instructions\n"
                "reset, r:           reset emulator\n",
@@ -140,11 +141,6 @@ void CliDebugger::disassemble_block(u16 start, u16 end)
         [ ](u16 addr, std::string_view str) { fmt::print("${:04X}: {}\n", addr, str); });
 }
 
-void CliDebugger::hold_button(input::Button button)
-{
-    program.hold_button(button, true);
-}
-
 void CliDebugger::trace(std::string_view filename)
 {
     if (!tracer.start(filename))
@@ -195,6 +191,7 @@ bool CliDebugger::repl()
             Command{ "disblock",    "db",       &CliDebugger::disassemble_block,            this },
             Command{ "writecpureg", "wrcpu",    &CliDebugger::write_cpu_reg,                this },
             Command{ "hold",        "hb",       &CliDebugger::hold_button,                  this },
+            Command{ "unhold",      "uhb",      &CliDebugger::unhold_button,                  this },
             Command{ "trace",       "t",        &CliDebugger::trace,                        this },
             Command{ "stoptrace",   "str",      [&]() { tracer.stop(); }                         },
             Command{ "reset",       "r",        [&]() { reset_system(); }                        },
