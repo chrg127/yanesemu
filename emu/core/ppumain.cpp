@@ -53,9 +53,9 @@ void PPU::cycle(unsigned line)
 
     if (io.bg_show) {
         if constexpr((Cycle >= 1 && Cycle <= 256) || (Cycle >= 321 && Cycle <= 336)) {
-            if constexpr(Cycle % 8 == 1) background_shift_fill();
-            background_shift_run();
             background_fetch_cycle<Cycle % 8>();
+            if constexpr(Cycle % 8 == 0) background_shift_fill();
+            background_shift_run();
             if constexpr(Cycle % 8 == 0) vram.addr = inc_v_horzpos(vram.addr);
             if constexpr(Cycle == 256)   vram.addr = inc_v_vertpos(vram.addr);
         }

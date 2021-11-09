@@ -294,13 +294,16 @@ void PPU::background_shift_fill()
     unsigned bit1 = util::getbit(vram.addr.coarse_x, 1);
     unsigned bit2 = util::getbit(vram.addr.coarse_y, 1);
     // (00,01,10,11) -> (0,2,4,6)
-    unsigned bitno = (bit2 << 1 | bit1) * 2;
-
-    u2 bits = util::getbits(tile.attr, bitno, 2);
-    shift.feed_high = bits >> 1 & 1;
-    shift.feed_low  = bits & 1;
+    unsigned bitno = (bit2 << 1 | bit1) << 1;
+    u2 palette_num = util::getbits(tile.attr, bitno, 2);
+    shift.feed_high = util::getbit(palette_num, 1);
+    shift.feed_low  = util::getbit(palette_num, 0);
 }
 
+// fine x indicates which bit we want to get. we save the mask since it'll be
+// used for 4 times.
+// the mask is shifted for both pt_high and pt_low because for those two we must
+// look at the high byte.
 std::pair<u2, u2> PPU::background_output()
 {
     if (!io.bg_show)
@@ -410,9 +413,8 @@ u8 PPU::output(unsigned x)
 void PPU::render()
 {
     auto x = cycles;
-    u8 pixel = output(x);
     auto y = lines;
-    assert(y <= 239 && x <= 256);
+    u8 pixel = output(x);
     screen->output(x-1, y, pixel);
 }
 
