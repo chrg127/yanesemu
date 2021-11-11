@@ -54,10 +54,13 @@ void PPU::cycle(unsigned line)
     if (io.bg_show) {
         if constexpr((Cycle >= 1 && Cycle <= 256) || (Cycle >= 321 && Cycle <= 336)) {
             background_fetch_cycle<Cycle % 8>();
-            if constexpr(Cycle % 8 == 0) background_shift_fill();
             background_shift_run();
-            if constexpr(Cycle % 8 == 0) vram.addr = inc_v_horzpos(vram.addr);
-            if constexpr(Cycle == 256)   vram.addr = inc_v_vertpos(vram.addr);
+            if constexpr(Cycle % 8 == 0) {
+                background_shift_fill();
+                vram.addr = inc_v_horzpos(vram.addr);
+            }
+            if constexpr(Cycle == 256)
+                vram.addr = inc_v_vertpos(vram.addr);
         }
         if constexpr(Cycle == 257) copy_v_horzpos();
         if constexpr(Cycle >= 337 && Cycle <= 340)
@@ -68,7 +71,8 @@ void PPU::cycle(unsigned line)
         if constexpr(Cycle >= 1 && Cycle <= 256)
             sprite_shift_run();
         if constexpr(Cycle >= 257 && Cycle <= 320) {
-            if constexpr(Cycle == 257) secondary_oam.index = 0;
+            if constexpr(Cycle == 257)
+                secondary_oam.index = 0;
             u3 sprite_num = util::getbits(secondary_oam.index, 2, 3);
             sprite_read_secondary<Cycle % 8>();
             sprite_fetch_cycle<Cycle % 8>(sprite_num, line);
