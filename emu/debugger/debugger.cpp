@@ -63,7 +63,7 @@ unsigned BreakList::add(Breakpoint point)
 std::optional<unsigned> BreakList::test(u16 addr)
 {
     auto it = std::find_if(list.begin(), list.end(), [addr](const auto &p) {
-        return addr >= p.start && addr <= p.end;
+        return !p.erased && addr >= p.start && addr <= p.end;
     });
     if (it == list.end())
         return std::nullopt;
