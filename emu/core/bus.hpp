@@ -24,7 +24,7 @@ public:
     Bus(const Bus<BusSize> &) = delete;
     Bus<BusSize> operator=(const Bus<BusSize> &) = delete;
 
-    void map(u32 start, u32 end, auto &&reader, auto &&writer)
+    int map(u32 start, u32 end, auto &&reader, auto &&writer)
     {
         int id = 0;
 
@@ -32,13 +32,25 @@ public:
         while (assigned[id]) {
             if (++id > TABSIZE) {
                 error("mapping exhausted\n");
-                return;
+                return -1;
             }
         }
         assigned[id] = true;
         readtab[id] = reader;
         writetab[id] = writer;
         std::fill(lookup.begin() + start, lookup.begin() + end, id);
+
+        return id;
+    }
+
+    void remap(int id, auto &&reader, auto &&writer)
+    {
+        if (!assigned[id]) {
+            error("trying to remap to unassigned id\n");
+            return;
+        }
+        readtab[id] = reader;
+        writetab[id] = writer;
     }
 
     void reset()

@@ -18,8 +18,8 @@ void System::power(bool reset, char fill_value)
     }
 }
 
-using DecodeFn = u16 (*)(u16);
-static DecodeFn get_decode(Mirroring mirroring)
+using VramDecoder = u16 (*)(u16);
+static VramDecoder vram_addr_decoder(Mirroring mirroring)
 {
     switch (mirroring) {
     case Mirroring::OneScreen:  return [](u16 addr) -> u16 { return addr & util::bitmask(10); };
@@ -36,6 +36,21 @@ static DecodeFn get_decode(Mirroring mirroring)
     }
 }
 
+// u16 vram_address(u16 addr, Mirroring mirroring)
+// {
+//     switch (mirroring) {
+//     case Mirroring::OneScreen:  return addr & util::bitmask(10);
+//     case Mirroring::Vertical:   return addr & util::bitmask(11);
+//     case Mirroring::FourScreen: return addr & util::bitmask(12);
+//     case Mirroring::Horizontal: {
+//         auto tmp = addr & 0xFFF;
+//         auto bits = util::getbits(tmp, 10, 2) >> 1;
+//         return util::setbits(tmp, 10, 2, bits);
+//     }
+//     default: panic("");
+//     }
+// }
+
 void System::map(Mirroring mirroring)
 {
     rambus.reset();
@@ -47,14 +62,22 @@ void System::map(Mirroring mirroring)
     rambus.map(0x8000, CPUBUS_SIZE,         [this](u16 addr) { return mapper->read_rom(addr); },     [this](u16 addr, u8 data) { mapper->write_rom(addr, data); });
     vrambus.map(PT_START, NT_START,         [this](u16 addr) { return mapper->read_chr(addr); },     [this](u16 addr, u8 data) { mapper->write_chr(addr, data); });
     vrambus.map(PAL_START, 0x4000,          [this](u16 addr) { return palmem[addr & 0x1F]; },        [this](u16 addr, u8 data) { palmem[addr & 0x1F] = data; });
-    change_mirroring(mirroring);
+    // this->mirroring = mirroring;
+    // vrambus.map(NT_START, PAL_START, [this](u16 addr)          { return vrammem[vram_address(addr, this->mirroring)]; },
+    //                                  [this](u16 addr, u8 data) { vrammem[vram_address(addr, this->mirroring)] = data; });
+    const auto decode = vram_addr_decoder(mirroring);
+    vram_id = vrambus.map(NT_START, PAL_START, [this, decode](u16 addr) { return vrammem[decode(addr)]; },
+                                               [this, decode](u16 addr, u8 data) { vrammem[decode(addr)] = data; });
 }
 
+// void System::change_mirroring(Mirroring mirroring) { this->mirroring = mirroring; }
 void System::change_mirroring(Mirroring mirroring)
 {
-    const auto decode = get_decode(mirroring);
-    vrambus.map(NT_START, PAL_START,        [this, decode](u16 addr) { return vrammem[decode(addr)]; }, [this, decode](u16 addr, u8 data) { vrammem[decode(addr)] = data; });
+    const auto decode = vram_addr_decoder(mirroring);
+    vrambus.remap(vram_id, [this, decode](u16 addr)          { return vrammem[decode(addr)]; },
+                           [this, decode](u16 addr, u8 data) { vrammem[decode(addr)] = data; });
 }
+
 
 Emulator::Emulator()
 {

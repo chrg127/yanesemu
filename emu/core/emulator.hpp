@@ -30,6 +30,8 @@ struct System {
     std::array<u8, core::RAM_SIZE> rammem;
     std::array<u8, core::VRAM_SIZE> vrammem;
     std::array<u8, core::PAL_SIZE> palmem;
+    int vram_id = 0;
+    // Mirroring mirroring = Mirroring::OneScreen;
 
     void run();
     void power(bool reset, char fill_value = 0);
