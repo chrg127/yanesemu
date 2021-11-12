@@ -10,12 +10,14 @@
 #include <emu/util/mappedfile.hpp>
 #include <emu/util/os.hpp>
 #include <emu/util/conf.hpp>
+#include <emu/util/string.hpp>
 
 static const cmdline::ArgumentList cmdflags = {
     { 'h', "help",     "Print this help text and quit" },
     { 'v', "version",  "Shows the program's version"   },
     { 'd', "debugger", "Use command-line debugger"     },
     { 'n', "no-video", "Start without a window"        },
+    { 's', "window-size", "Specify window size (1, 2, 3, 4)", cmdline::ParamType::Single, "2" },
 };
 
 static const conf::ValidConf valid_conf = {
@@ -73,7 +75,17 @@ void cli_interface(cmdline::Result &flags)
     auto name = flags.items[0];
     auto rom = open_rom(name);
     program.start_video(name, flags);
-    program.set_window_scale(2);
+
+    int window_size = 2;
+    if (flags.has['s']) {
+        if (auto opt = str::conv(flags.params['s']);
+            opt && (opt.value() == 1 || opt.value() == 2 || opt.value() == 3 || opt.value() == 4)) {
+                window_size = opt.value();
+        } else
+            throw std::runtime_error("Invalid value for viewport size (valid values: 1 2 3 4)");
+    }
+    program.set_window_scale(window_size);
+
     program.use_config(config);
     core::emulator.power();
     if (!flags.has['d']) {
