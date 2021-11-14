@@ -32,14 +32,9 @@ struct Command {
     }
 };
 
-template <typename T> struct TryConvert;
+template <typename T> T try_convert_impl(std::string_view str);
 
 namespace detail {
-
-template <typename T>
-auto try_convert(std::string_view str) {
-    return TryConvert<T>::convert(str);
-};
 
 template<int N, typename... Ts>
 using NthTypeOf = typename std::tuple_element<N, std::tuple<Ts...>>::type;
@@ -48,7 +43,7 @@ template <typename... P>
 auto call_one(std::string_view name, std::span<std::string> args, bool &wrong_num_params, const Command<P...> &cmd)
 {
     auto call_forward = [&]<std::size_t... Is>(std::index_sequence<Is...> const&) {
-        cmd.fn( detail::try_convert<NthTypeOf<Is, P...>>(std::string_view(args[Is]))... );
+        cmd.fn( try_convert_impl<NthTypeOf<Is, P...>>(std::string_view(args[Is]))... );
     };
 
     if (cmd.name != name && cmd.abbrev != name)

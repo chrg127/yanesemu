@@ -26,14 +26,14 @@ u8 PPUDebugger::reg(u16 addr) const
                       | ppu->io.sp_zero_hit << 6
                       | ppu->io.sp_overflow << 5;
     case 0x2003: return ppu->oam.addr;
-    case 0x2004: return 0;
+    case 0x2004: return ppu->oam.mem[ppu->oam.addr];
     case 0x2005: return !ppu->io.scroll_latch ? ppu->vram.fine_x     << 5 | ppu->vram.tmp.coarse_x
                                               : ppu->vram.tmp.fine_y << 5 | ppu->vram.tmp.coarse_y;
     case 0x2006: return !ppu->io.scroll_latch ? ppu->vram.tmp.v & 0xFF
                                               : ppu->vram.tmp.v >> 8 & 0xFF;
     case 0x2007: return ppu->vram.addr.v < 0x3F00 ? ppu->io.data_buf
                                                   : ppu->bus->read(ppu->vram.addr.as_u14());
-    default: return 0xFF;
+    default: return 0;
     }
 }
 
@@ -52,9 +52,49 @@ u8 PPUDebugger::reg(Reg r) const
     }
 }
 
-// void PPUDebugger::set_reg(Reg reg, u8 data)
-// {
-// }
+void PPUDebugger::set_reg(Reg r, u16 data)
+{
+    // same as PPU::writereg, but doesn't write in io.latch and takes care of
+    // read-only registers
+    switch (r) {
+    case PPUDebugger::Reg::Ctrl:
+        ppu->vram.tmp.nt     = data & 0x03;
+        ppu->io.vram_inc     = data & 0x04;
+        ppu->io.sp_pt_addr   = data & 0x08;
+        ppu->io.bg_pt_addr   = data & 0x10;
+        ppu->io.sp_size      = (data & 0x20) >> 5;
+        ppu->io.ext_bus_dir  = data & 0x40;
+        ppu->io.nmi_enabled  = data & 0x80;
+        break;
+    case PPUDebugger::Reg::Mask:
+        ppu->io.grey          = data & 0x01;
+        ppu->io.bg_show_left  = data & 0x02;
+        ppu->io.sp_show_left  = data & 0x04;
+        ppu->io.bg_show       = data & 0x08;
+        ppu->io.sp_show       = data & 0x10;
+        ppu->io.red           = data & 0x20;
+        ppu->io.green         = data & 0x40;
+        ppu->io.blue          = data & 0x80;
+        break;
+    case PPUDebugger::Reg::Status:
+        ppu->io.vblank         = data & 0x80;
+        ppu->io.sp_zero_hit    = data & 0x40;
+        ppu->io.sp_overflow    = data & 0x20;
+        break;
+    case PPUDebugger::Reg::OAMAddr:
+        ppu->oam.addr = data;
+        break;
+    case PPUDebugger::Reg::OAMData:
+        break;
+    case PPUDebugger::Reg::PPUScroll:
+        break;
+    case PPUDebugger::Reg::PPUAddr:
+        ppu->vram.addr = data;
+        break;
+    case PPUDebugger::Reg::PPUData:
+        break;
+    }
+}
 
 std::pair<unsigned long, unsigned long> PPUDebugger::pos() const
 {

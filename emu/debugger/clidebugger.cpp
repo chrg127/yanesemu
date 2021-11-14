@@ -8,18 +8,15 @@
 #include <emu/util/bits.hpp>
 
 using util::ParseError;
-using util::TryConvert;
 using util::Command;
 
-#define CONVERT_FUNC(type, how, msg)            \
-template <> struct util::TryConvert<type> {     \
-    static type convert(std::string_view str)   \
-    {                                           \
-        if (auto o = how; o) return o.value();  \
-        throw ParseError(fmt::format(msg, str));\
-    }                                           \
-}
+#define CONVERT_FUNC(type, how, msg)                                    \
+template <> type util::try_convert_impl<type>(std::string_view str) {   \
+    if (auto o = how; o) return o.value();                              \
+    throw ParseError(fmt::format(msg, str));                            \
+}                                                                       \
 
+template <> std::string_view util::try_convert_impl<std::string_view>(std::string_view str) { return str; }
 CONVERT_FUNC(u16,                        str::conv<u16>(str, 16),            "Invalid address: {}.");
 CONVERT_FUNC(u8,                         str::conv<u8>(str, 16),             "Invalid value: {}.");
 CONVERT_FUNC(int,                        str::conv(str),                     "Not a number: {}.");
@@ -28,10 +25,6 @@ CONVERT_FUNC(debugger::Component,        debugger::string_to_component(str), "In
 CONVERT_FUNC(debugger::CPUDebugger::Reg, debugger::string_to_cpu_reg(str),   "Invalid register: {}.");
 CONVERT_FUNC(debugger::PPUDebugger::Reg, debugger::string_to_ppu_reg(str),   "Invalid register: {}.");
 CONVERT_FUNC(input::Button,              input::string_to_button(str),       "Invalid button: {}.");
-
-template <> struct util::TryConvert<std::string_view> {
-    static std::string_view convert(std::string_view str) { return str; }
-};
 
 namespace debugger {
 
@@ -61,7 +54,8 @@ void CliDebugger::help()
                "block, bl           read a block of memory\n"
                "disassemble, dis:   disassemble 3 bytes\n"
                "disblock, db:       disassemble a block of memory\n"
-               "writecpureg:        writes a value to a cpu register\n"
+               "writecpureg, wrcpu: writes a value to a CPU register\n"
+               "writeppureg, wrppu: writes a value to a PPU register\n"
                "hold, hb:           select a button to hold automatically\n"
                "unhold, uhb         stop holding button automatically\n"
                "trace, t:           trace and log instructions to a file\n"
@@ -190,8 +184,9 @@ bool CliDebugger::repl()
             Command{ "disassemble", "dis",      &CliDebugger::disassemble,                  this },
             Command{ "disblock",    "db",       &CliDebugger::disassemble_block,            this },
             Command{ "writecpureg", "wrcpu",    &CliDebugger::write_cpu_reg,                this },
+            Command{ "writeppureg", "wrppu",    &CliDebugger::write_ppu_reg,                this },
             Command{ "hold",        "hb",       &CliDebugger::hold_button,                  this },
-            Command{ "unhold",      "uhb",      &CliDebugger::unhold_button,                  this },
+            Command{ "unhold",      "uhb",      &CliDebugger::unhold_button,                this },
             Command{ "trace",       "t",        &CliDebugger::trace,                        this },
             Command{ "stoptrace",   "str",      [&]() { tracer.stop(); }                         },
             Command{ "reset",       "r",        [&]() { reset_system(); }                        },

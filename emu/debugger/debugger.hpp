@@ -63,7 +63,7 @@ public:
 
     u8 reg(u16 addr) const;
     u8 reg(Reg reg) const;
-    // void set_reg(Reg reg, u16 value);
+    void set_reg(Reg reg, u16 value);
     std::pair<unsigned long, unsigned long> pos() const;
     u16 nt_base_addr() const;
     u16 vram_addr() const;
