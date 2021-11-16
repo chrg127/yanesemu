@@ -46,6 +46,7 @@ void PPU::cycle(unsigned line)
             oam.sp0_next = 0;
         }
     }
+
     if constexpr(Cycle >= 1 && Cycle <= 256) {
         if (line != 261)
             render();
@@ -55,16 +56,22 @@ void PPU::cycle(unsigned line)
         if constexpr((Cycle >= 1 && Cycle <= 256) || (Cycle >= 321 && Cycle <= 336)) {
             background_fetch_cycle<Cycle % 8>();
             background_shift_run();
-            if constexpr(Cycle % 8 == 0) {
+            if constexpr(Cycle % 8 == 0)
                 background_shift_fill();
-                vram.addr = inc_v_horzpos(vram.addr);
-            }
-            if constexpr(Cycle == 256)
-                vram.addr = inc_v_vertpos(vram.addr);
         }
-        if constexpr(Cycle == 257) copy_v_horzpos();
         if constexpr(Cycle >= 337 && Cycle <= 340)
             background_fetch_cycle<Cycle % 8>();
+    }
+
+    if (io.bg_show || io.sp_show) {
+        if constexpr((Cycle >= 1 && Cycle <= 257) || (Cycle >= 321 && Cycle <= 336)) {
+            if constexpr(Cycle % 8 == 0)
+                vram.addr = inc_v_horzpos(vram.addr);
+            if constexpr(Cycle == 256)
+                vram.addr = inc_v_vertpos(vram.addr);
+            if constexpr(Cycle == 257)
+                copy_v_horzpos();
+        }
     }
 
     if (io.sp_show) {
@@ -119,7 +126,7 @@ void PPU::line(unsigned cycle, CycleFunc cycle_fn)
         (this->*cycle_fn)(Line);
         if (cycle == 1)
             vblank_end();
-        if (io.bg_show && cycle >= 280 && cycle <= 304)
+        if ((io.bg_show || io.sp_show) && cycle >= 280 && cycle <= 304)
             copy_v_vertpos();
         // check for last cycle.
         // last cycle of this scanline is 339 on an odd_frame, 340 on an even frame

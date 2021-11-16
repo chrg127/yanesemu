@@ -73,15 +73,20 @@ std::optional<unsigned> BreakList::test(u16 addr)
 void Tracer::trace(const CPUDebugger &cpudbg, const PPUDebugger &ppudbg)
 {
     if (file) {
+        auto [line, cycle] = ppudbg.pos();
         fmt::print(file.value().data(),
-            "PC: ${:04X} A: ${:02X} X: ${:02X} Y: ${:02X} SP: ${:02X} {} V: {:04X} {}\n",
+            "PC: ${:04X} A: ${:02X} X: ${:02X} Y: ${:02X} SP: ${:02X} {} "
+            "V: ${:04X} T: ${:04X} Line: {} Cycle: {} "
+            "{}\n",
             cpudbg.reg(CPUDebugger::Reg::PC),
             cpudbg.reg(CPUDebugger::Reg::Acc),
             cpudbg.reg(CPUDebugger::Reg::X),
             cpudbg.reg(CPUDebugger::Reg::Y),
             cpudbg.reg(CPUDebugger::Reg::SP),
             cpudbg.flags_to_string(),
-            ppudbg.reg(PPUDebugger::Reg::PPUAddr),
+            ppudbg.vram_addr(),
+            ppudbg.tmp_addr(),
+            line, cycle,
             cpudbg.curr_instr_to_string()
         );
     }
