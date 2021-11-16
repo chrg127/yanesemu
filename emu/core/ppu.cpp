@@ -108,12 +108,12 @@ u8 PPU::readreg(u16 addr)
         io.scroll_latch = 0;
         break;
 
-    // OAMData
+    // OAMDATA
     case 0x2004:
         io.latch = oam.mem[oam.addr];
         break;
 
-    // PPUData
+    // PPUDATA
     case 0x2007:
         if (vram.addr.v < 0x3F00) {
             io.latch = io.data_buf;
@@ -164,18 +164,18 @@ void PPU::writereg(u16 addr, u8 data)
     case 0x2002:
         break;
 
-    // OAMAddr
+    // OAMADDR
     case 0x2003:
         oam.addr = data;
         break;
 
-    // OAMData
+    // OAMDATA
     case 0x2004:
         if (lines > 239 && lines < 261)
             oam.mem[oam.addr++] = data;
         break;
 
-    // PPUScroll
+    // PPUSCROLL
     case 0x2005:
         if (!io.scroll_latch) {
             vram.tmp.coarse_x = util::getbits(data, 3, 5);
@@ -187,7 +187,7 @@ void PPU::writereg(u16 addr, u8 data)
         io.scroll_latch ^= 1;
         break;
 
-    // PPUAddr
+    // PPUADDR
     case 0x2006:
         if (io.scroll_latch == 0)
             vram.tmp.v = util::setbits(vram.tmp.v, 8, 8, data & 0x3F);
@@ -198,7 +198,7 @@ void PPU::writereg(u16 addr, u8 data)
         io.scroll_latch ^= 1;
         break;
 
-    // PPUData
+    // PPUDATA
     case 0x2007:
         bus->write(vram.addr.as_u14(), data);
         vram.addr += (1UL << 5*io.vram_inc);

@@ -241,8 +241,9 @@ void CliDebugger::print_ppu_status() const
     u8 mask = ppu.reg(PPUDebugger::Reg::Mask);
     u8 status = ppu.reg(PPUDebugger::Reg::Status);
     auto [line, cycle] = ppu.pos();
+    fmt::print("Line: {}; Cycle: {}\n", line, cycle);
     fmt::print("PPUCTRL ($2000): {:08b}:\n"
-               "    Base NT address: ${:04X}\n    VRAM address increment: {}\n    Sprite Pattern table address: ${:04X}\n"
+               "    Base nametable address: ${:04X}\n    VRAM address increment: {}\n    Sprite pattern table address: ${:04X}\n"
                "    Background pattern table address: ${:04X}\n    Sprite size: {}\n    Master/slave: {}\n    NMI enabled: {}\n",
                ctrl, ppu.nt_base_addr(), (ctrl & 4) == 0 ? 1 : 32, util::getbit(ctrl, 4) * 0x1000,
                util::getbit(ctrl, 5) * 0x1000, (ctrl & 32) ? "8x16" : "8x8", (ctrl & 64) ? "output color" : "read backdrop",
@@ -253,14 +254,9 @@ void CliDebugger::print_ppu_status() const
                mask, onoff(mask & 1),  onoff(mask & 2),  onoff(mask & 4),  onoff(mask & 8),
                onoff(mask & 16), onoff(mask & 32), onoff(mask & 64), onoff(mask & 128));
     fmt::print("PPUSTATUS ($2002): {:08b}:\n"
-               "    Sprite overflow: {}\n    Sprite 0 hit: {}\n    Vblank: {}\n",
+               "    Sprite overflow: {}\n    Sprite 0 hit: {}\n    Vertical blank: {}\n",
                status, onoff(status & 32), onoff(status & 64), onoff(status & 128));
-    fmt::print("OAMAddr ($2003): ${:02X}\n", ppu.reg(PPUDebugger::Reg::OAMAddr));
-    fmt::print("OAMData ($2004): ${:02X}\n", ppu.reg(PPUDebugger::Reg::OAMData));
-    fmt::print("PPUScroll ($2005): ${:02X}\n", ppu.reg(PPUDebugger::Reg::PPUScroll));
-    fmt::print("PPUAddr ($2006): ${:02X}\n", ppu.reg(PPUDebugger::Reg::PPUAddr));
-    fmt::print("PPUData ($2007): ${:02X}\n", ppu.reg(PPUDebugger::Reg::PPUData));
-    fmt::print("Line: {}; Cycle: {}\n", line, cycle);
+    fmt::print("OAMADDR ($2003): ${:02X}\n", ppu.reg(PPUDebugger::Reg::OAMAddr));
     fmt::print("VRAM address: {:04X}\n", ppu.vram_addr());
     fmt::print("TMP address: {:04X}\n", ppu.tmp_addr());
     fmt::print("Fine X: {:X}\n", ppu.fine_x());

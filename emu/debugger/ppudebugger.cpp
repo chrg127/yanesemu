@@ -84,52 +84,26 @@ void PPUDebugger::set_reg(Reg r, u16 data)
     case PPUDebugger::Reg::OAMAddr:
         ppu->oam.addr = data;
         break;
-    case PPUDebugger::Reg::OAMData:
-        break;
-    case PPUDebugger::Reg::PPUScroll:
-        break;
     case PPUDebugger::Reg::PPUAddr:
         ppu->vram.addr = data;
         break;
-    case PPUDebugger::Reg::PPUData:
+    default:
         break;
     }
 }
 
 std::pair<unsigned long, unsigned long> PPUDebugger::pos() const
 {
-    return { ppu->lines, ppu->cycles };
+    return std::make_pair(ppu->lines, ppu->cycles);
 }
 
-u16 PPUDebugger::nt_base_addr() const
-{
-    return 0x2000 + ppu->vram.tmp.nt * 0x400;
-}
+u16 PPUDebugger::nt_base_addr() const { return 0x2000 + ppu->vram.tmp.nt * 0x400; }
+u16 PPUDebugger::vram_addr() const    { return ppu->vram.addr.v; }
+u16 PPUDebugger::tmp_addr() const     { return ppu->vram.tmp.v; }
+u8 PPUDebugger::fine_x() const        { return ppu->vram.fine_x; }
 
-u16 PPUDebugger::vram_addr() const
-{
-    return ppu->vram.addr.v;
-}
-
-u16 PPUDebugger::tmp_addr() const
-{
-    return ppu->vram.tmp.v;
-}
-
-u8 PPUDebugger::fine_x() const
-{
-    return ppu->vram.fine_x;
-}
-
-u8 PPUDebugger::read_oam(u8 addr)
-{
-    return ppu->oam.mem[addr];
-}
-
-void PPUDebugger::write_oam(u8 addr, u8 data)
-{
-    ppu->oam.mem[addr] = data;
-}
+u8 PPUDebugger::read_oam(u8 addr)             { return ppu->oam.mem[addr]; }
+void PPUDebugger::write_oam(u8 addr, u8 data) { ppu->oam.mem[addr] = data; }
 
 } // namespace Debugger
 
