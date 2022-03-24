@@ -12,18 +12,18 @@ Program program;
 void Program::start_video(std::string_view rom_name, cmdline::Result &flags)
 {
     video = platform::Video::create(
-        flags.has['n'] ? platform::Type::NoVideo : platform::Type::SDL,
+        flags.has('n') ? platform::Type::NoVideo : platform::Type::SDL,
         core::SCREEN_WIDTH,
         core::SCREEN_HEIGHT
     );
     std::filesystem::path rompath{rom_name};
     auto basename = rompath.stem().c_str();
-    auto title = fmt::format("{}{} - {}", progname, (flags.has['d'] ? " (debugger)" : ""), basename);
+    auto title = fmt::format("{}{} - {}", progname, (flags.has('d') ? " (debugger)" : ""), basename);
     video.set_title(title);
     screen = video.create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
 }
 
-void Program::use_config(const conf::Configuration &conf)
+void Program::use_config(const conf::Data &conf)
 {
     video.map_keys(conf);
 }

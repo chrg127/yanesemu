@@ -98,7 +98,7 @@ class Tracer {
 public:
     bool start(std::string_view pathname)
     {
-        file = io::File::open(pathname.data(), io::Access::WRITE);
+        file = io::File::open(pathname.data(), io::Access::Write);
         return bool(file);
     }
     void stop() { file = std::nullopt; }

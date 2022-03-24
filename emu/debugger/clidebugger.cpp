@@ -17,9 +17,9 @@ template <> type util::try_convert_impl<type>(std::string_view str) {   \
 }                                                                       \
 
 template <> std::string_view util::try_convert_impl<std::string_view>(std::string_view str) { return str; }
-CONVERT_FUNC(u16,                        str::conv<u16>(str, 16),            "Invalid address: {}.");
-CONVERT_FUNC(u8,                         str::conv<u8>(str, 16),             "Invalid value: {}.");
-CONVERT_FUNC(int,                        str::conv(str),                     "Not a number: {}.");
+CONVERT_FUNC(u16,                        str::to_num<u16>(str, 16),          "Invalid address: {}.");
+CONVERT_FUNC(u8,                         str::to_num<u8>(str, 16),           "Invalid value: {}.");
+CONVERT_FUNC(int,                        str::to_num(str),                   "Not a number: {}.");
 CONVERT_FUNC(debugger::MemorySource,     debugger::string_to_memsource(str), "Invalid memory source: {}.");
 CONVERT_FUNC(debugger::Component,        debugger::string_to_component(str), "Invalid component: {}.");
 CONVERT_FUNC(debugger::CPUDebugger::Reg, debugger::string_to_cpu_reg(str),   "Invalid register: {}.");
@@ -157,7 +157,7 @@ bool CliDebugger::repl()
     std::string line;
 
     fmt::print(">>> ");
-    if (!input.getline(line))
+    if (!input.get_line(line))
         return true;
 
     try {

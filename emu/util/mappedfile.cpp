@@ -1,8 +1,6 @@
 #include "mappedfile.hpp"
 
-#include <emu/util/os.hpp>
-
-#ifdef PLATFORM_LINUX
+#ifdef __linux__
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -13,7 +11,7 @@
 
 namespace io {
 
-#ifdef PLATFORM_LINUX
+#ifdef __linux__
 
 std::optional<MappedFile> MappedFile::open(std::string_view pathname)
 {

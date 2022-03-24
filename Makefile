@@ -6,7 +6,7 @@ build := debug
 _objs := \
 	emulator.cpp cartridge.cpp cpu.cpp ppu.cpp screen.cpp controller.cpp mapper.cpp \
 	debugger.cpp clidebugger.cpp cpudebugger.cpp ppudebugger.cpp disassemble.cpp \
-	cmdline.cpp conf.cpp easyrandom.cpp file.cpp string.cpp mappedfile.cpp \
+	conf.cpp easyrandom.cpp mappedfile.cpp \
 	video.cpp opengl.cpp \
 	program.cpp \
 	stb_image.c

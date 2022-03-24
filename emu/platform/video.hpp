@@ -63,7 +63,7 @@ public:
         ptr->update_texture(tex, (const void *) buf.data());
     }
 
-    void map_keys(const conf::Configuration &conf);
+    void map_keys(const conf::Data &conf);
     bool is_pressed(input::Button button);
 };
 

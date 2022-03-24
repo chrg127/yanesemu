@@ -29,7 +29,7 @@ class Program {
 
 public:
     void start_video(std::string_view rom_name, cmdline::Result &flags);
-    void use_config(const conf::Configuration &conf);
+    void use_config(const conf::Data &conf);
     void set_window_scale(int size);
     void stop();
 

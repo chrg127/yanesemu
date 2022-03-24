@@ -40,7 +40,7 @@ Texture Video::create_texture(std::string_view pathname)
     return tex;
 }
 
-void Video::map_keys(const conf::Configuration &conf)
+void Video::map_keys(const conf::Data &conf)
 {
     using namespace std::literals;
     using namespace input;

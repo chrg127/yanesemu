@@ -8,11 +8,10 @@
 #include <emu/util/cmdline.hpp>
 #include <emu/util/debug.hpp>
 #include <emu/util/mappedfile.hpp>
-#include <emu/util/os.hpp>
 #include <emu/util/conf.hpp>
 #include <emu/util/string.hpp>
 
-static const cmdline::ArgumentList cmdflags = {
+static const std::vector<cmdline::Argument> cmdflags = {
     { 'h', "help",     "Print this help text and quit" },
     { 'v', "version",  "Shows the program's version"   },
     { 'd', "debugger", "Use command-line debugger"     },
@@ -20,18 +19,18 @@ static const cmdline::ArgumentList cmdflags = {
     { 's', "window-size", "Specify window size (1, 2, 3, 4)", cmdline::ParamType::Single, "2" },
 };
 
-static const conf::ValidConf valid_conf = {
-    { "AKey",      { conf::Type::String, "Key_z"     } },
-    { "BKey",      { conf::Type::String, "Key_x"     } },
-    { "UpKey",     { conf::Type::String, "Key_Up"    } },
-    { "DownKey",   { conf::Type::String, "Key_Down"  } },
-    { "LeftKey",   { conf::Type::String, "Key_Left"  } },
-    { "RightKey",  { conf::Type::String, "Key_Right" } },
-    { "StartKey",  { conf::Type::String, "Key_s"     } },
-    { "SelectKey", { conf::Type::String, "Key_a"     } },
+static const conf::ValidConfig valid_conf = {
+    { "AKey",      conf::Value("Key_z")     },
+    { "BKey",      conf::Value("Key_x")     },
+    { "UpKey",     conf::Value("Key_Up")    },
+    { "DownKey",   conf::Value("Key_Down")  },
+    { "LeftKey",   conf::Value("Key_Left")  },
+    { "RightKey",  conf::Value("Key_Right") },
+    { "StartKey",  conf::Value("Key_s")     },
+    { "SelectKey", conf::Value("Key_a")     },
 };
 
-static conf::Configuration config;
+static conf::Data config;
 
 
 
@@ -50,21 +49,6 @@ io::MappedFile open_rom(std::string_view rompath)
     return std::move(romfile.value());
 }
 
-static conf::Configuration make_config()
-{
-    static const char *filename = "yanesemu.conf";
-    auto conf = conf::parse(filename, valid_conf);
-    auto errors = conf::errors();
-    for (auto &err : errors) {
-        fmt::print(stderr, "error: ");
-        if (err.line != -1)
-            fmt::print(stderr, "line {}: ", err.line);
-        fmt::print("{}\n", err.msg);
-    }
-    conf::create(filename, conf);
-    return conf;
-}
-
 void cli_interface(cmdline::Result &flags)
 {
     if (flags.items.empty())
@@ -77,8 +61,8 @@ void cli_interface(cmdline::Result &flags)
     program.start_video(name, flags);
 
     int window_size = 2;
-    if (flags.has['s']) {
-        if (auto opt = str::conv(flags.params['s']);
+    if (flags.has('s')) {
+        if (auto opt = str::to_num(flags.params['s']);
             opt && (opt.value() == 1 || opt.value() == 2 || opt.value() == 3 || opt.value() == 4)) {
                 window_size = opt.value();
         } else
@@ -88,7 +72,7 @@ void cli_interface(cmdline::Result &flags)
 
     program.use_config(config);
     core::emulator.power();
-    if (!flags.has['d']) {
+    if (!flags.has('d')) {
         core::emulator.on_cpu_error([&](u8 id, u16 addr) {
             fmt::print(stderr, "The CPU has found an invalid instruction of ID ${:02X} at address ${:04X}. Stopping.\n", id, addr);
             core::emulator.stop();
@@ -113,7 +97,7 @@ void cli_interface(cmdline::Result &flags)
 
 int main(int argc, char *argv[])
 {
-#ifdef PLATFORM_WINDOWS
+#ifdef _WIN32
     // windows doesn't have line buffering, and full buffering is just bad
     // for stdout and stderr, so set no buffering to these two.
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -127,18 +111,23 @@ int main(int argc, char *argv[])
     }
 
     cmdline::Result flags = cmdline::parse(argc, argv, cmdflags);
-    if (flags.has['h']) {
+    if (flags.has('h')) {
         fmt::print(stderr, "Usage: {} [args...] romfile\n", progname);
         cmdline::print_args(cmdflags);
         return 0;
     }
 
-    if (flags.has['v']) {
+    if (flags.has('v')) {
         fmt::print(stderr, "{} version: {}\n", progname, version);
         return 0;
     }
 
-    config = make_config();
+    auto conf = conf::parse_or_create("yanesemu.conf", valid_conf, [](std::string_view msg) {
+        fmt::print(stderr, "{}\n", msg);
+    });
+    if (!conf)
+        return 1;
+    config = std::move(conf.value());
 
     try {
         cli_interface(flags);
