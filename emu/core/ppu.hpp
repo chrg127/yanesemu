@@ -19,10 +19,10 @@ class PPU {
 public:
     union VRAMAddress {
         u16 v = 0;
-        util::BitField<u16, 12, 3> fine_y;
-        util::BitField<u16, 10, 2> nt;
-        util::BitField<u16, 5,  5> coarse_y;
-        util::BitField<u16, 0,  5> coarse_x;
+        bits::BitField<u16, 12, 3> fine_y;
+        bits::BitField<u16, 10, 2> nt;
+        bits::BitField<u16, 5,  5> coarse_y;
+        bits::BitField<u16, 0,  5> coarse_x;
 
         VRAMAddress() = default;
         VRAMAddress(u16 data) : v(data) { }
@@ -30,7 +30,7 @@ public:
         VRAMAddress & operator=(const VRAMAddress &a) { v = a.v; return *this; }
 
         explicit operator u16() const   { return v; }
-        VRAMAddress & operator+=(u16 n) { v += n; v = util::getbits(v, 0, 15); return *this; }
+        VRAMAddress & operator+=(u16 n) { v += n; v = bits::getbits(v, 0, 15); return *this; }
 
         u14 as_u14() { return v; }
     };

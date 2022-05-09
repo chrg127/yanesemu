@@ -4,7 +4,7 @@
 #include <emu/program.hpp>
 #include <emu/core/emulator.hpp>
 #include <emu/platform/input.hpp>
-#include <emu/util/file.hpp>
+#include <emu/util/io.hpp>
 #include <emu/util/debug.hpp>
 #include <emu/util/utility.hpp>
 

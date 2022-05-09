@@ -11,12 +11,15 @@
 
 namespace str {
 
-inline bool is_space(int c) { return c == ' ' || c == '\t' || c == '\r'; }
+inline bool is_space(char c) { return c == ' ' || c == '\t' || c == '\r'; }
+inline bool is_alpha(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
+inline bool is_digit(char c) { return c >= '0' && c <= '9'; }
 
-inline std::vector<std::string_view> split(std::string_view s, char delim = ',')
+template <typename From = std::string, typename To = std::string>
+inline std::vector<To> split(const From &s, char delim = ',')
 {
-    std::vector<std::string_view> res;
-    for (auto i = 0l, p = 0l; i != s.size(); i = p+1) {
+    std::vector<To> res;
+    for (std::size_t i = 0, p = 0; i != s.size(); i = p+1) {
         p = s.find(delim, i);
         if (p == s.npos) {
             res.emplace_back(s.substr(i, s.size() - i));
@@ -28,24 +31,15 @@ inline std::vector<std::string_view> split(std::string_view s, char delim = ',')
     return res;
 }
 
-inline std::vector<std::string> split(const std::string &s, char delim = ',')
+inline std::vector<std::string_view> split_view(std::string_view s, char delim = ',')
 {
-    std::vector<std::string> res;
-    for (auto i = 0l, p = 0l; i != s.size(); i = p+1) {
-        p = s.find(delim, i);
-        if (p == s.npos) {
-            res.emplace_back(s.begin() + i, s.end());
-            break;
-        }
-        res.emplace_back(s.begin() + i, s.begin() + p);
-        i = p+1;
-    }
-    return res;
+    return split<std::string_view, std::string_view>(s, delim);
 }
 
-inline std::vector<std::string> split_lines(const std::string &s, int col)
+template <typename From = std::string, typename To = std::string>
+inline std::vector<To> split_lines(const From &s, std::size_t col)
 {
-    std::vector<std::string> result;
+    std::vector<To> result;
     auto it = s.begin();
     while (it != s.end()) {
         it = std::find_if_not(it, s.end(), is_space);
@@ -57,22 +51,24 @@ inline std::vector<std::string> split_lines(const std::string &s, int col)
     return result;
 }
 
-
-inline std::string trim(const std::string &s)
+template <typename From = std::string, typename To = std::string>
+inline To trim(const From &s)
 {
     auto i = std::find_if_not(s.begin(),  s.end(),  is_space);
     auto j = std::find_if_not(s.rbegin(), s.rend(), is_space).base();
     return {i, j};
 }
 
-inline void trim_in_place(std::string &s)
+inline std::string_view trim_view(std::string_view s) { return trim<std::string_view, std::string_view>(s); }
+
+template <typename T = std::string>
+inline void trim_in_place(T &s)
 {
     auto j = std::find_if_not(s.rbegin(), s.rend(), is_space).base();
     s.erase(j, s.end());
     auto i = std::find_if_not(s.begin(), s.end(), is_space);
     s.erase(s.begin(), i);
 }
-
 
 template <typename T = int, typename TStr = std::string>
 inline std::optional<T> to_num(const TStr &str, unsigned base = 10)

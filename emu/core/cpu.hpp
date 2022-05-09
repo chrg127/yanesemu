@@ -14,21 +14,21 @@ namespace core {
 
 class CPU {
     struct {
-        util::Word pc = 0;
+        bits::Word pc{0};
         u8 acc = 0;
         u8 x   = 0;
         u8 y   = 0;
         u8 sp  = 0;
         union Flags {
             u8 full = 0;
-            util::BitField<u8, 0> carry;
-            util::BitField<u8, 1> zero;
-            util::BitField<u8, 2> intdis;
-            util::BitField<u8, 3> decimal;
-            util::BitField<u8, 4> breakf;
-            util::BitField<u8, 5> unused;
-            util::BitField<u8, 6> ov;
-            util::BitField<u8, 7> neg;
+            bits::BitField<u8, 0> carry;
+            bits::BitField<u8, 1> zero;
+            bits::BitField<u8, 2> intdis;
+            bits::BitField<u8, 3> decimal;
+            bits::BitField<u8, 4> breakf;
+            bits::BitField<u8, 5> unused;
+            bits::BitField<u8, 6> ov;
+            bits::BitField<u8, 7> neg;
             void operator=(u8 value) { full = value; }
         } flags;
     } r;

@@ -245,8 +245,8 @@ void CliDebugger::print_ppu_status() const
     fmt::print("PPUCTRL ($2000): {:08b}:\n"
                "    Base nametable address: ${:04X}\n    VRAM address increment: {}\n    Sprite pattern table address: ${:04X}\n"
                "    Background pattern table address: ${:04X}\n    Sprite size: {}\n    Master/slave: {}\n    NMI enabled: {}\n",
-               ctrl, ppu.nt_base_addr(), (ctrl & 4) == 0 ? 1 : 32, util::getbit(ctrl, 4) * 0x1000,
-               util::getbit(ctrl, 5) * 0x1000, (ctrl & 32) ? "8x16" : "8x8", (ctrl & 64) ? "output color" : "read backdrop",
+               ctrl, ppu.nt_base_addr(), (ctrl & 4) == 0 ? 1 : 32, bits::getbit(ctrl, 4) * 0x1000,
+               bits::getbit(ctrl, 5) * 0x1000, (ctrl & 32) ? "8x16" : "8x8", (ctrl & 64) ? "output color" : "read backdrop",
                (ctrl & 128) ? "ON" : "OFF");
     fmt::print("PPUMASK ($2001): {:08b}:\n"
                "    Greyscale: {}\n    BG left: {}\n    Sprites left: {}\n    BG: {}\n    Sprites: {}\n"

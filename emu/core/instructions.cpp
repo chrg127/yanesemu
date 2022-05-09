@@ -2,10 +2,10 @@
 #error "Only emu/core/cpu.cpp may #include this file."
 #else
 
-using util::Word;
+using bits::Word;
 
 #define call(f, ...) (this->*f)(__VA_ARGS__)
-#define sign(x) (util::getbit((x), 7))
+#define sign(x) (bits::getbit((x), 7))
 
 /*
  * All instructions have an impled cycle from fetching the instruction
@@ -224,7 +224,7 @@ void CPU::instr_flag(u8 &flags, unsigned which, u1 value)
 {
     last_cycle();
     cycle();
-    flags = util::setbit(flags, which, value);
+    flags = bits::setbit(flags, which, value);
 }
 
 void CPU::instr_transfer(u8 val, u8 &to)
@@ -296,7 +296,7 @@ void CPU::instr_bit(u8 val)
 {
     r.flags.neg  = (r.acc & val) == 0;
     r.flags.zero = val == 0;
-    r.flags.ov   = util::getbit(val, 6);
+    r.flags.ov   = bits::getbit(val, 6);
 }
 
 u8 CPU::instr_inc(u8 val)
@@ -326,7 +326,7 @@ u8 CPU::instr_asl(u8 val)
 
 u8 CPU::instr_lsr(u8 val)
 {
-    r.flags.carry = util::getbit(val, 0);
+    r.flags.carry = bits::getbit(val, 0);
     val >>= 1;
     r.flags.zero = val == 0;
     r.flags.neg  = sign(val);
@@ -346,7 +346,7 @@ u8 CPU::instr_rol(u8 val)
 u8 CPU::instr_ror(u8 val)
 {
     u8 carry = r.flags.carry;
-    r.flags.carry = util::getbit(val, 0);
+    r.flags.carry = bits::getbit(val, 0);
     val = val >> 1 | carry << 7;
     r.flags.zero = val == 0;
     r.flags.neg  = sign(val);

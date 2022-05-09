@@ -19,8 +19,8 @@ std::unique_ptr<Mapper> Mapper::create(unsigned number, System *s)
 u8 MMC1::read(std::span<u8> rom, u16 addr, u5 *bank, u1 mode, u8 magic_start)
 {
     u8 magic        = magic_start - mode;
-    size_t offset   = addr & util::bitmask(magic);
-    u1 index        = util::getbit(addr, magic);
+    size_t offset   = addr & bits::bitmask(magic);
+    u1 index        = bits::getbit(addr, magic);
     size_t start    = bank[index] << magic;
     return rom[start + offset];
 }
@@ -39,22 +39,22 @@ u8 MMC1::read_chr(u16 addr)
 
 void MMC1::write_rom(u16 addr, u8 data)
 {
-    unsigned bit = util::getbit(data, 0);
-    bool reset   = util::getbit(data, 7);
+    unsigned bit = bits::getbit(data, 0);
+    bool reset   = bits::getbit(data, 7);
 
     if (reset) {
         shift = counter = 0;
         return;
     }
 
-    shift = util::setbit(shift >> 1, 4, bit);
+    shift = bits::setbit(shift >> 1, 4, bit);
     if (++counter == 5) {
-        unsigned regno = util::getbits(addr, 13, 2);
+        unsigned regno = bits::getbits(addr, 13, 2);
         switch (regno) {
         case 0: {
-            prg.mode = util::getbits(shift, 2, 2);
-            chr.mode = util::getbits(shift, 4, 1);
-            u2 mirroring = util::getbits(shift, 0, 2);
+            prg.mode = bits::getbits(shift, 2, 2);
+            chr.mode = bits::getbits(shift, 4, 1);
+            u2 mirroring = bits::getbits(shift, 0, 2);
             switch (mirroring) {
             case 0: case 1: system->change_mirroring(Mirroring::OneScreen);  break;
             case 2:         system->change_mirroring(Mirroring::Vertical);   break;

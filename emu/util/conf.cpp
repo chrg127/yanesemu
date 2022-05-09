@@ -1,57 +1,13 @@
 #include <cstdint>
 #include <cstddef>
-#include <string>
-#include <string_view>
 #include <vector>
-#include <optional>
-#include <variant>
-#include <map>
 #include <charconv>
 #include <fmt/core.h>
-
 #include "conf.hpp"
+#include "io.hpp"
+#include "string.hpp"
 
 namespace {
-
-static bool is_alpha(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '-'; }
-static bool is_digit(char c) { return c >= '0' && c <= '9'; }
-
-std::optional<std::string> read_file(std::string_view path)
-{
-    FILE *file = fopen(path.data(), "rb");
-    if (!file)
-        return std::nullopt;
-    fseek(file, 0l, SEEK_END);
-    long size = ftell(file);
-    rewind(file);
-    std::string buf(size, ' ');
-    size_t bytes_read = fread(buf.data(), sizeof(char), size, file);
-    if (bytes_read < std::size_t(size))
-        return std::nullopt;
-    fclose(file);
-    return buf;
-}
-
-template <typename T = int, typename TStr = std::string>
-std::optional<T> string_to_num(const TStr &str, unsigned base = 10)
-{
-    static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>, "T must be a number");
-    auto helper = [](const char *start, const char *end, unsigned base) -> std::optional<T> {
-        T value = 0;
-        std::from_chars_result res;
-        if constexpr(std::is_same_v<T, float>)
-            res = std::from_chars(start, end, value);
-        else
-            res = std::from_chars(start, end, value, base);
-        if (res.ec != std::errc() || res.ptr != end)
-            return std::nullopt;
-        return value;
-    };
-    if constexpr(std::is_same<std::decay_t<TStr>, char *>::value)
-        return helper(str, str + std::strlen(str), base);
-    else
-        return helper(str.data(), str.data() + str.size(), base);
-}
 
 std::string type_to_string(conf::Type t)
 {
@@ -65,11 +21,15 @@ std::string type_to_string(conf::Type t)
 }
 
 struct Token {
-    enum class Type { Ident, Int, Float, True, False, String, EqualSign, Newline, Error, End, };
-    Type type;
+    enum class Type {
+        Ident, Int, Float, True, False,
+        String, EqualSign, Newline, Error, End,
+    } type;
     std::string_view text;
     std::size_t pos;
 };
+
+bool is_ident_char(char c) { return str::is_alpha(c) || c == '_' || c == '-'; }
 
 struct Lexer {
     std::string_view text;
@@ -116,11 +76,11 @@ struct Lexer {
 
     Token number()
     {
-        while (is_digit(text[cur]))
+        while (str::is_digit(text[cur]))
             advance();
         if (peek() == '.') {
             advance();
-            while (is_digit(text[cur]))
+            while (str::is_digit(text[cur]))
                 advance();
             return make(Token::Type::Float);
         }
@@ -129,7 +89,7 @@ struct Lexer {
 
     Token ident()
     {
-        while (is_alpha(peek()) || is_digit(peek()))
+        while (is_ident_char(peek()) || str::is_digit(peek()))
             advance();
         auto word = text.substr(start, cur - start);
         return make(word == "true"  ? Token::Type::True
@@ -157,8 +117,8 @@ struct Lexer {
         return c == '='    ? make(Token::Type::EqualSign)
              : c == '\n'   ? make(Token::Type::Newline)
              : c == '"'    ? string_token()
-             : is_digit(c) ? number()
-             : is_alpha(c) ? ident()
+             : str::is_digit(c) ? number()
+             : is_ident_char(c) ? ident()
              : make(Token::Type::Error, "unexpected character");
     }
 };
@@ -179,9 +139,9 @@ struct Parser {
     void error(Token t, std::string_view msg)
     {
         had_error = true;
-        auto [l, c] = lexer.position_of(t);
+        auto [line, col] = lexer.position_of(t);
         throw ParseError(fmt::format("{}:{}: parse error{}: {}",
-            l, c,
+            line, col,
               t.type == Token::Type::End   ? " on end of file"
             : t.type == Token::Type::Error ? ""
             : fmt::format(" at '{}'", t.text),
@@ -224,8 +184,8 @@ struct Parser {
                     ident.text, type_to_string(type), type_to_string(r->second.type())));
         auto &pos = data[std::string(ident.text)];
         switch (type) {
-        case conf::Type::Int:    pos = conf::Value(string_to_num<int>(t.text).value()); break;
-        case conf::Type::Float:  pos = conf::Value(string_to_num<float>(t.text).value()); break;
+        case conf::Type::Int:    pos = conf::Value(str::to_num<  int>(t.text).value()); break;
+        case conf::Type::Float:  pos = conf::Value(str::to_num<float>(t.text).value()); break;
         case conf::Type::String: pos = conf::Value(std::string(t.text.substr(1, t.text.size() - 2))); break;
         case conf::Type::Bool:   pos = conf::Value(t.type == Token::Type::True); break;
         }
@@ -286,7 +246,7 @@ std::optional<Data> parse(std::string_view text, const ValidConfig &valid,
 std::optional<Data> parse_or_create(std::string_view path, const ValidConfig &valid,
                      std::function<void(std::string_view)> display_error)
 {
-    auto text = read_file(path);
+    auto text = io::read_file(path);
     if (!text) {
         display_error(fmt::format("error: couldn't open file {}, creating new one...", path));
         Data data(valid);

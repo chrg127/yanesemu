@@ -7,7 +7,7 @@
 #include <emu/debugger/clidebugger.hpp>
 #include <emu/util/cmdline.hpp>
 #include <emu/util/debug.hpp>
-#include <emu/util/mappedfile.hpp>
+#include <emu/util/io.hpp>
 #include <emu/util/conf.hpp>
 #include <emu/util/string.hpp>
 

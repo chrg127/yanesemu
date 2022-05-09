@@ -4,7 +4,7 @@
 #include <span>
 #include <emu/core/const.hpp>
 #include <emu/util/array.hpp>
-#include <emu/util/mappedfile.hpp>
+#include <emu/util/io.hpp>
 #include <emu/util/uint.hpp>
 
 namespace Util { class File; }

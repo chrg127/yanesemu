@@ -22,14 +22,14 @@ using VramDecoder = u16 (*)(u16);
 static VramDecoder vram_addr_decoder(Mirroring mirroring)
 {
     switch (mirroring) {
-    case Mirroring::OneScreen:  return [](u16 addr) -> u16 { return addr & util::bitmask(10); };
-    case Mirroring::Vertical:   return [](u16 addr) -> u16 { return addr & util::bitmask(11); };
-    case Mirroring::FourScreen: return [](u16 addr) -> u16 { return addr & util::bitmask(12); };
+    case Mirroring::OneScreen:  return [](u16 addr) -> u16 { return addr & bits::bitmask(10); };
+    case Mirroring::Vertical:   return [](u16 addr) -> u16 { return addr & bits::bitmask(11); };
+    case Mirroring::FourScreen: return [](u16 addr) -> u16 { return addr & bits::bitmask(12); };
     case Mirroring::Horizontal:
         return [](u16 addr) -> u16 {
             auto tmp = addr & 0xFFF;
-            auto bits = util::getbits(tmp, 10, 2) >> 1;
-            return util::setbits(tmp, 10, 2, bits);
+            auto bits = bits::getbits(tmp, 10, 2) >> 1;
+            return bits::setbits(tmp, 10, 2, bits);
         };
     default:
         panic("invalid value passed to get_decode\n");
