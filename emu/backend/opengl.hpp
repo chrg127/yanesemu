@@ -2,12 +2,11 @@
 
 #include <SDL2/SDL.h>
 #include <unordered_map>
-#include <emu/backend/video.hpp>
-#include <emu/backend/input.hpp>
+#include <emu/backend/backend.hpp>
 
 namespace backend {
 
-class OpenGL : public Video::Impl {
+class OpenGL : public Backend::Impl {
     SDL_Window *window = nullptr;
     SDL_GLContext context;
     unsigned prog_id;
@@ -16,9 +15,9 @@ class OpenGL : public Video::Impl {
     bool quit = false;
 
 public:
+    OpenGL(std::string_view title, std::size_t width, std::size_t height);
     ~OpenGL() override;
 
-    void init(std::size_t width, std::size_t height) override;
     void set_title(std::string_view title) override;
     void resize(std::size_t width, std::size_t height) override;
     void poll(input::ButtonArray &keys) override;

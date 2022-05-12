@@ -130,21 +130,12 @@ void create_objects(unsigned &vao, unsigned &vbo, unsigned &ebo)
 
 namespace backend {
 
-OpenGL::~OpenGL()
-{
-    glDeleteVertexArrays(1, &vao);
-    glDeleteBuffers(1, &vbo);
-    glDeleteBuffers(1, &ebo);
-    SDL_DestroyWindow(window);
-    SDL_GL_DeleteContext(context);
-    SDL_Quit();
-}
-
-void OpenGL::init(std::size_t width, std::size_t height)
+OpenGL::OpenGL(std::string_view title, std::size_t width, std::size_t height)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         throw std::runtime_error(fmt::format("can't initialize backend, SDL2 error: {}", SDL_GetError()));
-    window = SDL_CreateWindow("Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+    window = SDL_CreateWindow(title.data(),
+                              SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                               width, height,
                               SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -161,6 +152,16 @@ void OpenGL::init(std::size_t width, std::size_t height)
     glUniform1i(glGetUniformLocation(prog_id, "tex"), 0);
     glm::mat4 projection = glm::ortho(0.0f, (float) width, (float) height,  0.0f);
     glUniformMatrix4fv(glGetUniformLocation(prog_id, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+}
+
+OpenGL::~OpenGL()
+{
+    glDeleteVertexArrays(1, &vao);
+    glDeleteBuffers(1, &vbo);
+    glDeleteBuffers(1, &ebo);
+    SDL_DestroyWindow(window);
+    SDL_GL_DeleteContext(context);
+    SDL_Quit();
 }
 
 void OpenGL::set_title(std::string_view title)
@@ -215,7 +216,7 @@ Texture OpenGL::create_texture(std::size_t width, std::size_t height)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     return (Texture) {
-        .id = id, .width = width, .height = height,
+        .id = id, .width = width, .height = height, .bpp = 0
     };
 }
 

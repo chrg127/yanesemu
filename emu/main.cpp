@@ -56,10 +56,6 @@ void cli_interface(cmdline::Result &flags)
     if (flags.items.size() > 1)
         warning("multiple ROM files specified, first one will be used\n");
 
-    auto name = flags.items[0];
-    auto rom = open_rom(name);
-    program.start_video(name, flags);
-
     int window_size = 2;
     if (flags.has('s')) {
         if (auto opt = str::to_num(flags.params['s']);
@@ -68,9 +64,13 @@ void cli_interface(cmdline::Result &flags)
         } else
             throw std::runtime_error("Invalid value for viewport size (valid values: 1 2 3 4)");
     }
-    program.set_window_scale(window_size);
 
+    auto name = flags.items[0];
+    auto rom = open_rom(name);
+    program.start_video(name, flags);
+    program.set_window_scale(window_size);
     program.use_config(config);
+
     core::emulator.power();
     if (!flags.has('d')) {
         core::emulator.on_cpu_error([&](u8 id, u16 addr) {

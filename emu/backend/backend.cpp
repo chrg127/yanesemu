@@ -1,4 +1,4 @@
-#include "video.hpp"
+#include "backend.hpp"
 
 #include <cassert>
 #include <fmt/core.h>
@@ -10,28 +10,28 @@
 #include <emu/util/debug.hpp>
 
 #include "opengl.hpp"
+#include "sdl.hpp"
 
 namespace backend {
 
-Video Video::create(Type type, std::size_t width, std::size_t height)
+Backend Backend::create(Type type, std::string_view title, std::size_t width, std::size_t height)
 {
-    auto p = [&]() -> std::unique_ptr<Impl> {
+    auto f = [&]() -> std::unique_ptr<Impl> {
         switch (type) {
-        case Type::SDL_OpenGL: return std::make_unique<OpenGL>(); break;
-        case Type::SDL:        return std::make_unique<OpenGL>(); break;
-        case Type::NoVideo:    return std::make_unique<Impl>(); break;
+        case Type::SDL_OpenGL: return std::make_unique<OpenGL>(title, width, height);
+        // case Type::SDL:        return std::make_unique<   SDL>(title, width, height);
+        case Type::NoVideo:    return std::make_unique<  Impl>();
         default:
            panic("unknown type supplied to create_context()\n");
            break;
         }
-    }();
-    p->init(width, height);
-    Video context;
-    context.ptr = std::move(p);
-    return context;
+    };
+    Backend b;
+    b.ptr = f();
+    return b;
 }
 
-Texture Video::create_texture(std::string_view pathname)
+Texture Backend::create_texture(std::string_view pathname)
 {
     int width, height, channels;
     unsigned char *data = stbi_load(pathname.data(), &width, &height, &channels, 0);
@@ -41,7 +41,7 @@ Texture Video::create_texture(std::string_view pathname)
     return tex;
 }
 
-void Video::map_keys(const conf::Data &conf)
+void Backend::map_keys(const conf::Data &conf)
 {
     using namespace std::literals;
     using namespace input;
@@ -60,7 +60,7 @@ void Video::map_keys(const conf::Data &conf)
     }
 }
 
-bool Video::is_pressed(input::Button button)
+bool Backend::is_pressed(input::Button button)
 {
     return curr_keys[button];
 }

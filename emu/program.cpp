@@ -11,15 +11,15 @@ Program program;
 
 void Program::start_video(std::string_view rom_name, cmdline::Result &flags)
 {
-    video = backend::Video::create(
-        flags.has('n') ? backend::Type::NoVideo : backend::Type::SDL,
-        core::SCREEN_WIDTH,
-        core::SCREEN_HEIGHT
-    );
     std::filesystem::path rompath{rom_name};
     auto basename = rompath.stem().c_str();
     auto title = fmt::format("{}{} - {}", progname, (flags.has('d') ? " (debugger)" : ""), basename);
-    video.set_title(title);
+    video = backend::Backend::create(
+        flags.has('n') ? backend::Type::NoVideo : backend::Type::SDL_OpenGL,
+        title,
+        core::SCREEN_WIDTH,
+        core::SCREEN_HEIGHT
+    );
     screen = video.create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
 }
 

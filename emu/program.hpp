@@ -4,15 +4,14 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
-#include <emu/backend/video.hpp>
-#include <emu/backend/input.hpp>
+#include <emu/backend/backend.hpp>
 #include <emu/util/conf.hpp>
 #include <emu/util/uint.hpp>
 #include <emu/util/locked.hpp>
 #include <emu/util/cmdline.hpp>
 
 class Program {
-    backend::Video video;
+    backend::Backend video;
     backend::Texture screen;
     std::thread emulator_thread;
 
