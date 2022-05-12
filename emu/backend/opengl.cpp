@@ -227,7 +227,7 @@ void OpenGL::update_texture(Texture &tex, const void *data)
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tex.width, tex.height, GL_RGBA, GL_UNSIGNED_BYTE, data);
 }
 
-void OpenGL::draw_texture(const Texture &tex, std::size_t x, std::size_t y)
+void OpenGL::copy_texture(const Texture &tex, std::size_t x, std::size_t y)
 {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex.id);
@@ -254,7 +254,7 @@ void OpenGL::clear()
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void OpenGL::swap()
+void OpenGL::draw()
 {
     SDL_GL_SwapWindow(window);
 }

@@ -25,9 +25,9 @@ public:
 
     Texture create_texture(std::size_t width, std::size_t height) override;
     void update_texture(Texture &tex, const void *data) override;
-    void draw_texture(const Texture &tex, std::size_t x, std::size_t y) override;
+    void copy_texture(const Texture &tex, std::size_t x, std::size_t y) override;
     void clear() override;
-    void swap() override;
+    void draw() override;
 
     void map_key(const std::string &name, input::Button button) override;
 };

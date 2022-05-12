@@ -41,25 +41,6 @@ Texture Backend::create_texture(std::string_view pathname)
     return tex;
 }
 
-void Backend::map_keys(const conf::Data &conf)
-{
-    using namespace std::literals;
-    using namespace input;
-    for (auto p : { std::pair{"AKey"s,      Button::A},
-                    std::pair{"BKey"s,      Button::B},
-                    std::pair{"UpKey"s,     Button::Up},
-                    std::pair{"DownKey"s,   Button::Down},
-                    std::pair{"LeftKey"s,   Button::Left},
-                    std::pair{"RightKey"s,  Button::Right},
-                    std::pair{"StartKey"s,  Button::Start},
-                    std::pair{"SelectKey"s, Button::Select} }) {
-        auto entry = util::map_lookup(conf, p.first);
-        auto s = entry.value().as<std::string>();
-        s.erase(s.begin(), s.begin() + 4);
-        map_key(s, p.second);
-    }
-}
-
 bool Backend::is_pressed(input::Button button)
 {
     return curr_keys[button];

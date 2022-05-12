@@ -70,7 +70,7 @@ void SDL::update_texture(Texture &tex, const void *data)
     SDL_UpdateTexture(ptr, nullptr, data, tex.width * 4);
 }
 
-void SDL::draw_texture(const Texture &tex, std::size_t x, std::size_t y)
+void SDL::copy_texture(const Texture &tex, std::size_t x, std::size_t y)
 {
     auto ptr = textures[tex.id];
     SDL_RenderCopy(rd, ptr, nullptr, nullptr);
@@ -81,7 +81,7 @@ void SDL::clear()
     SDL_RenderClear(rd);
 }
 
-void SDL::swap()
+void SDL::draw()
 {
     SDL_RenderPresent(rd);
     SDL_Delay(1000/60);

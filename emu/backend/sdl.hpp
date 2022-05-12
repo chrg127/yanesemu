@@ -23,9 +23,9 @@ struct SDL : public Backend::Impl {
 
     Texture create_texture(std::size_t width, std::size_t height);
     void update_texture(Texture &tex, const void *data);
-    void draw_texture(const Texture &tex, std::size_t x, std::size_t y);
+    void copy_texture(const Texture &tex, std::size_t x, std::size_t y);
     void clear();
-    void swap();
+    void draw();
 
     virtual void map_key(const std::string &name, input::Button button);
 };

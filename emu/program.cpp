@@ -25,7 +25,21 @@ void Program::start_video(std::string_view rom_name, cmdline::Result &flags)
 
 void Program::use_config(const conf::Data &conf)
 {
-    video.map_keys(conf);
+    using namespace std::literals;
+    using namespace input;
+    for (auto p : { std::pair{"AKey"s,      Button::A},
+                    std::pair{"BKey"s,      Button::B},
+                    std::pair{"UpKey"s,     Button::Up},
+                    std::pair{"DownKey"s,   Button::Down},
+                    std::pair{"LeftKey"s,   Button::Left},
+                    std::pair{"RightKey"s,  Button::Right},
+                    std::pair{"StartKey"s,  Button::Start},
+                    std::pair{"SelectKey"s, Button::Select} }) {
+        auto entry = util::map_lookup(conf, p.first);
+        auto s = entry.value().as<std::string>();
+        s.erase(s.begin(), s.begin() + 4);
+        video.map_key(s, p.second);
+    }
 }
 
 void Program::set_window_scale(int size)
@@ -55,8 +69,8 @@ void Program::render_loop()
             stop();
         video.clear();
         on_pending([&]() { video.update_texture(screen, video_data); });
-        video.draw_texture(screen, 0, 0);
-        video.swap();
+        video.copy_texture(screen, 0, 0);
+        video.draw();
     }
     emulator_thread.join();
 }
