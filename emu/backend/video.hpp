@@ -5,9 +5,9 @@
 #include <optional>
 #include <emu/util/utility.hpp>
 #include <emu/util/conf.hpp>
-#include <emu/platform/input.hpp>
+#include <emu/backend/input.hpp>
 
-namespace platform {
+namespace backend {
 
 struct Texture {
     unsigned id;
@@ -16,6 +16,7 @@ struct Texture {
 
 enum class Type {
     NoVideo,
+    SDL_OpenGL,
     SDL,
 };
 
@@ -67,4 +68,4 @@ public:
     bool is_pressed(input::Button button);
 };
 
-} // namespace platform
+} // namespace backend

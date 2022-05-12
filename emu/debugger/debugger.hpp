@@ -8,7 +8,7 @@
 #include <utility>
 #include <emu/util/uint.hpp>
 #include <emu/util/io.hpp>
-#include <emu/platform/input.hpp>
+#include <emu/backend/input.hpp>
 
 namespace core {
     class Emulator;

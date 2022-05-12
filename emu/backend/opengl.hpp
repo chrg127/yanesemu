@@ -2,10 +2,10 @@
 
 #include <SDL2/SDL.h>
 #include <unordered_map>
-#include <emu/platform/video.hpp>
-#include <emu/platform/input.hpp>
+#include <emu/backend/video.hpp>
+#include <emu/backend/input.hpp>
 
-namespace platform {
+namespace backend {
 
 class OpenGL : public Video::Impl {
     SDL_Window *window = nullptr;
@@ -33,4 +33,4 @@ public:
     void map_key(const std::string &name, input::Button button) override;
 };
 
-} // namespace platform
+} // namespace backend

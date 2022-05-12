@@ -4,16 +4,16 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
-#include <emu/platform/video.hpp>
-#include <emu/platform/input.hpp>
+#include <emu/backend/video.hpp>
+#include <emu/backend/input.hpp>
 #include <emu/util/conf.hpp>
 #include <emu/util/uint.hpp>
 #include <emu/util/locked.hpp>
 #include <emu/util/cmdline.hpp>
 
 class Program {
-    platform::Video video;
-    platform::Texture screen;
+    backend::Video video;
+    backend::Texture screen;
     std::thread emulator_thread;
 
     std::mutex frame_mutex;

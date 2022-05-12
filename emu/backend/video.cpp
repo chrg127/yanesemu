@@ -11,14 +11,15 @@
 
 #include "opengl.hpp"
 
-namespace platform {
+namespace backend {
 
 Video Video::create(Type type, std::size_t width, std::size_t height)
 {
     auto p = [&]() -> std::unique_ptr<Impl> {
         switch (type) {
-        case Type::SDL: return std::make_unique<platform::OpenGL>(); break;
-        case Type::NoVideo: return std::make_unique<Impl>(); break;
+        case Type::SDL_OpenGL: return std::make_unique<OpenGL>(); break;
+        case Type::SDL:        return std::make_unique<OpenGL>(); break;
+        case Type::NoVideo:    return std::make_unique<Impl>(); break;
         default:
            panic("unknown type supplied to create_context()\n");
            break;
@@ -64,4 +65,4 @@ bool Video::is_pressed(input::Button button)
     return curr_keys[button];
 }
 
-} // namespace platform
+} // namespace backend

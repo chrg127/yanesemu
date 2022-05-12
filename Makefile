@@ -13,7 +13,7 @@ _objs := \
 _objs_main := main.cpp
 _tests := cpu_test
 
-VPATH := emu:emu/core:emu/util:emu/io:emu/platform:emu/debugger:external/stb:test
+VPATH := emu:emu/core:emu/util:emu/io:emu/backend:emu/debugger:external/stb:test
 CC := gcc
 CXX := g++
 CFLAGS := -I. -std=c11
@@ -84,4 +84,4 @@ debug/test:
 tests: $(test_programs)
 
 clean:
-	rm -rf $(outdir)
+	rm -rf debug release

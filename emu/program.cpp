@@ -11,8 +11,8 @@ Program program;
 
 void Program::start_video(std::string_view rom_name, cmdline::Result &flags)
 {
-    video = platform::Video::create(
-        flags.has('n') ? platform::Type::NoVideo : platform::Type::SDL,
+    video = backend::Video::create(
+        flags.has('n') ? backend::Type::NoVideo : backend::Type::SDL,
         core::SCREEN_WIDTH,
         core::SCREEN_HEIGHT
     );

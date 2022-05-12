@@ -37,17 +37,17 @@ enum class Platform : uint { Windows, MacOS, Linux, Unknown };
 
 #ifdef _WIN32
 #   define PLATFORM_WINDOWS
-//     static inline constexpr Platform platform() { return Platform::Windows; }
+    static inline constexpr Platform platform() { return Platform::Windows; }
 #elif defined(__APPLE__)
 #   define PLATFORM_MACOS
-//     static inline constexpr Platform platform() { return Platform::MacOS; }
+    static inline constexpr Platform platform() { return Platform::MacOS; }
 #elif defined(linux) || defined(__linux__)
 #   define PLATFORM_LINUX
-//     static inline constexpr Platform platform() { return Platform::Linux; }
+    static inline constexpr Platform platform() { return Platform::Linux; }
 #else
 #   define PLATFORM_UNKNOWN
 #   warning "unable to detect platform"
-//     static inline constexpr Platform platform() { return Platform::Unknown; }
+    static inline constexpr Platform platform() { return Platform::Unknown; }
 #endif
 
 #if defined(COMPILER_CLANG) || defined(COMPILER_GCC)

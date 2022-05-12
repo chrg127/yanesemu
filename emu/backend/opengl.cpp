@@ -3,9 +3,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <emu/util/common.hpp>
 #include <emu/util/utility.hpp>
 
-#ifdef __linux__
+#ifdef PLATFORM_LINUX
 #   define GL_GLEXT_PROTOTYPES
 #   include <GL/gl.h>
 #   include <GL/glu.h>
@@ -127,7 +128,7 @@ void create_objects(unsigned &vao, unsigned &vbo, unsigned &ebo)
 
 
 
-namespace platform {
+namespace backend {
 
 OpenGL::~OpenGL()
 {
@@ -142,7 +143,7 @@ OpenGL::~OpenGL()
 void OpenGL::init(std::size_t width, std::size_t height)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
-        throw std::runtime_error(fmt::format("can't initialize platform, SDL2 error: {}", SDL_GetError()));
+        throw std::runtime_error(fmt::format("can't initialize backend, SDL2 error: {}", SDL_GetError()));
     window = SDL_CreateWindow("Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                               width, height,
                               SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
@@ -263,4 +264,4 @@ void OpenGL::map_key(const std::string &name, input::Button button)
     keymap[key] = button;
 }
 
-} // namespace platform
+} // namespace backend

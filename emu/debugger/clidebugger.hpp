@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <string>
-#include <emu/platform/input.hpp>
+#include <emu/backend/input.hpp>
 #include <emu/debugger/debugger.hpp>
 
 namespace debugger {

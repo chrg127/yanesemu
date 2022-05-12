@@ -3,7 +3,7 @@
 #include <memory>
 #include <emu/util/debug.hpp>
 #include <emu/util/uint.hpp>
-#include <emu/platform/input.hpp>
+#include <emu/backend/input.hpp>
 
 /*
  * A NES has 2 controller ports (for player 1 and player 2). The CPU is
