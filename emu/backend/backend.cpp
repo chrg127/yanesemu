@@ -14,21 +14,16 @@
 
 namespace backend {
 
-Backend Backend::create(Type type, std::string_view title, std::size_t width, std::size_t height)
+std::unique_ptr<Backend> create(Type type, std::string_view title, std::size_t width, std::size_t height)
 {
-    auto f = [&]() -> std::unique_ptr<Impl> {
-        switch (type) {
-        case Type::SDL_OpenGL: return std::make_unique<OpenGL>(title, width, height);
-        // case Type::SDL:        return std::make_unique<   SDL>(title, width, height);
-        case Type::NoVideo:    return std::make_unique<  Impl>();
-        default:
-           panic("unknown type supplied to create_context()\n");
-           break;
-        }
-    };
-    Backend b;
-    b.ptr = f();
-    return b;
+    switch (type) {
+    case Type::SDL_OpenGL: return std::make_unique< OpenGL>(title, width, height);
+    case Type::SDL:        return std::make_unique<    SDL>(title, width, height);
+    // case Type::NoVideo:    return std::make_unique<Backend>();
+    default:
+       panic("unknown type supplied to create_context()\n");
+       break;
+    }
 }
 
 Texture Backend::create_texture(std::string_view pathname)
@@ -36,14 +31,9 @@ Texture Backend::create_texture(std::string_view pathname)
     int width, height, channels;
     unsigned char *data = stbi_load(pathname.data(), &width, &height, &channels, 0);
     assert(data != nullptr && channels == 4);
-    Texture tex = create_texture(width, height);
+    Texture tex = create_texture(width, height, TextureFormat::RGBA);
     update_texture(tex, data);
     return tex;
-}
-
-bool Backend::is_pressed(input::Button button)
-{
-    return curr_keys[button];
 }
 
 } // namespace backend

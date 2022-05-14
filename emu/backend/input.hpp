@@ -2,8 +2,8 @@
 
 #include <string_view>
 #include <optional>
-#include <array>
-#include <fmt/core.h>
+#include <emu/util/common.hpp>
+#include <emu/util/bits.hpp>
 
 namespace input {
 
@@ -48,7 +48,7 @@ inline std::optional<Button> string_to_button(std::string_view str)
     return std::nullopt;
 }
 
-class ButtonArray {
+class Keys {
     std::array<bool, NUM_BUTTONS> pressed = {};
 public:
     void clear()                     { std::fill(pressed.begin(), pressed.end(), false); }

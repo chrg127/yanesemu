@@ -11,7 +11,7 @@
 #include <emu/util/cmdline.hpp>
 
 class Program {
-    backend::Backend video;
+    std::unique_ptr<backend::Backend> video;
     backend::Texture screen;
     std::thread emulator_thread;
 

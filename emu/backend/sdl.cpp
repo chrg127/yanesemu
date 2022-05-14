@@ -30,7 +30,7 @@ void SDL::resize(std::size_t width, std::size_t height)
     SDL_SetWindowSize(window, width, height);
 }
 
-void SDL::poll(input::ButtonArray &keys)
+void SDL::poll()
 {
     for (SDL_Event ev; SDL_PollEvent(&ev); ) {
         switch (ev.type) {
@@ -42,16 +42,14 @@ void SDL::poll(input::ButtonArray &keys)
             auto btn = keymap.find(ev.key.keysym.sym);
             if (btn == keymap.end())
                 continue;
-            keys[btn->second] = ev.type == SDL_KEYDOWN;
+            curr_keys[btn->second] = ev.type == SDL_KEYDOWN;
             break;
         }
         }
     }
 }
 
-bool SDL::has_quit() { return quit; }
-
-Texture SDL::create_texture(std::size_t width, std::size_t height)
+Texture SDL::create_texture(std::size_t width, std::size_t height, TextureFormat fmt)
 {
     SDL_Texture *texture = SDL_CreateTexture(rd, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING,
                                              width, height);
@@ -70,7 +68,7 @@ void SDL::update_texture(Texture &tex, const void *data)
     SDL_UpdateTexture(ptr, nullptr, data, tex.width * 4);
 }
 
-void SDL::copy_texture(const Texture &tex, std::size_t x, std::size_t y)
+void SDL::draw_texture(const Texture &tex, std::size_t x, std::size_t y)
 {
     auto ptr = textures[tex.id];
     SDL_RenderCopy(rd, ptr, nullptr, nullptr);

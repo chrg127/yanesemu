@@ -7,27 +7,23 @@
 
 namespace backend {
 
-struct SDL : public Backend::Impl {
+class SDL : public Backend {
     SDL_Window *window;
     SDL_Renderer *rd;
-    bool quit = false;
     std::vector<SDL_Texture *> textures;
-    std::unordered_map<int, input::Button> keymap;
 
+public:
     SDL(std::string_view title, std::size_t width, std::size_t height);
     ~SDL();
-    void set_title(std::string_view title);
-    void resize(std::size_t width, std::size_t height);
-    void poll(input::ButtonArray &keys);
-    bool has_quit();
-
-    Texture create_texture(std::size_t width, std::size_t height);
-    void update_texture(Texture &tex, const void *data);
-    void copy_texture(const Texture &tex, std::size_t x, std::size_t y);
-    void clear();
-    void draw();
-
-    virtual void map_key(const std::string &name, input::Button button);
+    void set_title(std::string_view title) override;
+    void resize(std::size_t width, std::size_t height) override;
+    void poll();
+    Texture create_texture(std::size_t width, std::size_t height, TextureFormat fmt) override;
+    void update_texture(Texture &tex, const void *data) override;
+    void draw_texture(const Texture &tex, std::size_t x, std::size_t y) override;
+    void clear() override;
+    void draw() override;
+    void map_key(const std::string &name, input::Button button) override;
 };
 
 } // namespace backend

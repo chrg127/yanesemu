@@ -19,7 +19,7 @@ namespace core {
 
 struct Controller {
 protected:
-    input::ButtonArray hold_buttons;
+    input::Keys hold_buttons;
 public:
     enum class Type {
         Gamepad,

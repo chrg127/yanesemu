@@ -7,7 +7,7 @@ _objs := \
 	emulator.cpp cartridge.cpp cpu.cpp ppu.cpp screen.cpp controller.cpp mapper.cpp \
 	debugger.cpp clidebugger.cpp cpudebugger.cpp ppudebugger.cpp disassemble.cpp \
 	conf.cpp easyrandom.cpp \
-	backend.cpp opengl.cpp \
+	backend.cpp opengl.cpp sdl.cpp \
 	program.cpp \
 	stb_image.c
 _objs_main := main.cpp

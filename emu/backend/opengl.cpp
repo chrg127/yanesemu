@@ -175,7 +175,7 @@ void OpenGL::resize(std::size_t width, std::size_t height)
     glViewport(0, 0, width, height);
 }
 
-void OpenGL::poll(input::ButtonArray &keys)
+void OpenGL::poll()
 {
     for (SDL_Event ev; SDL_PollEvent(&ev); ) {
         switch (ev.type) {
@@ -192,19 +192,14 @@ void OpenGL::poll(input::ButtonArray &keys)
             auto btn = util::map_lookup(keymap, ev.key.keysym.sym);
             if (!btn)
                 continue;
-            keys[btn.value()] = ev.type == SDL_KEYDOWN;
+            curr_keys[btn.value()] = ev.type == SDL_KEYDOWN;
             break;
         }
         }
     }
 }
 
-bool OpenGL::has_quit()
-{
-    return quit;
-}
-
-Texture OpenGL::create_texture(std::size_t width, std::size_t height)
+Texture OpenGL::create_texture(std::size_t width, std::size_t height, TextureFormat fmt)
 {
     unsigned id;
     glActiveTexture(GL_TEXTURE0);
@@ -227,7 +222,7 @@ void OpenGL::update_texture(Texture &tex, const void *data)
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tex.width, tex.height, GL_RGBA, GL_UNSIGNED_BYTE, data);
 }
 
-void OpenGL::copy_texture(const Texture &tex, std::size_t x, std::size_t y)
+void OpenGL::draw_texture(const Texture &tex, std::size_t x, std::size_t y)
 {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex.id);

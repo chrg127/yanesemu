@@ -14,13 +14,13 @@ void Program::start_video(std::string_view rom_name, cmdline::Result &flags)
     std::filesystem::path rompath{rom_name};
     auto basename = rompath.stem().c_str();
     auto title = fmt::format("{}{} - {}", progname, (flags.has('d') ? " (debugger)" : ""), basename);
-    video = backend::Backend::create(
+    video = backend::create(
         flags.has('n') ? backend::Type::NoVideo : backend::Type::SDL_OpenGL,
         title,
         core::SCREEN_WIDTH,
         core::SCREEN_HEIGHT
     );
-    screen = video.create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT);
+    screen = video->create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT, backend::TextureFormat::RGBA);
 }
 
 void Program::use_config(const conf::Data &conf)
@@ -38,18 +38,18 @@ void Program::use_config(const conf::Data &conf)
         auto entry = util::map_lookup(conf, p.first);
         auto s = entry.value().as<std::string>();
         s.erase(s.begin(), s.begin() + 4);
-        video.map_key(s, p.second);
+        video->map_key(s, p.second);
     }
 }
 
 void Program::set_window_scale(int size)
 {
-    video.resize(core::SCREEN_WIDTH*size, core::SCREEN_HEIGHT*size);
+    video->resize(core::SCREEN_WIDTH*size, core::SCREEN_HEIGHT*size);
 }
 
 bool Program::poll_input(input::Button button)
 {
-    return video.is_pressed(button);
+    return video->is_pressed(button);
 }
 
 void Program::render_loop()
@@ -64,13 +64,13 @@ void Program::render_loop()
     };
 
     while (running()) {
-        video.poll();
-        if (video.has_quit())
+        video->poll();
+        if (video->has_quit())
             stop();
-        video.clear();
-        on_pending([&]() { video.update_texture(screen, video_data); });
-        video.copy_texture(screen, 0, 0);
-        video.draw();
+        video->clear();
+        on_pending([&]() { video->update_texture(screen, video_data); });
+        video->draw_texture(screen, 0, 0);
+        video->draw();
     }
     emulator_thread.join();
 }
