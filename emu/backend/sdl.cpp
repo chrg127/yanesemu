@@ -14,8 +14,6 @@ SDL::SDL(std::string_view title, std::size_t width, std::size_t height)
 
 SDL::~SDL()
 {
-    for (auto *tex : textures)
-        SDL_DestroyTexture(tex);
     SDL_DestroyRenderer(rd);
     SDL_DestroyWindow(window);
 }
@@ -49,29 +47,35 @@ void SDL::poll()
     }
 }
 
-Texture SDL::create_texture(std::size_t width, std::size_t height, TextureFormat fmt)
+u32 SDL::create_texture(TextureOptions opts)
 {
-    SDL_Texture *texture = SDL_CreateTexture(rd, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING,
-                                             width, height);
-    textures.push_back(texture);
-    return (Texture) {
-        .id = textures.size() - 1,
-        .width = width,
-        .height = height,
-        .bpp = 0,
-    };
+    auto sdl_fmt = [&]() {
+        switch (opts.fmt) {
+        case TextureFormat::RGBA: return SDL_PIXELFORMAT_RGBA32;
+        case TextureFormat::RGB:  return SDL_PIXELFORMAT_RGB888;
+        default:                  return SDL_PIXELFORMAT_RGBA32;
+        }
+    }();
+    SDL_Texture *texture = SDL_CreateTexture(rd, sdl_fmt, SDL_TEXTUREACCESS_STREAMING, opts.width, opts.height);
+    textures.push_back((TextureInfo) {
+        .ptr = std::unique_ptr<SDL_Texture, decltype(sdl_texture_deleter)>(texture),
+        .width = opts.width,
+        .height = opts.height,
+        .bpp = tex_format_to_bpp(opts.fmt),
+    });
+    return textures.size() - 1;
 }
 
-void SDL::update_texture(Texture &tex, const void *data)
+void SDL::update_texture(u32 id, std::span<const u8> data)
 {
-    auto ptr = textures[tex.id];
-    SDL_UpdateTexture(ptr, nullptr, data, tex.width * 4);
+    auto &tex = textures[id];
+    SDL_UpdateTexture(tex.ptr.get(), nullptr, (const void *) data.data(), tex.width * tex.bpp);
 }
 
-void SDL::draw_texture(const Texture &tex, std::size_t x, std::size_t y)
+void SDL::draw_texture(u32 id, std::size_t x, std::size_t y)
 {
-    auto ptr = textures[tex.id];
-    SDL_RenderCopy(rd, ptr, nullptr, nullptr);
+    auto &tex = textures[id];
+    SDL_RenderCopy(rd, tex.ptr.get(), nullptr, nullptr);
 }
 
 void SDL::clear()

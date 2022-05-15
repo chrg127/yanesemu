@@ -12,14 +12,14 @@
 
 class Program {
     std::unique_ptr<backend::Backend> video;
-    backend::Texture screen;
+    u32 screen;
     std::thread emulator_thread;
 
     std::mutex frame_mutex;
     std::condition_variable required_cond;
     unsigned frame_pending = 0;
     bool wait_for_frame_update = true;
-    u32 *video_data = nullptr;
+    std::span<const u8> video_data;
 
     enum State { Running, Exiting, };
     util::Locked<State> state;
@@ -37,7 +37,7 @@ public:
     bool running()                  { return state.access<bool>([](auto s) { return s == State::Running; }); }
 
     input::Keys poll_input();
-    void video_frame(u32 *data);
+    void video_frame(std::span<const u8> data);
 };
 
 extern Program program;

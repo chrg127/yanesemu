@@ -67,13 +67,7 @@ static u32 pal_rc2C03b[] = {
     0x91DAFFFF, 0x000000FF, 0x000000FF, 0x000000FF,
 };
 
-Screen::Screen()
-{
-    for (std::size_t x = 0; x < buf.width(); x++)
-        for (std::size_t y = 0; y < buf.height(); y++)
-            buf[y][x] = 0;
-    pal = pal2C02;
-}
+Screen::Screen() : pal(pal2C02) { }
 
 void Screen::output(unsigned x, unsigned y, u6 value)
 {
@@ -87,4 +81,3 @@ void Screen::set_palette(Palette palette)
                                       : palette == Palette::RC2C03B ? pal_rc2C03b
         : pal2C02;
 }
-

@@ -83,7 +83,7 @@ Emulator::Emulator()
 {
     system.ppu.on_nmi([this](bool nmi_enabled) {
         nmi = true;
-        program.video_frame(system.screen.data());
+        program.video_frame(system.screen.to_span());
         if (nmi_enabled)
             system.cpu.fire_nmi();
     });

@@ -199,8 +199,15 @@ void OpenGL::poll()
     }
 }
 
-Texture OpenGL::create_texture(std::size_t width, std::size_t height, TextureFormat fmt)
+u32 OpenGL::create_texture(TextureOptions opts)
 {
+    auto get_fmt = [&]() {
+        switch (opts.fmt) {
+        case TextureFormat::RGBA: return GL_RGBA;
+        case TextureFormat::RGB:  return GL_RGB;
+        default:                  return GL_RGBA;
+        }
+    };
     unsigned id;
     glActiveTexture(GL_TEXTURE0);
     glGenTextures(1, &id);
@@ -209,24 +216,31 @@ Texture OpenGL::create_texture(std::size_t width, std::size_t height, TextureFor
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    return (Texture) {
-        .id = id, .width = width, .height = height, .bpp = 0
-    };
+    auto gl_fmt = get_fmt();
+    glTexImage2D(GL_TEXTURE_2D, 0, gl_fmt, opts.width, opts.height, 0, gl_fmt, GL_UNSIGNED_BYTE, nullptr);
+    textures.push_back({
+        .id = id,
+        .width = opts.width,
+        .height = opts.height,
+        .fmt = gl_fmt
+    });
+    return textures.size() - 1;
 }
 
-void OpenGL::update_texture(Texture &tex, const void *data)
+void OpenGL::update_texture(u32 id, std::span<const u8> data)
 {
+    auto &tex = textures[id];
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex.id);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tex.width, tex.height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
+                    tex.width, tex.height, tex.fmt, GL_UNSIGNED_BYTE, (const void *) data.data());
 }
 
-void OpenGL::draw_texture(const Texture &tex, std::size_t x, std::size_t y)
+void OpenGL::draw_texture(u32 id, std::size_t x, std::size_t y)
 {
+    auto &tex = textures[id];
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex.id);
-
     glm::vec2 pos   = { (float) x, (float) y };
     glm::vec2 size  = { (float) tex.width, (float) tex.height };
     glm::mat4 model{1.0f};

@@ -13,14 +13,21 @@ void Program::start_video(std::string_view rom_name, cmdline::Result &flags)
 {
     std::filesystem::path rompath{rom_name};
     auto basename = rompath.stem().c_str();
-    auto title = fmt::format("{}{} - {}", progname, (flags.has('d') ? " (debugger)" : ""), basename);
-    video = backend::create(
-        flags.has('n') ? backend::Type::NoVideo : backend::Type::SDL_OpenGL,
-        title,
-        core::SCREEN_WIDTH,
-        core::SCREEN_HEIGHT
-    );
-    screen = video->create_texture(core::SCREEN_WIDTH, core::SCREEN_HEIGHT, backend::TextureFormat::RGBA);
+    video = backend::create({
+        .type         = flags.has('n') ? backend::Type::NoVideo
+                                       : backend::Type::SDL_OpenGL,
+        .title        = fmt::format("{}{} - {}",
+                                    progname,
+                                    flags.has('d') ? " (debugger)" : "",
+                                    basename),
+        .window_width  = core::SCREEN_WIDTH,
+        .window_height = core::SCREEN_HEIGHT
+    });
+    screen = video->create_texture({
+        .width  = core::SCREEN_WIDTH,
+        .height = core::SCREEN_HEIGHT,
+        .fmt    = backend::TextureFormat::RGBA
+    });
 }
 
 void Program::use_config(const conf::Data &conf)
@@ -75,7 +82,7 @@ void Program::render_loop()
     emulator_thread.join();
 }
 
-void Program::video_frame(u32 *data)
+void Program::video_frame(std::span<const u8> data)
 {
     std::unique_lock<std::mutex> lock{frame_mutex};
     frame_pending += 1;

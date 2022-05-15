@@ -34,7 +34,7 @@ public:
 template <typename T, std::size_t Width, std::size_t Height>
 class Array2D {
     static_assert(Width != 0 && Height != 0, "Can't define an Array2D with 0 width or height");
-    T arr[Width*Height];
+    T arr[Width*Height] = {};
 
 public:
     constexpr std::span<T>       operator[](std::size_t pos)       { return std::span{ arr+pos*Width, Width }; }
