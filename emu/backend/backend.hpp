@@ -42,6 +42,8 @@ public:
     {
         update_texture(tex, (const void *) buf.data());
     }
+
+    input::Keys get_curr_keys() const { return curr_keys; }
     bool is_pressed(input::Button button) const { return curr_keys[button]; }
 };
 

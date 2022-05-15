@@ -47,9 +47,9 @@ void Program::set_window_scale(int size)
     video->resize(core::SCREEN_WIDTH*size, core::SCREEN_HEIGHT*size);
 }
 
-bool Program::poll_input(input::Button button)
+input::Keys Program::poll_input()
 {
-    return video->is_pressed(button);
+    return video->get_curr_keys();
 }
 
 void Program::render_loop()

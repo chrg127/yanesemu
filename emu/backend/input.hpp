@@ -2,8 +2,8 @@
 
 #include <string_view>
 #include <optional>
+#include <bitset>
 #include <emu/util/common.hpp>
-#include <emu/util/bits.hpp>
 
 namespace input {
 
@@ -49,18 +49,11 @@ inline std::optional<Button> string_to_button(std::string_view str)
 }
 
 class Keys {
-    std::array<bool, NUM_BUTTONS> pressed = {};
+    std::bitset<NUM_BUTTONS> pressed;
 public:
-    void clear()                     { std::fill(pressed.begin(), pressed.end(), false); }
-    bool & operator[](Button button) { return pressed[static_cast<int>(button)]; }
-    void dump()
-    {
-        for (auto i = 0u; i < pressed.size(); i++) {
-            auto button = static_cast<Button>(i);
-            auto str = button_to_string(button);
-            fmt::print("key: {}, pressed: {}\n", str, pressed[i]);
-        }
-    }
+    void clear()                         { pressed.reset(); }
+    auto operator[](Button button)       { return pressed[static_cast<u32>(button)]; }
+    auto operator[](Button button) const { return pressed[static_cast<u32>(button)]; }
 };
 
 } // namespace input

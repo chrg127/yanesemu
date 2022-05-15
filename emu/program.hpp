@@ -36,7 +36,7 @@ public:
     void start()                    { render_loop(); }
     bool running()                  { return state.access<bool>([](auto s) { return s == State::Running; }); }
 
-    bool poll_input(input::Button button);
+    input::Keys poll_input();
     void video_frame(u32 *data);
 };
 
