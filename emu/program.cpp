@@ -26,7 +26,7 @@ void Program::start_video(std::string_view rom_name, cmdline::Result &flags)
     screen = video->create_texture({
         .width  = core::SCREEN_WIDTH,
         .height = core::SCREEN_HEIGHT,
-        .fmt    = backend::TextureFormat::RGBA
+        .fmt    = backend::TextureFormat::RGB
     });
 }
 

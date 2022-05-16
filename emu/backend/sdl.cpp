@@ -1,5 +1,7 @@
 #include "sdl.hpp"
 
+#include <cassert>
+
 namespace backend {
 
 SDL::SDL(std::string_view title, std::size_t width, std::size_t height)
@@ -52,7 +54,7 @@ u32 SDL::create_texture(TextureOptions opts)
     auto sdl_fmt = [&]() {
         switch (opts.fmt) {
         case TextureFormat::RGBA: return SDL_PIXELFORMAT_RGBA32;
-        case TextureFormat::RGB:  return SDL_PIXELFORMAT_RGB888;
+        case TextureFormat::RGB:  return SDL_PIXELFORMAT_RGB24;
         default:                  return SDL_PIXELFORMAT_RGBA32;
         }
     }();
@@ -69,6 +71,7 @@ u32 SDL::create_texture(TextureOptions opts)
 void SDL::update_texture(u32 id, std::span<const u8> data)
 {
     auto &tex = textures[id];
+    assert(data.size() == tex.height * tex.width * tex.bpp);
     SDL_UpdateTexture(tex.ptr.get(), nullptr, (const void *) data.data(), tex.width * tex.bpp);
 }
 

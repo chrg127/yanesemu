@@ -32,8 +32,8 @@ struct Color : ColorData<N> {
     Color() = default;
     Color(u32 value)
     {
-        for (auto i = 0u; i < 4; i++)
-            this->data[i] = value >> ((3 - i) * 8) & 0xff;
+        for (auto i = 0u; i < N; i++)
+            this->data[i] = value >> ((N - 1 - i) * 8) & 0xff;
     }
     u8 & operator[](std::size_t i) { return this->data[i]; }
 };
