@@ -2,12 +2,15 @@
 
 #include <span>
 #include <emu/core/const.hpp>
-#include <emu/util/array.hpp>
+#include <emu/util/common.hpp>
 #include <emu/util/uint.hpp>
+#include <emu/util/array.hpp>
 #include <emu/backend/video.hpp>
 
 class Screen {
-    util::Array2D<backend::RGB, core::SCREEN_WIDTH, core::SCREEN_HEIGHT> buf;
+    util::Array2D<backend::RGB,
+                  core::SCREEN_WIDTH,
+                  core::SCREEN_HEIGHT> buf;
     u32 *pal;
 
 public:
@@ -15,8 +18,7 @@ public:
         Pal2C02, Pal2C03, RC2C03B,
     };
 
-    Screen() { set_palette(Palette::2C02); }
-
+    Screen() { set_palette(Palette::Pal2C02); }
     void output(unsigned x, unsigned y, u6 value);
     void set_palette(Palette palette);
     std::span<const u8> to_span()

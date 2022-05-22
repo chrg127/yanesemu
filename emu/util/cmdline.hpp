@@ -23,7 +23,7 @@ struct Result {
     std::unordered_set<char> found;
     std::unordered_map<char, std::string_view> params;
     std::vector<std::string_view> items;
-    bool has(char flag) { return found.find(flag) != found.end(); }
+    bool has(char flag) const { return found.find(flag) != found.end(); }
 };
 
 inline auto find_arg(std::string_view arg, std::span<const Argument> l) { return std::find_if(l.begin(), l.end(), [&](const auto &a) { return a.long_opt  == arg; }); }

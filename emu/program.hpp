@@ -6,7 +6,7 @@
 #include <condition_variable>
 #include <emu/backend/backend.hpp>
 #include <emu/util/conf.hpp>
-#include <emu/util/uint.hpp>
+#include <emu/util/common.hpp>
 #include <emu/util/locked.hpp>
 #include <emu/util/cmdline.hpp>
 

@@ -10,6 +10,7 @@
 #include <emu/util/io.hpp>
 #include <emu/util/conf.hpp>
 #include <emu/util/string.hpp>
+#include <emu/util/utility.hpp>
 
 static const std::vector<cmdline::Argument> cmdflags = {
     { 'h', "help",     "Print this help text and quit" },
@@ -49,6 +50,16 @@ io::MappedFile open_rom(std::string_view rompath)
     return std::move(romfile.value());
 }
 
+int get_window_size(cmdline::Result &flags)
+{
+    if (!flags.has('s'))
+        return 2;
+    if (auto num = str::to_num(flags.params['s']);
+        num && num.value() >= 1 && num.value() <= 4)
+        return num.value();
+    throw std::runtime_error("Invalid value for viewport size (valid values: 1 2 3 4)");
+}
+
 void cli_interface(cmdline::Result &flags)
 {
     if (flags.items.empty())
@@ -56,15 +67,7 @@ void cli_interface(cmdline::Result &flags)
     if (flags.items.size() > 1)
         warning("multiple ROM files specified, first one will be used\n");
 
-    int window_size = 2;
-    if (flags.has('s')) {
-        if (auto opt = str::to_num(flags.params['s']);
-            opt && (opt.value() == 1 || opt.value() == 2 || opt.value() == 3 || opt.value() == 4)) {
-                window_size = opt.value();
-        } else
-            throw std::runtime_error("Invalid value for viewport size (valid values: 1 2 3 4)");
-    }
-
+    int window_size = get_window_size(flags);
     auto name = flags.items[0];
     auto rom = open_rom(name);
     program.start_video(name, flags);

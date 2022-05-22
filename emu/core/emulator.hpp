@@ -11,7 +11,7 @@
 #include <emu/core/screen.hpp>
 #include <emu/core/controller.hpp>
 #include <emu/core/mapper.hpp>
-#include <emu/util/uint.hpp>
+#include <emu/util/common.hpp>
 
 namespace debugger { class Debugger; }
 
@@ -31,7 +31,6 @@ struct System {
     std::array<u8, core::VRAM_SIZE> vrammem;
     std::array<u8, core::PAL_SIZE> palmem;
     int vram_id = 0;
-    // Mirroring mirroring = Mirroring::OneScreen;
 
     void run();
     void power(bool reset, char fill_value = 0);

@@ -1,11 +1,21 @@
 #pragma once
 
 #include <cstdio>
+#include <cstdlib>
 #include <span>
 #include <string>
 #include <string_view>
 #include <optional>
 #include "common.hpp"
+
+#if defined(PLATFORM_LINUX)
+#   include <fcntl.h>
+#   include <sys/mman.h>
+#   include <sys/stat.h>
+#   include <unistd.h>
+#else
+#   warning "platform not supported"
+#endif
 
 namespace io {
 
@@ -40,9 +50,9 @@ public:
         FILE *fp = nullptr;
         switch (access) {
         case Access::Read:   fp = fopen(pathname.data(), "rb"); break;
-        case Access::Write:  fp = fopen(pathname.data(), "rb"); break;
-        case Access::Modify: fp = fopen(pathname.data(), "rb"); break;
-        case Access::Append: fp = fopen(pathname.data(), "rb"); break;
+        case Access::Write:  fp = fopen(pathname.data(), "wb"); break;
+        case Access::Modify: fp = fopen(pathname.data(), "rb+"); break;
+        case Access::Append: fp = fopen(pathname.data(), "ab"); break;
         }
         if (!fp)
             return std::nullopt;
@@ -123,15 +133,6 @@ public:
 
 
 
-#ifdef PLATFORM_LINUX
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#else
-#error "Platforms without mmap() are still unsupported."
-#endif
-
 namespace io {
 
 #ifdef PLATFORM_LINUX
@@ -174,6 +175,13 @@ inline std::optional<std::string> read_file(std::string_view path)
         return std::nullopt;
     fclose(file);
     return buf;
+}
+
+inline std::string user_home()
+{
+#ifdef PLATFORM_LINUX
+    return getenv("HOME");
+#endif
 }
 
 } // namespace io

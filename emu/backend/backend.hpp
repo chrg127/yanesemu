@@ -4,7 +4,6 @@
 #include <string_view>
 #include <optional>
 #include <span>
-#include <emu/util/utility.hpp>
 #include <emu/util/conf.hpp>
 #include <emu/backend/input.hpp>
 #include <emu/backend/video.hpp>

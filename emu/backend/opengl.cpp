@@ -4,7 +4,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <emu/util/common.hpp>
-#include <emu/util/utility.hpp>
 
 #ifdef PLATFORM_LINUX
 #   define GL_GLEXT_PROTOTYPES
@@ -187,12 +186,11 @@ void OpenGL::poll()
                 glViewport(0, 0, ev.window.data1, ev.window.data2);
             break;
         case SDL_KEYUP:
-        case SDL_KEYDOWN:
-        {
-            auto btn = util::map_lookup(keymap, ev.key.keysym.sym);
-            if (!btn)
+        case SDL_KEYDOWN: {
+            auto btn = keymap.find(ev.key.keysym.sym);
+            if (btn == keymap.end())
                 continue;
-            curr_keys[btn.value()] = ev.type == SDL_KEYDOWN;
+            curr_keys[btn->second] = ev.type == SDL_KEYDOWN;
             break;
         }
         }

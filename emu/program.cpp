@@ -42,8 +42,8 @@ void Program::use_config(const conf::Data &conf)
                     std::pair{"RightKey"s,  Button::Right},
                     std::pair{"StartKey"s,  Button::Start},
                     std::pair{"SelectKey"s, Button::Select} }) {
-        auto entry = util::map_lookup(conf, p.first);
-        auto s = entry.value().as<std::string>();
+        auto entry = conf.find(p.first);
+        auto s = entry->second.as<std::string>();
         s.erase(s.begin(), s.begin() + 4);
         video->map_key(s, p.second);
     }

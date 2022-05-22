@@ -2,6 +2,7 @@
 
 #include <span>
 #include <memory>
+#include <emu/util/common.hpp>
 #include <emu/util/uint.hpp>
 
 namespace core {
